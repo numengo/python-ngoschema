@@ -1,0 +1,27 @@
+graft docs
+graft src
+graft tests
+
+include .bumpversion.cfg
+include .coveragerc
+include .cookiecutterrc
+include .editorconfig
+
+include AUTHORS.rst
+include CHANGELOG.rst
+include CONTRIBUTING.rst
+include LICENSE
+include README.rst
+
+include tox.ini .travis.yml appveyor.yml
+
+global-exclude *.py[cod] __pycache__ *.so *.dylib 
+global-exclude *.bak *.dll *.bat *.pyproj
+
+prune .eggs
+prune .templates
+
+exclude bootstrap.py
+exclude pyproj_bootstrap.py
+exclude run-coverage.py
+exclude run-tests.py

@@ -1,0 +1,2674 @@
+{
+  "$schema": "http://numengo.org/draft-03/schema#", 
+  "$id": "http://numengo.org/draft-03/defs-schema#", 
+  "description": "numenGo core definitions", 
+  "type": "object", 
+  "title": "ngoMM", 
+  "nsPrefix": "NgoMM", 
+  "definitions": {
+    "Documentation": {
+      "title": "Documentation", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata"
+      ], 
+      "properties": {
+        "name": {
+          "type": "string"
+        }, 
+        "source": {
+          "type": "string"
+        }, 
+        "date": {
+          "type": "string"
+        }, 
+        "comment": {
+          "type": "string"
+        }
+      }
+    }, 
+    "Object": {
+      "title": "Object", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "isAbstract": true, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata"
+      ], 
+      "properties": {
+        "tooltip": {
+          "type": "string"
+        }, 
+        "canonicalName": {
+          "type": "string"
+        }, 
+        "documentation": {
+          "$ref": "#/definitions/Documentation"
+        }, 
+        "filePath": {
+          "type": "string"
+        }
+      }
+    }, 
+    "Class": {
+      "title": "Class", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "isAbstract": true, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+        "#/definitions/Object"
+      ], 
+      "properties": {
+        "logLevel": {
+          "default": "WARNING", 
+          "enum": [
+            "DEBUG", 
+            "INFO", 
+            "WARNING", 
+            "ERROR", 
+            "CRITICAL"
+          ]
+        }
+      }
+    }, 
+    "Package": {
+      "title": "Package", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+        "#/definitions/Object"
+      ], 
+      "properties": {
+        "files": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/File"
+          }
+        }, 
+        "documents": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/Document"
+          }
+        }, 
+        "packages": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/Package"
+          }
+        }, 
+        "groups": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/Group"
+          }
+        }, 
+        "quantityDefinitions": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/quantity/definitions/QuantityDefinition"
+          }
+        }, 
+        "componentDefinitions": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/model/definitions/ComponentDefinition"
+          }
+        }, 
+        "portDefinitions": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/model/definitions/PortDefinition"
+          }
+        }, 
+        "license": {
+          "type": "string"
+        }, 
+        "licenseProtected": {
+          "type": "boolean", 
+          "default": false
+        }, 
+        "RlmLicFeature": {
+          "type": "string"
+        }, 
+        "simxLicFeature": {
+          "type": "string"
+        }, 
+        "staticLibrary": {
+          "type": "string"
+        }, 
+        "dynamicLibrary": {
+          "type": "string"
+        }, 
+        "headerFilePath": {
+          "type": "string"
+        }, 
+        "iconGallery": {
+          "$ref": "#/definitions/graphics/definitions/IconGallery"
+        }, 
+        "externalClassRegistry": {
+          "$ref": "#/definitions/generation/definitions/ExternalClassRegistry"
+        }, 
+        "generationInfo": {
+          "$ref": "#/definitions/generation/definitions/PackageInfo"
+        }, 
+        "defaultIcon": {
+          "targetSchemaUri": "#/definitions/graphics/definitions/Icon", 
+          "type": "string", 
+          "format": "uri-reference"
+        }, 
+        "RgbCode": {
+          "type": "string", 
+          "default": "35,62,153"
+        }, 
+        "dependencies": {
+          "type": "array", 
+          "items": {
+            "targetSchemaUri": "#/definitions/Package", 
+            "type": "string", 
+            "format": "uri-reference"
+          }
+        }, 
+        "projectAlias": {
+          "type": "string"
+        }
+      }
+    }, 
+    "Group": {
+      "title": "Group", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+        "#/definitions/Object"
+      ], 
+      "properties": {
+        "groups": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/Group"
+          }
+        }, 
+        "componentDefinitions": {
+          "type": "array", 
+          "items": {
+            "$ref": "#/definitions/model/definitions/ComponentDefinition"
+          }
+        }
+      }
+    }, 
+    "Document": {
+      "title": "Document", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata"
+      ], 
+      "properties": {
+        "name": {
+          "type": "string"
+        }, 
+        "source": {
+          "type": "string"
+        }, 
+        "date": {
+          "type": "string"
+        }, 
+        "version": {
+          "type": "string"
+        }, 
+        "description": {
+          "type": "string"
+        }, 
+        "comment": {
+          "type": "string"
+        }, 
+        "author": {
+          "type": "string"
+        }, 
+        "categories": {
+          "type": "array", 
+          "items": {
+            "type": "string"
+          }
+        }, 
+        "tags": {
+          "type": "array", 
+          "items": {
+            "type": "string"
+          }
+        }, 
+        "topics": {
+          "type": "array", 
+          "items": {
+            "type": "string"
+          }
+        }, 
+        "primaryTopic": {
+          "type": "string"
+        }, 
+        "sha1": {
+          "type": "string"
+        }
+      }
+    }, 
+    "File": {
+      "title": "File", 
+      "type": "object", 
+      "additionalProperties": false, 
+      "extends": [
+        "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+        "#/definitions/Document"
+      ], 
+      "properties": {
+        "uri": {
+          "type": "string"
+        }, 
+        "md5": {
+          "type": "string"
+        }, 
+        "type": {
+          "type": "string"
+        }, 
+        "uploadedOn": {
+          "type": "string"
+        }, 
+        "size": {
+          "type": "string"
+        }
+      }
+    }, 
+    "os": {
+      "type": "object", 
+      "title": "os", 
+      "nsPrefix": "Os", 
+      "definitions": {
+        "Binary": {
+          "title": "Binary", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {}
+        }, 
+        "DynamicLibrary": {
+          "title": "DynamicLibrary", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/os/definitions/Binary"
+          ], 
+          "properties": {
+            "system": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/os/definitions/System"
+              }, 
+              "minItems": 1
+            }, 
+            "constructor": {
+              "type": "string"
+            }, 
+            "destructor": {
+              "type": "string"
+            }, 
+            "parameterPassingType": {
+              "type": "string"
+            }
+          }
+        }, 
+        "Executable": {
+          "title": "Executable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/os/definitions/Binary"
+          ], 
+          "properties": {
+            "system": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/os/definitions/System"
+              }, 
+              "minItems": 1
+            }
+          }
+        }, 
+        "System": {
+          "title": "System", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "binaryName": {
+              "type": "string"
+            }, 
+            "systemType": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }, 
+    "variable": {
+      "type": "object", 
+      "title": "variable", 
+      "nsPrefix": "Variable", 
+      "definitions": {
+        "Alias": {
+          "enum": [
+            "NoAlias", 
+            "Alias", 
+            "NegatedAlias", 
+            "Reference"
+          ]
+        }, 
+        "Variability": {
+          "enum": [
+            "Continuous", 
+            "Discrete", 
+            "Parameter", 
+            "Constant"
+          ]
+        }, 
+        "Causality": {
+          "enum": [
+            "Internal", 
+            "Input", 
+            "Output", 
+            "None"
+          ]
+        }, 
+        "StateSelect": {
+          "enum": [
+            "Never", 
+            "Always"
+          ]
+        }, 
+        "VariableType": {
+          "enum": [
+            "Real", 
+            "Integer", 
+            "Boolean", 
+            "Enumeration", 
+            "Text", 
+            "Object", 
+            "VariableWithEditor"
+          ]
+        }, 
+        "Variable": {
+          "title": "Variable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "generationInfo": {
+              "$ref": "#/definitions/generation/definitions/VariableInfo"
+            }, 
+            "valueLiteral": {
+              "type": "string"
+            }, 
+            "defaultValueLiteral": {
+              "type": "string"
+            }, 
+            "receivesValueFrom": {
+              "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/variable/definitions/Variable/definitions/sendsValueTo"
+            }, 
+            "sendsValueTo": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "opposite": "#/definitions/variable/definitions/Variable/definitions/receivesValueFrom", 
+                "format": "uri-reference"
+              }
+            }, 
+            "isDerivative": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "dimension": {
+              "type": "string", 
+              "default": "1"
+            }, 
+            "maxDimension": {
+              "type": "integer", 
+              "default": 1
+            }, 
+            "causality": {
+              "enum": [
+                "Internal", 
+                "Input", 
+                "Output", 
+                "None"
+              ], 
+              "default": "Internal"
+            }, 
+            "variability": {
+              "enum": [
+                "Continuous", 
+                "Discrete", 
+                "Parameter", 
+                "Constant"
+              ], 
+              "default": "Continuous"
+            }, 
+            "alias": {
+              "enum": [
+                "NoAlias", 
+                "Alias", 
+                "NegatedAlias", 
+                "Reference"
+              ], 
+              "default": "NoAlias"
+            }, 
+            "isPlottable": {
+              "type": "boolean", 
+              "default": true
+            }, 
+            "recompile": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "isState": {
+              "enum": [
+                "Never", 
+                "Always"
+              ], 
+              "default": "Never"
+            }, 
+            "implClass": {
+              "type": "string"
+            }, 
+            "outputOfFunction": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/model/definitions/Function", 
+                "type": "string", 
+                "opposite": "#/definitions/model/definitions/Function/definitions/outputVariables", 
+                "format": "uri-reference"
+              }
+            }, 
+            "retValueOfFunction": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/model/definitions/Function", 
+                "type": "string", 
+                "opposite": "#/definitions/model/definitions/Function/definitions/returnVariable", 
+                "format": "uri-reference"
+              }
+            }, 
+            "refHiddenElements": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/EnumerationLiteral", 
+                "type": "string", 
+                "opposite": "#/definitions/variable/definitions/EnumerationLiteral/definitions/hiddenElements", 
+                "format": "uri-reference"
+              }
+            }
+          }
+        }, 
+        "RealVariable": {
+          "title": "RealVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {
+            "variableValidity": {
+              "$ref": "#/definitions/validity/definitions/ValidityReal"
+            }, 
+            "quantityType": {
+              "targetSchemaUri": "#/definitions/quantity/definitions/QuantityDefinition", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "isDifference": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "unit": {
+              "type": "string"
+            }, 
+            "displayUnit": {
+              "type": "string"
+            }
+          }
+        }, 
+        "RealMatrix": {
+          "title": "RealMatrix", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {}
+        }, 
+        "RealMatrixColumnValues": {
+          "title": "RealMatrixColumnValues", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "value": {
+              "type": "array", 
+              "items": {
+                "type": "number"
+              }, 
+              "minItems": 1
+            }
+          }
+        }, 
+        "RealMatrixValue": {
+          "title": "RealMatrixValue", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "columns": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/variable/definitions/RealMatrixColumnValues"
+              }, 
+              "minItems": 1
+            }
+          }
+        }, 
+        "BooleanVariable": {
+          "title": "BooleanVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {}
+        }, 
+        "IntegerVariable": {
+          "title": "IntegerVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {
+            "variableValidity": {
+              "$ref": "#/definitions/validity/definitions/ValidityInteger"
+            }
+          }
+        }, 
+        "EnumerationVariable": {
+          "title": "EnumerationVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {
+            "literals": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/variable/definitions/EnumerationLiteral"
+              }
+            }, 
+            "value": {
+              "targetSchemaUri": "#/definitions/variable/definitions/EnumerationLiteral", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "defaultValue": {
+              "targetSchemaUri": "#/definitions/variable/definitions/EnumerationLiteral", 
+              "type": "string", 
+              "format": "uri-reference"
+            }
+          }
+        }, 
+        "EnumerationLiteral": {
+          "title": "EnumerationLiteral", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "numericalValue": {
+              "type": "integer"
+            }, 
+            "icon": {
+              "targetSchemaUri": "#/definitions/graphics/definitions/Icon", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "hiddenElements": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "opposite": "#/definitions/variable/definitions/Variable/definitions/refHiddenElements", 
+                "format": "uri-reference"
+              }
+            }, 
+            "parent": {
+              "targetSchemaUri": "#/definitions/variable/definitions/EnumerationVariable", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/variable/definitions/EnumerationVariable/definitions/literals"
+            }
+          }
+        }, 
+        "TextVariable": {
+          "title": "TextVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {}
+        }, 
+        "VariableWithEditor": {
+          "title": "VariableWithEditor", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {
+            "binary": {
+              "targetSchemaUri": "#/definitions/os/definitions/Binary", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "class": {
+              "type": "string"
+            }
+          }
+        }, 
+        "ObjectVariable": {
+          "title": "ObjectVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {
+            "externalClass": {
+              "targetSchemaUri": "#/definitions/generation/definitions/ExternalClass", 
+              "type": "string", 
+              "format": "uri-reference"
+            }
+          }
+        }, 
+        "DatetimeVariable": {
+          "title": "DatetimeVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/variable/definitions/Variable"
+          ], 
+          "properties": {}
+        }, 
+        "VariableFilter": {
+          "title": "VariableFilter", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "removedVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "addNull": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "addInheritedVariables": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "addSubComponents": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "metaTypes": {
+              "type": "array", 
+              "items": {
+                "enum": [
+                  "Real", 
+                  "Integer", 
+                  "Boolean", 
+                  "Enumeration", 
+                  "Text", 
+                  "Object", 
+                  "VariableWithEditor"
+                ]
+              }
+            }, 
+            "causualities": {
+              "type": "array", 
+              "items": {
+                "enum": [
+                  "Internal", 
+                  "Input", 
+                  "Output", 
+                  "None"
+                ]
+              }
+            }, 
+            "variablilities": {
+              "type": "array", 
+              "items": {
+                "enum": [
+                  "Continuous", 
+                  "Discrete", 
+                  "Parameter", 
+                  "Constant"
+                ]
+              }
+            }, 
+            "stateSelects": {
+              "type": "array", 
+              "items": {
+                "enum": [
+                  "Never", 
+                  "Always"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }, 
+    "quantity": {
+      "type": "object", 
+      "title": "quantity", 
+      "nsPrefix": "Quantity", 
+      "definitions": {
+        "Unit": {
+          "title": "Unit", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "label": {
+              "type": "string"
+            }, 
+            "quantity": {
+              "targetSchemaUri": "#/definitions/quantity/definitions/QuantityDefinition", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/quantity/definitions/QuantityDefinition/definitions/units"
+            }, 
+            "referenceUnit": {
+              "targetSchemaUri": "#/definitions/quantity/definitions/Unit", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "multiplier": {
+              "type": "number", 
+              "default": 1.0
+            }, 
+            "offset": {
+              "type": "number"
+            }
+          }
+        }, 
+        "QuantityDefinition": {
+          "title": "QuantityDefinition", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "units": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/quantity/definitions/Unit"
+              }, 
+              "minItems": 1
+            }, 
+            "defaultUnit": {
+              "targetSchemaUri": "#/definitions/quantity/definitions/Unit", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "implClass": {
+              "type": "string", 
+              "default": "Quantity"
+            }, 
+            "meter": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "kilogram": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "second": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "ampere": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "kelvin": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "mole": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "candela": {
+              "type": "integer", 
+              "default": 0
+            }
+          }
+        }
+      }
+    }, 
+    "validity": {
+      "type": "object", 
+      "title": "validity", 
+      "nsPrefix": "Validity", 
+      "definitions": {
+        "Validity": {
+          "title": "Validity", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "implClass": {
+              "type": "string", 
+              "default": "Quantity"
+            }
+          }
+        }, 
+        "ValidityReal": {
+          "title": "ValidityReal", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/validity/definitions/Validity"
+          ], 
+          "properties": {
+            "min": {
+              "type": "number"
+            }, 
+            "max": {
+              "type": "number"
+            }
+          }
+        }, 
+        "ValidityInteger": {
+          "title": "ValidityInteger", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/validity/definitions/Validity"
+          ], 
+          "properties": {
+            "min": {
+              "type": "integer"
+            }, 
+            "max": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }, 
+    "model": {
+      "type": "object", 
+      "title": "model", 
+      "nsPrefix": "Model", 
+      "definitions": {
+        "FunctionVariableType": {
+          "enum": [
+            "Input", 
+            "Output", 
+            "Return"
+          ]
+        }, 
+        "IVariableGroup": {
+          "title": "IVariableGroup", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "variableGroups": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/VariableGroup"
+              }
+            }, 
+            "variables": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/variable/definitions/Variable"
+              }
+            }
+          }
+        }, 
+        "IComponentDefinition": {
+          "title": "IComponentDefinition", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/model/definitions/IVariableGroup"
+          ], 
+          "properties": {
+            "functions": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/Function"
+              }
+            }, 
+            "ports": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/Port"
+              }
+            }, 
+            "components": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/Component"
+              }
+            }, 
+            "connections": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/Connection"
+              }
+            }, 
+            "defaultIcon": {
+              "targetSchemaUri": "#/definitions/graphics/definitions/Icon", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "FrameIcon": {
+              "targetSchemaUri": "#/definitions/graphics/definitions/Icon", 
+              "type": "string", 
+              "format": "uri-reference"
+            }
+          }
+        }, 
+        "IPortDefinition": {
+          "title": "IPortDefinition", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/model/definitions/IVariableGroup"
+          ], 
+          "properties": {}
+        }, 
+        "VariableGroup": {
+          "title": "VariableGroup", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object", 
+            "#/definitions/model/definitions/IVariableGroup"
+          ], 
+          "properties": {
+            "generationInfo": {
+              "$ref": "#/definitions/generation/definitions/VariableGroupInfo"
+            }
+          }
+        }, 
+        "ComponentDefinition": {
+          "title": "ComponentDefinition", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Class", 
+            "#/definitions/model/definitions/IComponentDefinition"
+          ], 
+          "properties": {
+            "extends": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/model/definitions/ComponentDefinition", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "friends": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/model/definitions/ComponentDefinition", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "abstract": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "generationInfo": {
+              "$ref": "#/definitions/generation/definitions/ComponentDefinitionInfo"
+            }, 
+            "handlesDiscontinuities": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "needsTime": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "nDiscInd": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "initializeFromInputs": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "stopsSourceCodeGeneration": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "onlyCppCode": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "Component": {
+          "title": "Component", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object", 
+            "#/definitions/model/definitions/IComponentDefinition"
+          ], 
+          "properties": {
+            "componentType": {
+              "targetSchemaUri": "#/definitions/model/definitions/ComponentDefinition", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "X": {
+              "type": "integer"
+            }, 
+            "Y": {
+              "type": "integer"
+            }, 
+            "flip": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "rotation": {
+              "type": "integer", 
+              "default": 0
+            }
+          }
+        }, 
+        "PortDefinition": {
+          "title": "PortDefinition", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object", 
+            "#/definitions/model/definitions/IPortDefinition"
+          ], 
+          "properties": {}
+        }, 
+        "Port": {
+          "title": "Port", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object", 
+            "#/definitions/model/definitions/IPortDefinition"
+          ], 
+          "properties": {
+            "portType": {
+              "targetSchemaUri": "#/definitions/model/definitions/PortDefinition", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "connection": {
+              "targetSchemaUri": "#/definitions/model/definitions/Connection", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/model/definitions/Connection/definitions/ports"
+            }, 
+            "connectsTo": {
+              "type": "string"
+            }, 
+            "Xposition": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "Yposition": {
+              "type": "integer", 
+              "default": 0
+            }, 
+            "leaveUnconnected": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "showName": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "Function": {
+          "title": "Function", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "generationInfo": {
+              "$ref": "#/definitions/generation/definitions/FunctionInfo"
+            }, 
+            "inputVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "outputVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "opposite": "#/definitions/variable/definitions/Variable/definitions/outputOfFunction", 
+                "format": "uri-reference"
+              }
+            }, 
+            "returnVariable": {
+              "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/variable/definitions/Variable/definitions/retValueOfFunction"
+            }, 
+            "replaceable": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "Connection": {
+          "title": "Connection", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "ports": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/model/definitions/Port", 
+                "type": "string", 
+                "opposite": "#/definitions/model/definitions/Port/definitions/connection", 
+                "format": "uri-reference"
+              }, 
+              "maxItems": 2, 
+              "minItems": 2
+            }
+          }
+        }
+      }
+    }, 
+    "graphics": {
+      "type": "object", 
+      "title": "graphics", 
+      "nsPrefix": "Graphics", 
+      "definitions": {
+        "IconGallery": {
+          "title": "IconGallery", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "icons": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/graphics/definitions/Icon"
+              }
+            }
+          }
+        }, 
+        "Icon": {
+          "title": "Icon", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "xbmRepresentation": {
+              "$ref": "#/definitions/graphics/definitions/XBMIcon"
+            }, 
+            "svgRepresentation": {
+              "$ref": "#/definitions/graphics/definitions/SVGIcon"
+            }, 
+            "modRepresentation": {
+              "$ref": "#/definitions/graphics/definitions/ModelicaIcon"
+            }
+          }
+        }, 
+        "XBMIcon": {
+          "title": "XBMIcon", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "string": {
+              "type": "string"
+            }
+          }
+        }, 
+        "SVGIcon": {
+          "title": "SVGIcon", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "string": {
+              "type": "string"
+            }
+          }
+        }, 
+        "ModelicaIcon": {
+          "title": "ModelicaIcon", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "string": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }, 
+    "generation": {
+      "type": "object", 
+      "title": "generation", 
+      "nsPrefix": "Generation", 
+      "definitions": {
+        "FunctionArgumentIIOType": {
+          "enum": [
+            "Input", 
+            "Output"
+          ]
+        }, 
+        "FunctionCArgumentType": {
+          "enum": [
+            "Integer", 
+            "Real", 
+            "Boolean", 
+            "String", 
+            "Pointer"
+          ]
+        }, 
+        "FunctionCReturnType": {
+          "enum": [
+            "void", 
+            "Integer", 
+            "Real", 
+            "Boolean", 
+            "String", 
+            "Pointer", 
+            "IntegerArray", 
+            "RealArray", 
+            "BooleanArray", 
+            "StringArray"
+          ]
+        }, 
+        "PassingVariableType": {
+          "enum": [
+            "Value", 
+            "Reference", 
+            "Pointer", 
+            "InstanceID"
+          ]
+        }, 
+        "AccessType": {
+          "enum": [
+            "public", 
+            "protected", 
+            "private"
+          ]
+        }, 
+        "GenerationInfo": {
+          "title": "GenerationInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "inherited": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "suppressDeclaration": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "PackageInfo": {
+          "title": "PackageInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/GenerationInfo"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/Package", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/Package/definitions/generationInfo"
+            }, 
+            "namespace": {
+              "type": "string"
+            }, 
+            "namePrefix": {
+              "type": "string"
+            }, 
+            "macroPrefix": {
+              "type": "string"
+            }, 
+            "destinationFolder": {
+              "type": "string"
+            }, 
+            "ameSimDestinationFolder": {
+              "type": "string"
+            }, 
+            "packageWideIncludes": {
+              "type": "array", 
+              "items": {
+                "type": "string"
+              }
+            }, 
+            "baseComponent": {
+              "targetSchemaUri": "#/definitions/generation/definitions/ExternalClass", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "baseComponentModule": {
+              "targetSchemaUri": "#/definitions/generation/definitions/ModuleClass", 
+              "type": "string", 
+              "format": "uri-reference"
+            }
+          }
+        }, 
+        "VariableGroupInfo": {
+          "title": "VariableGroupInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/GenerationInfo"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/model/definitions/VariableGroup", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/model/definitions/VariableGroup/definitions/generationInfo"
+            }
+          }
+        }, 
+        "LocalVariable": {
+          "title": "LocalVariable", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "type": {
+              "targetSchemaUri": "#/definitions/generation/definitions/ExternalClass", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "userTypeCPP": {
+              "type": "string"
+            }, 
+            "dimension": {
+              "type": "string", 
+              "default": "1"
+            }, 
+            "dynamicAllocation": {
+              "type": "boolean", 
+              "default": true
+            }, 
+            "access": {
+              "enum": [
+                "public", 
+                "protected", 
+                "private"
+              ]
+            }, 
+            "defaultValue": {
+              "type": "string"
+            }
+          }
+        }, 
+        "MethodCPP": {
+          "title": "MethodCPP", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "returnType": {
+              "type": "string"
+            }, 
+            "access": {
+              "enum": [
+                "public", 
+                "protected", 
+                "private"
+              ]
+            }, 
+            "virtual": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "const": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "abstract": {
+              "type": "boolean"
+            }, 
+            "body": {
+              "$ref": "#/definitions/generation/definitions/FunctionBody"
+            }, 
+            "arguments": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ArgumentCPP"
+              }
+            }
+          }
+        }, 
+        "MethodC": {
+          "title": "MethodC", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "returnType": {
+              "enum": [
+                "void", 
+                "Integer", 
+                "Real", 
+                "Boolean", 
+                "String", 
+                "Pointer", 
+                "IntegerArray", 
+                "RealArray", 
+                "BooleanArray", 
+                "StringArray"
+              ]
+            }, 
+            "virtual": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "const": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "abstract": {
+              "type": "boolean"
+            }, 
+            "body": {
+              "$ref": "#/definitions/generation/definitions/FunctionBody"
+            }, 
+            "arguments": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ArgumentC"
+              }
+            }, 
+            "toWrap": {
+              "type": "boolean", 
+              "default": true
+            }
+          }
+        }, 
+        "FunctionCPP": {
+          "title": "FunctionCPP", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "returnType": {
+              "type": "string"
+            }, 
+            "body": {
+              "$ref": "#/definitions/generation/definitions/FunctionBody"
+            }, 
+            "arguments": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ArgumentCPP"
+              }
+            }
+          }
+        }, 
+        "FunctionC": {
+          "title": "FunctionC", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "returnType": {
+              "enum": [
+                "void", 
+                "Integer", 
+                "Real", 
+                "Boolean", 
+                "String", 
+                "Pointer", 
+                "IntegerArray", 
+                "RealArray", 
+                "BooleanArray", 
+                "StringArray"
+              ]
+            }, 
+            "body": {
+              "$ref": "#/definitions/generation/definitions/FunctionBody"
+            }, 
+            "arguments": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ArgumentC"
+              }
+            }
+          }
+        }, 
+        "ArgumentCPP": {
+          "title": "ArgumentCPP", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "type": {
+              "type": "string"
+            }, 
+            "defaultValue": {
+              "type": "string"
+            }
+          }
+        }, 
+        "ArgumentC": {
+          "title": "ArgumentC", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "name": {
+              "type": "string"
+            }, 
+            "description": {
+              "type": "string"
+            }, 
+            "ioType": {
+              "enum": [
+                "Input", 
+                "Output"
+              ]
+            }, 
+            "type": {
+              "enum": [
+                "Integer", 
+                "Real", 
+                "Boolean", 
+                "String", 
+                "Pointer"
+              ], 
+              "default": "Integer"
+            }, 
+            "dimension": {
+              "type": "integer", 
+              "default": 1
+            }, 
+            "defaultValue": {
+              "type": "string"
+            }
+          }
+        }, 
+        "FunctionBody": {
+          "title": "FunctionBody", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "sourceCode": {
+              "type": "string"
+            }
+          }
+        }, 
+        "ComponentDefinitionAutoInfo": {
+          "title": "ComponentDefinitionAutoInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "allDirectSuperClasses": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/Class", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "inheritedVariables": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/variable/definitions/Variable"
+              }
+            }, 
+            "allAttributes": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "parameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "realParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "integerParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "enumerationParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "booleanParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "textParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "objectParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "ameSimIntegerParameters": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "variables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "variablesWithInner": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "innerVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "realVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "continousRealVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "discreteRealVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "stateRealVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "integerVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "enumerationVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "booleanVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "objectVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "stateVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "stateVariablesWithInner": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "innerStateVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "continuousStateVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "discreteStateVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "continuousStateVariablesWithInner": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "discreteStateVariablesWithInner": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalStateRealVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalNotStateRealVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalIntegerVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalEnumerationVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalBooleanVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalTextVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "internalObjectVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "externalVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "externalInputVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "externalOutputVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "portsPackage": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/Package", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "maxRealID": {
+              "type": "integer", 
+              "default": -1
+            }, 
+            "maxIntegerID": {
+              "type": "integer", 
+              "default": -1
+            }, 
+            "maxBooleanID": {
+              "type": "integer", 
+              "default": -1
+            }, 
+            "maxTextID": {
+              "type": "integer", 
+              "default": -1
+            }, 
+            "UUID": {
+              "type": "string"
+            }, 
+            "processed": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "ComponentDefinitionInfo": {
+          "title": "ComponentDefinitionInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/GenerationInfo", 
+            "#/definitions/generation/definitions/ComponentDefinitionAutoInfo"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/model/definitions/ComponentDefinition", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/model/definitions/ComponentDefinition/definitions/generationInfo"
+            }, 
+            "headerIncludes": {
+              "type": "array", 
+              "items": {
+                "type": "string"
+              }
+            }, 
+            "componentModule": {
+              "targetSchemaUri": "#/definitions/generation/definitions/ModuleClass", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "cppIncludes": {
+              "type": "array", 
+              "items": {
+                "type": "string"
+              }
+            }, 
+            "externalExtends": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/generation/definitions/ExternalClass", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "externalFriends": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ExternalClass"
+              }
+            }, 
+            "extraMethods": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/MethodCPP"
+              }
+            }, 
+            "extraMethodsWrappable": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/MethodC"
+              }
+            }, 
+            "extraConstructors": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/MethodCPP"
+              }
+            }, 
+            "destructor": {
+              "$ref": "#/definitions/generation/definitions/MethodCPP"
+            }, 
+            "localVariables": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/LocalVariable"
+              }
+            }, 
+            "extraFunctions": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/FunctionCPP"
+              }
+            }, 
+            "extraFunctionsWrappable": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/FunctionC"
+              }
+            }, 
+            "generatedCalcFunctions": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/model/definitions/Function"
+              }
+            }, 
+            "generateMainFunction": {
+              "type": "boolean", 
+              "default": true
+            }, 
+            "initializeFunction": {
+              "$ref": "#/definitions/model/definitions/Function"
+            }, 
+            "initializeFromInputsFunction": {
+              "$ref": "#/definitions/model/definitions/Function"
+            }, 
+            "calcMainFunction": {
+              "$ref": "#/definitions/model/definitions/Function"
+            }, 
+            "eventUpdateFunction": {
+              "$ref": "#/definitions/model/definitions/Function"
+            }, 
+            "extendedSetStateVariables": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }, 
+            "declaresRegistrant": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "createAdditionalWrappersUsingIndex": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "createAccessorsUsingIndex": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "identifier": {
+              "targetSchemaUri": "#/definitions/variable/definitions/ObjectVariable", 
+              "type": "string", 
+              "format": "uri-reference"
+            }
+          }
+        }, 
+        "VariableInfoAuto": {
+          "title": "VariableInfoAuto", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "fmiIndex": {
+              "type": "integer"
+            }, 
+            "isArray": {
+              "type": "boolean"
+            }, 
+            "parameterOffset": {
+              "type": "integer"
+            }, 
+            "dependsOn": {
+              "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "calculatedFrom": {
+              "targetSchemaUri": "#/definitions/model/definitions/Function", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "derivative": {
+              "$ref": "#/definitions/variable/definitions/RealVariable"
+            }, 
+            "initializationParameter": {
+              "targetSchemaUri": "#/definitions/variable/definitions/RealVariable", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "modelicaName": {
+              "type": "string"
+            }, 
+            "modelicaType": {
+              "type": "string"
+            }
+          }
+        }, 
+        "VariableInfo": {
+          "title": "VariableInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/GenerationInfo", 
+            "#/definitions/generation/definitions/VariableInfoAuto"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/variable/definitions/Variable/definitions/generationInfo"
+            }, 
+            "passingType": {
+              "enum": [
+                "Value", 
+                "Reference", 
+                "Pointer", 
+                "InstanceID"
+              ], 
+              "default": "Value"
+            }, 
+            "cppType": {
+              "type": "string"
+            }, 
+            "readOnly": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "generateCalcFunction": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "generateGetMethod": {
+              "type": "boolean", 
+              "default": true
+            }, 
+            "generateSetMethod": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "generateComputeMethod": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "valueCPPTypeWhenInput": {
+              "type": "string"
+            }, 
+            "valueCPPTypeWhenOutput": {
+              "type": "string"
+            }, 
+            "valueCPPTypeWhenReturn": {
+              "type": "string"
+            }
+          }
+        }, 
+        "FunctionInfoAuto": {
+          "title": "FunctionInfoAuto", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "isAbstract": true, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "arguments": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/FunctionArgument"
+              }
+            }, 
+            "returnType": {
+              "$ref": "#/definitions/generation/definitions/FunctionReturnType"
+            }
+          }
+        }, 
+        "FunctionInfo": {
+          "title": "FunctionInfo", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/GenerationInfo", 
+            "#/definitions/generation/definitions/FunctionInfoAuto"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/model/definitions/Function", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/model/definitions/Function/definitions/generationInfo"
+            }, 
+            "abstract": {
+              "type": "boolean", 
+              "default": false
+            }
+          }
+        }, 
+        "FunctionArgument": {
+          "title": "FunctionArgument", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "refVariable": {
+              "targetSchemaUri": "#/definitions/variable/definitions/Variable", 
+              "type": "string", 
+              "format": "uri-reference"
+            }, 
+            "isDerivative": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "isArray": {
+              "type": "boolean", 
+              "default": false
+            }, 
+            "cppType": {
+              "type": "string"
+            }, 
+            "cppName": {
+              "type": "string"
+            }, 
+            "cppNameWhenCall": {
+              "type": "string"
+            }, 
+            "cppRelativePathName": {
+              "type": "string"
+            }, 
+            "ameSimType": {
+              "type": "string"
+            }, 
+            "ameSimName": {
+              "type": "string"
+            }, 
+            "ameSimTempObjectVariableName": {
+              "type": "string"
+            }, 
+            "ameSimNameWhenCall": {
+              "type": "string"
+            }, 
+            "modelicaType": {
+              "type": "string"
+            }, 
+            "modelicaName": {
+              "type": "string"
+            }, 
+            "modelicaSizeName": {
+              "type": "string"
+            }, 
+            "modelicaNameWhenCall": {
+              "type": "string"
+            }, 
+            "ioType": {
+              "enum": [
+                "Input", 
+                "Output"
+              ]
+            }
+          }
+        }, 
+        "FunctionReturnType": {
+          "title": "FunctionReturnType", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata"
+          ], 
+          "properties": {
+            "parent": {
+              "targetSchemaUri": "#/definitions/generation/definitions/FunctionInfoAuto", 
+              "type": "string", 
+              "format": "uri-reference", 
+              "opposite": "#/definitions/generation/definitions/FunctionInfoAuto/definitions/returnType"
+            }, 
+            "cppType": {
+              "type": "string"
+            }, 
+            "ameSimType": {
+              "type": "string"
+            }
+          }
+        }, 
+        "ExternalClassRegistry": {
+          "title": "ExternalClassRegistry", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Object"
+          ], 
+          "properties": {
+            "externalClasses": {
+              "type": "array", 
+              "items": {
+                "$ref": "#/definitions/generation/definitions/ExternalClass"
+              }
+            }
+          }
+        }, 
+        "ExternalClass": {
+          "title": "ExternalClass", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/Class"
+          ], 
+          "properties": {
+            "typeID": {
+              "type": "string"
+            }, 
+            "staticLibrary": {
+              "type": "string"
+            }, 
+            "staticLibraryPath": {
+              "type": "string"
+            }, 
+            "dynamicLibrary": {
+              "type": "string"
+            }, 
+            "dynamicLibraryPath": {
+              "type": "string"
+            }, 
+            "headerFile": {
+              "type": "string"
+            }, 
+            "headerFilePath": {
+              "type": "string"
+            }, 
+            "indexId": {
+              "type": "string"
+            }, 
+            "indexAccessor": {
+              "type": "string"
+            }, 
+            "extends": {
+              "type": "array", 
+              "items": {
+                "targetSchemaUri": "#/definitions/generation/definitions/ExternalClass", 
+                "type": "string", 
+                "format": "uri-reference"
+              }
+            }
+          }
+        }, 
+        "ModuleClass": {
+          "title": "ModuleClass", 
+          "type": "object", 
+          "additionalProperties": false, 
+          "extends": [
+            "http://numengo.org/draft-03/schema#/definitions/Metadata", 
+            "#/definitions/generation/definitions/ExternalClass"
+          ], 
+          "properties": {
+            "shortName": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }, 
+    "ObjectManager": {
+      "additionalProperties": false, 
+      "type": "object", 
+      "properties": {
+        "excludes": {
+          "default": [
+            ".*", 
+            "dist", 
+            "build", 
+            "docs"
+          ], 
+          "items": {
+            "type": "string"
+          }, 
+          "type": "array"
+        }, 
+        "configFile": {
+          "type": "string"
+        }, 
+        "parsers": {
+          "uniqueItems": true, 
+          "items": {
+            "type": "object"
+          }, 
+          "type": "array"
+        }, 
+        "extensions": {
+          "uniqueItems": true, 
+          "default": [
+            ".ngo"
+          ], 
+          "type": "array"
+        }, 
+        "recursive": {
+          "default": true, 
+          "type": "boolean"
+        }, 
+        "objectClass": {
+          "type": "object"
+        }, 
+        "serializers": {
+          "uniqueItems": true, 
+          "items": {
+            "type": "object"
+          }, 
+          "type": "array"
+        }, 
+        "pathlist": {
+          "items": {
+            "type": "object"
+          }, 
+          "type": "array"
+        }, 
+        "includes": {
+          "items": {
+            "type": "string"
+          }, 
+          "type": "array"
+        }
+      }
+    }, 
+    "ObjectTransform": {
+      "additionalProperties": false, 
+      "type": "object", 
+      "properties": {
+        "from_": {
+          "type": "object"
+        }, 
+        "complexTransformsTo": {
+          "additionalProperties": {
+            "type": "string"
+          }, 
+          "type": "object"
+        }, 
+        "fieldsEquivalence": {
+          "additionalProperties": {
+            "type": "string"
+          }, 
+          "type": "object"
+        }, 
+        "to_": {
+          "type": "object"
+        }, 
+        "complexTransformsFrom": {
+          "additionalProperties": {
+            "type": "string"
+          }, 
+          "type": "object"
+        }
+      }
+    }
+  }
+}
