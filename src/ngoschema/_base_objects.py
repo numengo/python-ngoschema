@@ -12,24 +12,24 @@ import pathlib
 from builtins import object
 from builtins import str
 
-import import
 import python_jsonschema_objects.util as pjo_util
 from future.builtins import object
 from future.utils import with_metaclass
 from past.builtins import basestring
 
-
-from python_jsonschema_objects.classbuilder import ProtocolBase
-
+from ._schemas import SchemaMetaclass, SchemaBase
 
 _ = gettext.gettext
 
 
 
 
-class Path(with_metaclass(SchemaMetaclass, object)):
-    schemaUri = "http://numengo.org/draft-03/schema#/definitions/Path"
+#class File(with_metaclass(SchemaMetaclass, object)):
+
+class File(SchemaBase):
+    schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/File"
 
     def __init__(self, path=".", **kw):
-        return pathlib.Path(path, kw)
+        SchemaBase.__init__(self,**kw)
+
 

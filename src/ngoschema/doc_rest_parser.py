@@ -6,6 +6,7 @@ import re
 import sys
 from builtins import object
 from builtins import str
+from ._string_utils import multiple_replace
 
 # Copyright 2015: Mirantis Inc.
 # All Rights Reserved.
@@ -155,3 +156,27 @@ class InfoMixin(object):
             "parameters": doc["params"],
             "returns": doc["returns"]
         }
+
+def parse_type_string(typestring):
+    """
+    Parse a type string and returns a json schema compliant type
+    """
+    typestring = typestring.strip()
+    if typestring[0] != '{':
+        typestring = '{type:%s}'%typestring
+    ret = re.sub(r'(\w+)',r'"\1"',typestring)
+    aliases = {
+        '=': ':',
+        '"tuple"' : '"list"',
+        '"set"' : '"list", "uniqueItems":True',
+        '"bool"' : '"boolean"',
+        '"int"' : '"integer"',
+        '"float"' : '"number"',
+        '"str"' : '"string"',
+        '"text"' : '"string"',
+        '"dict"' : '"object"',
+        '"uri"-"reference"' : '"uri-reference"',
+        '"pathlib.Path"': '"path"'
+    }
+    ret = multiple_replace(ret, aliases)
+    return eval(ret)

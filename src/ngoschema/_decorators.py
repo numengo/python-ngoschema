@@ -11,103 +11,18 @@ from __future__ import unicode_literals
 import functools
 import gettext
 import sys
+import six
+import inspect
 from builtins import object
 from builtins import str
 from pprint import pformat
 
-import six
+from python_jsonschema_objects.validators import ValidationError
 
 from .exceptions import InvalidValue
+from .validators import convert_validate
 
 _ = gettext.gettext
-
-
-def _format_call_msg(object, args=None, kwargs=None):
-    """
-    Format a call message
-    """
-    msg = "%s" % object
-    if args:
-        msg = _('%s\n\twith args:\n%s' % (msg, pformat(args)))
-    if kwargs:
-        msg = _('%s\n\twith kwargs:\n%s' % (msg, pformat(kwargs)))
-    return msg
-
-
-def log_exceptions(method):
-    """
-    Decoractor to log exceptions in instance logger
-    """
-
-    @functools.wraps(method)
-    def exception_wrapper(instance, *args, **kwargs):
-        try:
-            instance.logger.debug(
-                _format_call_msg('CALL %r.%s' % (instance, method.__name__),
-                                 args, kwargs))
-            return method(instance, *args, **kwargs)
-        except Exception as er:
-            etype, value, trace = sys.exc_info()
-            instance.logger.error(
-                _format_call_msg('CALL %r.%s ERROR %s (%s)' %
-                                 (instance, method.__name__, etype.__name__,
-                                  value), args, kwargs))
-            try:
-                six.reraise(etype, value, trace)
-            finally:
-                del trace  # to avoid circular refs
-
-    return exception_wrapper
-
-
-def log_init(method):
-    """
-    Decorator to add log to init method
-    """
-
-    @functools.wraps(method)
-    def init_logger_wrapper(instance, *args, **kwargs):
-        instance.logger.info(
-            _format_call_msg('INIT %r' % instance, args, kwargs))
-        return method(instance, *args, **kwargs)
-
-    return init_logger_wrapper
-
-
-def assert_arg(arg, validator):
-    """
-    Decorator to add a validator on a given argument
-    """
-
-    def decorated(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            new_args = list(args)
-            try:
-                if type(arg) is int and arg < len(args):
-                    try:
-                        new_args[arg] = validator(args[arg])
-                    except Exception as er:
-                        if is_list(args[arg]):
-                            new_args[arg] = [validator(a) for a in args[arg]]
-                        else:
-                            raise InvalidValue()
-                elif not type(arg) is int:
-                    kwargs[arg] = validator(kwargs[arg])
-            except Exception as er:
-                if type(arg) is int:
-                    msg = _('arg at position %i is not valid (%s)' %
-                            (arg, args[arg]))
-                else:
-                    msg = _('keyword arg %s is not valid (%s)' % (arg,
-                                                                  kwargs[arg]))
-                raise InvalidValue(msg)
-
-            return func(*new_args, **kwargs)
-
-        return wrapper
-
-    return decorated
 
 
 def take_arrays(narg1=0, narg2=-1, flatten=False):
@@ -156,7 +71,7 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
                 return [item for sublist in ret for item in sublist]
             return ret
 
-        doc = [wrapper.__doc__] if wrapper.__doc__ else []
+        doc = [wrapper.__doc__.strip()] if wrapper.__doc__ else []
         if narg2 != -1:
             doc.append(
                 'Arguments in position %i and %i can take arrays of same size, and the function will perfom the operation in parallel and return the result as a list.'
@@ -173,20 +88,107 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
     return decorated
 
 
+def assert_arg(arg, schema):
+    """
+    Decorator to add a schema to validate a given argument
+    """
+
+    def decorated(func):
+        sig = inspect.getargspec(func)
+        arg_ = arg
+        if sig.defaults and type(arg) is int and arg >= (len(sig.args)-len(sig.defaults)):
+            arg_ = sig.args[arg]
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            new_args = list(args)
+            try:
+                if type(arg_) is int and arg < len(args):
+                    new_args[arg_] = convert_validate(args[arg_], schema)
+                elif not type(arg_) is int and arg_ in kwargs:
+                    kwargs[arg] = convert_validate(kwargs[arg], schema)
+            except Exception as er:
+                if type(arg_) is int:
+                    raise InvalidValue(_('arg "%s"(=%s) is not valid. %s') %
+                                      (sig.args[arg_], args[arg_], er.message))
+                else:
+                    raise InvalidValue(_('arg "%s"(=%s) is not valid. %s') %
+                                        (arg_, kwargs[arg_], er.message))
+                raise InvalidValue(msg)
+
+            return func(*new_args, **kwargs)
+
+        wrapper.__doc__ = ((wrapper.__doc__ or '').strip() +
+        '\nArgument %r is ' % arg +
+        'automatically type converted and validated against this schema %s.'
+        % pformat(schema))
+        return wrapper
+
+    return decorated
+
+def _format_call_msg(funcname, args, kwargs):
+    return '%s(%s)'%(funcname,', '.join(['%s'%a for a in args]
+                     +['%s=%s'%(a,v) for a, v in kwargs.items()]))
+
+
+def log_exceptions(method):
+    """
+    Decoractor to log exceptions in instance logger
+    """
+
+    @functools.wraps(method)
+    def exception_wrapper(instance, *args, **kwargs):
+        try:
+            sig = inspect.getargspec(method)
+            instance.logger.debug('CALL ' +
+                _format_call_msg('%r.%s' % (instance, method.__name__),
+                                 args, kwargs))
+            return method(instance, *args, **kwargs)
+        except Exception as er:
+            etype, value, trace = sys.exc_info()
+            sig = inspect.getargspec(method)
+            instance.logger.error('CALL ' +
+                _format_call_msg('%r.%s' % (instance, method.__name__),
+                                 args, kwargs) +
+                '\n\tERROR %s: %s'% (etype.__name__, value))
+            try:
+                six.reraise(etype, value, trace)
+            finally:
+                del trace  # to avoid circular refs
+
+    return exception_wrapper
+
+
+def log_init(method):
+    """
+    Decorator to add log to init method
+    """
+    sig = inspect.getargspec(method)
+
+    @functools.wraps(method)
+    def init_logger_wrapper(instance, *args, **kwargs):
+        method(instance, *args, **kwargs)
+        instance.logger.info(
+            _format_call_msg('INIT %r' % instance, args, kwargs))
+
+    return init_logger_wrapper
+
+
 def assert_prop(instance, *args):
     def decorated(func):
         for prop in args:
             # look in schema ?
-            if prop not in list(instance.keys()):
-                raise exceptions.PropertyNotInSchema(prop)
+            if prop not in instance._properties:
+                raise AttributeError(_("No property %s."%prop))
             # look in validated data
-            if not instance.get(prop):
-                raise exceptions.PropertyUndefined(prop)
+            if instance._properties.get(prop,None) is None:
+                raise ValidationError(_('%s is not defined.'%prop))
 
         @functools.wraps(func)
         def wrapper(instance, *args, **kwargs):
             return func(instance, *args, **kwargs)
 
+        wrapper.__doc__ = ((wrapper.__doc__ or '').strip() +
+        '\nProperties %r are asserted to be defined in instance.' % args)
         return wrapper
 
     return decorated

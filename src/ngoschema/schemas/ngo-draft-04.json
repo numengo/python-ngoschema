@@ -48,6 +48,14 @@
       "default": [], 
       "type": "array"
     }, 
+    "complexTypes": {
+      "enum": [
+        "path", 
+        "date", 
+        "time", 
+        "datetime"
+      ]
+    }, 
     "Metadata": {
       "additionalProperties": false, 
       "type": "object", 
@@ -173,6 +181,9 @@
           }, 
           "uniqueItems": true, 
           "type": "array"
+        }, 
+        {
+          "$ref": "#/definitions/complexTypes"
         }
       ]
     }, 
@@ -285,14 +296,9 @@
       "$comment": "for code generation", 
       "type": "boolean"
     }, 
-    "isPathExisting": {
+    "isPathFile": {
       "$comment": "for complexType path", 
       "type": "boolean"
-    }, 
-    "opposite": {
-      "$comment": "for DB auto construction", 
-      "type": "string", 
-      "format": "uri-reference"
     }, 
     "isPathDir": {
       "$comment": "for complexType path", 
@@ -306,13 +312,22 @@
       "$comment": "for inheritance...", 
       "type": "array"
     }, 
-    "schemaUri": {
-      "$comment": "for object subclassing", 
+    "opposite": {
+      "$comment": "for DB auto construction", 
       "type": "string", 
       "format": "uri-reference"
     }, 
+    "isPathExisting": {
+      "$comment": "for complexType path", 
+      "type": "boolean"
+    }, 
     "targetSchemaUri": {
       "$comment": "to indicate an URI should point to a fragment respecting a given schema", 
+      "type": "string", 
+      "format": "uri-reference"
+    }, 
+    "schemaUri": {
+      "$comment": "for object subclassing", 
       "type": "string", 
       "format": "uri-reference"
     }

@@ -15,6 +15,7 @@ import pytest
 
 from ngoschema._decorators import *
 from ngoschema.exceptions import *
+from ngoschema.validators import *
 
 
 @take_arrays()
@@ -42,7 +43,7 @@ def test_decorators():
         pass
 
     class A(object):
-        logger = logging.getLogger('TEST')
+        _logger = logging.getLogger('TEST')
 
         @log_init
         def __init__(self):
@@ -58,26 +59,38 @@ def test_decorators():
         @log_exceptions
         def raise_exc(self):
             raise MyException('YO')
-        """
+
         @log_exceptions
-        @assert_arg(1, Integer)
+        @assert_arg(1, SCH_INT)
         def foo(self, integer):
             return 1 + integer
 
         @log_exceptions
-        @assert_arg('integer', Integer)
+        @assert_arg(1, SCH_INT)
         def bar(self, integer=1):
             return 1 + integer
-        """
+
+        @log_exceptions
+        @assert_arg('integer', SCH_INT)
+        def bar2(self, integer=1):
+            """
+            Test docstring
+            """
+            return 1 + integer
+
 
     logging.basicConfig(level=logging.DEBUG)
     a = A()
     with pytest.raises(MyException) as e_info:
         a.raise_exc()
-    #with pytest.raises(InvalidValue) as e_info:
-    #    a.foo('reziu')
-    #with pytest.raises(InvalidValue) as e_info:
-    #    a.bar(integer='reziu')
+    with pytest.raises(InvalidValue) as e_info:
+        a.foo('reziu')
+    with pytest.raises(InvalidValue) as e_info:
+        a.bar(integer='reziu')
+    with pytest.raises(InvalidValue) as e_info:
+        a.bar2(integer='reziu')
+
+    print(a.bar2.__doc__)
 
 
 if __name__ == "__main__":

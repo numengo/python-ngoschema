@@ -18,17 +18,21 @@ import os
 import logging
 import pytest
 import json
+import pathlib
+import datetime
 import dpath.util
 from pprint import pprint
 
 from jsonschema import RefResolver, Draft6Validator
+from python_jsonschema_objects.validators import ValidationError
 
 from ngoschema.resolver import ExpandingResolver
+from ngoschema import validators
 from ngoschema.validators import DefaultValidator
+from ngoschema import MS_STORE, DEFAULT_DEFS_URI
+from ngoschema import _jso_validators as jso_validators
 
 logging.basicConfig(level=logging.INFO)
-
-from ngoschema import MS_STORE, DEFAULT_DEFS_URI
 
 DEFS_URI = DEFAULT_DEFS_URI
 
@@ -110,8 +114,20 @@ def test_validate_subschemas():
     assert list(error.path) == ['variableGroups', 0, 'variables', 0, 'literals', 3, 'numericalValue']
     assert error.message == "u'4' is not of type u'integer'"
 
+def test_convert_validate():
+    with pytest.raises(ValidationError):
+        validators.convert_validate([1,2,3], {"type":"array", "maxItems": 2})
 
+    p = validators.convert_validate(__file__,validators.SCH_PATH_FILE)
+    assert isinstance(p, pathlib.Path)
+
+    with pytest.raises(ValidationError):
+        validators.convert_validate(__file__,validators.SCH_PATH_DIR)
+
+    p = validators.convert_validate("25/05/2018",validators.SCH_DATE)
+    assert isinstance(p, datetime.date)
 
 if __name__ == "__main__":
     test_validate_extends()
     test_validate_subschemas()
+    test_convert_validate()

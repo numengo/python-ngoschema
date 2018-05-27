@@ -13,6 +13,8 @@ import imp
 import json
 import logging
 import pkgutil
+import inflection
+import six
 from builtins import object
 from builtins import str
 
@@ -55,10 +57,13 @@ def load_schema(schema, schemas_store=None):
     :type schemas_store: dict
     """
     uri = _id_of(schema)
+    if not uri and 'title' in schema:
+        uri =  inflection.parameterize(six.text_type(schema['title']), '_')
     if not uri:
         raise SchemaError(
-            _('Impossible to load schema because id (or $id) field is missing.\n%s'
-              % schema))
+           _('Impossible to load schema because `id (or `$id) and `title fields'
+             'are missing.\n%s'
+             % schema))
     if schemas_store is not None:
         schemas_store[uri] = schema
     _all_schemas_store[uri] = schema

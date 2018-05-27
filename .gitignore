@@ -18,7 +18,7 @@ TODEL
 TODO
 
 # jupyter
-.ipynb*
+.ipynb_checkpoints
 
 # C extensions
 *.so

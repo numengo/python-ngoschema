@@ -62,10 +62,12 @@ class ExpandingResolver(RefResolver):
         if uri in _def_store:
             return _def_store[uri]
 
+        doc_scope, frag = urldefrag(uri)
+
         ref = schema.get('$ref')
 
         if ref:
-            ref = self._urljoin_cache(self.resolution_scope, ref)
+            ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
             sch = self._expand(uri_, schema_)
             _def_store[uri] = sch
@@ -75,7 +77,7 @@ class ExpandingResolver(RefResolver):
 
         extends = schema.get('extends', [])
         for ref in extends:
-            ref = self._urljoin_cache(self.resolution_scope, ref)
+            ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
             sch = self._expand(uri_, schema_)
             dpath.util.merge(schema_exp, copy.deepcopy(sch))

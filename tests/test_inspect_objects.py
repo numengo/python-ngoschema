@@ -16,28 +16,6 @@ import pytest
 from ngofile import list_files, LoadedModules
 
 from ngoschema.inspect_objects import FunctionInspector, ClassInspector
-from ngoschema.doc_rest_parser import parse_docstring
-
-
-def test_doc_parsing():
-    
-    ds = """
-        Create a new file with a given template
-
-        This is a long description of the function.
-    
-        :param filetype: type of file
-        :type filetype: type1, type2, type3
-        :param name: name of the file
-        :type name: string
-
-        :rtype: bool
-        """
-    doc = parse_docstring(ds)
-    assert doc['params']['filetype']['doc'] == 'type of file'
-    assert doc['params']['filetype']['type'] == 'type1, type2, type3'
-    assert len(doc['params'])==2
-    assert doc['returns'] == 'bool'
 
 
 def test_FunctionInspector():
@@ -64,7 +42,6 @@ def test_ClassInspector():
     assert ci.mro[0].methods['list_files'].parameters[2].doc
 
 if __name__ == "__main__":
-    test_doc_parsing()
     test_FunctionInspector()
     test_ClassInspector()
     print("")

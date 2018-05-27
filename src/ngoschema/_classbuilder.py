@@ -13,17 +13,27 @@ from __future__ import unicode_literals
 import gettext
 import inspect
 import logging
+import pathlib
+import arrow
+import datetime
 from builtins import object
 from builtins import str
 
-import python_jsonschema_objects.classbuilder as classbuilder
-import python_jsonschema_objects.literals as literals
-import python_jsonschema_objects.pattern_properties as pattern_properties
+import python_jsonschema_objects.classbuilder as pjo_classbuilder
+import python_jsonschema_objects.literals as pjo_literals
+import python_jsonschema_objects.validators as pjo_validators
+import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.wrapper_types
-from future.utils import text_to_native_str
 from python_jsonschema_objects.validators import ValidationError
 
+from . import _jso_validators
+
+from future.utils import text_to_native_str as native_str
+
+_ = gettext.gettext
+
+#from ngoschema import _jso_validators as ngo_validators
 
 def find_getter_setter_defv(propname, class_attrs):
     getter = None
@@ -52,74 +62,105 @@ def find_getter_setter_defv(propname, class_attrs):
     return getter, setter, defv, class_attrs
 
 
-class ProtocolBase(classbuilder.ProtocolBase):
-    __doc__ = classbuilder.ProtocolBase.__doc__
+class ProtocolBase(pjo_classbuilder.ProtocolBase):
+    __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
     def __new__(cls, *args, **kwargs):
-        new = super(classbuilder.ProtocolBase, cls).__new__
+        new = super(pjo_classbuilder.ProtocolBase, cls).__new__
         if new is object.__new__:
             return new(cls)
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
-        classbuilder.ProtocolBase.__init__(self, **kwargs)
+        pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
     def __getattr__(self, name):
         if name in self.__object_attr_list__:
-            return object.__getattr__(self, name)
+            return object.__getattribute__(self, name)
         if name in self.__prop_names__:
             raise KeyError(name)
-        if name not in self._extended_properties:
-            raise AttributeError("{0} is not a valid property of {1}".format(
-                name, self.__class__.__name__))
+        if name in self._extended_properties:
+            return self._extended_properties[name]
+        
+        raise AttributeError("{0} is not a valid attribute of {1}".format(
+            name, self.__class__.__name__))
 
-        return self._extended_properties[name]
 
+class ClassBuilder(pjo_classbuilder.ClassBuilder):
+    def _build_pseudo_literal(self, nm, clsdata, parent):
+        def __getattr__(self, name):
+            """
+            Special __getattr__ method to be able to use subclass methods
+            directly on literal
+            """
+            if hasattr(self.__subclass__, name):
+                return getattr(self._value, name)
+            else:
+                return object.__getattr__(self, name)
 
-class ClassBuilder(classbuilder.ClassBuilder):
-    def _build_pseudo_literal(self, nm, clsdata, parents, attrs):
-        props = dict(attrs)
-        props.update({
+        return type(native_str(nm), (pjo_literals.LiteralValue,) , {
             '__propinfo__': {
                 '__literal__': clsdata,
                 '__default__': clsdata.get('default')
-            }
+            },
+            '__subclass__': parent,
+            '__getattr__': __getattr__
+
         })
-        return type(text_to_native_str(nm), parents, props)
+
+    def _construct(self, uri, clsdata, parent=(ProtocolBase,),**kw):
+        if clsdata.get('type') not in ('path', 'date', 'time', 'datetime'):
+            return pjo_classbuilder.ClassBuilder._construct(self, uri, clsdata, parent, **kw)
+
+        typ = clsdata['type']
+
+        if typ == 'path':
+            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata,
+                                                            pathlib.Path)
+        if typ == 'date':
+            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata,
+                                                            datetime.date)
+        if typ == 'time':
+            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata,
+                                                            datetime.time)
+        if typ == 'datetime':
+            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata,
+                                                            arrow.Arrow)
+
+        return self.resolved[uri]
 
     def _build_object(self, nm, clsdata, parents, **kw):
-        logger = classbuilder.logger
+        logger = pjo_classbuilder.logger
         logger.debug(pjo_util.lazy_format("Building object {0}", nm))
 
         # To support circular references, we tag objects that we're
         # currently building as "under construction"
         self.under_construction.add(nm)
 
+        # necessary to build type
+        clsname = native_str(nm.split('/')[-1])
+
         props = {}
         defaults = set()
 
         class_attrs = kw.get('class_attrs', {})
 
+        # setup logger and make it a property
+        if 'logger' not in class_attrs:
+            class_attrs['__logger__'] = logging.getLogger(clsname)
+            def get_logger(self):
+                return self.__logger__
+            class_attrs['logger'] = property(get_logger, doc='class logger')
+
+        # create a setter for logLevel
+        if 'logLevel' in clsdata.get('properties', {}):
+            def set_logLevel(self, logLevel):
+                level = logging.getLevelName(logLevel)
+                self.logger.setLevel(level)
+            class_attrs['set_logLevel'] = set_logLevel
+
+
         __object_attr_list__ = ProtocolBase.__object_attr_list__
-
-        for p in parents:
-            if not (pjo_util.safe_issubclass(p, classbuilder.ProtocolBase)
-                    or pjo_util.safe_issubclass(p, literals.LiteralValue)):
-                for cls in reversed(p.__mro__):
-                    if hasattr(cls, '__dict__'):
-                        d = {
-                            k: v
-                            for k, v in getattr(cls, '__dict__', {}).items()
-                            if k[0:2] != '__'
-                        }
-                        __object_attr_list__ |= set(d.keys())
-                        props.update(d)
-
-        for p in parents:
-            if pjo_util.safe_issubclass(p, literals.LiteralValue):
-                self.under_construction.remove(nm)
-                props.update(class_attrs)
-                return self._build_pseudo_literal(nm, clsdata, parents, props)
 
         props['__object_attr_list__'] = __object_attr_list__
 
@@ -141,8 +182,10 @@ class ClassBuilder(classbuilder.ClassBuilder):
             name_translation[prop] = prop.replace('@', '').replace('$', '')
             prop = name_translation[prop]
 
+            # look for getter/setter/defaultvalue first in class definition
             getter, setter, defv, class_attrs = find_getter_setter_defv(
                 prop, class_attrs)
+            # look for missing getter/setter/defaultvalue in parent classes
             for p in reversed(parents):
                 par_attrs = p.__dict__
                 pgetter, psetter, pdefv, par_attrs = find_getter_setter_defv(
@@ -168,6 +211,7 @@ class ClassBuilder(classbuilder.ClassBuilder):
 
             elif 'type' not in detail and '$ref' in detail:
                 ref = detail['$ref']
+                # TODO CRN: shouldn't we retrieve also the reference and construct from it??
                 uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope,
                                                ref)
                 logger.debug(
@@ -217,7 +261,7 @@ class ClassBuilder(classbuilder.ClassBuilder):
                                                    "<anonymous_field>")
                         try:
                             if 'oneOf' in detail['items']:
-                                typ = TypeProxy([
+                                typ = pjo_classbuilder.TypeProxy([
                                     self.construct(uri + "_%s" % i,
                                                    item_detail)
                                     if '$ref' not in item_detail else
@@ -284,7 +328,7 @@ class ClassBuilder(classbuilder.ClassBuilder):
             # Need a validation to check that it meets one of them
             props['__validation__'] = {'type': klasses}
 
-        props['__extensible__'] = pattern_properties.ExtensibleValidator(
+        props['__extensible__'] = pjo_pattern_properties.ExtensibleValidator(
             nm, clsdata, self)
 
         props['__prop_names__'] = name_translation
@@ -302,7 +346,7 @@ class ClassBuilder(classbuilder.ClassBuilder):
             req for req in required if req not in props['__propinfo__']
         ]
         if len(invalid_requires) > 0:
-            raise validators.ValidationError(
+            raise pjo_validators.ValidationError(
                 "Schema Definition Error: {0} schema requires "
                 "'{1}', but properties are not defined".format(
                     nm, invalid_requires))
@@ -313,8 +357,6 @@ class ClassBuilder(classbuilder.ClassBuilder):
             props['__strict__'] = True
 
         props.update(class_attrs)
-        # necessary to build type
-        clsname = text_to_native_str(nm.split('/')[-1])
 
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
@@ -323,20 +365,30 @@ class ClassBuilder(classbuilder.ClassBuilder):
 
 
 def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
+    # flag to know if variable is readOnly
+    RO = 'readOnly' in info and info['readOnly']
+    RO_active = RO
+
     def getprop(self):
         self.logger.debug('GET %s.%s' % (self.__class__.__name__, prop))
-        try:
-            ret = self._properties[prop]
-            if ret is None and fget:
+        if fget:
+            try:
+                RO_active = False
                 setprop(self, fget(self))
-                ret = self._properties[prop]
-            return ret
+            except Exception as er:
+                RO_active = RO
+                raise AttributeError(_("Error getting property %s.\n%s"%(prop,er.message)))
+        try:
+            return self._properties[prop]
         except KeyError:
             raise AttributeError(_("No attribute %s" % prop))
 
     def setprop(self, val):
         self.logger.debug('SET %s.%s=%s' % (self.__class__.__name__, prop,
                                             val))
+        if RO_active:
+            raise AttributeError(_("'%s' is read only" % prop))
+
         if isinstance(info['type'], (list, tuple)):
             ok = False
             errors = []
@@ -346,7 +398,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 if not isinstance(typ, dict):
                     type_checks.append(typ)
                     continue
-                typ = next(t for n, t in validators.SCHEMA_TYPE_MAPPING
+                typ = next(t for n, t in pjo_validators.SCHEMA_TYPE_MAPPING
+                                       + pjo_validators.USER_TYPE_MAPPING
                            if typ['type'] == n)
                 if typ is None:
                     typ = type(None)
@@ -398,7 +451,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
             if not ok:
                 errstr = "\n".join(errors)
-                raise validators.ValidationError(
+                raise pjo_validators.ValidationError(
                     _("Object must be one of %s: \n%s" % (info['type'],
                                                           errstr)))
 
@@ -427,10 +480,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
             val.validate()
 
-        elif isinstance(info['type'], TypeProxy):
+        elif isinstance(info['type'], pjo_classbuilder.TypeProxy):
             val = info['type'](val)
 
-        elif isinstance(info['type'], TypeRef):
+        elif isinstance(info['type'], pjo_classbuilder.TypeRef):
             if not isinstance(val, info['type'].ref_class):
                 val = info['type'](**val)
 
@@ -439,7 +492,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif info['type'] is None:
             # This is the null value
             if val is not None:
-                raise validators.ValidationError(
+                raise pjo_validators.ValidationError(
                     _("None is only valid value for null"))
 
         else:
