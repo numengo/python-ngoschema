@@ -45,8 +45,8 @@ def test_decorators():
     with pytest.raises(InvalidValue):
         add([1, 2], [1, 2, 3])
 
-    print(time2.__doc__)
-    print(add.__doc__)
+    print(help(time2))
+    print(help(add))
 
 
     class MyException(Exception):
@@ -71,16 +71,16 @@ def test_decorators():
             raise MyException('YO')
 
         @log_exceptions
-        @assert_arg(0, SCH_INT)
+        @assert_arg(1, SCH_INT)
         def foo(self, integer):
             return 1 + integer
 
         @log_exceptions
-        @assert_arg(0, SCH_INT)
+        @assert_arg(1, SCH_INT)
         def bar(self, integer=1):
             return 1 + integer
 
-        #@log_exceptions
+        @log_exceptions
         @assert_arg('integer', SCH_INT)
         def bar2(self, integer=1):
             """
@@ -88,10 +88,20 @@ def test_decorators():
             """
             return 1 + integer
 
+        @log_exceptions
+        @assert_prop('notExistingProp')
+        @assert_arg('integer', SCH_INT)
+        def bar3(self, integer=1):
+            """
+            bar 3 documentation
+            """
+            return 1 + integer
+
 
     logging.basicConfig(level=logging.DEBUG)
     a = A()
-    print(a.bar2.__doc__)
+    print(help(a.bar2))
+    print(help(a.bar3))
     with pytest.raises(MyException) as e_info:
         a.raise_exc()
     with pytest.raises(ValidationError) as e_info:
@@ -100,9 +110,11 @@ def test_decorators():
         a.bar(integer='reziu')
     with pytest.raises(ValidationError) as e_info:
         a.bar2(integer='reziu')
+    with pytest.raises(AttributeError) as e_info:
+        a.bar3(integer=1)
 
 
 
 if __name__ == "__main__":
-    test_decorators()
+     test_decorators()
     #pytest.main(__file__)

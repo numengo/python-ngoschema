@@ -99,7 +99,7 @@ class SchemaMetaclass(type):
                 if p.type:
                     logger.debug(_('decorate <%s>.%s ' % (clsname, k) +
                                    'with argument %i validity check.' % pos))
-                    fn = decorators.assert_arg(pos-1, p.type)(fn)
+                    fn = decorators.assert_arg(pos, p.type)(fn)
 
             # add exception logging
             if not k.startswith('__'):
