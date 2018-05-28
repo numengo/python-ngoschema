@@ -16,15 +16,21 @@ import pytest
 from ngoschema._decorators import *
 from ngoschema.exceptions import *
 from ngoschema.validators import *
+from python_jsonschema_objects.validators import ValidationError
 
 
 @take_arrays()
 def time2(d):
+    """multiply by 2"""
     return 2 * d
 
 
 @take_arrays(0, 1)
 def add(a, b):
+    """add 2 components
+    :param a: 1st
+    :param b: 2nd
+    """
     return a + b
 
 
@@ -39,11 +45,15 @@ def test_decorators():
     with pytest.raises(InvalidValue):
         add([1, 2], [1, 2, 3])
 
+    print(time2.__doc__)
+    print(add.__doc__)
+
+
     class MyException(Exception):
         pass
 
     class A(object):
-        _logger = logging.getLogger('TEST')
+        logger = logging.getLogger('TEST')
 
         @log_init
         def __init__(self):
@@ -61,16 +71,16 @@ def test_decorators():
             raise MyException('YO')
 
         @log_exceptions
-        @assert_arg(1, SCH_INT)
+        @assert_arg(0, SCH_INT)
         def foo(self, integer):
             return 1 + integer
 
         @log_exceptions
-        @assert_arg(1, SCH_INT)
+        @assert_arg(0, SCH_INT)
         def bar(self, integer=1):
             return 1 + integer
 
-        @log_exceptions
+        #@log_exceptions
         @assert_arg('integer', SCH_INT)
         def bar2(self, integer=1):
             """
@@ -81,16 +91,16 @@ def test_decorators():
 
     logging.basicConfig(level=logging.DEBUG)
     a = A()
+    print(a.bar2.__doc__)
     with pytest.raises(MyException) as e_info:
         a.raise_exc()
-    with pytest.raises(InvalidValue) as e_info:
+    with pytest.raises(ValidationError) as e_info:
         a.foo('reziu')
-    with pytest.raises(InvalidValue) as e_info:
+    with pytest.raises(ValidationError) as e_info:
         a.bar(integer='reziu')
-    with pytest.raises(InvalidValue) as e_info:
+    with pytest.raises(ValidationError) as e_info:
         a.bar2(integer='reziu')
 
-    print(a.bar2.__doc__)
 
 
 if __name__ == "__main__":

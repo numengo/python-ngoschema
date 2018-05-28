@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 
 import ast
 import gettext
+import logging
 import importlib
 import inspect
 import itertools
@@ -24,30 +25,43 @@ from builtins import zip
 from ._string_utils import is_string
 from ._utils import import_from_string
 from .doc_rest_parser import parse_docstring
+from .doc_rest_parser import parse_type_string
 from .exceptions import InvalidValue
 
 _ = gettext.gettext
 
+logger = logging.getLogger(__name__)
 
 class Argument(object):
     """
     Class for function/method attributes
     """
-    doc = None
-    _typ = None
-    _default = None
 
-    def __init__(self, name, doc=None, typ=None):
+    def __init__(self, name, doc=None, doctype=None):
         self.name = name
-        self.doc = doc
-        self._typ = typ
         self._has_default = False
+        self._doc = doc
+        self._type = None
+        if doctype:
+            try:
+                self._type = parse_type_string(doctype)
+            except Exception as er:
+                logger.error('impossible to parse valid schema from type doc %s'
+                             % doctype)
 
     def __repr__(self):
         ret = '<arg %s' % self.name
         if self._has_default:
             ret += '=%s' % self.default
         return ret + '>'
+
+    @property
+    def doc(self):
+        return self._doc
+
+    @property
+    def type(self):
+        return self._type
 
     @property
     def default(self):
@@ -59,10 +73,6 @@ class Argument(object):
     def default(self, value):
         self._has_default = True
         self._default = value
-
-    @property
-    def type(self):
-        return self._typ
 
 
 # global variale used in visit_FunctionDef
@@ -83,15 +93,15 @@ def visit_FunctionDef(node):
         doc_params[a.id]['doc'] if a.id in doc_params else None
         for a in node.args.args
     ]
-    types = [
+    doctypes = [
         doc_params[a.id]['type']
         if a.id in doc_params and 'type' in doc_params[a.id] else None
         for a in node.args.args
     ]
 
     _params = [
-        Argument(arg.id, doc, typ)
-        for arg, doc, typ in zip(node.args.args, docs, types)
+        Argument(arg.id, doc, doctype)
+        for arg, doc, doctype in zip(node.args.args, docs, doctypes)
     ]
 
     _keywords = node.args.kwarg
@@ -99,6 +109,7 @@ def visit_FunctionDef(node):
     _defaults = [ast.literal_eval(d) for d in node.args.defaults]
     for d, p in zip(reversed(_defaults), reversed(_params)):
         p.default = d
+
     _decorators = []
     for n in node.decorator_list:
         name = ''
@@ -156,7 +167,9 @@ class FunctionInspector(object):
                 _('%r is not a function or a method' % function))
         self.function = function
         self.name = function.__name__
-        self.doc = self.function.__doc__.strip()
+        self.doc = self.function.__doc__
+        if self.doc:
+            self.doc = self.doc.strip()
         _module = importlib.import_module(function.__module__)
         self.module = _module
         self.moduleName = _module.__name__
@@ -209,9 +222,14 @@ class ClassInspector(object):
         self.klass = klass
         self.name = klass.__name__
         self.doc = klass.__doc__
-        doc = parse_docstring(klass.__doc__)
-        self.shortDescription = doc['shortDescription']
-        self.longDescription = doc['longDescription']
+        if self.doc:
+            self.doc = self.doc.strip()
+            doc = parse_docstring(klass.__doc__)
+            self.shortDescription = doc['shortDescription']
+            self.longDescription = doc['longDescription']
+        else:
+            self.shortDescription = None
+            self.longDescription = None
         _module = importlib.import_module(klass.__module__)
         self.module = _module
         self.moduleName = _module.__name__

@@ -36,6 +36,7 @@ _ = gettext.gettext
 #from ngoschema import _jso_validators as ngo_validators
 
 def find_getter_setter_defv(propname, class_attrs):
+    class_attrs = dict(class_attrs) # make a copy as it might be a dictproxy
     getter = None
     setter = None
     defv = None
@@ -52,11 +53,11 @@ def find_getter_setter_defv(propname, class_attrs):
         else:
             defv = a
     if gpn in class_attrs:
-        a = class_attrs.pop(gpn)
+        a = class_attrs[gpn]
         if inspect.isfunction(a) or inspect.ismethod(a):
             getter = a
     if spn in class_attrs:
-        a = class_attrs.pop(spn)
+        a = class_attrs[spn]
         if inspect.isfunction(a) or inspect.ismethod(a):
             setter = a
     return getter, setter, defv, class_attrs
@@ -370,7 +371,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
-        self.logger.debug('GET %s.%s' % (self.__class__.__name__, prop))
+        self.logger.debug('GET %r.%s' % (self, prop))
         if fget:
             try:
                 RO_active = False
@@ -384,7 +385,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise AttributeError(_("No attribute %s" % prop))
 
     def setprop(self, val):
-        self.logger.debug('SET %s.%s=%s' % (self.__class__.__name__, prop,
+        self.logger.debug('SET %r.%s=%s' % (self, prop,
                                             val))
         if RO_active:
             raise AttributeError(_("'%s' is read only" % prop))
@@ -503,7 +504,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             fset(self, val)
 
     def delprop(self):
-        self.logger.debug('DEL %s' % (self.__class__.__name__, prop))
+        self.logger.debug('DEL %r.%s' % (self.__class__.__name__, prop))
         if prop in self.__required__:
             raise AttributeError(_("'%s' is required" % prop))
         else:

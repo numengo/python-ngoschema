@@ -27,6 +27,7 @@ from .schemas_loader import load_module_schemas
 from .schemas_loader import load_schema_file
 from .resolver import get_resolver
 from .validators import DefaultValidator
+from .inspect_objects import FunctionInspector
 from ._classbuilder import ProtocolBase, ClassBuilder, make_property
 from . import _decorators as decorators
 
@@ -78,18 +79,35 @@ class SchemaMetaclass(type):
         meta_validator.validate(schema)
         DefaultValidator._setDefaults = def_bak
 
-        logger.debug(_('SCHEMA %s creating class with schema' % (clsname)))
+        logger.debug(_('creating <%s> with schema' % (clsname)))
 
+        # add some magic on methods defined in class
+        # exception handling, argument conversion/validation, etc...
         for k, fn in attrs.items():
             if not inspect.isfunction(fn) and not inspect.ismethod(fn):
                 continue
+
             if k == '__init__':
                 logger.debug(
-                        _('SCHEMA %s decorate __init__ with init logger' %
+                        _('decorate <%s>.__init__ with init logger' %
                          (clsname)))
-                attrs[k] = decorators.log_init(fn)
-            if k[0] == '_':
-                continue
+                fn = decorators.log_init(fn)
+
+            # add argument checking
+            fi = FunctionInspector(fn)
+            for pos, p in enumerate(fi.parameters):
+                if p.type:
+                    logger.debug(_('decorate <%s>.%s ' % (clsname, k) +
+                                   'with argument %i validity check.' % pos))
+                    fn = decorators.assert_arg(pos-1, p.type)(fn)
+
+            # add exception logging
+            if not k.startswith('__'):
+                logger.debug(_('decorate <%s>.%s with exception logger'
+                               % (clsname, k)))
+                fn = decorators.log_exceptions(fn)
+
+            attrs[k] = fn
 
         resolver = get_resolver(schemaUri)
         builder = ClassBuilder(resolver)
