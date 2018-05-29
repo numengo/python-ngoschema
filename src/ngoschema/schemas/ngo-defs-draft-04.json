@@ -45,9 +45,6 @@
         }, 
         "documentation": {
           "$ref": "#/definitions/Documentation"
-        }, 
-        "filePath": {
-          "type": "path"
         }
       }
     }, 
@@ -2581,6 +2578,10 @@
     }, 
     "ObjectManager": {
       "additionalProperties": false, 
+      "isAbstract": true, 
+      "required": [
+        "objectClass"
+      ], 
       "type": "object", 
       "properties": {
         "excludes": {
@@ -2601,7 +2602,7 @@
         "parsers": {
           "uniqueItems": true, 
           "items": {
-            "type": "object"
+            "type": "string"
           }, 
           "type": "array"
         }, 
@@ -2610,6 +2611,9 @@
           "default": [
             ".ngo"
           ], 
+          "items": {
+            "type": "string"
+          }, 
           "type": "array"
         }, 
         "recursive": {
@@ -2617,12 +2621,12 @@
           "type": "boolean"
         }, 
         "objectClass": {
-          "type": "object"
+          "type": "string"
         }, 
         "serializers": {
           "uniqueItems": true, 
           "items": {
-            "type": "object"
+            "type": "string"
           }, 
           "type": "array"
         }, 

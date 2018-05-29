@@ -69,8 +69,7 @@ DefaultValidator = NgoDraft04Validator
 
 def convert_validate(value, schema):
     ret = value
-    type_ = schema.get('type','object')
-        
+    type_ = 'enum' if 'enum' in schema else schema.get('type','object')
 
     converter  = converter_registry(type_)
     if converter is not None:

@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 import gettext
 import inspect
 import logging
+import weakref
 import pathlib
 import arrow
 import datetime
@@ -33,10 +34,11 @@ from future.utils import text_to_native_str as native_str
 
 _ = gettext.gettext
 
+logger = pjo_classbuilder.logger
+
 #from ngoschema import _jso_validators as ngo_validators
 
 def find_getter_setter_defv(propname, class_attrs):
-    class_attrs = dict(class_attrs) # make a copy as it might be a dictproxy
     getter = None
     setter = None
     defv = None
@@ -44,12 +46,11 @@ def find_getter_setter_defv(propname, class_attrs):
     gpn = 'get_%s' % pn
     spn = 'set_%s' % pn
     if pn in class_attrs:
-        a = class_attrs.pop(pn)
+        a = class_attrs[pn]
         if inspect.isfunction(a) or inspect.ismethod(a):
-            getter = a
+            logger.warning(pjo_util.lazy_format('{} will be overwritten', propname))
         elif inspect.isdatadescriptor(a):
-            getter = a.fget
-            setter = a.fset
+            pass
         else:
             defv = a
     if gpn in class_attrs:
@@ -60,7 +61,7 @@ def find_getter_setter_defv(propname, class_attrs):
         a = class_attrs[spn]
         if inspect.isfunction(a) or inspect.ismethod(a):
             setter = a
-    return getter, setter, defv, class_attrs
+    return getter, setter, defv
 
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
@@ -73,21 +74,43 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
+        self.__registry__[id(self)] = self
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
     def __getattr__(self, name):
-        if name in self.__object_attr_list__:
+        if name.startswith('_'):
             return object.__getattribute__(self, name)
-        if name in self.__prop_names__:
-            raise KeyError(name)
-        if name in self._extended_properties:
-            return self._extended_properties[name]
-        
-        raise AttributeError("{0} is not a valid attribute of {1}".format(
-            name, self.__class__.__name__))
+        else:
+            pjo_classbuilder.ProtocolBase.__getattr__(self, name)
+        #return
+        #if name in self.__object_attr_list__:
+        #    return object.__getattribute__(self, name)
+        #if name in self.__prop_names__:
+        #    raise KeyError(name)
+        #if name in self._extended_properties:
+        #    return self._extended_properties[name]
+        #
+        #raise AttributeError("{0} is not a valid attribute of {1}".format(
+        #    name, self.__class__.__name__))
 
+    def __setattr__(self, name, val):
+        if name.startswith('_'):
+            object.__setattr__(self, name, val)
+        else:
+            pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
+        #return
+        #if name in self.__object_attr_list__ or name in self.__propinfo__:
+        #    pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
+        #elif name.startswith('_'):
+        #    object.__setattr__(self, name, val)
+        #else:
+        #    pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
+    """
+    Class
+    """
+
     def _build_pseudo_literal(self, nm, clsdata, parent):
         def __getattr__(self, name):
             """
@@ -131,7 +154,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         return self.resolved[uri]
 
     def _build_object(self, nm, clsdata, parents, **kw):
-        logger = pjo_classbuilder.logger
         logger.debug(pjo_util.lazy_format("Building object {0}", nm))
 
         # To support circular references, we tag objects that we're
@@ -145,6 +167,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         defaults = set()
 
         class_attrs = kw.get('class_attrs', {})
+
+        # create weakrefSet for instances alive
+        class_attrs['__registry__'] = weakref.WeakValueDictionary()
 
         # setup logger and make it a property
         if 'logger' not in class_attrs:
@@ -160,14 +185,17 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 self.logger.setLevel(level)
             class_attrs['set_logLevel'] = set_logLevel
 
+        # we set class attributes as properties now, and they will be 
+        # overwritten if they are default values
+        props.update(class_attrs)
 
         __object_attr_list__ = ProtocolBase.__object_attr_list__
 
         props['__object_attr_list__'] = __object_attr_list__
 
         properties = {}
+
         for p in parents:
-            #properties = pjo_util.propmerge(properties, p.__propinfo__)
             properties = pjo_util.propmerge(properties,
                                             getattr(p, '__propinfo__', {}))
 
@@ -184,16 +212,19 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             prop = name_translation[prop]
 
             # look for getter/setter/defaultvalue first in class definition
-            getter, setter, defv, class_attrs = find_getter_setter_defv(
+            getter, setter, defv = find_getter_setter_defv(
                 prop, class_attrs)
             # look for missing getter/setter/defaultvalue in parent classes
             for p in reversed(parents):
                 par_attrs = p.__dict__
-                pgetter, psetter, pdefv, par_attrs = find_getter_setter_defv(
+                pgetter, psetter, pdefv = find_getter_setter_defv(
                     prop, par_attrs)
                 getter = getter or pgetter
                 setter = setter or psetter
                 defv = defv or pdefv
+
+            if defv is not None:
+                detail['default'] = defv
 
             if detail.get('default', None) is not None:
                 defaults.add(prop)
@@ -357,8 +388,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         if required and kw.get("strict"):
             props['__strict__'] = True
 
-        props.update(class_attrs)
-
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
 
@@ -389,6 +418,11 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                                             val))
         if RO_active:
             raise AttributeError(_("'%s' is read only" % prop))
+
+        if fset:
+            # call the setter, and get the value stored in _properties
+            fset(self, val)
+            val = self._properties[prop]
 
         if isinstance(info['type'], (list, tuple)):
             ok = False
@@ -500,8 +534,6 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise TypeError(_("Unknown object type: '%s'" % (info['type'])))
 
         self._properties[prop] = val
-        if fset:
-            fset(self, val)
 
     def delprop(self):
         self.logger.debug('DEL %r.%s' % (self.__class__.__name__, prop))

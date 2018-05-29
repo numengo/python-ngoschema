@@ -21,14 +21,55 @@ from builtins import str
 import six
 from past.builtins import basestring
 
-from ._decorators import take_arrays
+from .decorators import take_arrays
 from .exceptions import InvalidValue
+from ._qualname import qualname
 
 _ = gettext.gettext
 
 
-def _is_string(value):
+@take_arrays(0)
+def is_basestring(value):
+    """
+    Test if value is a basestring
+    """
+    return isinstance(value, basestring) and not isinstance(value, str)
+
+
+@take_arrays(0)
+def is_string(value):
+    """
+    Test if value is a string
+    """
     return isinstance(value, (str, basestring))
+
+
+@take_arrays(0)
+def is_pattern(value):
+    """
+    Test if value is a pattern, ie contains {{ }} formatted content 
+    """
+    return is_string(value) and '{{' in value
+
+
+@take_arrays(0)
+def is_expr(value):
+    """
+    Test if value is an expression and starts with `
+    """
+    return is_string(value) and value.strip().startswith('`')
+
+
+@take_arrays(0)
+def fullname(obj):
+    if is_module(obj):
+        return str(obj).split("'")[1]
+    qn = getattr(obj,'__qualname__',None) or qualname(obj)
+    mn = obj.__module__
+    if mn is None or mn == str.__class__.__module__: # avoid builtin
+        return qn
+    return mn + '.' + qn
+ 
 
 
 @take_arrays(0)
@@ -60,7 +101,7 @@ def is_module(value):
     """
     Test if value is a module
     """
-    if _is_string(value):
+    if is_string(value):
         try:
             value = import_from_string(value)
         except Exception as er:
@@ -73,7 +114,7 @@ def is_class(value):
     """
     Test if value is a class
     """
-    if _is_string(value):
+    if is_string(value):
         try:
             value = import_from_string(value)
         except Exception as er:
@@ -86,7 +127,7 @@ def is_method(value):
     """
     Test if value is a method
     """
-    if _is_string(value):
+    if is_string(value):
         value = destringify.destringify(value)
     return inspect.ismethod(value) or inspect.ismethoddescriptor(value)
 
@@ -96,7 +137,7 @@ def is_function(value):
     """
     Test if value is a function
     """
-    if _is_string(value):
+    if is_string(value):
         try:
             value = import_from_string(value)
         except Exception as er:
@@ -109,7 +150,7 @@ def is_imported(value):
     """
     Test if a symbol is importable/imported
     """
-    if _is_string(value):
+    if is_string(value):
         try:
             value = import_from_string(value)
         except Exception as er:

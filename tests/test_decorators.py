@@ -13,7 +13,7 @@ from builtins import str
 
 import pytest
 
-from ngoschema._decorators import *
+from ngoschema.decorators import *
 from ngoschema.exceptions import *
 from ngoschema.validators import *
 from python_jsonschema_objects.validators import ValidationError

@@ -22,8 +22,8 @@ from builtins import object
 from builtins import str
 from builtins import zip
 
-from ._string_utils import is_string
-from ._utils import import_from_string
+from .utils import is_string
+from .utils import import_from_string
 from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
 from .exceptions import InvalidValue
@@ -110,7 +110,7 @@ def visit_FunctionDef(node):
     for d, p in zip(reversed(_defaults), reversed(_params)):
         p.default = d
 
-    _decorators = []
+    decorators = []
     for n in node.decorator_list:
         name = ''
         if isinstance(n, ast.Call):
@@ -127,8 +127,8 @@ def visit_FunctionDef(node):
             dec = FunctionInspector(dec)
             for a, p in zip(args, dec.parameters):
                 p.default = a
-        _decorators.append(dec)
-    return _short_desc, _long_desc, _returns, _params, _keywords, _varargs, _decorators
+        decorators.append(dec)
+    return _short_desc, _long_desc, _returns, _params, _keywords, _varargs, decorators
 
 
 class FunctionInspector(object):

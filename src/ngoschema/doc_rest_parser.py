@@ -6,7 +6,7 @@ import re
 import sys
 from builtins import object
 from builtins import str
-from ._string_utils import multiple_replace
+from .str_utils import multiple_replace
 
 # Copyright 2015: Mirantis Inc.
 # All Rights Reserved.
@@ -161,9 +161,13 @@ def parse_type_string(typestring):
     """
     Parse a type string and returns a json schema compliant type
     """
+    # this is not pretty, but it should cover most cases
     typestring = typestring.strip()
     if typestring[0] != '{':
-        typestring = '{type:%s}'%typestring
+        if typestring.startswith('enum'):
+            typestring = '{%s}'%typestring
+        else:
+            typestring = '{type:%s}'%typestring
     ret = re.sub(r'(\w+)',r'"\1"',typestring)
     aliases = {
         '=': ':',
@@ -175,8 +179,16 @@ def parse_type_string(typestring):
         '"str"' : '"string"',
         '"text"' : '"string"',
         '"dict"' : '"object"',
+        '"choice"' : '"enum"',
         '"uri"-"reference"' : '"uri-reference"',
-        '"pathlib.Path"': '"path"'
+        '"uri"-"template"' : '"uri-template"',
+        '"date"-"time"' : '"date-time"',
+        '"json"-"pointer"' : '"json-pointer"',
+        '"pathlib.Path"': '"path"',
+        '"True"' : 'True',
+        '"true"' : 'True',
+        '"False"' : 'False',
+        '"false"' : 'False',
     }
     ret = multiple_replace(ret, aliases)
     return eval(ret)

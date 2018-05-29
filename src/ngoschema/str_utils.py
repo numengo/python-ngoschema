@@ -10,11 +10,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
-import importlib
-import inspect
 import logging
-import pathlib
-import pprint
 import re
 from builtins import object
 from builtins import str
@@ -23,7 +19,7 @@ from decimal import Decimal
 from future.utils import text_to_native_str
 from past.builtins import basestring
 
-from ._decorators import take_arrays
+from .decorators import take_arrays
 from .exceptions import InvalidValue
 
 _ = gettext.gettext
@@ -118,106 +114,3 @@ def split_string(string, delimiters=" ", strip=True):
         return [w.strip() if strip else w for w in re.split(regex, string)]
     return [string]
 
-
-@take_arrays(0)
-def is_basestring(value):
-    """
-    Test if value is a basestring
-    """
-    return isinstance(value, basestring) and not isinstance(value, str)
-
-
-@take_arrays(0)
-def is_string(value):
-    """
-    Test if value is a string
-    """
-    return isinstance(value, str) or isinstance(value, basestring)
-
-
-@take_arrays(0)
-def is_pattern(value):
-    """
-    Test if value is a pattern, ie contains {{ }} formatted content 
-    """
-    return is_string(value) and '{{' in value
-
-
-@take_arrays(0)
-def is_expr(value):
-    """
-    Test if value is an expression and starts with `
-    """
-    return is_string(value) and value.strip().startswith('`')
-
-
-@take_arrays(0)
-def str_is_int(value):
-    try:
-        int(value)
-        return True
-    except:
-        return False
-
-
-@take_arrays(0)
-def str_is_bool(value):
-    return value.strip().lower() in ['true', 'false']
-
-
-@take_arrays(0)
-def str_is_float(value):
-    try:
-        float(value)
-        return True
-    except:
-        return False
-
-
-@take_arrays(0)
-def str_to_float(value):
-    """
-    Clean a string and return a decimal.Decimal instance
-    or a float if Decimal raises an exception.
-    """
-    value2 = regex_clean_float.sub('', value)
-    try:
-        return Decimal(value2)
-    except Exception as er:
-        pass
-    try:
-        return float(value2)
-    except Exception as er:
-        pass
-    raise InvalidValue(_('impossible to create float from %s' % value))
-
-
-regex_path_excl = re.compile('({{)+[#\?@]+(\/\/)+')
-# https://regex101.com/r/MRsca7/3
-regex_path = re.compile(
-    '^(?:\w:)?(?:[^:*?\"<>|\r\n]+)?[\\\/](?:[^\\\/:?\"<>|\r\n]*)$')
-
-
-@take_arrays(0)
-def str_is_path(value):
-    ret = regex_path.match(value)
-    return ret or value.strip() in ['.', '..']
-
-
-regex_filename = re.compile(
-    '^(?:[^\\\/\s:?*\"<>|\r\n]*)\.(?:[^\\\/:?{}*\s\"<>|\r\n]+)$')
-
-
-@take_arrays(0)
-def str_is_filename(value):
-    ret = regex_filename.match(value)
-    return ret or value.strip() in ['.', '..']
-
-
-regex_importable = re.compile('^[a-zA-Z_]+\w*\.*[\w\.]*\w+$')
-
-
-@take_arrays(0)
-def str_looks_like_importable(value):
-    """ match an importable python object """
-    return bool(regex_importable.match(value.strip()))

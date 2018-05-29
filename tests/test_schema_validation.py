@@ -124,8 +124,12 @@ def test_convert_validate():
     with pytest.raises(ValidationError):
         validators.convert_validate(__file__,validators.SCH_PATH_DIR)
 
-    p = validators.convert_validate("25/05/2018",validators.SCH_DATE)
-    assert isinstance(p, datetime.date)
+    d = validators.convert_validate("25/05/2018",validators.SCH_DATE)
+    assert isinstance(d, datetime.date)
+
+    e = validators.convert_validate(1,{"enum":['A','B','C']})
+    assert e == 'A'
+
 
 if __name__ == "__main__":
     test_validate_extends()

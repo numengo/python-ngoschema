@@ -51,7 +51,26 @@ Overview
 
 .. end-badges
 
-model definition, management and code-generation
+This library aims at building classes based on a
+<a href="https://spacetelescope.github.io/understanding-json-schema/index.html">JSON schema</a>.
+
+User can declare its attributes in a schema (along with their type, default
+value) and the class will be built with accessors to check and validate data.
+
+User can add methods and override setters/getters, but the library provides a
+boiler plate to automatically create the class, nicely instrumented (with loggers,
+exception handling, type checking, data validation, etc...).
+
+Objects created are come with managers to load/save them into files.
+
+Serialization tools are provided that can be used to do code generation.
+
+The library is build on top of <a href="https://github.com/cwacek/python-jsonschema-objects">
+python-jsonschema-object</a>, with a lot of hacking, which allows to create classes
+from a JSON-schema.
+
+Both projects use the library <a href="http://python-jsonschema.readthedocs.io/en/latest/validate/">
+python-jsonchema</a>, a python implementation for JSON schema validation.
 
 * Free software: GNU General Public License v3
 

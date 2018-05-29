@@ -174,7 +174,9 @@ def log_exceptions(method, instance, args, kwargs):
 
     SHOULDN T BE USED FOR __init__, use log_init instead
     """
-
+    # special case happening for getters/setters
+    if instance is None:
+        instance = args[0]
     try:
         instance.logger.debug('CALL ' +
             _format_call_msg('%r.%s' % (instance, method.__name__),

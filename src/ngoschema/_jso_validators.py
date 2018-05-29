@@ -30,9 +30,9 @@ from python_jsonschema_objects.validators import converter_registry
 from python_jsonschema_objects.validators import formatter_registry
 
 from .exceptions import InvalidValue
-from ._decorators import take_arrays
-from ._utils import import_from_string
-from ._utils import is_sequence
+from .decorators import take_arrays
+from .utils import import_from_string
+from .utils import is_sequence
 
 
 _ = gettext.gettext
@@ -47,9 +47,10 @@ NGO_TYPE_MAPPING = (
     ('datetime', string_types + datetime_types),
 )
 
-
-
 validators.set_user_type_mapping(NGO_TYPE_MAPPING)
+
+# validators
+############
 
 @registry.register()
 def minimum(param, value, type_data):
@@ -89,7 +90,8 @@ def isPathExisting(param, value, type_data):
     if value.exists() != param:
         raise ValidationError("{0} is not an existing path".format(value))
 
-# types checking
+# type checkers
+################
 
 @type_registry.register(name='string')
 def check_string_type(param, value, _):
@@ -123,6 +125,10 @@ def check_time_type(param, value, _):
 def check_datetime_type(param, value, _):
     if isinstance(value, arrow.Arrow):
         return
+
+
+# converters
+############
 
 @converter_registry.register(name="array")
 def convert_array(param, value, detail):
@@ -207,6 +213,9 @@ def convert_path_type(param, value, _):
     raise ValidationError(
         "{0} is not a path".format(value))
 
+
+# formatters
+############
 
 @formatter_registry.register(name='date')
 def format_date(param, value, details):
