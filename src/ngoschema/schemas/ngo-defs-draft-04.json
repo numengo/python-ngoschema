@@ -2608,12 +2608,12 @@
         }, 
         "extensions": {
           "uniqueItems": true, 
-          "default": [
-            ".ngo"
-          ], 
           "items": {
             "type": "string"
           }, 
+          "default": [
+            ".ngo"
+          ], 
           "type": "array"
         }, 
         "recursive": {
@@ -2649,7 +2649,7 @@
       "type": "object", 
       "properties": {
         "from_": {
-          "type": "object"
+          "type": "string"
         }, 
         "complexTransformsTo": {
           "additionalProperties": {
@@ -2664,7 +2664,7 @@
           "type": "object"
         }, 
         "to_": {
-          "type": "object"
+          "type": "string"
         }, 
         "complexTransformsFrom": {
           "additionalProperties": {

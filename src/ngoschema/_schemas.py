@@ -22,6 +22,7 @@ from future.builtins import object
 from future.utils import with_metaclass
 from jsonschema.compat import iteritems
 from pyrsistent import pmap
+from ngofile import PathList
 
 from . import validators
 from . import utils
@@ -149,25 +150,10 @@ class ObjectManager(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if clsname not in cls._instances:
             cls._instances[clsname] = super(ObjectManager, cls).__new__(
                 cls, *args, **kwargs)
-            #cls._instances[clsname].__object_attr_list__.update(['_managed', '_serializers', '_parsers', '_objectClass'])
             cls._instances[clsname]._managed = dict()
         return cls._instances[clsname]
 
-    def _obj_or_str(val):
-        if str_utils.is_string(val):
-            return val, utils.import_from_string(e)
-        elif utils.is_class(e):
-            return utils.fullname(e), e
-        else:
-            raise InvalidValue(_('%r is not an object class' % value))
 
-    def _obj_or_str_arr(array):
-        s_a = o_a = []
-        for e in array:
-            s, o = _object_or_string(e)
-            s_a.append(s)
-            o_a.append(o)
-        return s_a, o_a
 
     def set_objectClass(self, value):
         self._properties['objectClass'], self._objectClass = _obj_or_str(value)
@@ -178,7 +164,23 @@ class ObjectManager(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_parsers(self, value):
         self._properties['parsers'], self._parsers = _obj_or_str_arr(value)
 
+    def list_files(self, includes=[], excludes=[]):
+        """
+        Returns the list of files in the pathlist with the includes and
+        excludes masks defined as schema properties
 
+        :param includes: additional includes pattern
+        :type includes: list
+        :param excludes: additional excludes pattern
+        :type excludes: list
+        """
+        for f in PathList(*self.pathlist, singleton=False).list_files(
+                self.includes + ['*%s' % e
+                                 for e in self.extensions] + includes,
+                self.excludes + excludes, self.recursive):
+            yield f
 
+    def update_from_files(self):
+        pass
 
 

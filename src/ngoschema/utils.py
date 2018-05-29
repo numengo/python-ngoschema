@@ -129,6 +129,8 @@ def is_method(value):
     """
     if is_string(value):
         value = destringify.destringify(value)
+    if inspect.isclass(value):
+        return hasattr(value,'__call__')
     return inspect.ismethod(value) or inspect.ismethoddescriptor(value)
 
 
@@ -142,6 +144,8 @@ def is_function(value):
             value = import_from_string(value)
         except Exception as er:
             return False
+    if inspect.isclass(value):
+        return hasattr(value,'__call__')
     return inspect.isfunction(value)
 
 
@@ -216,3 +220,20 @@ def apply_through_collection(coll, func):
         for i, v in enumerate(coll):
             coll[i] = func(i, v)
             apply_through_collection(v, func)
+
+
+def obj_or_str(val):
+    if str_utils.is_string(val):
+        return val, utils.import_from_string(e)
+    elif utils.is_class(e):
+        return utils.fullname(e), e
+    else:
+        raise InvalidValue(_('%r is not an object class' % value))
+
+def obj_or_str_arr(array):
+    s_a = o_a = []
+    for e in array:
+        s, o = _object_or_string(e)
+        s_a.append(s)
+        o_a.append(o)
+    return s_a, o_a
