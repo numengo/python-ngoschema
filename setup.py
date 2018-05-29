@@ -14,7 +14,7 @@ from setuptools import setup
 
 name = 'ngoschema'
 package = 'ngoschema'
-description = 'model definition, management and code-generation'
+description = 'definition of classes with json-schema, object management and code-generation'
 url = 'https://github.com/numengo/python-ngoschema'
 author = 'Cédric ROMAN'
 author_email = 'roman@numengo.com'
@@ -71,23 +71,30 @@ setup_requires = [
 ]
 
 install_requires = [
+    'git+https://github.com/Julian/jsonschema.git@draft7',
+    'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
+    'ngofile',
     'pathlib',
     'apipkg',
     'future',
     'python-gettext',
     'click',
+    'attrs',
+    'dpath',
+    'pyrsistent',
     'configparser2',
     'appdirs',
-    'jsonschema',
-    'ruamel.yaml',
+    'wrapt',
     'jinja2',
-    'python-dateutil',
-    'arrow',  
+    'arrow',
+    'inflection',
+    'six',
+    'ruamel.yaml',
 ]
 
-cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i]
+cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i or ':' in i]
 subprocess.check_call(cmd)
-install_requires = [i for i in install_requires if not '-' in i]
+install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
 
 test_requires = [
     'pytest',
@@ -115,8 +122,8 @@ setup(
     py_modules=[os.path.splitext(os.path.basename(p))[0] for p in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,    
-    keywords=["models", "schemas", "datavalidation", "semantic", "mixins", "dataserialization"], 
-    # python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=2.7.*,!=3.4.*,",
+    keywords=["json-schema", "classbuilder", "datavalidation", "typechecking", "semantic", "mixins", "dataserialization"], 
+    # python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.4.*,",
     setup_requires=setup_requires,
     install_requires=install_requires,
     requires=install_requires,
@@ -141,9 +148,13 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Utilities',
     ],
+    #dependency_links=[
+    #    "git+ssh://git@github.com/RomanCedric/python-jsonschema-objects.git"
+    #],
 )
 
 if sys.argv[-1] == 'publish':

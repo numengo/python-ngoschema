@@ -18,7 +18,6 @@ from past.builtins import basestring
 import os, os.path
 import logging
 from collections import (OrderedDict as odict, Iterable)
-from lxml import etree
 import json
 import dpath.util
 import pathlib

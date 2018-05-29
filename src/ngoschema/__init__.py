@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
-#from . import _apipkg
-#from ._schemas_old import *
 from .exceptions import (SchemaError, InvalidValue)
-#from .schemas_loader import (load_schema, load_schema_file, load_module_schemas)
-#from ngoschema.doc_rest_parser import parse_docstring
-
-#from ngoschema.exceptions import (SchemaError, InvalidValue)
-#from ngoschema.schemas_loader import load_module_schemas
-#from ngoschema.doc_rest_parser import parse_docstring
-
-#from ngoschema.resolver import ExpandingResolver, get_resolver
 from ._classbuilder import ProtocolBase
 from ._schemas import SchemaMetaclass
 
@@ -22,5 +12,5 @@ __all__ = ['MS_STORE', 'DEFAULT_MS_URI', 'DEFAULT_DEFS_URI', 'get_resolver', 'Pr
 
 __author__ = 'Cédric ROMAN'
 __email__ = 'roman@numengo.com'
-__version__ = '0.5.0'
+__version__ = '0.1.0'
 
