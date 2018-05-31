@@ -247,7 +247,6 @@ def apply_through_collection(coll, func):
             coll[i] = func(i, v)
             apply_through_collection(v, func)
 
-
 def only_keys(icontainer, keys, recursive=False):
     """
     Keep only specific keys in a container

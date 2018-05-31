@@ -32,7 +32,7 @@ class Deserializer(with_metaclass(ABCMeta)):
 
         :param path: file path containing the object
         :type path: path
-        :param opts: can be 'protocol' (default is 'r')
+        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), objectClass=None
         """
         ptcl = opts.get('protocol', 'r')
         enc = opts.get('encoding', 'utf-8')
@@ -49,7 +49,7 @@ class Deserializer(with_metaclass(ABCMeta)):
 
         :param stream: data stream
         :type stream: string
-        :param opts: can be 'protocol' (default is 'r')
+        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), objectClass=None
         """
         pass
 
