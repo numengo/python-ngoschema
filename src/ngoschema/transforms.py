@@ -12,8 +12,11 @@ from future.utils import with_metaclass
 
 from ngofile.pathlist import list_in_modules
 
+from . import utils
+from . import str_utils
 from ._schemas import ObjectManager
 from ._classbuilder import ProtocolBase
+from .json import Json
 
 _ = gettext.gettext
 
@@ -24,32 +27,31 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/ObjectTransform"
 
-    def _set_from_(self, from_):
-        pass
+    def _set_from(self, value):
+        self._properties['from'], self._from = utils.obj_or_str(value)
 
-    def set_to_(self, to_):
-        pass
+    def set_to(self, value):
+        self._properties['to'], self._to = utils.obj_or_str(value)
 
     def transform_from(self, from_dict):
         to_dict = {}
-        from_ = self.from_.__name__.lower()
-        to_ = self.to_.__name__.lower()
+        from_ = self._from.__name__.lower()
+        to_ = self._to.__name__.lower()
         translation = {
             'this.%s' % k: 'this.%s' % v
-            for k, v in list(self.fieldsEquivalence.items())
+            for k, v in self.fieldsEquivalence.items()
         }
         translation.update({
             '%s.%s' % (from_, k): 'this.%s' % v
-            for k, v in list(self.fieldsEquivalence.items())
+            for k, v in self.fieldsEquivalence.items()
         })
-        common = gcs(self.from_, self.to_)
-        for k, v in list(from_dict.items()):
-            if common and hasattr(common, '_schema') and k in list(
-                    common.keys()):
+        common = utils.gcs(self._from, self._to)
+        for k, v in from_dict.items():
+            if hasattr(common, k):
                 to_dict[k] = v
             elif k in self.fieldsEquivalence:
-                if '{{' in validators.String(v):
-                    v = validators.multiple_replace(v, translation)
+                #if utils.is_expr(v):
+                #    v = str_utils.multiple_replace(v, translation)
                 to_dict[self.fieldsEquivalence[k]] = v
             elif k in self.complexTransformsTo:
                 tf = self.complexTransformsTo[k]
@@ -61,24 +63,23 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def transform_to(self, to_dict):
         from_dict = {}
-        from_ = self.from_.__name__
-        to_ = self.to_.__name__
+        from_ = self._from.__name__.lower()
+        to_ = self._to.__name__.lower()
         translation = {
             'this.%s' % v: 'this.%k' % v
-            for k, v in list(self.fieldsEquivalence.items())
+            for k, v in self.fieldsEquivalence.items()
         }
         translation.update({
             '%s.%s' % (to_, v): 'this.%s' % k
-            for k, v in list(self.fieldsEquivalence.items())
+            for k, v in self.fieldsEquivalence.items()
         })
-        common = gcs(self.from_, self.to_)
+        common = gcs(self._from, self._to)
         for k, v in list(from_dict.items()):
-            if common and hasattr(common, '_schema') and k in list(
-                    common.keys()):
+            if common and hasattr(common, '_schema') and k in common.keys():
                 from_dict[k] = v
-            elif k in list(self.fieldsEquivalence.values()):
-                if validators.is_pattern(v) or validators.is_expr(v):
-                    v = validators.multiple_replace(v, translation)
+            elif k in self.fieldsEquivalence.values():
+                #if utils.is_expr(v):
+                #    v = str_utils.multiple_replace(v, translation)
                 from_dict[self.fieldsEquivalence[k]] = v
             elif k in self.complexTransformsFrom:
                 tf = self.complexTransformsFrom[k]
@@ -91,7 +92,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 class ObjectTransformManager(ObjectManager):
     extensions = ['.mtm']
-    parsers = [JsonParser, YamlParser]
+    parsers = [Json]
 
     def __init__(self, *args, **kwargs):
         ObjectManager.__init__(self, ObjectTransform, *args, **kwargs)
@@ -99,7 +100,9 @@ class ObjectTransformManager(ObjectManager):
         if not self.loaded:
             self.update_from_files()
 
+    '''
     def transforms_from(self, object_class, object_class2=None):
+
         object_class = validators.destringify(object_class)
         object_class2 = validators.destringify(object_class2)
         ret = [t for t in self.objects if issubclass(object_class, t.from_)]
@@ -149,3 +152,4 @@ class ObjectTransformManager(ObjectManager):
         raise Exception(
             _('no transform found for object %r and %r' % (object_class1,
                                                            object_class2)))
+    '''

@@ -2648,7 +2648,7 @@
       "additionalProperties": false, 
       "type": "object", 
       "properties": {
-        "from_": {
+        "to": {
           "type": "string"
         }, 
         "complexTransformsTo": {
@@ -2657,16 +2657,16 @@
           }, 
           "type": "object"
         }, 
-        "fieldsEquivalence": {
+        "from": {
+          "type": "string"
+        }, 
+        "complexTransformsFrom": {
           "additionalProperties": {
             "type": "string"
           }, 
           "type": "object"
         }, 
-        "to_": {
-          "type": "string"
-        }, 
-        "complexTransformsFrom": {
+        "fieldsEquivalence": {
           "additionalProperties": {
             "type": "string"
           }, 

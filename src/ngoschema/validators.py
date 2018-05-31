@@ -12,6 +12,7 @@ import six
 import gettext
 from builtins import object
 from builtins import str
+from pyrsistent import pmap
 
 from jsonschema.validators import Draft6Validator
 from jsonschema.validators import extend
@@ -26,17 +27,17 @@ from .schemas_loader import _load_schema
 _ = gettext.gettext
 
 # useful schemas shortcuts
-SCH_STR = { "type": "string" }
-SCH_INT = { "type": "integer" }
-SCH_NUM = { "type": "number" }
-SCH_STR_ARRAY = { "type": "array", "items": { "type": "string"} }
-SCH_PATH = { "type": "path"}
-SCH_PATH_DIR = { "type": "path", "isPathDir": True}
-SCH_PATH_FILE = { "type": "path", "isPathFile": True}
-SCH_PATH_EXISTS = { "type": "path", "isPathExisting": True}
-SCH_DATE = { "type": "date"}
-SCH_TIME = { "type": "time"}
-SCH_DATETIME = { "type": "datetime"}
+SCH_STR = pmap({ "type": "string" })
+SCH_INT = pmap({ "type": "integer" })
+SCH_NUM = pmap({ "type": "number" })
+SCH_STR_ARRAY = pmap({ "type": "array", "items": { "type": "string"} })
+SCH_PATH = pmap({ "type": "path"})
+SCH_PATH_DIR = pmap({ "type": "path", "isPathDir": True})
+SCH_PATH_FILE = pmap({ "type": "path", "isPathFile": True})
+SCH_PATH_EXISTS = pmap({ "type": "path", "isPathExisting": True})
+SCH_DATE = pmap({ "type": "date"})
+SCH_TIME = pmap({ "type": "time"})
+SCH_DATETIME = pmap({ "type": "datetime"})
 
 
 

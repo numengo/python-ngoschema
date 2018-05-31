@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 import collections
 import gettext
+import copy
 import importlib
 import inspect
 import logging
@@ -26,6 +27,31 @@ from .exceptions import InvalidValue
 from ._qualname import qualname
 
 _ = gettext.gettext
+
+
+class GenericRegistry(object):
+
+    def __init__(self):
+       self.registry = {}
+
+    def register(self, name=None):
+       def f(functor):
+          self.registry[name if name is not None else functor.__name__] = functor
+          return functor
+       return f
+
+    def __call__(self, name):
+       return self.registry.get(name)
+
+
+def gcs(*classes):
+    """
+    Return the greatest common superclass of input classes
+    """
+    mros = [x.mro() for x in classes]
+    for x in mros[0]:
+        if all([x in mro for mro in mros]):
+            return x
 
 
 @take_arrays(0)
@@ -221,6 +247,69 @@ def apply_through_collection(coll, func):
             coll[i] = func(i, v)
             apply_through_collection(v, func)
 
+
+def only_keys(icontainer, keys, recursive=False):
+    """
+    Keep only specific keys in a container
+
+    :param icontainer: input container
+    :param keys: keys to keep
+    :type keys: list
+    :param recursive: process container recursively
+    """
+    ocontainer = copy.deepcopy(icontainer)
+    def delete_fields_not_of(container, fields, recursive):
+        if is_mapping(container):
+            to_del = fields.difference(set(container.keys()))
+            left = fields.intersection(set(container.keys()))
+            for k in to_del:
+                del container[k]
+            if recursive:
+                for k in left:
+                    delete_fields_not_of(container[k], fields, recursive)
+        elif is_sequence(container):
+            for i, v in enumerate(container):
+                container[i] = delete_fields_not_of(v, fields, recursive)
+        return container
+    ocontainer = delete_fields_not_of(ocontainer, set(keys), recursive)
+    return ocontainer
+
+def but_keys(icontainer, keys, recursive=False):
+    """
+    Remove specific keys in a container
+
+    :param icontainer: input container
+    :param keys: keys to remove
+    :type keys: list
+    :param recursive: process container recursively
+    """
+    ocontainer = copy.deepcopy(icontainer)
+    def delete_fields(container, fields, recursive):
+        if is_mapping(container):
+            to_del = fields.intersection(set(container.keys()))
+            left = fields.difference(set(container.keys()))
+            for k in to_del:
+                del container[k]
+            if recursive:
+                for k in left:
+                    delete_fields(container[k], fields, recursive)
+        elif is_sequence(container):
+            for i, v in enumerate(container):
+                container[i] = delete_fields(v, fields, recursive)
+        return container
+    ocontainer = delete_fields(ocontainer, set(keys), recursive)
+    return ocontainer
+
+def process_collection(data, **opts):
+    if 'only_fields' in opts:
+        rec = opts.get('fields_recursive', False)
+        data = utils.only_keys(data, opts['only_fields'], rec)
+    if 'but_fields' in opts:
+        rec = opts.get('fields_recursive', False)
+        data = utils.but_keys(data, opts['only_fields'], rec)
+    if 'objectClass' in opts:
+        return opts['objectClass'](data)
+    return data
 
 def obj_or_str(val):
     if is_string(val):

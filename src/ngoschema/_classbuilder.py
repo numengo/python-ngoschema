@@ -74,7 +74,6 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
-        self.__registry__[id(self)] = self
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
     def __getattr__(self, name):
@@ -167,9 +166,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         defaults = set()
 
         class_attrs = kw.get('class_attrs', {})
-
-        # create weakrefSet for instances alive
-        class_attrs['__registry__'] = weakref.WeakValueDictionary()
 
         # setup logger and make it a property
         if 'logger' not in class_attrs:

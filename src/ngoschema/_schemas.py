@@ -11,28 +11,23 @@ from __future__ import unicode_literals
 
 import inspect
 import gettext
-import json
 import logging
 import weakref
 from builtins import object
 from builtins import str
 
-import jsonschema
-from future.builtins import object
 from future.utils import with_metaclass
 from jsonschema.compat import iteritems
-from pyrsistent import pmap
-from ngofile import PathList
 
-from . import validators
 from . import utils
 from . import str_utils
-from .schemas_loader import load_module_schemas
+from .schemas_loader import load_schema
 from .schemas_loader import load_schema_file
+from .schemas_loader import load_module_schemas
 from .resolver import get_resolver
 from .validators import DefaultValidator
 from .inspect_objects import FunctionInspector
-from ._classbuilder import ProtocolBase, ClassBuilder, make_property
+from ._classbuilder import ProtocolBase, ClassBuilder
 from . import decorators
 
 _ = gettext.gettext
@@ -98,12 +93,10 @@ class SchemaMetaclass(type):
         else:
             schema['type'] = 'object'
 
-        # add weak value dict to know all managers
-        attrs['_managers'] = weakref.WeakValueDictionary()
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, etc...
         for k, fn in attrs.items():
-            if not inspect.isfunction(fn) and not inspect.ismethod(fn):
+            if not (utils.is_method(fn) or utils.is_function(fn)):
                 continue
 
             if k == '__init__':
@@ -129,58 +122,5 @@ class SchemaMetaclass(type):
             attrs[k] = fn
 
         return builder.construct(clsname, schema, parent=bases, class_attrs=dict(attrs))
-
-
-class SchemaBase(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/Class"
-
-    def __init__(self, *args, **kwargs):
-        ProtocolBase.__init__(self, **kwargs)
-        # add managers and so on
-
-
-class ObjectManager(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/ObjectManager"
-    _instances = {}
-
-    def __new__(cls, *args, **kwargs):
-        clsname = cls.__name__
-        if clsname == 'ObjectManager':
-            raise TypeError('ObjectManager must not be instantiated directly')
-        if clsname not in cls._instances:
-            cls._instances[clsname] = super(ObjectManager, cls).__new__(
-                cls, *args, **kwargs)
-            cls._instances[clsname]._managed = dict()
-        return cls._instances[clsname]
-
-
-
-    def set_objectClass(self, value):
-        self._properties['objectClass'], self._objectClass = utils.obj_or_str(value)
-
-    def set_serializers(self, value):
-        self._properties['serializers'], self._serializers = utils.obj_or_str_arr(value)
-
-    def set_parsers(self, value):
-        self._properties['parsers'], self._parsers = utils.obj_or_str_arr(value)
-
-    def list_files(self, includes=[], excludes=[]):
-        """
-        Returns the list of files in the pathlist with the includes and
-        excludes masks defined as schema properties
-
-        :param includes: additional includes pattern
-        :type includes: list
-        :param excludes: additional excludes pattern
-        :type excludes: list
-        """
-        for f in PathList(*self.pathlist, singleton=False).list_files(
-                self.includes + ['*%s' % e
-                                 for e in self.extensions] + includes,
-                self.excludes + excludes, self.recursive):
-            yield f
-
-    def update_from_files(self):
-        pass
 
 
