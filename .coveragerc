@@ -1,10 +1,12 @@
 [paths]
-source = src
+source =
+   src/ngoschema
+   */site-packages/ngoschema
 
 [run]
 branch = true
 source =
-    src
+    ngoschema
     tests
 parallel = true
 

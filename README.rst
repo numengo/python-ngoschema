@@ -10,7 +10,7 @@ Overview
     * - docs
       - |docs|
     * - tests
-      - | |travis|
+      - | |travis| |appveyor| |requires|
         | |codecov|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
@@ -23,6 +23,14 @@ Overview
 .. |travis| image:: https://travis-ci.org/numengo/python-ngoschema.svg?branch=master
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/numengo/python-ngoschema
+
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/numengo/python-ngoschema?branch=master&svg=true
+    :alt: AppVeyor Build Status
+    :target: https://ci.appveyor.com/project/numengo/python-ngoschema
+
+.. |requires| image:: https://requires.io/github/numengo/python-ngoschema/requirements.svg?branch=master
+    :alt: Requirements Status
+    :target: https://requires.io/github/numengo/python-ngoschema/requirements/?branch=master
 
 .. |codecov| image:: https://codecov.io/github/numengo/python-ngoschema/coverage.svg?branch=master
     :alt: Coverage Status
@@ -51,26 +59,7 @@ Overview
 
 .. end-badges
 
-This library aims at building classes based on a
-<a href="https://spacetelescope.github.io/understanding-json-schema/index.html">JSON schema</a>.
-
-User can declare its attributes in a schema (along with their type, default
-value) and the class will be built with accessors to check and validate data.
-
-User can add methods and override setters/getters, but the library provides a
-boiler plate to automatically create the class, nicely instrumented (with loggers,
-exception handling, type checking, data validation, etc...).
-
-Objects created are come with managers to load/save them into files.
-
-Serialization tools are provided that can be used to do code generation.
-
-The library is build on top of <a href="https://github.com/cwacek/python-jsonschema-objects">
-python-jsonschema-object</a>, with a lot of hacking, which allows to create classes
-from a JSON-schema.
-
-Both projects use the library <a href="http://python-jsonschema.readthedocs.io/en/latest/validate/">
-python-jsonchema</a>, a python implementation for JSON schema validation.
+definition of classes with json-schema, object management and code-generation
 
 * Free software: GNU General Public License v3
 

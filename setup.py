@@ -1,29 +1,27 @@
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import print_function
 
-import io
-import os.path
-import re
-import sys
-import subprocess
-from glob import glob
-
 from setuptools import find_packages
 from setuptools import setup
 
-name = 'ngoschema'
-package = 'ngoschema'
-description = 'definition of classes with json-schema, object management and code-generation'
-url = 'https://github.com/numengo/python-ngoschema'
-author = 'Cédric ROMAN'
-author_email = 'roman@numengo.com'
-license = 'GNU General Public License v3'
+import io
+import os
+import re
+import sys
+import subprocess
+from os.path import basename
+from os.path import dirname
+from os.path import join
+from glob import glob
+from os.path import splitext
+
 
 
 def read(*names, **kwargs):
     return io.open(
-        os.path.join(os.path.dirname(__file__), *names),
+        join(dirname(__file__), *names),
         encoding=kwargs.get('encoding', 'utf8')
     ).read()
 
@@ -32,22 +30,20 @@ def get_version(package):
     """
     Return package version as listed in `__version__` in `init.py`.
     """
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    init_py = open(os.path.join(dir_path, 'src', package, '__init__.py')).read()
+    dir_path = dirname(os.path.realpath(__file__))
+    init_py = open(join(dir_path, 'src', package, '__init__.py')).read()
     return re.search("^__version__ = ['\"]([^'\"]+)['\"]",
                      init_py, re.MULTILINE).group(1)
 
 
+name = 'ngoschema'
+package = 'ngoschema'
+description = 'definition of classes with json-schema, object management and code-generation'
+url = 'https://github.com/numengo/python-ngoschema'
+author='Cédric ROMAN',
+author_email='roman@numengo.com',
+license = 'GNU General Public License v3'
 version = get_version(package)
-
-
-def get_packages(package):
-    """
-    Return root package and all sub-packages.
-    """
-    return [dirpath
-            for dirpath, dirnames, filenames in os.walk(package)
-            if os.path.exists(os.path.join(dirpath, '__init__.py'))]
 
 
 def get_package_data(package):
@@ -71,14 +67,14 @@ setup_requires = [
 ]
 
 install_requires = [
-    'git+https://github.com/Julian/jsonschema.git@draft7',
-    'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
-    'ngofile',
     'pathlib',
     'apipkg',
     'future',
     'python-gettext',
     'click',
+    'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
+    'git+https://github.com/Julian/jsonschema.git@draft7',
+    'ngofile',
     'attrs',
     'dpath',
     'pyrsistent',
@@ -89,7 +85,7 @@ install_requires = [
     'arrow',
     'inflection',
     'six',
-    'ruamel.yaml',
+    'ruamel.yaml',  
 ]
 
 cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i or ':' in i]
@@ -102,8 +98,8 @@ test_requires = [
 ]
 
 extras_requires = {
-}
-   
+}    
+    
 setup(
     name=name,
     version=version,
@@ -119,11 +115,10 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     package_data=get_package_data(package),
-    py_modules=[os.path.splitext(os.path.basename(p))[0] for p in glob('src/*.py')],
+    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
-    zip_safe=False,    
-    keywords=["json-schema", "classbuilder", "datavalidation", "typechecking", "semantic", "mixins", "dataserialization"], 
-    # python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.4.*,",
+    zip_safe=False,
+    keywords=["json-schema", " class builder", " data validation", " type checking", " semantic", " mixins", " object serialization", " code generation"], 
     setup_requires=setup_requires,
     install_requires=install_requires,
     requires=install_requires,
@@ -143,18 +138,18 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python',    
-        'Programming Language :: Python :: 2.7',    
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: Implementation :: PyPy',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Utilities',
     ],
-    #dependency_links=[
-    #    "git+ssh://git@github.com/RomanCedric/python-jsonschema-objects.git"
-    #],
+
 )
 
 if sys.argv[-1] == 'publish':
