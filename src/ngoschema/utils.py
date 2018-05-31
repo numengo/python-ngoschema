@@ -223,17 +223,17 @@ def apply_through_collection(coll, func):
 
 
 def obj_or_str(val):
-    if str_utils.is_string(val):
-        return val, utils.import_from_string(e)
-    elif utils.is_class(e):
-        return utils.fullname(e), e
+    if is_string(val):
+        return val, import_from_string(val)
+    elif is_class(val):
+        return fullname(val), val
     else:
-        raise InvalidValue(_('%r is not an object class' % value))
+        raise InvalidValue(_('%r is not an object class' % val))
 
 def obj_or_str_arr(array):
     s_a = o_a = []
     for e in array:
-        s, o = _object_or_string(e)
+        s, o = obj_or_str(e)
         s_a.append(s)
         o_a.append(o)
     return s_a, o_a

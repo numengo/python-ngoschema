@@ -17,6 +17,7 @@ from builtins import str
 import os
 import logging
 import pytest
+import six
 import json
 import pathlib
 import datetime
@@ -100,7 +101,10 @@ def test_validate_subschemas():
     assert len(errors)==1
     error = errors[0]
     assert list(error.path) == ['initializeFromInputs']
-    assert error.message == "u'true' is not of type u'boolean'"
+    if six.PY2:
+        assert error.message == "u'true' is not of type u'boolean'"
+    else:
+        assert error.message == "'true' is not of type 'boolean'"
 
     # the error is further down in a subschema
     # the numerical value has been turned to a string
@@ -112,7 +116,10 @@ def test_validate_subschemas():
     assert len(errors)==1
     error = errors[0]
     assert list(error.path) == ['variableGroups', 0, 'variables', 0, 'literals', 3, 'numericalValue']
-    assert error.message == "u'4' is not of type u'integer'"
+    if six.PY2:
+        assert error.message == "u'4' is not of type u'integer'"
+    else:
+        assert error.message == "'4' is not of type 'integer'"
 
 def test_convert_validate():
     with pytest.raises(ValidationError):

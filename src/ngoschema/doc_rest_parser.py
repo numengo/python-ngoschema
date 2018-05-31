@@ -177,6 +177,8 @@ def parse_type_string(typestring):
         '"int"' : '"integer"',
         '"float"' : '"number"',
         '"str"' : '"string"',
+        '"strArray"' : '"array", "items": {"type": "string"}',
+        '"stringArray"' : '"array", "items": {"type": "string"}',
         '"text"' : '"string"',
         '"dict"' : '"object"',
         '"choice"' : '"enum"',

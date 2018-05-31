@@ -137,10 +137,10 @@ def assert_arg(arg, schema):
             except ValidationError as er:
                 if arg_s in kwargs:
                     raise ValidationError(_('%s=%r is not valid. %s') %
-                                      (arg_s, kwargs[arg_s], er.message))
+                                      (arg_s, kwargs[arg_s], er))
                 elif type(arg_i) is int and arg_i < len(new_args):
                     raise ValidationError(_('%s=%r is not valid. %s') %
-                                        (arg_s, new_args[arg_i], er.message))
+                                        (arg_s, new_args[arg_i], er))
             if instance:
                 new_args.pop(0)
             return wrapped(*new_args, **kwargs)

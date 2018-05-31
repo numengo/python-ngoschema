@@ -125,7 +125,7 @@ class ExpandingResolver(RefResolver):
         :type name: string
         :rtype: tuple
         """
-        uris = self.store.keys()
+        uris = list(self.store.keys())
         uris.remove(self.resolution_scope)
         uris.insert(0, self.resolution_scope)
 

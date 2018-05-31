@@ -22,8 +22,6 @@ import json
 import dpath.util
 import pathlib
 import jsonschema
-from jsonpath_ng import jsonpath
-from jsonpath_ng.ext import parse
 import re
 import copy
 from pprint import pprint
@@ -40,12 +38,6 @@ from ngoschema.validators import NgoDraft02Validator
 
 #logging.basicConfig(level=logging.DEBUG)
 
-
-#import six
-#from jsonschema.compat import iteritems
-#import python_jsonschema_objects.util  as util
-#import inflection
-
 #classbuilder.logger.addHandler(logging.StreamHandler())
 #import python_jsonschema_objects.classbuilder as classbuilder
 #classbuilder.logger.setLevel(logging.INFO)
@@ -54,7 +46,6 @@ ms_uri = DEFAULT_MS_URI
 defs_uri = 'http://numengo.org/draft-03/defs-schema'
 
 ms = load_module_schemas()
-pprint(ms.keys())
 resolver = ExpandingResolver(ms_uri,ms[ms_uri],ms)
 
 def test_builder_ngo_defs():
@@ -73,7 +64,6 @@ def test_builder_ngo_defs():
         builder = pjo.ObjectBuilder(ms[defs_uri], resolver=resolver, validatorClass=NgoDraft02Validator)
         ns = builder.build_classes()
         essai = ns.Package
-        print(essai.__dict__)
 
     except ValidationError as er:
         print(er.message)
@@ -114,7 +104,7 @@ def test_pjo_typed_arrays():
             "paths": {
               "type": "array",
               "items": {
-                  "$ref": "#/definitions/Path"
+                  "type": "#/definitions/Path"
               }
             },
           }
@@ -143,7 +133,7 @@ def test_pjo_typed_arrays():
         #p2 = Path(path=1)
         pl = PathList(paths=[p1, "a string"])
     except Exception as er:
-        print(er.message)
+        print(er)
 
 
 if __name__ == "__main__":

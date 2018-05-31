@@ -155,13 +155,13 @@ def convert_date_type(param, value, detail):
     if isinstance(value,string_types):
         try:
             a = arrow.get(value,date_fts)
-            if not bool(a.time()):
+            if a.time() == datetime.time(0,0):
                 return a.date()
         except:
             pass
         try:
             a = arrow.get(value,alt_date_fts)
-            if not bool(a.time()):
+            if a.time() == datetime.time(0,0):
                 return a.date()
         except:
             pass

@@ -156,13 +156,13 @@ class ObjectManager(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 
     def set_objectClass(self, value):
-        self._properties['objectClass'], self._objectClass = _obj_or_str(value)
+        self._properties['objectClass'], self._objectClass = utils.obj_or_str(value)
 
     def set_serializers(self, value):
-        self._properties['serializers'], self._serializers = _obj_or_str_arr(value)
+        self._properties['serializers'], self._serializers = utils.obj_or_str_arr(value)
 
     def set_parsers(self, value):
-        self._properties['parsers'], self._parsers = _obj_or_str_arr(value)
+        self._properties['parsers'], self._parsers = utils.obj_or_str_arr(value)
 
     def list_files(self, includes=[], excludes=[]):
         """

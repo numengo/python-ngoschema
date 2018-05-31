@@ -40,9 +40,9 @@ def extends_ngo_draft1(validator, extends, instance, schema):
                 _format_checker(validator).check(ref, 'uri-reference')
                 scope, resolved = validator.resolver.resolve(ref)
             except FormatError as er:
-                yield ValidationError(error.message, cause=error.cause)
+                yield ValidationError(str(error), cause=error.cause)
             except RefResolutionError as er:
-                yield ValidationError(error.message, cause=error.cause)
+                yield ValidationError(str(error), cause=error.cause)
 
 
 def properties_ngo_draft1(validator, properties, instance, schema):
@@ -136,8 +136,7 @@ def ref_ngo_draft2(validator, ref, instance, schema):
             validator.resolver.push_scope(scope)
         except RefResolutionError as error:
             yield ValidationError("%s. Resolution scope=%s" %
-                                  (error.message,
-                                   validator.resolver.resolution_scope))
+                                  (error, validator.resolver.resolution_scope))
             return
 
         try:

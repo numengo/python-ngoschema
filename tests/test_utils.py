@@ -16,6 +16,7 @@ from builtins import str
 from future.utils import text_to_native_str
 from past.builtins import basestring
 
+import six
 import pytest
 import pathlib
 import collections
@@ -65,7 +66,7 @@ def test_utils():
     path = pathlib.Path('a/dummy/path')
 
     assert utils.is_basestring([basestring, unicodestr, newstring,
-                   path]) == [True, False, False, False]
+                   path]) == [six.PY2, False, False, False]
     assert utils.is_string([basestring, unicodestr, newstring,
                path]) == [True, True, True, False]
 

@@ -73,7 +73,7 @@ def test_datetime():
     builder = ClassBuilder(get_resolver())
     DTE = builder.construct('DateTimeExample', schema)
 
-    d = date(2018,05,26)
+    d = date(2018,5,26)
     a_d = arrow.get(d)
     dt_d = a_d.datetime
 
@@ -81,7 +81,7 @@ def test_datetime():
     dt_t = datetime(1,1,1,11,11,11)
     a_t = arrow.get(dt_t)
 
-    dt = datetime(2018,05,26,11,11,11)
+    dt = datetime(2018,5,26,11,11,11)
     a_dt = arrow.get(dt)
 
     dte = DTE()
@@ -112,12 +112,12 @@ def test_datetime():
     # takes string formatted as date
     dte.date = "2018/05/26"
     assert dte.date.year == 2018
-    assert dte.date.month == 05
+    assert dte.date.month == 5
     assert dte.date.day == 26
     assert isinstance(dte.date._value, date)
     dte.date = "26/05/2018"
     assert dte.date.year == 2018
-    assert dte.date.month == 05
+    assert dte.date.month == 5
     assert dte.date.day == 26
     # takes datetime with no time
     dte.date = dt_d

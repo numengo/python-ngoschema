@@ -15,6 +15,7 @@ import gettext
 import logging
 import importlib
 import inspect
+import six
 import itertools
 import types
 from builtins import next
@@ -79,6 +80,8 @@ class Argument(object):
 # set by inspectors when inspecting a class/function
 _module = None
 
+def _id(arg):
+    return getattr(arg, 'id', None) or getattr(arg, 'arg')
 
 def visit_FunctionDef(node):
     """ ast node visitor """
@@ -90,17 +93,17 @@ def visit_FunctionDef(node):
     _returns = doc['returns']
 
     docs = [
-        doc_params[a.id]['doc'] if a.id in doc_params else None
+        doc_params[_id(a)]['doc'] if _id(a) in doc_params else None
         for a in node.args.args
     ]
     doctypes = [
-        doc_params[a.id]['type']
-        if a.id in doc_params and 'type' in doc_params[a.id] else None
+        doc_params[_id(a)]['type']
+        if _id(a) in doc_params and 'type' in doc_params[_id(a)] else None
         for a in node.args.args
     ]
 
     _params = [
-        Argument(arg.id, doc, doctype)
+        Argument(_id(arg), doc, doctype)
         for arg, doc, doctype in zip(node.args.args, docs, doctypes)
     ]
 
@@ -115,10 +118,10 @@ def visit_FunctionDef(node):
         name = ''
         if isinstance(n, ast.Call):
             name = n.func.attr if isinstance(n.func,
-                                             ast.Attribute) else n.func.id
+                                             ast.Attribute) else _id(n.func)
             args = [ast.literal_eval(d) for d in n.args]
         else:
-            name = n.attr if isinstance(n, ast.Attribute) else n.id
+            name = n.attr if isinstance(n, ast.Attribute) else _id(n)
             args = []
         dec = getattr(_module, name, None)
         if not dec:
@@ -254,7 +257,7 @@ class ClassInspector(object):
             mi.doc = mi.function.__doc__
             mi.module = self.module
             mi.moduleName = self.moduleName
-            mi.isStatic = isinstance(mi.function, types.FunctionType)
+            mi.isStatic = 'staticmethod' in mi.decorators
             # remove first argument if not static
             if not mi.isStatic:
                 mi.parameters.pop(0)
@@ -262,12 +265,21 @@ class ClassInspector(object):
 
         node_iter = ast.NodeVisitor()
         node_iter.visit_FunctionDef = _visit_FunctionDef_class
-        node = ast.parse(inspect.getsource(self.klass))
-        node_iter.visit(node)
+        # avoid builtin
+        def is_builtin(obj):
+            mn = obj.__module__
+            return( mn is None
+                   or mn == str.__class__.__module__
+                   or mn == 'future.types.newobject')
+
+        if not is_builtin(self.klass):
+            node = ast.parse(inspect.getsource(self.klass))
+            node_iter.visit(node)
 
         self.mro = []
         for mro in inspect.getmro(self.klass)[1:]:
-            if mro.__module__ in ['future.types.newobject', '__builtin__']:
+            #if mro.__module__ in ['future.types.newobject', '__builtin__']:
+            if is_builtin(mro):
                 break
             ci_mro = ClassInspector(mro)
             self.mro.append(ci_mro)
@@ -285,8 +297,8 @@ class ClassInspector(object):
     @property
     def methodsAll(self):
         return dict(
-            itertools.chain(self.methods.iteritems(),
-                            self.methodsInherited.iteritems()))
+            itertools.chain(six.iteritems(self.methods),
+                            six.iteritems(self.methodsInherited)))
 
     @property
     def methodsPublic(self):
@@ -317,7 +329,7 @@ def inspect_file(file_):
     t = ast.parse(r.read())
     return ([d.name for d in t.body if isinstance(d, ast.FunctionDef)],
             [d.name for d in t.body if isinstance(d, ast.ClassDef)], [
-                d.targets[0].id for d in t.body
-                if isinstance(d, ast.Assign) and hasattr(d.targets[0], 'id')
-                and d.targets[0].id[0].isupper()
+                _id(d.targets[0]) for d in t.body
+                if isinstance(d, ast.Assign) and (hasattr(d.targets[0], 'id') or hasattr(d.targets[0], 'id'))
+                and _id(d.targets[0])[0].isupper()
             ])
