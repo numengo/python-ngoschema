@@ -1,7 +1,7 @@
 {
   "$schema": "http://numengo.org/draft-04/schema", 
-  "$id": "http://numengo.org/draft-04/Project", 
-  "title": "Project", 
+  "$id": "http://numengo.org/draft-04/Project3", 
+  "title": "Project3", 
   "type": "object", 
   "additionalProperties": false, 
   "properties": {
@@ -20,7 +20,7 @@
       "type": "array"
     }, 
     "releaseDate": {
-      "type": "string"
+      "type": "date"
     }, 
     "gitRepo": {
       "default": "git@github.com:{{this.githubUsername}}//{{this.repoName}}.git", 
@@ -52,10 +52,6 @@
       "type": "string"
     }, 
     "lic": {
-      "type": "string"
-    }, 
-    "fileSrcManager": {
-      "default": "ngoproject._file.FileSrcManager", 
       "type": "string"
     }, 
     "authorEmail": {
@@ -101,9 +97,11 @@
     "description": {
       "type": "string"
     }, 
-    "fileDataManager": {
-      "default": "ngoproject._file.FileDataManager", 
-      "type": "string"
+    "installDeps": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
     }, 
     "pythonSupport": {
       "items": {
@@ -118,16 +116,15 @@
     "vsGuid": {
       "type": "string"
     }, 
+    "pythonEnvs": {
+      "type": "object"
+    }, 
     "envVar": {
       "default": "DirProject{{this.name}}Root", 
       "type": "string"
     }, 
     "parsers": {
       "default": "ngomodel.YamlParser, ngomodel.JsonParser", 
-      "type": "string"
-    }, 
-    "fileTestManager": {
-      "default": "ngoproject._file.FileTestManager", 
       "type": "string"
     }, 
     "entryPoints": {
@@ -139,10 +136,6 @@
     "setup_py": {
       "isPathExisting": true, 
       "type": "path"
-    }, 
-    "toxEnv": {
-      "default": "ngoproject._environment.ToxEnvironment", 
-      "type": "object"
     }, 
     "name": {
       "default": "MyProject", 

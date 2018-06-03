@@ -12,6 +12,7 @@ import logging
 import json
 import codecs
 import sys
+from six import reraise as raise_
 from ruamel.yaml import YAML
 from abc import ABCMeta
 from abc import abstractmethod
@@ -51,8 +52,9 @@ class Deserializer(with_metaclass(ABCMeta)):
                 return self.loads(f.read(), **opts)
             except Exception as er:
                type, value, traceback = sys.exc_info()
-               raise IOError, "Problem occured loading file %s.\n%s" % (path,
-                         value), sys.exc_info()[2]
+               msg = "Problem occured loading file %s.\n%s" % (path, value)
+               raise_(IOError, msg, traceback)
+
 
     @abstractmethod
     def loads(self, stream, **opts):

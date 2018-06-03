@@ -42,8 +42,11 @@ def test_transform():
     mtm = JsonDeserializer().load(mtm_fp, objectClass=ObjectTransform)
 
     proj = mtm.transform_from(cc_js, objectClass=Project)
-    pprint(proj.as_dict())
-    pass
+    # field equivalence transform
+    assert proj.authorEmail == cc_js.email
+    # complex transform with jinja template
+    assert len(proj.keywords) == len(cc_js.keywords.for_json().split(','))
+    # missing complex transform with external function
 
 
 if __name__ == '__main__':

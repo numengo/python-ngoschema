@@ -508,9 +508,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             if not isinstance(val, info['type']):
                 validator = info['type'](val)
                 # handle case of patterns
-                if utils.is_pattern(val):
-                    validator._pattern = val
-                else:
+                if not utils.is_pattern(val):
+                    # don't validate if it s a pattern
                     validator.validate()
                 if validator._value is not None:
                     # This allows setting of default Literal values

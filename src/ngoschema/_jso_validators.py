@@ -153,6 +153,9 @@ def convert_date_type(param, value, detail):
     if isinstance(value, datetime.date):
         return value
     if isinstance(value,string_types):
+        if value in ['now', 'today']:
+            a = arrow.utcnow()
+            return a.date()
         try:
             a = arrow.get(value,date_fts)
             if a.time() == datetime.time(0,0):
@@ -177,6 +180,9 @@ def convert_time_type(param, value, _):
     if isinstance(value, datetime_types) and value.date() == datetime.date(1, 1, 1):
         return value.time()
     if isinstance(value,string_types):
+        if value in ['now']:
+            a = arrow.utcnow()
+            return a.time()
         try:
             a = arrow.get(value, alt_time_fts)
             if a.date() == datetime.date(1, 1, 1):
@@ -191,6 +197,10 @@ def convert_datetime_type(param, value, _):
         return value
     if isinstance(value, datetime.datetime):
         return arrow.get(value)
+    if isinstance(value,string_types):
+        if value in ['now']:
+            a = arrow.utcnow()
+            return a
     try:
         return arrow.get(value)
     except:

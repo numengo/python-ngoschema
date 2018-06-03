@@ -93,7 +93,7 @@ def visit_FunctionDef(node):
     _returns = doc['returns']
 
     docs = [
-        doc_params[_id(a)]['doc'] if _id(a) in doc_params else None
+        doc_params[_id(a)].get('doc', None) if _id(a) in doc_params else None
         for a in node.args.args
     ]
     doctypes = [

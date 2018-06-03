@@ -61,10 +61,10 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         from_ = from_.as_dict() if hasattr(from_,'as_dict') else from_
         to_ = {}
-        from_to = self.fieldsEquivalence
+        from_to = {v.for_json(): k for k, v in self.fieldsEquivalence.items()}
         for k, v in from_.items():
             if k in from_to:
-                k2 = from_to[k].for_json()
+                k2 = from_to[k]
                 to_[k2] = v
         for k2, tf in self._complexTransformFrom.items():
             try:
@@ -99,10 +99,10 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         to_ = to_.as_dict() if hasattr(to_,'as_dict') else to_
         from_ = {}
-        to_from = {v: k for k, v in self.fieldsEquivalence}
+        to_from = {k: v.for_json() for k, v in self.fieldsEquivalence.items()}
         for k, v in to_.items():
             if k in to_from:
-                k2 = to_from[k].for_json()
+                k2 = to_from[k]
                 from_[k2] = v
         for k2, tf in self._complexTransformTo.items():
             try:
