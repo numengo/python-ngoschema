@@ -24,7 +24,7 @@ class ConfigParser(Deserializer):
 
     def loads(self, stream, **kwargs):
         config = configparser2.ConfigParser()
-        config.readfp(stream)
+        config.read_string(stream)
         return config
 
 class ConfigManager(object):
@@ -33,13 +33,13 @@ class ConfigManager(object):
     _sections = {}
 
     def __new__(cls, *args, **kwargs):
-        if self._instance is None:
-            self._instance = super(ConfigManager, cls).__new__(cls, *args,
+        if cls._instance is None:
+            cls._instance = super(ConfigManager, cls).__new__(cls, *args,
                                                                **kwargs)
-        return self._instance
+        return cls._instance
 
     def add_config(self, configFilepath):
-        cfg = ConfigParser.load(configFilePath)
+        cfg = ConfigParser().load(configFilepath)
         self._registry[str(configFilepath)] = cfg
 
         for name, options in dict(cfg._sections).items():
@@ -53,8 +53,7 @@ class ConfigManager(object):
         return pmap(self._sections[name])
 
     def get_defaults(self, sname, keys):
-        sname = sname.lower()
         if sname in self._sections:
             section = self._sections[sname]
-            return { k: section[v.lower()] for k in keys if k.lower() in section}
+            return { k: section[k.lower()] for k in keys if k.lower() in section}
         return {}

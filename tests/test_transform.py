@@ -43,6 +43,7 @@ def test_transform():
 
     proj = mtm.transform_from(cc_js, objectClass=Project)
     pprint(proj.as_dict())
+    pass
 
 
 if __name__ == '__main__':

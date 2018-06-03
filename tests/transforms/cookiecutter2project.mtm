@@ -20,7 +20,6 @@
         "keywords": "{{from.keywords.split(',')}}",
         "installDeps": "{{from.install_deps.split(',')}}",
         "deps": "{{from.deps.split(',')}}",
-        "entryPoints": "{{from.entry_points.split(',')}}",
-        "pythonEnvs": "{{from.python_envs.split(',')}}"
+        "entryPoints": "{{from.entry_points.split(',')}}"
     }
 }

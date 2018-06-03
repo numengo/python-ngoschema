@@ -13,13 +13,13 @@ from __future__ import unicode_literals
 import gettext
 import inspect
 import logging
-import weakref
 import pathlib
 import arrow
 import datetime
 from builtins import object
 from builtins import str
 
+import dpath.util
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.validators as pjo_validators
@@ -31,6 +31,7 @@ from python_jsonschema_objects.validators import ValidationError
 from . import _jso_validators
 from . import utils
 from . import jinja2
+from .config import ConfigManager
 
 from future.utils import text_to_native_str as native_str
 
@@ -77,6 +78,20 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     def __init__(self, *args, **kwargs):
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
+
+        # we wait for init to be done in protocolbase, as many things to get
+        # attribute lookup need to be done
+        try:
+            defconf = ConfigManager().get_defaults(utils.fullname(self.__class__),
+                                                  self.__prop_names__.values())
+            for k, v in defconf.items():
+                if k not in kwargs:
+                    try:
+                        setattr(self, k, v)
+                    except:
+                        pass
+        except Exception as er:
+            pass
 
     def alt_repr(self):
         return '<%s id=%i>'%(self.__class__.__name__, id(self))
@@ -492,10 +507,15 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif getattr(info['type'], 'isLiteralClass', False) is True:
             if not isinstance(val, info['type']):
                 validator = info['type'](val)
-                validator.validate()
+                # handle case of patterns
+                if utils.is_pattern(val):
+                    validator._pattern = val
+                else:
+                    validator.validate()
                 if validator._value is not None:
                     # This allows setting of default Literal values
                     val = validator
+
 
         elif pjo_util.safe_issubclass(info['type'], ProtocolBase):
             if not isinstance(val, info['type']):

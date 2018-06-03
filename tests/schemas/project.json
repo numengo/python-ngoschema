@@ -142,7 +142,7 @@
     }, 
     "toxEnv": {
       "default": "ngoproject._environment.ToxEnvironment", 
-      "type": "string"
+      "type": "object"
     }, 
     "name": {
       "default": "MyProject", 
