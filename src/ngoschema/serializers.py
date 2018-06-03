@@ -11,14 +11,23 @@ import gettext
 import logging
 import io
 import six
+import json
+from ruamel.yaml import YAML
+from ruamel import yaml
 from abc import ABCMeta
+from abc import abstractmethod
 from builtins import object
 from builtins import str
 
-from future.utils import with_metaclass, abstractmethod
+from future.utils import with_metaclass
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from . import utils
-import is_sequence, is_mapping, GenericRegistry
+from . import decorators
 
 _ = gettext.gettext
 
@@ -27,6 +36,7 @@ class Serializer(with_metaclass(ABCMeta)):
     objectClass = None
     logger = logging.getLogger(__name__)
 
+    @decorators.log_exceptions
     def dump(self, obj, path, overwrite=False, **opts):
         """
         Serialize an object to a file like object string
@@ -40,12 +50,12 @@ class Serializer(with_metaclass(ABCMeta)):
         ptcl = opts.get('protocol', 'w')
         enc = opts.get('encoding', 'utf-8')
 
-        self.logger.info(_('DUMP %r to file %s' % (data, path)))
+        self.logger.info(_('DUMP %r to file %s' % (obj, path)))
 
         if path.exists() and not overwrite:
             raise IOError(_('file %s already exists' % str(path)))
         with io.open(str(path), ptcl, encoding=enc) as outfile:
-            stream = self.dumps(data, **opts)
+            stream = self.dumps(obj, **opts)
             stream = six.text_type(stream)
             outfile.write(stream)
 
@@ -64,12 +74,23 @@ serializer_registry = utils.GenericRegistry()
 
 @serializer_registry.register()
 class JsonSerializer(Serializer):
+    """
+    Default settings for dumping are:
+    indent: 2
+    ensure_ascii: False
+    """
     logger = logging.getLogger(__name__+'.JsonDeserializer')
 
     def dumps(self, obj, **opts):
-        data = obj.as_dict() if hasattr(obj,'has_dict') else obj
+        data = obj.as_dict() if hasattr(obj,'as_dict') else obj
         data  = utils.process_collection(data, **opts)
-        return json.dumps(data, **opts)
+        return json.dumps(data,
+                          indent=opts.get('indent',2),
+                          ensure_ascii=opts.get('ensure_ascii',False),
+                          separators=opts.get('separators',None),
+                          #encoding=opts.get('encoding','utf-8'),
+                          default=opts.get('default',None),
+                          )
 
 
 @serializer_registry.register()
@@ -79,8 +100,16 @@ class YamlSerializer(Serializer):
     def __init__(self, **kwargs):
         # default, if not specfied, is 'rt' (round-trip)
         self._yaml = YAML(typ='safe', **kwargs)
+        self._yaml = yaml
 
     def dumps(self, obj, **opts):
-        data = obj.as_dict() if hasattr(obj,'has_dict') else obj
+        self._yaml.indent = opts.get('indent',2)
+        self._yaml.allow_unicode = (opts.get('encoding','utf-8')=='utf-8')
+
+        data = obj.as_dict() if hasattr(obj,'as_dict') else obj
         data  = utils.process_collection(data, **opts)
-        return self._yaml.dumps(data, **opts)
+        name = obj.__class__.__name__ if hasattr(obj,'as_dict') else "default_context"
+
+        output = StringIO()
+        self._yaml.safe_dump({name: data}, output, default_flow_style=False)
+        return output.getvalue()

@@ -1,0 +1,183 @@
+{
+  "$schema": "http://numengo.org/draft-04/schema", 
+  "$id": "http://numengo.org/draft-04/Project", 
+  "title": "Project", 
+  "type": "object", 
+  "additionalProperties": false, 
+  "properties": {
+    "devStatus": {
+      "enum": [
+        "Alpha", 
+        "Beta", 
+        "Production/Stable", 
+        "Mature"
+      ]
+    }, 
+    "deps": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "releaseDate": {
+      "type": "string"
+    }, 
+    "gitRepo": {
+      "default": "git@github.com:{{this.githubUsername}}//{{this.repoName}}.git", 
+      "type": "string"
+    }, 
+    "githubUrl": {
+      "type": "string", 
+      "format": "uri-reference"
+    }, 
+    "keywords": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "shortDescription": {
+      "type": "string"
+    }, 
+    "tox_ini": {
+      "isPathExisting": true, 
+      "type": "path"
+    }, 
+    "docUrl": {
+      "type": "string", 
+      "format": "uri-reference"
+    }, 
+    "serializers": {
+      "default": "ngoproject._vs2017.Vs2017Serializer", 
+      "type": "string"
+    }, 
+    "lic": {
+      "type": "string"
+    }, 
+    "fileSrcManager": {
+      "default": "ngoproject._file.FileSrcManager", 
+      "type": "string"
+    }, 
+    "authorEmail": {
+      "type": "string", 
+      "format": "email"
+    }, 
+    "authorName": {
+      "type": "string"
+    }, 
+    "version": {
+      "type": "string"
+    }, 
+    "repoName": {
+      "default": "{{ this.type }}-{{ this.name|lower|replace(' ','-') }}", 
+      "type": "string"
+    }, 
+    "djangoCmsSupport": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "djangoSupport": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "type": {
+      "enum": [
+        "python", 
+        "django-plugin", 
+        "django-app", 
+        "django-cms", 
+        "cpp", 
+        "sim"
+      ]
+    }, 
+    "website": {
+      "type": "string", 
+      "format": "uri-reference"
+    }, 
+    "description": {
+      "type": "string"
+    }, 
+    "fileDataManager": {
+      "default": "ngoproject._file.FileDataManager", 
+      "type": "string"
+    }, 
+    "pythonSupport": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "githubUsername": {
+      "default": "numengo", 
+      "type": "string"
+    }, 
+    "vsGuid": {
+      "type": "string"
+    }, 
+    "envVar": {
+      "default": "DirProject{{this.name}}Root", 
+      "type": "string"
+    }, 
+    "parsers": {
+      "default": "ngomodel.YamlParser, ngomodel.JsonParser", 
+      "type": "string"
+    }, 
+    "fileTestManager": {
+      "default": "ngoproject._file.FileTestManager", 
+      "type": "string"
+    }, 
+    "entryPoints": {
+      "items": {
+        "type": "string"
+      }, 
+      "type": "array"
+    }, 
+    "setup_py": {
+      "isPathExisting": true, 
+      "type": "path"
+    }, 
+    "toxEnv": {
+      "default": "ngoproject._environment.ToxEnvironment", 
+      "type": "string"
+    }, 
+    "name": {
+      "default": "MyProject", 
+      "type": "string"
+    }, 
+    "license": {
+      "enum": [
+        "GNU General Public License v3", 
+        "NUMENGO", 
+        "BSD 2-Clause License", 
+        "BSD 3-Clause License", 
+        "MIT license", 
+        "ISC license", 
+        "Apache Software License 2.0"
+      ]
+    }, 
+    "packageName": {
+      "default": "{{ this.name|lower|replace(' ','_')|replace('-','_') }}", 
+      "type": "string"
+    }, 
+    "alias": {
+      "default": "{{this.name.lower}}", 
+      "type": "string"
+    }, 
+    "distributionName": {
+      "default": "{{ this.packageName|replace('_','-') }}", 
+      "type": "string"
+    }, 
+    "extensions": {
+      "default": ".ngo, .pyproj", 
+      "type": "string"
+    }, 
+    "repoDir": {
+      "isPathExisting": true, 
+      "type": "path"
+    }
+  }
+}

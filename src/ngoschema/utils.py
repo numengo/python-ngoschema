@@ -75,7 +75,7 @@ def is_pattern(value):
     """
     Test if value is a pattern, ie contains {{ }} formatted content 
     """
-    return is_string(value) and '{{' in value
+    return is_string(value) and ('{{' in value or '{%' in value)
 
 
 @take_arrays(0)
@@ -122,6 +122,23 @@ def import_from_string(value):
     raise InvalidValue(_('%s is not an importable object' % value))
 
 
+def impobj_or_str(val):
+    if is_string(val):
+        return val, import_from_string(val)
+    elif is_imported(val):
+        return fullname(val), val
+    else:
+        raise InvalidValue(_('%r is not an object class' % val))
+
+def impobj_or_str_arr(array):
+    s_a = o_a = []
+    for e in array:
+        s, o = obj_or_str(e)
+        s_a.append(s)
+        o_a.append(o)
+    return s_a, o_a
+
+
 @take_arrays(0)
 def is_module(value):
     """
@@ -154,7 +171,10 @@ def is_method(value):
     Test if value is a method
     """
     if is_string(value):
-        value = destringify.destringify(value)
+        try:
+            value = import_from_string(value)
+        except Exception as er:
+            return False
     if inspect.isclass(value):
         return hasattr(value,'__call__')
     return inspect.ismethod(value) or inspect.ismethoddescriptor(value)
@@ -307,21 +327,5 @@ def process_collection(data, **opts):
         rec = opts.get('fields_recursive', False)
         data = utils.but_keys(data, opts['only_fields'], rec)
     if 'objectClass' in opts:
-        return opts['objectClass'](data)
+        return opts['objectClass'](**data)
     return data
-
-def obj_or_str(val):
-    if is_string(val):
-        return val, import_from_string(val)
-    elif is_class(val):
-        return fullname(val), val
-    else:
-        raise InvalidValue(_('%r is not an object class' % val))
-
-def obj_or_str_arr(array):
-    s_a = o_a = []
-    for e in array:
-        s, o = obj_or_str(e)
-        s_a.append(s)
-        o_a.append(o)
-    return s_a, o_a

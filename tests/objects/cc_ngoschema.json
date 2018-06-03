@@ -1,0 +1,12 @@
+{
+  "full_name": "Cédric ROMAN",
+  "email": "roman@numengo.com",
+  "github_username": "numengo",
+  "project_name": "NgoSchema",
+  "keywords": "json-schema, class_builder, data_validation, type_checking, semantic, mixins, object_serialization, code_generation",
+  "project_short_description": "definition of classes with json-schema, object management and code-generation",
+  "install_deps": "git+https://github.com/RomanCedric/python-jsonschema-objects@myfork, git+https://github.com/Julian/jsonschema.git@draft7, ngofile, attrs, dpath, pyrsistent, configparser2, appdirs, wrapt, jinja2, arrow, inflection, six, ruamel.yaml",
+  "python_envs": "py27, py36, pypy",
+  "entry_points": "obj_manager = ngoschema:ObjectManager",
+  "version": "0.1.0"
+}

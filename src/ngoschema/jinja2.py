@@ -5,6 +5,7 @@ Jinja2 serializer and custom filters
 author: Cédric ROMAN (roman@numengo.com)
 licence: GPL3
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
@@ -12,6 +13,7 @@ import logging
 import jinja2
 import re
 import sys
+import copy
 import inspect
 import inflection
 import pathlib
@@ -24,19 +26,7 @@ from .serializers import serializer_registry
 
 _ = gettext.gettext
 
-
-class templatedString(object):
-    """
-    Returns a templated string for a given context
-    """
-    def __init__(self, templated_str):
-        self.jinja = jinja2.Environment()
-        for k, v in filters_registry.registry.items():
-            self.jinja.filters[k] = v
-        self.template = self.jinja.from_string(templated_str)
-
-    def __call__(self, **context):
-        return self.template.render(**context)
+filters_registry = utils.GenericRegistry()
 
 
 class DefaultJinja2Environment(jinja2.Environment):
@@ -56,20 +46,39 @@ class DefaultJinja2Environment(jinja2.Environment):
             if hasattr(m, '__file__')
             and pathlib.Path(m.__file__).with_name(package_path).is_dir()
             }
-        loader = PrefixLoader({k: PackageLoader(m, package_path)
+        loader = jinja2.PrefixLoader({k: jinja2.PackageLoader(m, package_path)
                                for k, m in to_load.items()})
 
         opts = {
-            trim_blocks: True,
-            lstrip_blocks: True,
-            keep_trailing_newline: True,
+            'trim_blocks': True,
+            'lstrip_blocks': True,
+            'keep_trailing_newline': True,
             }
         opts.update(kwargs)
-        jinja2.Environment.__init__(loader=loader, **opts)
+        jinja2.Environment.__init__(self, loader=loader, **opts)
 
         # add filters
         for k, v in filters_registry.registry.items():
             self.filters[k] = v
+
+_def_jinja_env = DefaultJinja2Environment()
+
+regex_has_dot = re.compile('(\{\{\s*\w+\.)')
+
+class templatedString(object):
+    """
+    Returns a templated string for a given context
+    """
+    def __init__(self, templated_str):
+        self.templated_str = templated_str 
+        self.template = _def_jinja_env.from_string(templated_str)
+        self.has_dot = regex_has_dot.search(templated_str) is not None
+
+    def __call__(self, obj):
+        #ctx = context.as_dict() if hasattr(context,'as_dict') else context
+        if not hasattr(obj,'as_dict') or not self.has_dot:
+            return self.template.render(obj)
+        return self.template.render({'this': obj})
 
 
 @serializer_registry.register()
@@ -78,15 +87,13 @@ class Jinja2Serializer(Serializer):
 
     def __init__(self, template, environment=None):
         """ initialize with given template """
-        self.jinja = environment or DefaultJinja2Environment()
+        self.jinja = environment or _def_jinja_env
 
     def dumps(self, obj, **opts):
-        data = obj.as_dict() if hasattr(obj,'has_dict') else obj
+        data = obj.as_dict() if hasattr(obj,'as_dict') else obj
         data  = utils.process_collection(data, **opts)
         return self.jinja.get_template(template).render(data)
 
-
-filters_registry = utils.GenericRegistry()
 
 # ADDITIONAL FILTERS FROM INFLECTION
 

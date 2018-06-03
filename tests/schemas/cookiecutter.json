@@ -1,0 +1,242 @@
+{
+  "$schema": "http://numengo.org/draft-04/schema", 
+  "$id": "http://numengo.org/draft-04/cookiecutter", 
+  "title": "Cookiecutter", 
+  "type": "object", 
+  "additionalProperties": false, 
+  "properties": {
+    "codacy": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "test_matrix_separate_coverage": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "c_extension_module": {
+      "default": "_{{ this.package_name }}", 
+      "type": "string"
+    }, 
+    "appveyor": {
+      "enum": [
+        "yes", 
+        "no"
+      ]
+    }, 
+    "year": {
+      "enum": [
+        "now", 
+        "2018", 
+        "2017", 
+        "2016", 
+        "2015", 
+        "2014", 
+        "2013", 
+        "2012", 
+        "2011", 
+        "2010"
+      ]
+    }, 
+    "github_username": {
+      "default": "numengo", 
+      "type": "string"
+    }, 
+    "travis": {
+      "enum": [
+        "yes", 
+        "no"
+      ]
+    }, 
+    "full_name": {
+      "default": "Cedric ROMAN", 
+      "type": "string"
+    }, 
+    "codeclimate": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "keywords": {
+      "default": "keyword1, keyword2", 
+      "type": "string"
+    }, 
+    "install_deps": {
+      "type": "string"
+    }, 
+    "landscape": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "package_name": {
+      "default": "{{ this.project_name|lower|replace(' ','_')|replace('-','_') }}", 
+      "type": "string"
+    }, 
+    "linter": {
+      "enum": [
+        "flake8", 
+        "pylama"
+      ]
+    }, 
+    "gettext": {
+      "enum": [
+        "yes", 
+        "no"
+      ]
+    }, 
+    "test_deps": {
+      "type": "string"
+    }, 
+    "scrutinizer": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "version": {
+      "default": "0.1.0", 
+      "type": "string"
+    }, 
+    "requiresio": {
+      "enum": [
+        "yes", 
+        "no"
+      ]
+    }, 
+    "email": {
+      "default": "roman@numengo.com", 
+      "type": "string"
+    }, 
+    "command_line_interface": {
+      "enum": [
+        "click", 
+        "plain", 
+        "argparse", 
+        "no"
+      ]
+    }, 
+    "repo_name": {
+      "default": "python-{{ this.project_name|lower|replace(' ','-') }}", 
+      "type": "string"
+    }, 
+    "c_extension_function": {
+      "default": "longest", 
+      "type": "string"
+    }, 
+    "website": {
+      "default": "http://www.numengo.com", 
+      "type": "string"
+    }, 
+    "project_name": {
+      "default": "Nameless", 
+      "type": "string"
+    }, 
+    "test_runner": {
+      "enum": [
+        "pytest", 
+        "nose"
+      ]
+    }, 
+    "command_line_interface_bin_name": {
+      "default": "{{ this.distribution_name }}", 
+      "type": "string"
+    }, 
+    "project_short_description": {
+      "default": "An example package. Generated with cc-py-setup.", 
+      "type": "string"
+    }, 
+    "setup_deps": {
+      "type": "string"
+    }, 
+    "distribution_name": {
+      "default": "{{ this.package_name|replace('_','-') }}", 
+      "type": "string"
+    }, 
+    "dev_status": {
+      "enum": [
+        "Alpha", 
+        "Beta", 
+        "Production/Stable", 
+        "Mature"
+      ]
+    }, 
+    "codecov": {
+      "enum": [
+        "yes", 
+        "no"
+      ]
+    }, 
+    "python_envs": {
+      "default": "py27, py36, pypy", 
+      "type": "string"
+    }, 
+    "sphinx_theme": {
+      "enum": [
+        "sphinx-rtd-theme", 
+        "sphinx-py3doc-enhanced-theme"
+      ]
+    }, 
+    "entry_points": {
+      "type": "string"
+    }, 
+    "coveralls": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "license": {
+      "enum": [
+        "GNU General Public License v3", 
+        "NUMENGO", 
+        "BSD 2-Clause License", 
+        "BSD 3-Clause License", 
+        "MIT license", 
+        "ISC license", 
+        "Apache Software License 2.0"
+      ]
+    }, 
+    "test_matrix_configurator": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "release_date": {
+      "default": "today", 
+      "type": "string"
+    }, 
+    "c_extension_optional": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "sphinx_doctest": {
+      "enum": [
+        "no", 
+        "yes"
+      ]
+    }, 
+    "_copy_without_render": {
+      "items": {
+        "type": "object"
+      }, 
+      "type": "array"
+    }, 
+    "c_extension_support": {
+      "enum": [
+        "no", 
+        "yes", 
+        "cffi", 
+        "cython"
+      ]
+    }
+  }
+}

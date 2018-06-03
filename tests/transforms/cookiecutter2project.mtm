@@ -1,0 +1,26 @@
+{
+    "from": "cookiecutter",
+    "to": "ngoschema._base_objects.Project",
+    "fieldsEquivalence" : {
+        "name": "project_name",
+        "version": "version",
+        "authorName": "full_name",
+        "authorEmail": "email",
+        "website": "website",
+        "repoName": "repo_name",
+        "packageName": "package_name",
+        "distributionName": "distribution_name",
+        "shortDescription": "project_short_description",
+        "releaseDate": "release_date",
+        "devStatus": "dev_status",
+        "license": "license"
+        },
+    "complexTransformFrom": {
+        "gitRepo": "git@github.com:{{from.github_username}}//{{from.repo_name}}.git",
+        "keywords": "{{from.keywords.split(',')}}",
+        "installDeps": "{{from.install_deps.split(',')}}",
+        "deps": "{{from.deps.split(',')}}",
+        "entryPoints": "{{from.entry_points.split(',')}}",
+        "pythonEnvs": "{{from.python_envs.split(',')}}"
+    }
+}

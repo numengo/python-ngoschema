@@ -2576,74 +2576,6 @@
         }
       }
     }, 
-    "ObjectManager": {
-      "additionalProperties": false, 
-      "isAbstract": true, 
-      "required": [
-        "objectClass"
-      ], 
-      "type": "object", 
-      "properties": {
-        "excludes": {
-          "default": [
-            ".*", 
-            "dist", 
-            "build", 
-            "docs"
-          ], 
-          "items": {
-            "type": "string"
-          }, 
-          "type": "array"
-        }, 
-        "configFile": {
-          "type": "path"
-        }, 
-        "parsers": {
-          "uniqueItems": true, 
-          "items": {
-            "type": "string"
-          }, 
-          "type": "array"
-        }, 
-        "extensions": {
-          "uniqueItems": true, 
-          "items": {
-            "type": "string"
-          }, 
-          "default": [
-            ".ngo"
-          ], 
-          "type": "array"
-        }, 
-        "recursive": {
-          "default": true, 
-          "type": "boolean"
-        }, 
-        "objectClass": {
-          "type": "string"
-        }, 
-        "serializers": {
-          "uniqueItems": true, 
-          "items": {
-            "type": "string"
-          }, 
-          "type": "array"
-        }, 
-        "pathlist": {
-          "items": {
-            "type": "path"
-          }, 
-          "type": "array"
-        }, 
-        "includes": {
-          "items": {
-            "type": "string"
-          }, 
-          "type": "array"
-        }
-      }
-    }, 
     "ObjectTransform": {
       "additionalProperties": false, 
       "type": "object", 
@@ -2651,22 +2583,22 @@
         "to": {
           "type": "string"
         }, 
-        "complexTransformsTo": {
-          "additionalProperties": {
-            "type": "string"
-          }, 
-          "type": "object"
-        }, 
         "from": {
           "type": "string"
         }, 
-        "complexTransformsFrom": {
+        "complexTransformFrom": {
           "additionalProperties": {
             "type": "string"
           }, 
           "type": "object"
         }, 
         "fieldsEquivalence": {
+          "additionalProperties": {
+            "type": "string"
+          }, 
+          "type": "object"
+        }, 
+        "complexTransformTo": {
           "additionalProperties": {
             "type": "string"
           }, 

@@ -64,7 +64,7 @@ class SchemaMetaclass(type):
             schema = resolver.expand(schemaUri, schema)
         elif attrs.get('schemaPath'):
             schemaUri, schema = load_schema_file(attrs['schemaPath'])
-            schema = resolver.expand(schemaUri, schema)
+            schema = resolver._expand(schemaUri, schema)
         elif attrs.get('schemaUri'):
             schemaUri, schema = resolver.resolve(attrs['schemaUri'])
         if schema:

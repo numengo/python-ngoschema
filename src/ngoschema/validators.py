@@ -39,8 +39,6 @@ SCH_DATE = pmap({ "type": "date"})
 SCH_TIME = pmap({ "type": "time"})
 SCH_DATETIME = pmap({ "type": "datetime"})
 
-
-
 NgoDraft01Validator = extend(
     Draft6Validator,
     validators={

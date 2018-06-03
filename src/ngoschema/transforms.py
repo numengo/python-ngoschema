@@ -12,7 +12,7 @@ from future.utils import with_metaclass
 
 from . import utils
 from . import jinja2
-from ._schemas import SchemaMetaclass
+from .schema_metaclass import SchemaMetaclass
 from ._classbuilder import ProtocolBase
 
 _ = gettext.gettext
@@ -29,15 +29,24 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/ObjectTransform"
 
-    def set_complexTransformFrom(self, dictio):
-        self._properties['complexTransformFrom'] = dictio
-        self._complexTransformFrom = {k: _process_transform(v)
-                                       for k, v in dictio.items() }
+    def __init__(self, **kwargs):
+        ProtocolBase.__init__(self, **kwargs)
+        try:
+            self._properties['from'], self._from = utils.impobj_or_str(kwargs['from'])
+        except:
+            self._from = None
+        try:
+            self._properties['to'], self._to = utils.impobj_or_str(kwargs['to'])
+        except:
+            self._to = None
 
-    def set_complexTransformTo(self, dictio):
-        self._properties['complexTransformTo'] = dictio
+        complexTransformFrom = kwargs.get('complexTransformFrom', {})
+        self._complexTransformFrom = {k: _process_transform(v)
+                                      for k, v in complexTransformFrom.items() }
+
+        complexTransformTo = kwargs.get('complexTransformTo', {})
         self._complexTransformTo = {k: _process_transform(v)
-                                       for k, v in dictio.items() }
+                                    for k, v in complexTransformTo.items() }
 
     def transform_from(self, from_, **opts):
         """
@@ -50,15 +59,31 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
         :param opts: dictionary of options, objectClass=None
         :rtype: object
         """
-        from_ = from_.as_dict() if hasattr(from_,'has_dict') else from_
+        from_ = from_.as_dict() if hasattr(from_,'as_dict') else from_
         to_ = {}
         from_to = self.fieldsEquivalence
         for k, v in from_.items():
             if k in from_to:
-                k2 = from_to[k]
+                k2 = from_to[k].for_json()
                 to_[k2] = v
         for k2, tf in self._complexTransformFrom.items():
-            to_[k2] = tf(**from_)
+            try:
+                if isinstance(tf, jinja2.templatedString):
+                    to_[k2] = tf({'to': to_, 'from': from_})
+                else:
+                    to_[k2] = tf(**from_)
+            except:
+                pass
+
+        # converting types than can be easily converted by evaluation
+        if self._to and hasattr(self._to, 'as_dict'):
+            for k, v in to_.items():
+                try:
+                    if self._to.__propinfo__[k]['type'] != 'string':
+                        to_[k] = eval(v)
+                except:
+                    pass
+
         return utils.process_collection(to_, **opts)
 
     def transform_to(self, to_, **opts):
@@ -72,13 +97,29 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
         :param opts: dictionary of options, objectClass=None
         :rtype: object
         """
-        to_ = to_.as_dict() if hasattr(to_,'has_dict') else to_
+        to_ = to_.as_dict() if hasattr(to_,'as_dict') else to_
         from_ = {}
         to_from = {v: k for k, v in self.fieldsEquivalence}
         for k, v in to_.items():
             if k in to_from:
-                k2 = to_from[k]
+                k2 = to_from[k].for_json()
                 from_[k2] = v
         for k2, tf in self._complexTransformTo.items():
-            from_[k2] = tf(**to_)
+            try:
+                if isinstance(tf, jinja2.templatedString):
+                    from_[k2] = tf({'to': to_, 'from': from_})
+                else:
+                    from_[k2] = tf(**to_)
+            except:
+                pass
+
+        # converting types than can be easily converted by evaluation
+        if self._from and hasattr(self._from, 'as_dict'):
+            for k, v in from_.items():
+                try:
+                    if self._from.__propinfo__[k]['type'] != 'string':
+                        from_[k] = eval(v)
+                except:
+                    pass
+
         return utils.process_collection(from_, **opts)

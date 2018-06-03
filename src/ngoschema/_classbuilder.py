@@ -25,10 +25,12 @@ import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.validators as pjo_validators
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
-import python_jsonschema_objects.wrapper_types
+import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 from python_jsonschema_objects.validators import ValidationError
 
 from . import _jso_validators
+from . import utils
+from . import jinja2
 
 from future.utils import text_to_native_str as native_str
 
@@ -76,34 +78,21 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     def __init__(self, *args, **kwargs):
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
-    def __getattr__(self, name):
-        if name.startswith('_'):
-            return object.__getattribute__(self, name)
-        else:
-            pjo_classbuilder.ProtocolBase.__getattr__(self, name)
-        #return
-        #if name in self.__object_attr_list__:
-        #    return object.__getattribute__(self, name)
-        #if name in self.__prop_names__:
-        #    raise KeyError(name)
-        #if name in self._extended_properties:
-        #    return self._extended_properties[name]
-        #
-        #raise AttributeError("{0} is not a valid attribute of {1}".format(
-        #    name, self.__class__.__name__))
+    def alt_repr(self):
+        return '<%s id=%i>'%(self.__class__.__name__, id(self))
+
+    #def __getattr__(self, name):
+    #    if name.startswith('_'):
+    #        return object.__getattribute__(self, name)
+    #    else:
+    #        return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
 
     def __setattr__(self, name, val):
+        """allow setting of protected attributes"""
         if name.startswith('_'):
             object.__setattr__(self, name, val)
         else:
             pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
-        #return
-        #if name in self.__object_attr_list__ or name in self.__propinfo__:
-        #    pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
-        #elif name.startswith('_'):
-        #    object.__setattr__(self, name, val)
-        #else:
-        #    pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
@@ -281,7 +270,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                             'type':
                             'array',
                             'validator':
-                            python_jsonschema_objects.wrapper_types.
+                            pjo_wrapper_types.
                             ArrayWrapper.create(uri, item_constraint=typ)
                         }
                     else:
@@ -306,7 +295,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 'type':
                                 'array',
                                 'validator':
-                                python_jsonschema_objects.wrapper_types.
+                                pjo_wrapper_types.
                                 ArrayWrapper.create(
                                     uri,
                                     item_constraint=typ,
@@ -318,7 +307,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 'type':
                                 'array',
                                 'validator':
-                                python_jsonschema_objects.wrapper_types.
+                                pjo_wrapper_types.
                                 ArrayWrapper.create(
                                     uri,
                                     item_constraint=typ,
@@ -396,7 +385,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
-        self.logger.debug('GET %r.%s' % (self, prop))
+        self.logger.debug('GET %s.%s' % (self.alt_repr(), prop))
         if fget:
             try:
                 RO_active = False
@@ -405,12 +394,15 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 RO_active = RO
                 raise AttributeError(_("Error getting property %s.\n%s"%(prop,er.message)))
         try:
-            return self._properties[prop]
+            ret = self._properties[prop]
+            if (hasattr(ret, 'isLiteralClass') and utils.is_pattern(ret._value)):
+                ret = jinja2.templatedString(ret._value)(self)
+            return ret
         except KeyError:
             raise AttributeError(_("No attribute %s" % prop))
 
     def setprop(self, val):
-        self.logger.debug('SET %r.%s=%s' % (self, prop,
+        self.logger.debug('SET %s.%s=%s' % (self.alt_repr(), prop,
                                             val))
         if RO_active:
             raise AttributeError(_("'%s' is read only" % prop))
@@ -468,7 +460,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                         break
                 elif pjo_util.safe_issubclass(
                         typ,
-                        python_jsonschema_objects.wrapper_types.ArrayWrapper):
+                        pjo_wrapper_types.ArrayWrapper):
                     try:
                         val = typ(val)
                     except Exception as e:
@@ -492,7 +484,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
         elif pjo_util.safe_issubclass(
                 info['type'],
-                python_jsonschema_objects.wrapper_types.ArrayWrapper):
+                pjo_wrapper_types.ArrayWrapper):
             # An array type may have already been converted into an ArrayValidator
             val = info['type'](val)
             val.validate()
@@ -532,7 +524,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         self._properties[prop] = val
 
     def delprop(self):
-        self.logger.debug('DEL %r.%s' % (self.__class__.__name__, prop))
+        self.logger.debug('DEL %s.%s' % (self.alt_repr(), prop))
         if prop in self.__required__:
             raise AttributeError(_("'%s' is required" % prop))
         else:

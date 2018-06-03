@@ -28,8 +28,13 @@ from .schemas_loader import _get_all_schemas_store
 
 _ = gettext.gettext
 
-DEFAULT_MS_URI = 'http://numengo.org/draft-04/schema'
-DEFAULT_DEFS_URI = 'http://numengo.org/draft-04/defs-schema'
+CURRENT_DRAFT = 'draft-04'
+
+def uri_ngo(name,draft=CURRENT_DRAFT):
+    return "http://numengo.org/%s/%s"%(draft, name)
+
+DEFAULT_MS_URI = uri_ngo('schema')
+DEFAULT_DEFS_URI = uri_ngo('defs-schema')
 
 _def_store = dict()
 
