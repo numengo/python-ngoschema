@@ -8,7 +8,7 @@ little bit helps, and credit will always be given.
 Bug reports
 ===========
 
-When `reporting a bug <https://github.com/numengo/python-ngoschema/issues>`_ please include:
+When `reporting a bug <https://github.com/RomanCedric/python-ngoschema/issues>`_ please include:
 
     * Your operating system name and version.
     * Any details about your local setup that might be helpful in troubleshooting.
@@ -24,7 +24,7 @@ articles, and such.
 Feature requests and feedback
 =============================
 
-The best way to send feedback is to file an issue at https://github.com/numengo/python-ngoschema/issues.
+The best way to send feedback is to file an issue at https://github.com/RomanCedric/python-ngoschema/issues.
 
 If you are proposing a feature:
 
@@ -37,7 +37,7 @@ Development
 
 To set up `python-ngoschema` for local development:
 
-1. Fork `python-ngoschema <https://github.com/numengo/python-ngoschema>`_
+1. Fork `python-ngoschema <https://github.com/RomanCedric/python-ngoschema>`_
    (look for the "Fork" button).
 2. Clone your fork locally::
 
@@ -74,7 +74,7 @@ For merging, you should:
 4. Add yourself to ``AUTHORS.rst``.
 
 .. [1] If you don't have all the necessary python versions available locally you can rely on Travis - it will
-       `run the tests <https://travis-ci.org/numengo/python-ngoschema/pull_requests>`_ for each change you add in the pull request.
+       `run the tests <https://travis-ci.org/RomanCedric/python-ngoschema/pull_requests>`_ for each change you add in the pull request.
 
        It will be slower though ...
 
@@ -83,7 +83,7 @@ Tips
 
 To run a subset of tests::
 
-    tox -e envname -- py.test -k test_myfeature
+    tox -e envname -- pytest -k test_myfeature
 
 To run all the test environments in *parallel* (you need to ``pip install detox``)::
 

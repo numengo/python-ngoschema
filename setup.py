@@ -39,7 +39,7 @@ def get_version(package):
 name = 'ngoschema'
 package = 'ngoschema'
 description = 'definition of classes with json-schema, object management and code-generation'
-url = 'https://github.com/numengo/python-ngoschema'
+url = 'https://github.com/RomanCedric/python-ngoschema'
 author='Cédric ROMAN',
 author_email='roman@numengo.com',
 license = 'GNU General Public License v3'
@@ -73,7 +73,6 @@ install_requires = [
     'python-gettext',
     'click',
     'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
-    'git+https://github.com/Julian/jsonschema.git@draft7',
     'ngofile',
     'attrs',
     'dpath',
@@ -118,7 +117,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
-    keywords=["json-schema", " class builder", " data validation", " type checking", " semantic", " mixins", " object serialization", " code generation"], 
+    keywords=["json-schema", " schema", " class_builder", " data_validation", " type_checking", " mixins", " object_serialization", " code_generation"], 
     setup_requires=setup_requires,
     install_requires=install_requires,
     requires=install_requires,
