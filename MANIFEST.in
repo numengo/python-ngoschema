@@ -24,3 +24,5 @@ prune .templates
 
 exclude run-coverage.py
 exclude run-tests.py
+
+exclude cc_ngoschema_serialized.*

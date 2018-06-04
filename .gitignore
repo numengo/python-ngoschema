@@ -1,4 +1,6 @@
 scripts
+cc_ngoschema_serialized.json
+cc_ngoschema_serialized.yaml
 
 *.py[cod]
 __pycache__
@@ -16,8 +18,6 @@ bak
 *.db
 TODEL
 TODO
-tests/objects/cc_ngoschema_serialized.*
-tests\objects\cc_ngoschema_serialized.*
 
 # jupyter
 .ipynb_checkpoints
