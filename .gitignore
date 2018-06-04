@@ -16,7 +16,8 @@ bak
 *.db
 TODEL
 TODO
-tests/objects/*_serialized.*
+tests/objects/cc_ngoschema_serialized.*
+tests\objects\cc_ngoschema_serialized.*
 
 # jupyter
 .ipynb_checkpoints
