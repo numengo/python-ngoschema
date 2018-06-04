@@ -13,7 +13,7 @@ from future.utils import with_metaclass
 from . import utils
 from . import jinja2
 from .schema_metaclass import SchemaMetaclass
-from ._classbuilder import ProtocolBase
+from .classbuilder import ProtocolBase
 
 _ = gettext.gettext
 

@@ -1,6 +1,6 @@
 import pytest  # noqa
 import python_jsonschema_objects as pjo
-from ngoschema._classbuilder import ClassBuilder
+from ngoschema.classbuilder import ClassBuilder
 from ngoschema import get_resolver
 import os.path
 import pathlib

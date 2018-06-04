@@ -27,7 +27,7 @@ from .schemas_loader import load_module_schemas
 from .resolver import get_resolver
 from .validators import DefaultValidator
 from .inspect_objects import FunctionInspector
-from ._classbuilder import ProtocolBase, ClassBuilder
+from .classbuilder import ProtocolBase, ClassBuilder
 from . import decorators
 
 _ = gettext.gettext

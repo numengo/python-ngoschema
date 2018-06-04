@@ -31,7 +31,7 @@ from ngoschema.resolver import ExpandingResolver
 from ngoschema import validators
 from ngoschema.validators import DefaultValidator
 from ngoschema import MS_STORE, DEFAULT_DEFS_URI
-from ngoschema import _jso_validators as jso_validators
+from ngoschema import pjo_validators as jso_validators
 
 logging.basicConfig(level=logging.INFO)
 

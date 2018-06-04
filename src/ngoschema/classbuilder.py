@@ -29,7 +29,7 @@ import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 from python_jsonschema_objects.validators import ValidationError
 
-from . import _jso_validators
+from . import pjo_validators
 from . import utils
 from . import jinja2
 from .config import ConfigManager
@@ -40,7 +40,7 @@ _ = gettext.gettext
 
 logger = pjo_classbuilder.logger
 
-#from ngoschema import _jso_validators as ngo_validators
+#from ngoschema import pjo_validators as ngo_validators
 
 def find_getter_setter_defv(propname, class_attrs):
     getter = None

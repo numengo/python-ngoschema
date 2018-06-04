@@ -1,7 +1,7 @@
 default_context:
     full_name: "Cédric ROMAN"
     email: "roman@numengo.com"
-    github_username: "numengo"
+    github_username: "RomanCedric"
     project_name: "NgoSchema"
     keywords: "json-schema, class builder, data validation, type checking, semantic, mixins, object serialization, code generation"
     project_short_description: "definition of classes with json-schema, object management and code-generation"

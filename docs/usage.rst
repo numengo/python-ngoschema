@@ -49,8 +49,8 @@ properties as both attributes and through dictionary access.
 In addition, classes contain a number of utility methods for serialization,
 deserialization, and validation.
 
-.. autoclass:: ngoschema._schemas.SchemaMetaclass
+.. autoclass:: ngoschema.schema_metaclass.SchemaMetaclass
     :members:
 
-.. autoclass:: ngoschema._classbuilder.ClassBuilder
+.. autoclass:: ngoschema.classbuilder.ClassBuilder
     :members:

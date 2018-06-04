@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from .exceptions import (SchemaError, InvalidValue)
-from ._classbuilder import ProtocolBase
+from .classbuilder import ProtocolBase
 from .schema_metaclass import SchemaMetaclass
 
 from .resolver import DEFAULT_MS_URI, DEFAULT_DEFS_URI, get_resolver

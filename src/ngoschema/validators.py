@@ -21,7 +21,7 @@ from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import converter_registry
 from python_jsonschema_objects.validators import ValidationError
 
-from . import _js_validators as _validators
+from . import js_validators as _validators
 from .schemas_loader import _load_schema
 
 _ = gettext.gettext

@@ -15,7 +15,7 @@ from future.utils import with_metaclass
 from future.builtins import object
 from builtins import str
 
-from ngoschema._classbuilder import ProtocolBase
+from ngoschema.classbuilder import ProtocolBase
 from ngoschema.schema_metaclass import SchemaMetaclass
 from ngoschema.deserializers import YamlDeserializer
 from ngoschema.deserializers import JsonDeserializer
