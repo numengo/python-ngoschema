@@ -16,6 +16,7 @@ bak
 *.db
 TODEL
 TODO
+/tests/objects/*_serialized.*
 
 # jupyter
 .ipynb_checkpoints

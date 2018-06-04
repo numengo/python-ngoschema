@@ -1,0 +1,62 @@
+# This file exists so you can easily regenerate your project.
+#
+# `cookiepatcher` is a convenient shim around `cookiecutter`
+# for regenerating projects (it will generate a .cookiecutterrc
+# automatically for any template). To use it:
+#
+#    pip install cookiepatcher
+#    cookiepatcher gh:RomanCedric/cc-py-setup project-path
+#
+# See:
+#    https://pypi.python.org/pypi/cookiepatcher
+#
+# Alternatively, you can run:
+#
+#    cookiecutter --overwrite-if-exists --config-file=project-path/.cookiecutterrc gh:RomanCedric/cc-py-setup
+
+default_context:
+
+    _copy_without_render:      ['.templates/template*']
+    _template:                 'cc-py-setup'
+    appveyor:                  'yes'
+    c_extension_function:      'longest'
+    c_extension_module:        '_ngoschema'
+    c_extension_optional:      'no'
+    c_extension_support:       'no'
+    codacy:                    'no'
+    codeclimate:               'no'
+    codecov:                   'yes'
+    command_line_interface:    'click'
+    command_line_interface_bin_name: 'ngoschema'
+    coveralls:                 'no'
+    dev_status:                'Alpha'
+    distribution_name:         'ngoschema'
+    email:                     'roman@numengo.com'
+    entry_points:              'obj_manager = ngoschema:ObjectManager'
+    full_name:                 'Cédric ROMAN'
+    gettext:                   'yes'
+    github_username:           'RomanCedric'
+    install_deps:              'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork, ngofile, attrs, dpath, pyrsistent, configparser2, appdirs, wrapt, jinja2, arrow, inflection, six, ruamel.yaml'
+    keywords:                  'json-schema, schema, class_builder, data_validation, type_checking, mixins, object_serialization, code_generation'
+    landscape:                 'no'
+    license:                   'GNU General Public License v3'
+    linter:                    'flake8'
+    package_name:              'ngoschema'
+    project_name:              'NgoSchema'
+    project_short_description: 'definition of classes with json-schema, object management and code-generation'
+    python_envs:               'py27, py35, py36, pypy'
+    release_date:              'today'
+    repo_name:                 'python-ngoschema'
+    requiresio:                'yes'
+    scrutinizer:               'no'
+    setup_deps:                ''
+    sphinx_doctest:            'no'
+    sphinx_theme:              'sphinx-rtd-theme'
+    test_deps:                 ''
+    test_matrix_configurator:  'no'
+    test_matrix_separate_coverage: 'no'
+    test_runner:               'pytest'
+    travis:                    'yes'
+    version:                   '0.1.0'
+    website:                   'http://www.numengo.com'
+    year:                      'now'
