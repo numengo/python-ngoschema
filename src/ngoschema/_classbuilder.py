@@ -16,6 +16,7 @@ import logging
 import pathlib
 import arrow
 import datetime
+import collections
 from builtins import object
 from builtins import str
 
@@ -105,7 +106,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     def __setattr__(self, name, val):
         """allow setting of protected attributes"""
         if name.startswith('_'):
-            object.__setattr__(self, name, val)
+            collections.MutableMapping.__setattr__(self, name, val)
+            #object.__setattr__(self, name, val)
         else:
             pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
