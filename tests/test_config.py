@@ -19,7 +19,7 @@ from ngoschema.config import ConfigManager
 from ngoschema.schema_metaclass import SchemaMetaclass
 from ngoschema.deserializers import YamlDeserializer
 from ngoschema.deserializers import JsonDeserializer
-from ngoschema._base_objects import Project
+from ngoschema._for_test_only import Project
 
 _ = gettext.gettext
 

@@ -1,6 +1,6 @@
 {
     "from": "cookiecutter",
-    "to": "ngoschema._base_objects.Project",
+    "to": "ngoschema._for_test_only.Project",
     "fieldsEquivalence" : {
         "name": "project_name",
         "version": "version",

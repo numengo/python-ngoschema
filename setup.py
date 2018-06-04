@@ -5,6 +5,7 @@ from __future__ import print_function
 
 from setuptools import find_packages
 from setuptools import setup
+from setuptools.command.install import install
 
 import io
 import os
@@ -87,8 +88,16 @@ install_requires = [
     'ruamel.yaml',  
 ]
 
-cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i or ':' in i]
-subprocess.check_call(cmd)
+# for setuptools to work properly, we need to install packages with - or : separately
+# and for that we need a hook
+# https://stackoverflow.com/questions/20288711/post-install-script-with-python-setuptools
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i or ':' in i]
+        subprocess.check_call(cmd)
+        install.run(self)
+
 install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
 
 test_requires = [
@@ -148,7 +157,9 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Utilities',
     ],
-
+    cmdclass={
+        'install': PostInstallCommand,
+    },
 )
 
 if sys.argv[-1] == 'publish':
