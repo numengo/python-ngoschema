@@ -5,21 +5,18 @@ json-schema validator classes
 author: Cédric ROMAN (roman@numengo.com)
 licence: GPL3
 """
-from __future__ import unicode_literals
 from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import gettext
 
 import six
-import gettext
-from builtins import object
-from builtins import str
-from pyrsistent import pmap
-
 from jsonschema.validators import Draft6Validator
 from jsonschema.validators import extend
-
-from python_jsonschema_objects.validators import registry
-from python_jsonschema_objects.validators import converter_registry
+from pyrsistent import pmap
 from python_jsonschema_objects.validators import ValidationError
+from python_jsonschema_objects.validators import converter_registry
+from python_jsonschema_objects.validators import registry
 
 from . import js_validators as _validators
 from .schemas_loader import _load_schema
@@ -87,24 +84,19 @@ def convert_validate(value, schema):
         if "minItems" in schema and len(ret) < schema["minItems"]:
             raise ValidationError(
                 "{1} has too few elements. Wanted {0}.".format(
-                    schema["minItems"], value
-                )
-            )
+                    schema["minItems"], value))
         if "maxItems" in schema and len(ret) > schema["maxItems"]:
             raise ValidationError(
                 "{1} has too many elements. Wanted {0}.".format(
-                    schema["maxItems"], value
-                )
-            )
+                    schema["maxItems"], value))
         # validate uniqueness
         if "uniqueItems" in schema and len(set(ret)) != len(ret):
             raise ValidationError(
-                "{0} has duplicate elements, but uniqueness required".format(value)
-            )
+                "{0} has duplicate elements, but uniqueness required".format(
+                    value))
 
     for param, paramval in sorted(
-        six.iteritems(schema), key=lambda x: x[0].lower() != "type"
-    ):
+            six.iteritems(schema), key=lambda x: x[0].lower() != "type"):
         validator = registry(param)
         if validator is not None:
             validator(paramval, ret, schema)

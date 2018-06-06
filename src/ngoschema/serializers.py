@@ -9,26 +9,25 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
-import logging
 import io
-import six
 import json
-from ruamel.yaml import YAML
-from ruamel import yaml
+import logging
 from abc import ABCMeta
 from abc import abstractmethod
-from builtins import object
 from builtins import str
 
+import six
 from future.utils import with_metaclass
+from ruamel import yaml
+from ruamel.yaml import YAML
+
+from . import decorators
+from . import utils
 
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-
-from . import utils
-from . import decorators
 
 _ = gettext.gettext
 
@@ -67,7 +66,6 @@ class Serializer(with_metaclass(ABCMeta)):
         :param obj: object to serialize
         :param opts: dictionary of options, as protocol(=w) , encoding=(utf-8), objectClass=None
         """
-        pass
 
 
 serializer_registry = utils.GenericRegistry()

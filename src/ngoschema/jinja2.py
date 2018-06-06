@@ -9,16 +9,15 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
+import inspect
 import logging
-import jinja2
+import pathlib
 import re
 import sys
-import copy
-import inspect
-import inflection
-import pathlib
 from builtins import object
-from builtins import str
+
+import inflection
+import jinja2
 
 from . import utils
 from .serializers import Serializer
@@ -36,21 +35,18 @@ class DefaultJinja2Environment(jinja2.Environment):
         # prepare prefixed loader with all loaded modules with package_path
         ms = {
             k: m
-            for k, m in sys.modules.items()
-            if m
-            and inspect.ismodule(m)
-            and not inspect.isbuiltin(m)
-            and not k.startswith("_")
+            for k, m in sys.modules.items() if m and inspect.ismodule(m)
+            and not inspect.isbuiltin(m) and not k.startswith("_")
         }
         to_load = {
             k: m
-            for k, m in ms.items()
-            if hasattr(m, "__file__")
+            for k, m in ms.items() if hasattr(m, "__file__")
             and pathlib.Path(m.__file__).with_name(package_path).is_dir()
         }
-        loader = jinja2.PrefixLoader(
-            {k: jinja2.PackageLoader(m, package_path) for k, m in to_load.items()}
-        )
+        loader = jinja2.PrefixLoader({
+            k: jinja2.PackageLoader(m, package_path)
+            for k, m in to_load.items()
+        })
 
         opts = {
             "trim_blocks": True,
@@ -94,11 +90,12 @@ class Jinja2Serializer(Serializer):
     def __init__(self, template, environment=None):
         """ initialize with given template """
         self.jinja = environment or _def_jinja_env
+        self.template = template
 
     def dumps(self, obj, **opts):
         data = obj.as_dict() if hasattr(obj, "as_dict") else obj
         data = utils.process_collection(data, **opts)
-        return self.jinja.get_template(template).render(data)
+        return self.jinja.get_template(self.template).render(data)
 
 
 # ADDITIONAL FILTERS FROM INFLECTION

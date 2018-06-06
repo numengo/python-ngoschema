@@ -11,27 +11,23 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import object
-from builtins import str
-
-import os
+import datetime
+import json
 import logging
+import os
+import pathlib
+
 import pytest
 import six
-import json
-import pathlib
-import datetime
-import dpath.util
-from pprint import pprint
-
-from jsonschema import RefResolver, Draft6Validator
+from jsonschema import Draft6Validator
+from jsonschema import RefResolver
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema.resolver import ExpandingResolver
+from ngoschema import DEFAULT_DEFS_URI
+from ngoschema import MS_STORE
 from ngoschema import validators
+from ngoschema.resolver import ExpandingResolver
 from ngoschema.validators import DefaultValidator
-from ngoschema import MS_STORE, DEFAULT_DEFS_URI
-from ngoschema import pjo_validators as jso_validators
 
 logging.basicConfig(level=logging.INFO)
 
@@ -61,9 +57,8 @@ def test_validate_extends():
     with pytest.raises(Exception) as e_info:
         v.validate(instance)
         assert (
-            a_info.message
-            == "Additional properties are not allowed (u'title' was unexpected)"
-        )
+            e_info.message ==
+            "Additional properties are not allowed (u'title' was unexpected)")
 
     v = Draft6Validator(sch)
     v.validate(instance)
@@ -134,7 +129,10 @@ def test_validate_subschemas():
 
 def test_convert_validate():
     with pytest.raises(ValidationError):
-        validators.convert_validate([1, 2, 3], {"type": "array", "maxItems": 2})
+        validators.convert_validate([1, 2, 3], {
+            "type": "array",
+            "maxItems": 2
+        })
 
     p = validators.convert_validate(__file__, validators.SCH_PATH_FILE)
     assert isinstance(p, pathlib.Path)

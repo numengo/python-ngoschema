@@ -14,14 +14,9 @@ from __future__ import unicode_literals
 
 import copy
 import gettext
-import logging
-from builtins import object
-from builtins import str
 
 import dpath.util
 from jsonschema.compat import urldefrag
-from jsonschema.compat import urljoin
-from jsonschema.compat import urlsplit
 from jsonschema.validators import RefResolver
 
 from .schemas_loader import _get_all_schemas_store
@@ -42,16 +37,13 @@ _def_store = dict()
 
 
 class ExpandingResolver(RefResolver):
-    __doc__ = (
-        """ 
+    __doc__ = (""" 
     Resolver expanding the resolved document according to the 'extends' field
     (array of uri-reference). The returned document is a deep merge of all
     corresponding documents.
     The merge is done according to the order of 'extends' (properties can be
     overwritten).The original resolved document is merged at the end.
-    """
-        + RefResolver.__doc__
-    )
+    """ + RefResolver.__doc__)
 
     _expanding = True
 
@@ -142,8 +134,7 @@ class ExpandingResolver(RefResolver):
         for uri in uris:
             s = self.store[uri]
             for p, d in dpath.util.search(
-                s.get("definitions", {}), "**/%s" % name, yielded=True
-            ):
+                    s.get("definitions", {}), "**/%s" % name, yielded=True):
                 id = "%s#/definitions/%s" % (uri, p)
                 if expand:
                     self.push_scope(uri)
@@ -169,8 +160,8 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     ms = _get_all_schemas_store()
     if base_uri not in ms:
         raise IOError(
-            _("%s not found in loaded schemas (%s)" % (base_uri, ", ".join(ms.keys())))
-        )
+            _("%s not found in loaded schemas (%s)" % (base_uri, ", ".join(
+                ms.keys()))))
     referrer = ms[base_uri]
     if not _resolver or len(ms) != len(_resolver.store):
         _resolver = ExpandingResolver(base_uri, referrer, ms)

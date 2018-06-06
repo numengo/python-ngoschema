@@ -8,23 +8,21 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
-import logging
-import json
 import codecs
+import gettext
+import json
+import logging
 import sys
-from six import reraise as raise_
-from ruamel.yaml import YAML
 from abc import ABCMeta
 from abc import abstractmethod
-from builtins import object
 from builtins import str
 
 from future.utils import with_metaclass
+from ruamel.yaml import YAML
+from six import reraise as raise_
 
-from . import utils
-from .utils import process_collection, GenericRegistry
 from . import decorators
+from . import utils
 from . import validators
 
 _ = gettext.gettext
@@ -65,7 +63,6 @@ class Deserializer(with_metaclass(ABCMeta)):
         :type string: string
         :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), objectClass=None
         """
-        pass
 
 
 deserializer_registry = utils.GenericRegistry()
@@ -76,10 +73,9 @@ class JsonDeserializer(Deserializer):
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
     def loads(self, string, **opts):
-        data = json.loads(
-            string
-            # ,encoding=opts.get('encoding', 'utf-8')
-        )
+        data = json.loads(string
+                          # ,encoding=opts.get('encoding', 'utf-8')
+                          )
         data = utils.process_collection(data, **opts)
         return data
 

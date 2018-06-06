@@ -1,11 +1,15 @@
-import pytest  # noqa
-import python_jsonschema_objects as pjo
-from ngoschema.classbuilder import ClassBuilder
-from ngoschema import get_resolver
 import os.path
 import pathlib
-from datetime import date, time, datetime
+from datetime import date
+from datetime import datetime
+from datetime import time
+
 import arrow
+import pytest  # noqa
+import python_jsonschema_objects as pjo
+
+from ngoschema import get_resolver
+from ngoschema.classbuilder import ClassBuilder
 
 
 def test_path():
@@ -13,10 +17,23 @@ def test_path():
         "title": "Path Example",
         "type": "object",
         "properties": {
-            "listPath": {"type": "array", "items": {"type": "path"}},
-            "anyPath": {"type": "path"},
-            "existingPath": {"type": "path", "isPathExisting": True},
-            "dirPath": {"type": "path", "isPathDir": True},
+            "listPath": {
+                "type": "array",
+                "items": {
+                    "type": "path"
+                }
+            },
+            "anyPath": {
+                "type": "path"
+            },
+            "existingPath": {
+                "type": "path",
+                "isPathExisting": True
+            },
+            "dirPath": {
+                "type": "path",
+                "isPathDir": True
+            },
         },
     }
     builder = ClassBuilder(get_resolver())
@@ -47,9 +64,15 @@ def test_datetime():
         "title": "Date Time Example",
         "type": "object",
         "properties": {
-            "date": {"type": "date"},
-            "time": {"type": "time"},
-            "datetime": {"type": "datetime"},
+            "date": {
+                "type": "date"
+            },
+            "time": {
+                "type": "time"
+            },
+            "datetime": {
+                "type": "datetime"
+            },
         },
     }
 
@@ -103,7 +126,7 @@ def test_datetime():
     assert dte.date.day == 26
     # takes datetime with no time
     dte.date = dt_d
-    assert isinstance(dte.date, date) == False
+    assert not isinstance(dte.date, date)
     assert isinstance(dte.date._value, date)
     # takes arrow with no time
     dte.date = a_d

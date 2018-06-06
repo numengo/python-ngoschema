@@ -10,35 +10,33 @@ created on 22/05/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import collections
+import datetime
 import gettext
 import inspect
 import logging
 import pathlib
-import arrow
-import datetime
-import collections
 from builtins import object
-from builtins import str
 
-import dpath.util
+import arrow
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 import python_jsonschema_objects.literals as pjo_literals
-import python_jsonschema_objects.validators as pjo_validators
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
+import python_jsonschema_objects.validators as pjo_validators
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
-from python_jsonschema_objects.validators import ValidationError
-
-from . import pjo_validators
-from . import utils
-from . import jinja2
-from .config import ConfigLoader
-
 from future.utils import text_to_native_str as native_str
+
+from . import jinja2
+from . import pjo_validators as ngo_pjo_validators
+from . import utils
+from .config import ConfigLoader
 
 _ = gettext.gettext
 
 logger = pjo_classbuilder.logger
+
+_NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
 
 def find_getter_setter_defv(propname, class_attrs):
@@ -55,7 +53,8 @@ def find_getter_setter_defv(propname, class_attrs):
     if pn in class_attrs:
         a = class_attrs[pn]
         if inspect.isfunction(a) or inspect.ismethod(a):
-            logger.warning(pjo_util.lazy_format("{} will be overwritten", propname))
+            logger.warning(
+                pjo_util.lazy_format("{} will be overwritten", propname))
         elif inspect.isdatadescriptor(a):
             pass
         else:
@@ -89,14 +88,12 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         # attribute lookup need to be done
         try:
             defconf = ConfigLoader(singleton=True).get_values(
-                self.fullname, self.__prop_names__.values()
-            )
+                self.fullname, self.__prop_names__.values())
             for k, v in defconf.items():
                 if k not in kwargs:
                     try:
                         self.logger.debug(
-                            "CONFIG SET %s.%s = %s" % (self.alt_repr(), k, v)
-                        )
+                            "CONFIG SET %s.%s = %s" % (self.alt_repr(), k, v))
                         setattr(self, k, v)
                     except Exception as er:
                         pass
@@ -182,7 +179,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         return type(
             native_str(nm),
-            (pjo_literals.LiteralValue,),
+            (pjo_literals.LiteralValue, ),
             {
                 "__propinfo__": {
                     "__literal__": clsdata,
@@ -193,22 +190,25 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             },
         )
 
-    def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+    def _construct(self, uri, clsdata, parent=(ProtocolBase, ), **kw):
         if clsdata.get("type") not in ("path", "date", "time", "datetime"):
             return pjo_classbuilder.ClassBuilder._construct(
-                self, uri, clsdata, parent, **kw
-            )
+                self, uri, clsdata, parent, **kw)
 
         typ = clsdata["type"]
 
         if typ == "path":
-            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata, pathlib.Path)
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, pathlib.Path)
         if typ == "date":
-            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata, datetime.date)
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, datetime.date)
         if typ == "time":
-            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata, datetime.time)
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, datetime.time)
         if typ == "datetime":
-            self.resolved[uri] = self._build_pseudo_literal(uri, clsdata, arrow.Arrow)
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, arrow.Arrow)
 
         return self.resolved[uri]
 
@@ -257,7 +257,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         properties = {}
 
         for p in parents:
-            properties = pjo_util.propmerge(properties, getattr(p, "__propinfo__", {}))
+            properties = pjo_util.propmerge(properties,
+                                            getattr(p, "__propinfo__", {}))
 
         if "properties" in clsdata:
             properties = pjo_util.propmerge(properties, clsdata["properties"])
@@ -265,7 +266,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         name_translation = {}
 
         for prop, detail in properties.items():
-            logger.debug(pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
+            logger.debug(
+                pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
             properties[prop]["raw_name"] = prop
             name_translation[prop] = prop.replace("@", "").replace("$", "")
             prop = name_translation[prop]
@@ -275,7 +277,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             # look for missing getter/setter/defaultvalue in parent classes
             for p in reversed(parents):
                 par_attrs = p.__dict__
-                pgetter, psetter, pdefv = find_getter_setter_defv(prop, par_attrs)
+                pgetter, psetter, pdefv = find_getter_setter_defv(
+                    prop, par_attrs)
                 getter = getter or pgetter
                 setter = setter or psetter
                 defv = defv or pdefv
@@ -288,7 +291,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if detail.get("type", None) == "object":
                 uri = "{0}/{1}_{2}".format(nm, prop, "<anonymous>")
-                self.resolved[uri] = self.construct(uri, detail, (ProtocolBase,))
+                self.resolved[uri] = self.construct(uri, detail,
+                                                    (ProtocolBase, ))
 
                 props[prop] = make_property(
                     prop,
@@ -302,88 +306,97 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             elif "type" not in detail and "$ref" in detail:
                 ref = detail["$ref"]
                 # TODO CRN: shouldn't we retrieve also the reference and construct from it??
-                uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, ref)
+                uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope,
+                                               ref)
                 logger.debug(
-                    pjo_util.lazy_format(
-                        "Resolving reference {0} for {1}.{2}", ref, nm, prop
-                    )
-                )
+                    pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
+                                         ref, nm, prop))
                 if uri in self.resolved:
                     typ = self.resolved[uri]
                 else:
-                    typ = self.construct(uri, detail, (ProtocolBase,))
+                    typ = self.construct(uri, detail, (ProtocolBase, ))
 
                 props[prop] = make_property(
-                    prop, {"type": typ}, fget=getter, fset=setter, desc=typ.__doc__
-                )
+                    prop, {"type": typ},
+                    fget=getter,
+                    fset=setter,
+                    desc=typ.__doc__)
                 properties[prop]["$ref"] = uri
                 properties[prop]["type"] = typ
 
             elif "oneOf" in detail:
                 potential = self.resolve_classes(detail["oneOf"])
                 logger.debug(
-                    pjo_util.lazy_format(
-                        "Designating {0} as oneOf {1}", prop, potential
-                    )
-                )
+                    pjo_util.lazy_format("Designating {0} as oneOf {1}", prop,
+                                         potential))
                 desc = detail["description"] if "description" in detail else ""
                 props[prop] = make_property(
-                    prop, {"type": potential}, fget=getter, fset=setter, desc=desc
-                )
+                    prop, {"type": potential},
+                    fget=getter,
+                    fset=setter,
+                    desc=desc)
 
             elif "type" in detail and detail["type"] == "array":
                 if "items" in detail and isinstance(detail["items"], dict):
                     if "$ref" in detail["items"]:
                         uri = pjo_util.resolve_ref_uri(
-                            self.resolver.resolution_scope, detail["items"]["$ref"]
-                        )
+                            self.resolver.resolution_scope,
+                            detail["items"]["$ref"])
                         typ = self.construct(uri, detail["items"])
                         propdata = {
-                            "type": "array",
-                            "validator": pjo_wrapper_types.ArrayWrapper.create(
-                                uri, item_constraint=typ
-                            ),
+                            "type":
+                            "array",
+                            "validator":
+                            pjo_wrapper_types.ArrayWrapper.create(
+                                uri, item_constraint=typ),
                         }
                     else:
-                        uri = "{0}/{1}_{2}".format(nm, prop, "<anonymous_field>")
+                        uri = "{0}/{1}_{2}".format(nm, prop,
+                                                   "<anonymous_field>")
                         try:
                             if "oneOf" in detail["items"]:
-                                typ = pjo_classbuilder.TypeProxy(
-                                    [
-                                        self.construct(uri + "_%s" % i, item_detail)
-                                        if "$ref" not in item_detail
-                                        else self.construct(
-                                            pjo_util.resolve_ref_uri(
-                                                self.resolver.resolution_scope,
-                                                item_detail["$ref"],
-                                            ),
-                                            item_detail,
-                                        )
-                                        for i, item_detail in enumerate(
-                                            detail["items"]["oneOf"]
-                                        )
-                                    ]
-                                )
+                                typ = pjo_classbuilder.TypeProxy([
+                                    self.construct(uri + "_%s" % i,
+                                                   item_detail)
+                                    if "$ref" not in item_detail else
+                                    self.construct(
+                                        pjo_util.resolve_ref_uri(
+                                            self.resolver.resolution_scope,
+                                            item_detail["$ref"],
+                                        ),
+                                        item_detail,
+                                    ) for i, item_detail in enumerate(detail[
+                                        "items"]["oneOf"])
+                                ])
                             else:
                                 typ = self.construct(uri, detail["items"])
                             propdata = {
-                                "type": "array",
-                                "validator": pjo_wrapper_types.ArrayWrapper.create(
-                                    uri, item_constraint=typ, addl_constraints=detail
-                                ),
+                                "type":
+                                "array",
+                                "validator":
+                                pjo_wrapper_types.ArrayWrapper.create(
+                                    uri,
+                                    item_constraint=typ,
+                                    addl_constraints=detail),
                             }
                         except NotImplementedError:
                             typ = detail["items"]
                             propdata = {
-                                "type": "array",
-                                "validator": pjo_wrapper_types.ArrayWrapper.create(
-                                    uri, item_constraint=typ, addl_constraints=detail
-                                ),
+                                "type":
+                                "array",
+                                "validator":
+                                pjo_wrapper_types.ArrayWrapper.create(
+                                    uri,
+                                    item_constraint=typ,
+                                    addl_constraints=detail),
                             }
 
                     props[prop] = make_property(
-                        prop, propdata, fget=getter, fset=setter, desc=typ.__doc__
-                    )
+                        prop,
+                        propdata,
+                        fget=getter,
+                        fset=setter,
+                        desc=typ.__doc__)
                 elif "items" in detail:
                     typs = []
                     for i, elem in enumerate(detail["items"]):
@@ -392,8 +405,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         typs.append(typ)
 
                     props[prop] = make_property(
-                        prop, {"type": typs}, fget=getter, fset=setter
-                    )
+                        prop, {"type": typs}, fget=getter, fset=setter)
 
             else:
                 desc = detail["description"] if "description" in detail else ""
@@ -401,9 +413,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 typ = self.construct(uri, detail)
 
                 props[prop] = make_property(
-                    prop, {"type": typ}, fget=getter, fset=setter, desc=desc
-                )
-        """ If this object itself has a 'oneOf' designation, then
+                    prop, {"type": typ}, fget=getter, fset=setter, desc=desc)
+        """
+        If this object itself has a 'oneOf' designation, then
         make the validation 'type' the list of potential objects.
         """
         if "oneOf" in clsdata:
@@ -412,25 +424,27 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             props["__validation__"] = {"type": klasses}
 
         props["__extensible__"] = pjo_pattern_properties.ExtensibleValidator(
-            nm, clsdata, self
-        )
+            nm, clsdata, self)
 
         props["__prop_names__"] = name_translation
 
         props["__propinfo__"] = properties
         # required = set.union(*[p.__required__ for p in parents])
-        required = set.union(*[getattr(p, "__required__", set()) for p in parents])
+        required = set.union(
+            *[getattr(p, "__required__", set()) for p in parents])
 
         if "required" in clsdata:
             for prop in clsdata["required"]:
                 required.add(prop)
 
-        invalid_requires = [req for req in required if req not in props["__propinfo__"]]
+        invalid_requires = [
+            req for req in required if req not in props["__propinfo__"]
+        ]
         if len(invalid_requires) > 0:
             raise pjo_validators.ValidationError(
                 "Schema Definition Error: {0} schema requires "
-                "'{1}', but properties are not defined".format(nm, invalid_requires)
-            )
+                "'{1}', but properties are not defined".format(
+                    nm, invalid_requires))
 
         props["__required__"] = required
         props["__has_default__"] = defaults
@@ -457,8 +471,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             except Exception as er:
                 RO_active = RO
                 raise AttributeError(
-                    _("Error getting property %s.\n%s" % (prop, er.message))
-                )
+                    _("Error getting property %s.\n%s" % (prop, er.message)))
         try:
             val = self._properties[prop]
             if hasattr(val, "_pattern"):
@@ -488,12 +501,9 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 if not isinstance(typ, dict):
                     type_checks.append(typ)
                     continue
-                typ = next(
-                    t
-                    for n, t in pjo_validators.SCHEMA_TYPE_MAPPING
-                    + pjo_validators.USER_TYPE_MAPPING
-                    if typ["type"] == n
-                )
+                typ = next(t for n, t in pjo_validators.SCHEMA_TYPE_MAPPING +
+                           pjo_validators.USER_TYPE_MAPPING
+                           if typ["type"] == n)
                 if typ is None:
                     typ = type(None)
                 if isinstance(typ, (list, tuple)):
@@ -509,8 +519,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                     try:
                         validator = typ(val)
                     except Exception as e:
-                        errors.append("Failed to coerce to '{0}': {1}".format(typ, e))
-                        pass
+                        errors.append("Failed to coerce to '{0}': {1}".format(
+                            typ, e))
                     else:
                         validator.validate()
                         ok = True
@@ -520,18 +530,19 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                     try:
                         val = typ(**pjo_util.coerce_for_expansion(val))
                     except Exception as e:
-                        errors.append(_("Failed to coerce to '%s': %s" % (typ, e)))
-                        pass
+                        errors.append(
+                            _("Failed to coerce to '%s': %s" % (typ, e)))
                     else:
                         val.validate()
                         ok = True
                         break
-                elif pjo_util.safe_issubclass(typ, pjo_wrapper_types.ArrayWrapper):
+                elif pjo_util.safe_issubclass(typ,
+                                              pjo_wrapper_types.ArrayWrapper):
                     try:
                         val = typ(val)
                     except Exception as e:
-                        errors.append(_(("Failed to coerce to '%s': %s") % (typ, e)))
-                        pass
+                        errors.append(
+                            _(("Failed to coerce to '%s': %s") % (typ, e)))
                     else:
                         val.validate()
                         ok = True
@@ -540,14 +551,15 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             if not ok:
                 errstr = "\n".join(errors)
                 raise pjo_validators.ValidationError(
-                    _("Object must be one of %s: \n%s" % (info["type"], errstr))
-                )
+                    _("Object must be one of %s: \n%s" % (info["type"],
+                                                          errstr)))
 
         elif info["type"] == "array":
             val = info["validator"](val)
             val.validate()
 
-        elif pjo_util.safe_issubclass(info["type"], pjo_wrapper_types.ArrayWrapper):
+        elif pjo_util.safe_issubclass(info["type"],
+                                      pjo_wrapper_types.ArrayWrapper):
             # An array type may have already been converted into an ArrayValidator
             val = info["type"](val)
             val.validate()
@@ -587,8 +599,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             # This is the null value
             if val is not None:
                 raise pjo_validators.ValidationError(
-                    _("None is only valid value for null")
-                )
+                    _("None is only valid value for null"))
 
         else:
             raise TypeError(_("Unknown object type: '%s'" % (info["type"])))

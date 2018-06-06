@@ -10,21 +10,19 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import collections
-import gettext
 import copy
+import gettext
 import importlib
 import inspect
-import logging
 import re
 from builtins import object
 from builtins import str
 
-import six
 from past.builtins import basestring
 
+from ._qualname import qualname
 from .decorators import take_arrays
 from .exceptions import InvalidValue
-from ._qualname import qualname
 
 _ = gettext.gettext
 
@@ -35,7 +33,8 @@ class GenericRegistry(object):
 
     def register(self, name=None):
         def f(functor):
-            self.registry[name if name is not None else functor.__name__] = functor
+            self.registry[name
+                          if name is not None else functor.__name__] = functor
             return functor
 
         return f
@@ -103,12 +102,13 @@ def import_from_string(value):
         try:
             m = value[0:pos]
             ret = importlib.import_module(m)
-            for a in value[pos + 1 :].split("."):
+            for a in value[pos + 1:].split("."):
                 if not a:
                     continue
                 ret = getattr(ret, a, None)
                 if not ret:
-                    raise InvalidValue(_("%s is not an importable object" % value))
+                    raise InvalidValue(
+                        _("%s is not an importable object" % value))
             return ret
         except Exception as er:
             continue
@@ -127,7 +127,7 @@ def impobj_or_str(val):
 def impobj_or_str_arr(array):
     s_a = o_a = []
     for e in array:
-        s, o = obj_or_str(e)
+        s, o = impobj_or_str(e)
         s_a.append(s)
         o_a.append(o)
     return s_a, o_a
@@ -196,7 +196,8 @@ def is_imported(value):
             value = import_from_string(value)
         except Exception as er:
             return False
-    return is_class(value) or is_method(value) or is_module(value) or is_function(value)
+    return is_class(value) or is_method(value) or is_module(
+        value) or is_function(value)
 
 
 def is_instance(value):
@@ -221,7 +222,8 @@ def is_sequence(value):
     """
     Test if value is a sequence (list, tuple, deque)
     """
-    if isinstance(value, collections.Sequence) and not isinstance(value, basestring):
+    if isinstance(value,
+                  collections.Sequence) and not isinstance(value, basestring):
         return True
     if isinstance(value, collections.deque):
         return True
@@ -317,10 +319,10 @@ def but_keys(icontainer, keys, recursive=False):
 def process_collection(data, **opts):
     if "only_fields" in opts:
         rec = opts.get("fields_recursive", False)
-        data = utils.only_keys(data, opts["only_fields"], rec)
+        data = only_keys(data, opts["only_fields"], rec)
     if "but_fields" in opts:
         rec = opts.get("fields_recursive", False)
-        data = utils.but_keys(data, opts["only_fields"], rec)
+        data = but_keys(data, opts["only_fields"], rec)
     if "objectClass" in opts:
         return opts["objectClass"](**data)
     return data

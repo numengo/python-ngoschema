@@ -1,8 +1,10 @@
 # *- coding: utf-8 -*-
 import os.path
+
 from future.utils import with_metaclass
-from .schema_metaclass import SchemaMetaclass
+
 from .classbuilder import ProtocolBase
+from .schema_metaclass import SchemaMetaclass
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 

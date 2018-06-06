@@ -13,11 +13,10 @@ import imp
 import json
 import logging
 import pkgutil
-import inflection
-import six
-from builtins import object
 from builtins import str
 
+import inflection
+import six
 from jsonschema._utils import URIDict
 from ngofile import list_files
 
@@ -61,11 +60,8 @@ def load_schema(schema, schemas_store=None):
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")
     if not uri:
         raise SchemaError(
-            _(
-                "Impossible to load schema because `id (or `$id) and `title fields"
-                "are missing.\n%s" % schema
-            )
-        )
+            _("Impossible to load schema because `id (or `$id) and `title fields"
+              "are missing.\n%s" % schema))
     if schemas_store is not None:
         schemas_store[uri] = schema
     _all_schemas_store[uri] = schema

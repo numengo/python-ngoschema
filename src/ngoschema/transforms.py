@@ -9,12 +9,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
+
 from future.utils import with_metaclass
 
-from . import utils
 from . import jinja2
-from .schema_metaclass import SchemaMetaclass
+from . import utils
 from .classbuilder import ProtocolBase
+from .schema_metaclass import SchemaMetaclass
 
 _ = gettext.gettext
 
@@ -36,22 +37,26 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
         try:
-            self._properties["from"], self._from = utils.impobj_or_str(kwargs["from"])
+            self._properties["from"], self._from = utils.impobj_or_str(
+                kwargs["from"])
         except Exception:
             self._from = None
         try:
-            self._properties["to"], self._to = utils.impobj_or_str(kwargs["to"])
+            self._properties["to"], self._to = utils.impobj_or_str(
+                kwargs["to"])
         except Exception:
             self._to = None
 
         complexTransformFrom = kwargs.get("complexTransformFrom", {})
         self._complexTransformFrom = {
-            k: _process_transform(v) for k, v in complexTransformFrom.items()
+            k: _process_transform(v)
+            for k, v in complexTransformFrom.items()
         }
 
         complexTransformTo = kwargs.get("complexTransformTo", {})
         self._complexTransformTo = {
-            k: _process_transform(v) for k, v in complexTransformTo.items()
+            k: _process_transform(v)
+            for k, v in complexTransformTo.items()
         }
 
     def transform_from(self, from_, **opts):

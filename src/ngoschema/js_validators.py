@@ -11,10 +11,6 @@ from __future__ import unicode_literals
 
 import collections
 import gettext
-import importlib
-import logging
-import re
-from builtins import object
 from builtins import str
 
 from jsonschema._format import draft7_format_checker
@@ -22,9 +18,6 @@ from jsonschema.compat import iteritems
 from jsonschema.exceptions import FormatError
 from jsonschema.exceptions import RefResolutionError
 from jsonschema.exceptions import ValidationError
-from jsonschema.validators import _id_of as id_of
-
-from .exceptions import InvalidValue
 
 _ = gettext.gettext
 
@@ -40,9 +33,9 @@ def extends_ngo_draft1(validator, extends, instance, schema):
                 _format_checker(validator).check(ref, "uri-reference")
                 scope, resolved = validator.resolver.resolve(ref)
             except FormatError as er:
-                yield ValidationError(str(error), cause=error.cause)
+                yield ValidationError(str(er), cause=er.cause)
             except RefResolutionError as er:
-                yield ValidationError(str(error), cause=error.cause)
+                yield ValidationError(str(er), cause=er.cause)
 
 
 def properties_ngo_draft1(validator, properties, instance, schema):
@@ -61,8 +54,10 @@ def properties_ngo_draft1(validator, properties, instance, schema):
 
         if property in instance:
             for error in validator.descend(
-                instance[property], subschema, path=property, schema_path=property
-            ):
+                    instance[property],
+                    subschema,
+                    path=property,
+                    schema_path=property):
                 yield error
 
     if "schema" in instance:
@@ -85,8 +80,10 @@ def properties_ngo_draft2(validator, properties, instance, schema):
 
         if property in instance:
             for error in validator.descend(
-                instance[property], subschema, path=property, schema_path=property
-            ):
+                    instance[property],
+                    subschema,
+                    path=property,
+                    schema_path=property):
                 yield error
 
     if "schemaUri" in instance:
@@ -129,9 +126,8 @@ def ref_ngo_draft2(validator, ref, instance, schema):
             scope, resolved = validator.resolver.resolve(ref)
             validator.resolver.push_scope(scope)
         except RefResolutionError as error:
-            yield ValidationError(
-                "%s. Resolution scope=%s" % (error, validator.resolver.resolution_scope)
-            )
+            yield ValidationError("%s. Resolution scope=%s" %
+                                  (error, validator.resolver.resolution_scope))
             return
 
         try:

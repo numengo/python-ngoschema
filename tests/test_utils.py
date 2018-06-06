@@ -9,19 +9,16 @@ licence: GNU GPLv3
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import object
+import collections
+import pathlib
 from builtins import str
 
-from future.utils import text_to_native_str
-from past.builtins import basestring
-
-import six
 import pytest
-import pathlib
-import collections
+import six
+from future.utils import text_to_native_str
 
-from ngoschema import utils
 from ngoschema import str_utils
+from ngoschema import utils
 from ngoschema.exceptions import InvalidValue
 
 
@@ -33,8 +30,10 @@ def test_resolve_import():
     with pytest.raises(InvalidValue) as e_info:
         utils.import_from_string("not.an.importable")
 
-    method = utils.import_from_string("jsonschema.validators.RefResolver.resolve")
-    assert utils.fullname(method) == "jsonschema.validators.RefResolver.resolve"
+    method = utils.import_from_string(
+        "jsonschema.validators.RefResolver.resolve")
+    assert utils.fullname(
+        method) == "jsonschema.validators.RefResolver.resolve"
     # tested on temporary file containing a nested class, import and fullname were working
     # nested_class = utils.import_from_string('ngoschema.example_nested_class.Human.Head')
     # assert utils.fullname(nested_class) == 'ngoschema.example_nested_class.Human.Head'
@@ -65,18 +64,15 @@ def test_utils():
     unicodestr = str("foo")
     path = pathlib.Path("a/dummy/path")
 
-    assert utils.is_basestring([basestring_, unicodestr, newstring, path]) == [
-        six.PY2,
-        False,
-        False,
-        False,
-    ]
-    assert utils.is_string([basestring_, unicodestr, newstring, path]) == [
-        True,
-        True,
-        True,
-        False,
-    ]
+    assert utils.is_basestring(basestring_) == six.PY2
+    assert not utils.is_basestring(unicodestr)
+    assert not utils.is_basestring(newstring)
+    assert not utils.is_basestring(path)
+
+    assert utils.is_string(basestring_)
+    assert utils.is_string(unicodestr)
+    assert utils.is_string(newstring)
+    assert not utils.is_string(path)
 
     assert utils.is_pattern("{{ typical pattern }}")
     assert not utils.is_pattern("not a pattern")
@@ -86,14 +82,13 @@ def test_utils():
 
 
 def test_string_utils():
-    assert (
-        str_utils.multiple_replace(
-            "boa kills, is it a boa", {"boa": "python", "kills": "rocks"}
-        )
-        == "python rocks, is it a python"
-    )
+    assert (str_utils.multiple_replace("boa kills, is it a boa", {
+        "boa": "python",
+        "kills": "rocks"
+    }) == "python rocks, is it a python")
 
-    assert str_utils.split_string("one,two|three", ",|") == ["one", "two", "three"]
+    assert str_utils.split_string("one,two|three",
+                                  ",|") == ["one", "two", "three"]
 
 
 if __name__ == "__main__":

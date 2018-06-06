@@ -2,31 +2,25 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import json
-import pathlib
-import jsonschema
+import gettext
 import logging
 import os
-import gettext
-import pytest
+import pathlib
 
 from future.utils import with_metaclass
-from future.builtins import object
-from builtins import str
 
 from ngoschema.classbuilder import ProtocolBase
-from ngoschema.schema_metaclass import SchemaMetaclass
-from ngoschema.deserializers import YamlDeserializer
 from ngoschema.deserializers import JsonDeserializer
-from ngoschema.serializers import YamlSerializer
+from ngoschema.deserializers import YamlDeserializer
+from ngoschema.schema_metaclass import SchemaMetaclass
 from ngoschema.serializers import JsonSerializer
+from ngoschema.serializers import YamlSerializer
 
 _ = gettext.gettext
 
-import logging
-
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(logging.INFO)
+logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(
+    logging.INFO)
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -42,7 +36,10 @@ def test_json2yaml():
     cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
 
     yml = js.with_name("cc_ngoschema_serialized.yaml")
-    YamlSerializer().dump({"default_context": cc_js.as_dict()}, yml, overwrite=True)
+    YamlSerializer().dump(
+        {
+            "default_context": cc_js.as_dict()
+        }, yml, overwrite=True)
     cc_yml = YamlDeserializer().load(yml)
     cc_yml = cc_yml["default_context"]
     cc_yml = Cookiecutter(**cc_yml)

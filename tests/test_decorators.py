@@ -1,22 +1,26 @@
 # -*- coding: utf-8 -*-
-""" Unit tests for decorators of NgoProject
+"""
+Unit tests for decorators
 
-test_decorators.py - created on 2017/11/15 08:44:32
 author: Cedric ROMAN
 email: roman@numengo.com
-licence: GNU GPLv3  """
+licence: GNU GPLv3
+"""
 from __future__ import unicode_literals
 
 import logging
 from builtins import object
-from builtins import str
 
 import pytest
-
-from ngoschema.decorators import *
-from ngoschema.exceptions import *
-from ngoschema.validators import *
 from python_jsonschema_objects.validators import ValidationError
+
+from ngoschema.decorators import take_arrays
+from ngoschema.decorators import log_init
+from ngoschema.decorators import log_exceptions
+from ngoschema.decorators import assert_arg
+from ngoschema.decorators import assert_prop
+from ngoschema.validators import SCH_INT
+from ngoschema.exceptions import InvalidValue
 
 
 @take_arrays()

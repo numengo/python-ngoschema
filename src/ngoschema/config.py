@@ -8,14 +8,14 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import copy
 import gettext
 import logging
-from dpath.util import merge
-from backports import configparser2
-from pyrsistent import pmap
-import copy
 from builtins import object
 from builtins import str
+
+from backports import configparser2
+from dpath.util import merge
 
 from .deserializers import Deserializer
 from .str_utils import CaseInsensitiveDict

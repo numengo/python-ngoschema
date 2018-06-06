@@ -9,26 +9,21 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import inspect
 import gettext
 import logging
-import weakref
-from builtins import object
-from builtins import str
 
-from future.utils import with_metaclass
 from jsonschema.compat import iteritems
+import python_jsonschema_objects.util as pjo_util
 
+from . import decorators
 from . import utils
-from . import str_utils
+from .classbuilder import ClassBuilder
+from .inspect_objects import FunctionInspector
+from .resolver import get_resolver
+from .schemas_loader import load_module_schemas
 from .schemas_loader import load_schema
 from .schemas_loader import load_schema_file
-from .schemas_loader import load_module_schemas
-from .resolver import get_resolver
 from .validators import DefaultValidator
-from .inspect_objects import FunctionInspector
-from .classbuilder import ProtocolBase, ClassBuilder
-from . import decorators
 
 _ = gettext.gettext
 
@@ -85,7 +80,8 @@ class SchemaMetaclass(type):
             builder = ClassBuilder(resolver)
             # building inner definitions
             for nm, defn in iteritems(schema.get("definitions", {})):
-                uri = pjo_util.resolve_ref_uri(schemaUri, "#/definitions/" + nm)
+                uri = pjo_util.resolve_ref_uri(schemaUri,
+                                               "#/definitions/" + nm)
                 builder.construct(uri, defn, attrs.get("nm", {}))
         else:
             schema["type"] = "object"
@@ -99,7 +95,8 @@ class SchemaMetaclass(type):
                 continue
 
             if k == "__init__":
-                logger.debug(_("decorate <%s>.__init__ with init logger" % (clsname)))
+                logger.debug(
+                    _("decorate <%s>.__init__ with init logger" % (clsname)))
                 fn = decorators.log_init(fn)
 
             # add argument checking
@@ -107,18 +104,17 @@ class SchemaMetaclass(type):
             for pos, p in enumerate(fi.parameters):
                 if p.type:
                     logger.debug(
-                        _(
-                            "decorate <%s>.%s " % (clsname, k)
-                            + "with argument %i validity check." % pos
-                        )
-                    )
+                        _("decorate <%s>.%s " % (clsname, k) +
+                          "with argument %i validity check." % pos))
                     fn = decorators.assert_arg(pos, p.type)(fn)
 
             # add exception logging
             if not k.startswith("__"):
-                logger.debug(_("decorate <%s>.%s with exception logger" % (clsname, k)))
+                logger.debug(
+                    _("decorate <%s>.%s with exception logger" % (clsname, k)))
                 fn = decorators.log_exceptions(fn)
 
             attrs[k] = fn
 
-        return builder.construct(clsname, schema, parent=bases, class_attrs=dict(attrs))
+        return builder.construct(
+            clsname, schema, parent=bases, class_attrs=dict(attrs))

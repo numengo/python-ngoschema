@@ -11,24 +11,20 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import object
-from builtins import str
-
-import logging
-import pytest
-import pkgutil
 import json
-import jsonschema
-from pprint import pprint
-import dpath.util
+import logging
+
 from jsonschema import RefResolver
 
-from ngoschema import MS_STORE, DEFAULT_DEFS_URI, DEFAULT_MS_URI
-from ngoschema.resolver import ExpandingResolver, get_resolver
+from ngoschema import DEFAULT_MS_URI
+from ngoschema import MS_STORE
+from ngoschema.resolver import ExpandingResolver
+from ngoschema.resolver import get_resolver
 
 logging.basicConfig(level=logging.INFO)
 
-resolver = ExpandingResolver(DEFAULT_MS_URI, MS_STORE[DEFAULT_MS_URI], MS_STORE)
+resolver = ExpandingResolver(DEFAULT_MS_URI, MS_STORE[DEFAULT_MS_URI],
+                             MS_STORE)
 orig_resolver = RefResolver(DEFAULT_MS_URI, MS_STORE[DEFAULT_MS_URI], MS_STORE)
 
 
@@ -50,7 +46,7 @@ def test_expand_schema():
 
     if False:
         with open("ComponentDefinition_expanded.json", "w") as outfile:
-            json.dump(sch21, outfile, indent=2)
+            json.dump(sch, outfile, indent=2)
 
         with open("ComponentDefinition.json", "w") as outfile:
             json.dump(sch2, outfile, indent=2)

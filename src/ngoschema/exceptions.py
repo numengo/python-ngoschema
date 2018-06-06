@@ -28,9 +28,8 @@ class SchemaError(NgoSchemaException, jsonschema.exceptions.SchemaError):
     """
 
 
-class InvalidValue(
-    NgoSchemaException, jsonschema.exceptions.ValidationError, ValueError
-):
+class InvalidValue(NgoSchemaException, jsonschema.exceptions.ValidationError,
+                   ValueError):
     """
     Raised if an invalid value is detected in a validator
     """
@@ -41,11 +40,9 @@ class PropertyNotInSchema(NgoSchemaException):
     Raisedfif property is not defined in Schema
     """
 
-    def __init__(prop):
-        message = (
-            _("[%(prop)s] does not exist in schema" % {"prop": str(prop)}),
-            message,
-        )
+    def __init__(self, prop):
+        message = (_(
+            "[%(prop)s] does not exist in schema" % {"prop": str(prop)}))
         super(NgoSchemaException, self).__init__(message)
 
 
@@ -54,6 +51,6 @@ class PropertyUndefined(NgoSchemaException):
     Raised property is not defined in Schema
     """
 
-    def __init__(prop):
-        message = (_("[%(prop)s] is not defined" % {"prop": str(prop)}), message)
+    def __init__(self, prop):
+        message = _("[%(prop)s] is not defined" % {"prop": str(prop)})
         super(NgoSchemaException, self).__init__(message)

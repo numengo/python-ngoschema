@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import re
 import sys
 from builtins import object
-from builtins import str
+
 from .str_utils import multiple_replace
 
 # Copyright 2015: Mirantis Inc.
@@ -96,7 +96,7 @@ def parse_docstring(docstring):
 
     def add2dict(dic, k, el):
         k = k.strip()
-        if not k in dic:
+        if k not in dic:
             dic[k] = {}
         dic[k].update(el)
 
@@ -120,7 +120,9 @@ def parse_docstring(docstring):
             if params_returns_desc:
                 all = PARAM_REGEX.findall(params_returns_desc)
                 params = {
-                    name.strip(): {"doc": trim(doc).strip()}
+                    name.strip(): {
+                        "doc": trim(doc).strip()
+                    }
                     for name, doc in PARAM_REGEX.findall(params_returns_desc)
                 }
                 types = TYPE_REGEX.findall(params_returns_desc)

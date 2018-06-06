@@ -12,22 +12,22 @@ from __future__ import unicode_literals
 
 import ast
 import gettext
-import logging
 import importlib
 import inspect
-import six
 import itertools
-import types
+import logging
 from builtins import next
 from builtins import object
 from builtins import str
 from builtins import zip
 
-from .utils import is_string
-from .utils import import_from_string
+import six
+
 from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
 from .exceptions import InvalidValue
+from .utils import import_from_string
+from .utils import is_string
 
 _ = gettext.gettext
 
@@ -49,8 +49,8 @@ class Argument(object):
                 self._type = parse_type_string(doctype)
             except Exception as er:
                 logger.error(
-                    "impossible to parse valid schema from type doc %s" % doctype
-                )
+                    "impossible to parse valid schema from type doc %s" %
+                    doctype)
 
     def __repr__(self):
         ret = "<arg %s" % self.name
@@ -102,8 +102,7 @@ def visit_FunctionDef(node):
     ]
     doctypes = [
         doc_params[_id(a)]["type"]
-        if _id(a) in doc_params and "type" in doc_params[_id(a)]
-        else None
+        if _id(a) in doc_params and "type" in doc_params[_id(a)] else None
         for a in node.args.args
     ]
 
@@ -122,7 +121,8 @@ def visit_FunctionDef(node):
     for n in node.decorator_list:
         name = ""
         if isinstance(n, ast.Call):
-            name = n.func.attr if isinstance(n.func, ast.Attribute) else _id(n.func)
+            name = n.func.attr if isinstance(n.func,
+                                             ast.Attribute) else _id(n.func)
             args = [ast.literal_eval(d) for d in n.args]
         else:
             name = n.attr if isinstance(n, ast.Attribute) else _id(n)
@@ -169,12 +169,10 @@ class FunctionInspector(object):
         global _module
         if is_string(function):
             function = import_from_string(function)
-        if not (
-            inspect.isfunction(function)
-            or inspect.ismethod(function)
-            or type(function) is staticmethod
-        ):
-            raise InvalidValue(_("%r is not a function or a method" % function))
+        if not (inspect.isfunction(function) or inspect.ismethod(function)
+                or type(function) is staticmethod):
+            raise InvalidValue(
+                _("%r is not a function or a method" % function))
         self.function = function
         self.doc = self.function.__doc__
         if self.doc:
@@ -187,10 +185,8 @@ class FunctionInspector(object):
             self.moduleName = _module.__name__
 
         def _visit_FunctionDef(node):
-            if (
-                node.name == self.name
-                and node.lineno == self.function.__code__.co_firstlineno
-            ):
+            if (node.name == self.name
+                    and node.lineno == self.function.__code__.co_firstlineno):
                 sd, ld, rt, ps, kw, va, decs = visit_FunctionDef(node)
                 self.shortDescription = sd
                 self.longDescription = ld
@@ -282,11 +278,8 @@ class ClassInspector(object):
         # avoid builtin
         def is_builtin(obj):
             mn = obj.__module__
-            return (
-                mn is None
-                or mn == str.__class__.__module__
-                or mn == "future.types.newobject"
-            )
+            return (mn is None or mn == str.__class__.__module__
+                    or mn == "future.types.newobject")
 
         if not is_builtin(self.klass):
             node = ast.parse(inspect.getsource(self.klass))
@@ -314,16 +307,16 @@ class ClassInspector(object):
     def methodsAll(self):
         return dict(
             itertools.chain(
-                six.iteritems(self.methods), six.iteritems(self.methodsInherited)
-            )
-        )
+                six.iteritems(self.methods),
+                six.iteritems(self.methodsInherited)))
 
     @property
     def methodsPublic(self):
         return {
             n: m
             for n, m in self.methodsAll()
-            if n not in list(self.properties.keys() + self.propertiesInherited.keys())
+            if n not in list(self.properties.keys() +
+                             self.propertiesInherited.keys())
             and not n.startswith("_")
         }
 
@@ -349,10 +342,9 @@ def inspect_file(file_):
         [d.name for d in t.body if isinstance(d, ast.FunctionDef)],
         [d.name for d in t.body if isinstance(d, ast.ClassDef)],
         [
-            _id(d.targets[0])
-            for d in t.body
-            if isinstance(d, ast.Assign)
-            and (hasattr(d.targets[0], "id") or hasattr(d.targets[0], "id"))
+            _id(d.targets[0]) for d in t.body
+            if isinstance(d, ast.Assign) and (
+                hasattr(d.targets[0], "id") or hasattr(d.targets[0], "id"))
             and _id(d.targets[0])[0].isupper()
         ],
     )

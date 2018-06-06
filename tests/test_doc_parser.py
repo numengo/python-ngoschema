@@ -9,12 +9,6 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import object
-from builtins import str
-
-import pytest
-from ngofile import list_files, LoadedModules
-
 from ngoschema.doc_rest_parser import parse_docstring
 from ngoschema.doc_rest_parser import parse_type_string as pts
 

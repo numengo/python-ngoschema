@@ -8,35 +8,22 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import logging
-
-from builtins import object
-from builtins import str
-from past.builtins import basestring
-
-import gettext
-import collections
-import pathlib
-from decimal import Decimal
-import arrow
 import datetime
-import dateutil.parser
-import dateutil.tz
-from arrow.parser import ParserError
+import gettext
+import pathlib
+from builtins import str
+from decimal import Decimal
 
+import arrow
+import six
+from past.builtins import basestring
 from python_jsonschema_objects import validators
-from python_jsonschema_objects.validators import (
-    ValidationError,
-    registry,
-    type_registry,
-)
-
+from python_jsonschema_objects.validators import ValidationError
 from python_jsonschema_objects.validators import converter_registry
 from python_jsonschema_objects.validators import formatter_registry
+from python_jsonschema_objects.validators import registry
+from python_jsonschema_objects.validators import type_registry
 
-from .exceptions import InvalidValue
-from .decorators import take_arrays
-from .utils import import_from_string
 from .utils import is_sequence
 
 _ = gettext.gettext
@@ -45,9 +32,9 @@ string_types = (basestring, str)
 datetime_types = (datetime.datetime, arrow.Arrow)
 
 NGO_TYPE_MAPPING = (
-    ("path", string_types + (pathlib.Path,)),
-    ("date", string_types + datetime_types + (datetime.date,)),
-    ("time", string_types + datetime_types + (datetime.time,)),
+    ("path", string_types + (pathlib.Path, )),
+    ("date", string_types + datetime_types + (datetime.date, )),
+    ("time", string_types + datetime_types + (datetime.time, )),
     ("datetime", string_types + datetime_types),
 )
 
@@ -66,7 +53,8 @@ def minimum(param, value, type_data):
 @registry.register()
 def exclusiveMinimum(param, value, type_data):
     if value <= param:
-        raise ValidationError("{0} is less than or equal to {1}".format(value, param))
+        raise ValidationError("{0} is less than or equal to {1}".format(
+            value, param))
 
 
 @registry.register()
@@ -78,15 +66,15 @@ def maximum(param, value, type_data):
 @registry.register()
 def exclusiveMaximum(param, value, type_data):
     if value >= param:
-        raise ValidationError(
-            "{0} is greater than or equal to {1}".format(value, param)
-        )
+        raise ValidationError("{0} is greater than or equal to {1}".format(
+            value, param))
 
 
 @registry.register()
 def isPathDir(param, value, type_data):
     if value.is_dir() != param:
-        raise ValidationError("{0} is not the path of a directory".format(value))
+        raise ValidationError(
+            "{0} is not the path of a directory".format(value))
 
 
 @registry.register()
@@ -114,7 +102,8 @@ def check_string_type(param, value, _):
 @type_registry.register(name="number")
 def check_number_type(param, value, _):
     if not isinstance(value, six.integer_types + (float, Decimal)):
-        raise ValidationError("{0} is neither an integer nor a float".format(value))
+        raise ValidationError(
+            "{0} is neither an integer nor a float".format(value))
 
 
 @type_registry.register(name="path")
@@ -160,7 +149,9 @@ def convert_enum(param, value, details):
     return value
 
 
-date_fts = ["YYYY-MM-DD", "YYYY/MM/DD", "YYYY.MM.DD", "YYYY-MM", "YYYY/MM", "YYYY.MM"]
+date_fts = [
+    "YYYY-MM-DD", "YYYY/MM/DD", "YYYY.MM.DD", "YYYY-MM", "YYYY/MM", "YYYY.MM"
+]
 alt_date_fts = [
     "DD-MM-YYYY",
     "DD/MM/YYYY",
@@ -210,7 +201,8 @@ alt_time_fts = [
 def convert_time_type(param, value, _):
     if isinstance(value, datetime.time):
         return value
-    if isinstance(value, datetime_types) and value.date() == datetime.date(1, 1, 1):
+    if isinstance(value, datetime_types) and value.date() == datetime.date(
+            1, 1, 1):
         return value.time()
     if isinstance(value, string_types):
         if value in ["now"]:
