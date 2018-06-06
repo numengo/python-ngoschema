@@ -48,27 +48,26 @@ def test_decorators():
     print(help(time2))
     print(help(add))
 
-
     class MyException(Exception):
         pass
 
     class A(object):
-        logger = logging.getLogger('TEST')
+        logger = logging.getLogger("TEST")
 
         @log_init
         def __init__(self):
             pass
 
         def __repr__(self):  # similar to the one in ClassWithSchema
-            ret = '<%s' % self.__class__.__name__
-            return ret + '>'
+            ret = "<%s" % self.__class__.__name__
+            return ret + ">"
 
         def __str__(self):
             return self.__repr__()
 
         @log_exceptions
         def raise_exc(self):
-            raise MyException('YO')
+            raise MyException("YO")
 
         @log_exceptions
         @assert_arg(1, SCH_INT)
@@ -81,7 +80,7 @@ def test_decorators():
             return 1 + integer
 
         @log_exceptions
-        @assert_arg('integer', SCH_INT)
+        @assert_arg("integer", SCH_INT)
         def bar2(self, integer=1):
             """
             Test docstring
@@ -89,14 +88,13 @@ def test_decorators():
             return 1 + integer
 
         @log_exceptions
-        @assert_prop('notExistingProp')
-        @assert_arg('integer', SCH_INT)
+        @assert_prop("notExistingProp")
+        @assert_arg("integer", SCH_INT)
         def bar3(self, integer=1):
             """
             bar 3 documentation
             """
             return 1 + integer
-
 
     logging.basicConfig(level=logging.DEBUG)
     a = A()
@@ -105,16 +103,15 @@ def test_decorators():
     with pytest.raises(MyException) as e_info:
         a.raise_exc()
     with pytest.raises(ValidationError) as e_info:
-        a.foo('reziu')
+        a.foo("reziu")
     with pytest.raises(ValidationError) as e_info:
-        a.bar(integer='reziu')
+        a.bar(integer="reziu")
     with pytest.raises(ValidationError) as e_info:
-        a.bar2(integer='reziu')
+        a.bar2(integer="reziu")
     with pytest.raises(AttributeError) as e_info:
         a.bar3(integer=1)
 
 
-
 if __name__ == "__main__":
-     test_decorators()
-    #pytest.main(__file__)
+    test_decorators()
+# pytest.main(__file__)

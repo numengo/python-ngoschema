@@ -27,12 +27,16 @@ from .str_utils import multiple_replace
 
 PARAM_OR_RETURNS_REGEX = re.compile(":(?:param|type|rtype)")
 RETURNS_REGEX = re.compile(":rtype:\s*(?P<doc>.*)", re.S)
-PARAM_REGEX = re.compile(":param (?P<name>[\*\w]+):\s*(?P<doc>.*?)"
-                         "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
-                         re.S)
-TYPE_REGEX = re.compile(":type (?P<name>[\*\w]+):\s*(?P<type>.*?)"
-                        "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
-                        re.S)
+PARAM_REGEX = re.compile(
+    ":param (?P<name>[\*\w]+):\s*(?P<doc>.*?)"
+    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
+    re.S,
+)
+TYPE_REGEX = re.compile(
+    ":type (?P<name>[\*\w]+):\s*(?P<type>.*?)"
+    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
+    re.S,
+)
 
 
 def trim(docstring):
@@ -90,9 +94,10 @@ def parse_docstring(docstring):
     short_description = long_description = returns = ""
     params = []
 
-    def add2dict(dic,k,el):
+    def add2dict(dic, k, el):
         k = k.strip()
-        if not k in dic: dic[k] = {}
+        if not k in dic:
+            dic[k] = {}
         dic[k].update(el)
 
     if docstring:
@@ -114,11 +119,13 @@ def parse_docstring(docstring):
 
             if params_returns_desc:
                 all = PARAM_REGEX.findall(params_returns_desc)
-                params = { name.strip() : { "doc": trim(doc).strip() }
-                           for name, doc in PARAM_REGEX.findall(params_returns_desc)}
+                params = {
+                    name.strip(): {"doc": trim(doc).strip()}
+                    for name, doc in PARAM_REGEX.findall(params_returns_desc)
+                }
                 types = TYPE_REGEX.findall(params_returns_desc)
                 for name, typ in types:
-                    add2dict(params,name,{"type": typ.strip()})
+                    add2dict(params, name, {"type": typ.strip()})
 
                 match = RETURNS_REGEX.search(params_returns_desc)
                 if match:
@@ -129,7 +136,7 @@ def parse_docstring(docstring):
         "shortDescription": short_description,
         "longDescription": long_description,
         "params": params,
-        "returns": returns
+        "returns": returns,
     }
 
 
@@ -154,8 +161,9 @@ class InfoMixin(object):
             "title": doc["shortDescription"],
             "description": doc["longDescription"],
             "parameters": doc["params"],
-            "returns": doc["returns"]
+            "returns": doc["returns"],
         }
+
 
 def parse_type_string(typestring):
     """
@@ -163,34 +171,34 @@ def parse_type_string(typestring):
     """
     # this is not pretty, but it should cover most cases
     typestring = typestring.strip()
-    if typestring[0] != '{':
-        if typestring.startswith('enum'):
-            typestring = '{%s}'%typestring
+    if typestring[0] != "{":
+        if typestring.startswith("enum"):
+            typestring = "{%s}" % typestring
         else:
-            typestring = '{type:%s}'%typestring
-    ret = re.sub(r'(\w+)',r'"\1"',typestring)
+            typestring = "{type:%s}" % typestring
+    ret = re.sub(r"(\w+)", r'"\1"', typestring)
     aliases = {
-        '=': ':',
-        '"tuple"' : '"list"',
-        '"set"' : '"list", "uniqueItems":True',
-        '"bool"' : '"boolean"',
-        '"int"' : '"integer"',
-        '"float"' : '"number"',
-        '"str"' : '"string"',
-        '"strArray"' : '"array", "items": {"type": "string"}',
-        '"stringArray"' : '"array", "items": {"type": "string"}',
-        '"text"' : '"string"',
-        '"dict"' : '"object"',
-        '"choice"' : '"enum"',
-        '"uri"-"reference"' : '"uri-reference"',
-        '"uri"-"template"' : '"uri-template"',
-        '"date"-"time"' : '"date-time"',
-        '"json"-"pointer"' : '"json-pointer"',
+        "=": ":",
+        '"tuple"': '"list"',
+        '"set"': '"list", "uniqueItems":True',
+        '"bool"': '"boolean"',
+        '"int"': '"integer"',
+        '"float"': '"number"',
+        '"str"': '"string"',
+        '"strArray"': '"array", "items": {"type": "string"}',
+        '"stringArray"': '"array", "items": {"type": "string"}',
+        '"text"': '"string"',
+        '"dict"': '"object"',
+        '"choice"': '"enum"',
+        '"uri"-"reference"': '"uri-reference"',
+        '"uri"-"template"': '"uri-template"',
+        '"date"-"time"': '"date-time"',
+        '"json"-"pointer"': '"json-pointer"',
         '"pathlib.Path"': '"path"',
-        '"True"' : 'True',
-        '"true"' : 'True',
-        '"False"' : 'False',
-        '"false"' : 'False',
+        '"True"': "True",
+        '"true"': "True",
+        '"False"': "False",
+        '"false"': "False",
     }
     ret = multiple_replace(ret, aliases)
     return eval(ret)

@@ -23,31 +23,33 @@ from ngoschema.deserializers import JsonDeserializer
 _ = gettext.gettext
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('python_jsonschema_objects.classbuilder').setLevel(logging.INFO)
+logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(logging.INFO)
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
+
 
 def test_transform():
     from ngoschema.transforms import ObjectTransform
     from ngoschema._for_test_only import Project
 
     class Cookiecutter(with_metaclass(SchemaMetaclass, ProtocolBase)):
-        schemaPath = os.path.join(dirpath,'schemas','cookiecutter.json')
+        schemaPath = os.path.join(dirpath, "schemas", "cookiecutter.json")
 
-    js = pathlib.Path(dirpath,'objects','cc_ngoschema.json')
+    js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
     cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
 
-    mtm_fp = pathlib.Path(dirpath,'transforms','cookiecutter2project.mtm')
+    mtm_fp = pathlib.Path(dirpath, "transforms", "cookiecutter2project.mtm")
     mtm = JsonDeserializer().load(mtm_fp, objectClass=ObjectTransform)
 
-    proj = mtm.transform_from(cc_js, objectClass=Project)
+    proj = mtm.transform_from(cc_js)
     # field equivalence transform
     assert proj.authorEmail == cc_js.email
     # complex transform with jinja template
-    assert len(proj.keywords) == len(cc_js.keywords.for_json().split(','))
+    assert len(proj.keywords) == len(cc_js.keywords.for_json().split(","))
     # missing complex transform with external function
 
 
-if __name__ == '__main__':
-    test_transform() 
+if __name__ == "__main__":
+    test_transform()

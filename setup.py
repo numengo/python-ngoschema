@@ -19,12 +19,10 @@ from glob import glob
 from os.path import splitext
 
 
-
 def read(*names, **kwargs):
     return io.open(
         join(dirname(__file__), *names),
-        encoding=kwargs.get('encoding', 'utf8')
-    ).read()
+        encoding=kwargs.get('encoding', 'utf8')).read()
 
 
 def get_version(package):
@@ -32,17 +30,17 @@ def get_version(package):
     Return package version as listed in `__version__` in `init.py`.
     """
     dir_path = dirname(os.path.realpath(__file__))
-    init_py = open(join(dir_path, 'src', package, '__init__.py')).read()
-    return re.search("^__version__ = ['\"]([^'\"]+)['\"]",
-                     init_py, re.MULTILINE).group(1)
+    bumpversion = open(join(dir_path, '.bumpversion.cfg')).read()
+    return re.search("^current_version\s*=\s*(\S*)\s*\n",
+                     bumpversion, re.MULTILINE).group(1)
 
 
 name = 'ngoschema'
 package = 'ngoschema'
 description = 'definition of classes with json-schema, object management and code-generation'
 url = 'https://github.com/RomanCedric/python-ngoschema'
-author='Cédric ROMAN',
-author_email='roman@numengo.com',
+author = 'Cédric ROMAN',
+author_email = 'roman@numengo.com',
 license = 'GNU General Public License v3'
 version = get_version(package)
 
@@ -53,18 +51,20 @@ def get_package_data(package):
     package themselves.
     """
     walk = [(dirpath.replace(package + os.sep, '', 1), filenames)
-            for dirpath, dirnames, filenames in os.walk(os.path.join('src', package))
+            for dirpath, dirnames, filenames in os.walk(
+                os.path.join('src', package))
             if not os.path.exists(os.path.join(dirpath, '__init__.py'))]
     filepaths = []
     for base, filenames in walk:
-        filepaths.extend([os.path.join(base, filename)
-                          for filename in filenames])
+        filepaths.extend(
+            [os.path.join(base, filename) for filename in filenames])
     return {package: filepaths}
+
 
 setup_requires = [
     'pathlib',
     'matrix',
-    #'pytest-runner', 
+    #'pytest-runner',
 ]
 
 install_requires = [
@@ -85,38 +85,41 @@ install_requires = [
     'arrow',
     'inflection',
     'six',
-    'ruamel.yaml',  
+    'ruamel.yaml',
 ]
+
 
 # for setuptools to work properly, we need to install packages with - or : separately
 # and for that we need a hook
 # https://stackoverflow.com/questions/20288711/post-install-script-with-python-setuptools
 class PostInstallCommand(install):
     """Post-installation for installation mode."""
+
     def run(self):
-        cmd = ['pip','install', '-q'] + [i for i in install_requires if '-' in i or ':' in i]
+        cmd = ['pip', 'install', '-q'
+               ] + [i for i in install_requires if '-' in i or ':' in i]
         subprocess.check_call(cmd)
         install.run(self)
+
 
 install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
 
 test_requires = [
     'pytest',
-    'pytest-logger', 
+    'pytest-logger',
 ]
 
-extras_requires = {
-}    
-    
+extras_requires = {}
+
 setup(
     name=name,
     version=version,
     license=license,
     description=description,
-    long_description='%s\n%s' % (
-        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
-        re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))
-    ),
+    long_description='%s\n%s' %
+    (re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub(
+        '', read('README.rst')),
+     re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))),
     author=author,
     author_email=author_email,
     url=url,
@@ -126,7 +129,11 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
-    keywords=["json-schema", " schema", " class_builder", " data_validation", " type_checking", " mixins", " object_serialization", " code_generation"], 
+    keywords=[
+        "json-schema", " schema", " class_builder", " data_validation",
+        " type_checking", " mixins", " object_serialization",
+        " code_generation"
+    ],
     setup_requires=setup_requires,
     install_requires=install_requires,
     requires=install_requires,
@@ -134,7 +141,6 @@ setup(
     extras_require=extras_requires,
     entry_points={
         'console_scripts': [
-
             'obj_manager=ngoschema.cli:obj_manager_cli',
         ]
     },

@@ -28,25 +28,30 @@ from .schemas_loader import _get_all_schemas_store
 
 _ = gettext.gettext
 
-CURRENT_DRAFT = 'draft-04'
+CURRENT_DRAFT = "draft-04"
 
-def uri_ngo(name,draft=CURRENT_DRAFT):
-    return "http://numengo.org/%s/%s"%(draft, name)
 
-DEFAULT_MS_URI = uri_ngo('schema')
-DEFAULT_DEFS_URI = uri_ngo('defs-schema')
+def uri_ngo(name, draft=CURRENT_DRAFT):
+    return "http://numengo.org/%s/%s" % (draft, name)
+
+
+DEFAULT_MS_URI = uri_ngo("schema")
+DEFAULT_DEFS_URI = uri_ngo("defs-schema")
 
 _def_store = dict()
 
 
 class ExpandingResolver(RefResolver):
-    __doc__ = """ 
+    __doc__ = (
+        """ 
     Resolver expanding the resolved document according to the 'extends' field
     (array of uri-reference). The returned document is a deep merge of all
     corresponding documents.
     The merge is done according to the order of 'extends' (properties can be
     overwritten).The original resolved document is merged at the end.
-    """ + RefResolver.__doc__
+    """
+        + RefResolver.__doc__
+    )
 
     _expanding = True
 
@@ -69,7 +74,7 @@ class ExpandingResolver(RefResolver):
 
         doc_scope, frag = urldefrag(uri)
 
-        ref = schema.get('$ref')
+        ref = schema.get("$ref")
 
         if ref:
             ref = self._urljoin_cache(doc_scope, ref)
@@ -80,7 +85,7 @@ class ExpandingResolver(RefResolver):
 
         schema_exp = {}
 
-        extends = schema.get('extends', [])
+        extends = schema.get("extends", [])
         for ref in extends:
             ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
@@ -89,13 +94,13 @@ class ExpandingResolver(RefResolver):
 
         dpath.util.merge(schema_exp, copy.deepcopy(schema))
 
-        extends = schema.get('extends', [])
+        extends = schema.get("extends", [])
         if extends:
             extends_ = []
             for e in extends:
                 if e not in extends_:
                     extends_.append(e)
-            schema_exp['extends'] = extends_
+            schema_exp["extends"] = extends_
 
         _def_store[uri] = schema_exp
         return schema_exp
@@ -137,8 +142,9 @@ class ExpandingResolver(RefResolver):
         for uri in uris:
             s = self.store[uri]
             for p, d in dpath.util.search(
-                    s.get('definitions', {}), '**/%s' % name, yielded=True):
-                id = '%s#/definitions/%s' % (uri, p)
+                s.get("definitions", {}), "**/%s" % name, yielded=True
+            ):
+                id = "%s#/definitions/%s" % (uri, p)
                 if expand:
                     self.push_scope(uri)
                     d = self._expand(id, d)
@@ -163,10 +169,10 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     ms = _get_all_schemas_store()
     if base_uri not in ms:
         raise IOError(
-            _('%s not found in loaded schemas (%s)' % (base_uri,
-                                                       ', '.join(ms.keys()))))
+            _("%s not found in loaded schemas (%s)" % (base_uri, ", ".join(ms.keys())))
+        )
     referrer = ms[base_uri]
-    if not _resolver:
+    if not _resolver or len(ms) != len(_resolver.store):
         _resolver = ExpandingResolver(base_uri, referrer, ms)
     if base_uri != _resolver.base_uri:
         _resolver.push_scope(base_uri)

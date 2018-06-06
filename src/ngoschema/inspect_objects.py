@@ -33,6 +33,7 @@ _ = gettext.gettext
 
 logger = logging.getLogger(__name__)
 
+
 class Argument(object):
     """
     Class for function/method attributes
@@ -47,14 +48,15 @@ class Argument(object):
             try:
                 self._type = parse_type_string(doctype)
             except Exception as er:
-                logger.error('impossible to parse valid schema from type doc %s'
-                             % doctype)
+                logger.error(
+                    "impossible to parse valid schema from type doc %s" % doctype
+                )
 
     def __repr__(self):
-        ret = '<arg %s' % self.name
+        ret = "<arg %s" % self.name
         if self._has_default:
-            ret += '=%s' % self.default
-        return ret + '>'
+            ret += "=%s" % self.default
+        return ret + ">"
 
     @property
     def doc(self):
@@ -80,25 +82,28 @@ class Argument(object):
 # set by inspectors when inspecting a class/function
 _module = None
 
+
 def _id(arg):
-    return getattr(arg, 'id', None) or getattr(arg, 'arg')
+    return getattr(arg, "id", None) or getattr(arg, "arg")
+
 
 def visit_FunctionDef(node):
     """ ast node visitor """
     doc = parse_docstring(ast.get_docstring(node))
-    _short_desc = doc['shortDescription']
-    _long_desc = doc['longDescription']
+    _short_desc = doc["shortDescription"]
+    _long_desc = doc["longDescription"]
 
-    doc_params = doc['params']
-    _returns = doc['returns']
+    doc_params = doc["params"]
+    _returns = doc["returns"]
 
     docs = [
-        doc_params[_id(a)].get('doc', None) if _id(a) in doc_params else None
+        doc_params[_id(a)].get("doc", None) if _id(a) in doc_params else None
         for a in node.args.args
     ]
     doctypes = [
-        doc_params[_id(a)]['type']
-        if _id(a) in doc_params and 'type' in doc_params[_id(a)] else None
+        doc_params[_id(a)]["type"]
+        if _id(a) in doc_params and "type" in doc_params[_id(a)]
+        else None
         for a in node.args.args
     ]
 
@@ -115,10 +120,9 @@ def visit_FunctionDef(node):
 
     decorators = []
     for n in node.decorator_list:
-        name = ''
+        name = ""
         if isinstance(n, ast.Call):
-            name = n.func.attr if isinstance(n.func,
-                                             ast.Attribute) else _id(n.func)
+            name = n.func.attr if isinstance(n.func, ast.Attribute) else _id(n.func)
             args = [ast.literal_eval(d) for d in n.args]
         else:
             name = n.attr if isinstance(n, ast.Attribute) else _id(n)
@@ -165,20 +169,28 @@ class FunctionInspector(object):
         global _module
         if is_string(function):
             function = import_from_string(function)
-        if not inspect.isfunction(function) and not inspect.ismethod(function):
-            raise InvalidValue(
-                _('%r is not a function or a method' % function))
+        if not (
+            inspect.isfunction(function)
+            or inspect.ismethod(function)
+            or type(function) is staticmethod
+        ):
+            raise InvalidValue(_("%r is not a function or a method" % function))
         self.function = function
-        self.name = function.__name__
         self.doc = self.function.__doc__
         if self.doc:
             self.doc = self.doc.strip()
-        _module = importlib.import_module(function.__module__)
-        self.module = _module
-        self.moduleName = _module.__name__
+
+        if not type(function) is staticmethod:
+            self.name = getattr(function, "__name__", None)
+            _module = importlib.import_module(function.__module__)
+            self.module = _module
+            self.moduleName = _module.__name__
 
         def _visit_FunctionDef(node):
-            if node.name == self.name and node.lineno == self.function.__code__.co_firstlineno:
+            if (
+                node.name == self.name
+                and node.lineno == self.function.__code__.co_firstlineno
+            ):
                 sd, ld, rt, ps, kw, va, decs = visit_FunctionDef(node)
                 self.shortDescription = sd
                 self.longDescription = ld
@@ -193,7 +205,7 @@ class FunctionInspector(object):
         node_iter.visit(ast.parse(inspect.getsource(_module)))
 
     def __repr__(self):
-        return '<FunctionInsp %s>' % self.name.__repr__()
+        return "<FunctionInsp %s>" % self.name.__repr__()
 
 
 class ClassInspector(object):
@@ -220,7 +232,7 @@ class ClassInspector(object):
         if is_string(klass):
             klass = import_from_string(klass)
         if not inspect.isclass(klass):
-            raise InvalidValue(_('%r is not a class' % klass))
+            raise InvalidValue(_("%r is not a class" % klass))
 
         self.klass = klass
         self.name = klass.__name__
@@ -228,8 +240,8 @@ class ClassInspector(object):
         if self.doc:
             self.doc = self.doc.strip()
             doc = parse_docstring(klass.__doc__)
-            self.shortDescription = doc['shortDescription']
-            self.longDescription = doc['longDescription']
+            self.shortDescription = doc["shortDescription"]
+            self.longDescription = doc["longDescription"]
         else:
             self.shortDescription = None
             self.longDescription = None
@@ -252,12 +264,13 @@ class ClassInspector(object):
                 parameters=ps,
                 keywords=kw,
                 varargs=va,
-                decorators=decs)
+                decorators=decs,
+            )
             mi.function = getattr(self.klass, node.name, None)
             mi.doc = mi.function.__doc__
             mi.module = self.module
             mi.moduleName = self.moduleName
-            mi.isStatic = 'staticmethod' in mi.decorators
+            mi.isStatic = "staticmethod" in mi.decorators
             # remove first argument if not static
             if not mi.isStatic:
                 mi.parameters.pop(0)
@@ -265,12 +278,15 @@ class ClassInspector(object):
 
         node_iter = ast.NodeVisitor()
         node_iter.visit_FunctionDef = _visit_FunctionDef_class
+
         # avoid builtin
         def is_builtin(obj):
             mn = obj.__module__
-            return( mn is None
-                   or mn == str.__class__.__module__
-                   or mn == 'future.types.newobject')
+            return (
+                mn is None
+                or mn == str.__class__.__module__
+                or mn == "future.types.newobject"
+            )
 
         if not is_builtin(self.klass):
             node = ast.parse(inspect.getsource(self.klass))
@@ -278,7 +294,7 @@ class ClassInspector(object):
 
         self.mro = []
         for mro in inspect.getmro(self.klass)[1:]:
-            #if mro.__module__ in ['future.types.newobject', '__builtin__']:
+            # if mro.__module__ in ['future.types.newobject', '__builtin__']:
             if is_builtin(mro):
                 break
             ci_mro = ClassInspector(mro)
@@ -288,25 +304,27 @@ class ClassInspector(object):
             self.methodsInherited.update(ci_mro.methods)
 
     def __repr__(self):
-        return '<ClassInsp %s>' % self.name
+        return "<ClassInsp %s>" % self.name
 
     @property
     def init(self):
-        return self.methods.get('__init__', None)
+        return self.methods.get("__init__", None)
 
     @property
     def methodsAll(self):
         return dict(
-            itertools.chain(six.iteritems(self.methods),
-                            six.iteritems(self.methodsInherited)))
+            itertools.chain(
+                six.iteritems(self.methods), six.iteritems(self.methodsInherited)
+            )
+        )
 
     @property
     def methodsPublic(self):
         return {
             n: m
             for n, m in self.methodsAll()
-            if n not in list(self.properties.keys(
-            ) + self.propertiesInherited.keys()) and not n.startswith('_')
+            if n not in list(self.properties.keys() + self.propertiesInherited.keys())
+            and not n.startswith("_")
         }
 
 
@@ -325,11 +343,16 @@ def inspect_file(file_):
     :param file_: file path
     :type file_: [str, path]
     """
-    r = open(str(file_), 'r')
+    r = open(str(file_), "r")
     t = ast.parse(r.read())
-    return ([d.name for d in t.body if isinstance(d, ast.FunctionDef)],
-            [d.name for d in t.body if isinstance(d, ast.ClassDef)], [
-                _id(d.targets[0]) for d in t.body
-                if isinstance(d, ast.Assign) and (hasattr(d.targets[0], 'id') or hasattr(d.targets[0], 'id'))
-                and _id(d.targets[0])[0].isupper()
-            ])
+    return (
+        [d.name for d in t.body if isinstance(d, ast.FunctionDef)],
+        [d.name for d in t.body if isinstance(d, ast.ClassDef)],
+        [
+            _id(d.targets[0])
+            for d in t.body
+            if isinstance(d, ast.Assign)
+            and (hasattr(d.targets[0], "id") or hasattr(d.targets[0], "id"))
+            and _id(d.targets[0])[0].isupper()
+        ],
+    )

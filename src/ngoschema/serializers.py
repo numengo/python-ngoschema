@@ -5,6 +5,7 @@ de/serializer meta class
 author: Cédric ROMAN (roman@numengo.com)
 licence: GPL3
 """
+from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
@@ -33,7 +34,6 @@ _ = gettext.gettext
 
 
 class Serializer(with_metaclass(ABCMeta)):
-    objectClass = None
     logger = logging.getLogger(__name__)
 
     @decorators.log_exceptions
@@ -47,13 +47,13 @@ class Serializer(with_metaclass(ABCMeta)):
         :param overwrite: overwrites existing file
         :param opts: dictionary of option, as protocol(=w) , encoding=(utf-8)
         """
-        ptcl = opts.get('protocol', 'w')
-        enc = opts.get('encoding', 'utf-8')
+        ptcl = opts.get("protocol", "w")
+        enc = opts.get("encoding", "utf-8")
 
-        self.logger.info(_('DUMP %r to file %s' % (obj, path)))
+        self.logger.info(_("DUMP %r to file %s" % (obj, path)))
 
         if path.exists() and not overwrite:
-            raise IOError(_('file %s already exists' % str(path)))
+            raise IOError(_("file %s already exists" % str(path)))
         with io.open(str(path), ptcl, encoding=enc) as outfile:
             stream = self.dumps(obj, **opts)
             stream = six.text_type(stream)
@@ -72,6 +72,7 @@ class Serializer(with_metaclass(ABCMeta)):
 
 serializer_registry = utils.GenericRegistry()
 
+
 @serializer_registry.register()
 class JsonSerializer(Serializer):
     """
@@ -79,37 +80,37 @@ class JsonSerializer(Serializer):
     indent: 2
     ensure_ascii: False
     """
-    logger = logging.getLogger(__name__+'.JsonDeserializer')
+
+    logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
     def dumps(self, obj, **opts):
-        data = obj.as_dict() if hasattr(obj,'as_dict') else obj
-        data  = utils.process_collection(data, **opts)
-        return json.dumps(data,
-                          indent=opts.get('indent',2),
-                          ensure_ascii=opts.get('ensure_ascii',False),
-                          separators=opts.get('separators',None),
-                          #encoding=opts.get('encoding','utf-8'),
-                          default=opts.get('default',None),
-                          )
+        data = obj.as_dict() if hasattr(obj, "as_dict") else obj
+        data = utils.process_collection(data, **opts)
+        return json.dumps(
+            data,
+            indent=opts.get("indent", 2),
+            ensure_ascii=opts.get("ensure_ascii", False),
+            separators=opts.get("separators", None),
+            # encoding=opts.get('encoding','utf-8'),
+            default=opts.get("default", None),
+        )
 
 
 @serializer_registry.register()
 class YamlSerializer(Serializer):
-    logger = logging.getLogger(__name__+'.YamlDeserializer')
+    logger = logging.getLogger(__name__ + ".YamlDeserializer")
 
     def __init__(self, **kwargs):
         # default, if not specfied, is 'rt' (round-trip)
-        self._yaml = YAML(typ='safe', **kwargs)
+        self._yaml = YAML(typ="safe", **kwargs)
         self._yaml = yaml
 
     def dumps(self, obj, **opts):
-        self._yaml.indent = opts.get('indent',2)
-        self._yaml.allow_unicode = (opts.get('encoding','utf-8')=='utf-8')
+        self._yaml.indent = opts.get("indent", 2)
+        self._yaml.allow_unicode = opts.get("encoding", "utf-8") == "utf-8"
 
-        data = obj.as_dict() if hasattr(obj,'as_dict') else obj
-        data  = utils.process_collection(data, **opts)
-        name = obj.__class__.__name__ if hasattr(obj,'as_dict') else "default_context"
-
+        data = obj.as_dict() if hasattr(obj, "as_dict") else obj
+        data = utils.process_collection(data, **opts)
         output = StringIO()
-        self._yaml.safe_dump({name: data}, output, default_flow_style=False)
+        self._yaml.safe_dump(data, output, default_flow_style=False)
         return output.getvalue()

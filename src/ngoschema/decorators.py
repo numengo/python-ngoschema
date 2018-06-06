@@ -40,6 +40,7 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
     :param flatten: flatten results
     :rtype: returns a list if the input argument is a list
     """
+
     def to_decorate(wrapped):
         sig = inspect.getargspec(wrapped)
 
@@ -50,9 +51,11 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
                 ret = []
                 new_args = list(args)
                 # only first argument is an array
-                if narg2 == -1 or not type(
-                        args[narg2]) in [list, set, tuple] or len(
-                            args[narg2]) == 1:
+                if (
+                    narg2 == -1
+                    or not type(args[narg2]) in [list, set, tuple]
+                    or len(args[narg2]) == 1
+                ):
                     for v in args[narg1]:
                         new_args[narg1] = v
                         ret.append(wrapped(*new_args, **kwargs))
@@ -67,8 +70,11 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
                     # different size
                     else:
                         raise InvalidValue(
-                            _('arguments %s and %s must be of same size' %
-                              (narg1, narg2)))
+                            _(
+                                "arguments %s and %s must be of same size"
+                                % (narg1, narg2)
+                            )
+                        )
             else:
                 # if the first one is not a string, ignore and call func
                 return wrapped(*args, **kwargs)
@@ -80,20 +86,20 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
 
         doc = [wrapped.__doc__.strip()] if wrapped.__doc__ else []
         doc.append(
-            "Argument '%s' can take an array, " % (sig.args[narg1]) +
-            "and the function will perfom the operation on each element " +
-            "and return the results as a list."
-            )
+            "Argument '%s' can take an array, " % (sig.args[narg1])
+            + "and the function will perfom the operation on each element "
+            + "and return the results as a list."
+        )
         if narg2 != -1:
             doc.append(
-                "Arguments '%s' and '%s'" % (sig.args[narg1], sig.args[narg2]) +
-                " can take arrays of same size, and the function will perfom " +
-                "the operation in parallel and return the results as a list."
-                )
+                "Arguments '%s' and '%s'" % (sig.args[narg1], sig.args[narg2])
+                + " can take arrays of same size, and the function will perfom "
+                + "the operation in parallel and return the results as a list."
+            )
         if flatten:
-            doc.append('The resulting list of lists if flattened.')
+            doc.append("The resulting list of lists if flattened.")
 
-        wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", '\n'.join(doc))
+        wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", "\n".join(doc))
 
         return decorated
 
@@ -109,6 +115,7 @@ def assert_arg(arg, schema):
     :param schema: json-schema for the type
     :type schema: dict
     """
+
     def to_decorate(wrapped):
         # find argument in signature
         sig = inspect.getargspec(wrapped)
@@ -134,24 +141,28 @@ def assert_arg(arg, schema):
                 elif type(arg_i) is int and arg_i < len(new_args):
                     new_args[arg_i] = convert_validate(new_args[arg_i], schema)
                 else:
-                    raise Exception('unknown error')
+                    raise Exception("unknown error")
             except ValidationError as er:
                 if arg_s in kwargs:
-                    raise ValidationError(_('%s=%r is not valid. %s') %
-                                      (arg_s, kwargs[arg_s], er))
+                    raise ValidationError(
+                        _("%s=%r is not valid. %s") % (arg_s, kwargs[arg_s], er)
+                    )
                 elif type(arg_i) is int and arg_i < len(new_args):
-                    raise ValidationError(_('%s=%r is not valid. %s') %
-                                        (arg_s, new_args[arg_i], er))
+                    raise ValidationError(
+                        _("%s=%r is not valid. %s") % (arg_s, new_args[arg_i], er)
+                    )
             if instance:
                 new_args.pop(0)
             return wrapped(*new_args, **kwargs)
 
         decorated = wrapper(wrapped)
 
-        doc = ((wrapped.__doc__ or '').strip() +
-        "\nArgument '%s' is " % arg +
-        "automatically type converted and validated against this schema %s."
-        % pformat(schema))
+        doc = (
+            (wrapped.__doc__ or "").strip()
+            + "\nArgument '%s' is " % arg
+            + "automatically type converted and validated against this schema %s."
+            % pformat(schema)
+        )
 
         wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
 
@@ -164,8 +175,13 @@ def _format_call_msg(funcname, args, kwargs):
     """
     Format a call message
     """
-    return '%s(%s)'%(funcname,', '.join(['%r'%a for a in args]
-                     +['%s=%r'%(a,v) for a, v in kwargs.items()]))
+    return "%s(%s)" % (
+        funcname,
+        ", ".join(
+            ["%r" % a for a in args] + ["%s=%r" % (a, v) for a, v in kwargs.items()]
+        ),
+    )
+
 
 @wrapt.decorator
 def log_exceptions(method, instance, args, kwargs):
@@ -179,16 +195,20 @@ def log_exceptions(method, instance, args, kwargs):
     if instance is None:
         instance = args[0]
     try:
-        instance.logger.debug('CALL ' +
-            _format_call_msg('%r.%s' % (instance, method.__name__),
-                             args, kwargs))
+        if hasattr(instance, "logger"):
+            instance.logger.debug(
+                "CALL "
+                + _format_call_msg("%r.%s" % (instance, method.__name__), args, kwargs)
+            )
         return method(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
-        instance.logger.error('CALL ' +
-            _format_call_msg('%r.%s' % (instance, method.__name__),
-                             args, kwargs) +
-            '\n\tERROR %s: %s'% (etype.__name__, value))
+        if hasattr(instance, "logger"):
+            instance.logger.error(
+                "CALL "
+                + _format_call_msg("%r.%s" % (instance, method.__name__), args, kwargs)
+                + "\n\tERROR %s: %s" % (etype.__name__, value)
+            )
         try:
             six.reraise(etype, value, trace)
         finally:
@@ -201,16 +221,21 @@ def log_init(init, instance, args, kwargs):
     log init of instance and possible exceptions
     """
     instance.logger.info(
-        _format_call_msg('INIT <%s>.__init__' % instance.__class__.__name__,
-                         args, kwargs))
+        _format_call_msg(
+            "INIT <%s>.__init__" % instance.__class__.__name__, args, kwargs
+        )
+    )
     try:
-        init( *args, **kwargs)
+        init(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
-        instance.logger.error('CALL ' +
-            _format_call_msg('INIT <%s>.__init__' % instance.__class__.__name__,
-                            args, kwargs) +
-            '\n\tERROR %s: %s'% (etype.__name__, value))
+        instance.logger.error(
+            "CALL "
+            + _format_call_msg(
+                "INIT <%s>.__init__" % instance.__class__.__name__, args, kwargs
+            )
+            + "\n\tERROR %s: %s" % (etype.__name__, value)
+        )
         try:
             six.reraise(etype, value, trace)
         finally:
@@ -223,23 +248,22 @@ def assert_prop(*args2check):
 
     :param args2check: list of property/attribute to check as defined
     """
-    def to_decorate(wrapped):
 
+    def to_decorate(wrapped):
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
             for prop in args2check:
-                if getattr(instance,prop,None) is None:
-                    raise AttributeError(_('%s is not defined.'%prop))
+                if getattr(instance, prop, None) is None:
+                    raise AttributeError(_("%s is not defined." % prop))
             return wrapped(*args, **kwargs)
 
         decorated = wrapper(wrapped)
 
-        doc = (wrapped.__doc__ or '').strip()
+        doc = (wrapped.__doc__ or "").strip()
         for prop in args2check:
-            doc += '\nProperty %s is asserted to be defined before call.' % prop
+            doc += "\nProperty %s is asserted to be defined before call." % prop
         wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
 
         return decorated
 
     return to_decorate
-

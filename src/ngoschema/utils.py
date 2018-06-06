@@ -30,18 +30,18 @@ _ = gettext.gettext
 
 
 class GenericRegistry(object):
-
     def __init__(self):
-       self.registry = {}
+        self.registry = {}
 
     def register(self, name=None):
-       def f(functor):
-          self.registry[name if name is not None else functor.__name__] = functor
-          return functor
-       return f
+        def f(functor):
+            self.registry[name if name is not None else functor.__name__] = functor
+            return functor
+
+        return f
 
     def __call__(self, name):
-       return self.registry.get(name)
+        return self.registry.get(name)
 
 
 def gcs(*classes):
@@ -54,7 +54,6 @@ def gcs(*classes):
             return x
 
 
-@take_arrays(0)
 def is_basestring(value):
     """
     Test if value is a basestring
@@ -62,7 +61,6 @@ def is_basestring(value):
     return isinstance(value, basestring) and not isinstance(value, str)
 
 
-@take_arrays(0)
 def is_string(value):
     """
     Test if value is a string
@@ -75,51 +73,46 @@ def is_pattern(value):
     """
     Test if value is a pattern, ie contains {{ }} formatted content 
     """
-    return is_string(value) and ('{{' in value or '{%' in value)
+    return is_string(value) and ("{{" in value or "{%" in value)
 
 
-@take_arrays(0)
 def is_expr(value):
     """
     Test if value is an expression and starts with `
     """
-    return is_string(value) and value.strip().startswith('`')
+    return is_string(value) and value.strip().startswith("`")
 
 
-@take_arrays(0)
 def fullname(obj):
     if is_module(obj):
         return str(obj).split("'")[1]
-    qn = getattr(obj,'__qualname__',None) or qualname(obj)
+    qn = getattr(obj, "__qualname__", None) or qualname(obj)
     mn = obj.__module__
-    if mn is None or mn == str.__class__.__module__: # avoid builtin
+    if mn is None or mn == str.__class__.__module__:  # avoid builtin
         return qn
-    return mn + '.' + qn
- 
+    return mn + "." + qn
 
 
-@take_arrays(0)
 def import_from_string(value):
     """
     Imports a symbol from a string
     """
-    poss = [m.start() for m in re.finditer('\.', '%s.' % value)]
+    poss = [m.start() for m in re.finditer("\.", "%s." % value)]
     # going backwards
     for pos in reversed(poss):
         try:
             m = value[0:pos]
             ret = importlib.import_module(m)
-            for a in value[pos + 1:].split('.'):
+            for a in value[pos + 1 :].split("."):
                 if not a:
                     continue
                 ret = getattr(ret, a, None)
                 if not ret:
-                    raise InvalidValue(
-                        _('%s is not an importable object' % value))
+                    raise InvalidValue(_("%s is not an importable object" % value))
             return ret
         except Exception as er:
             continue
-    raise InvalidValue(_('%s is not an importable object' % value))
+    raise InvalidValue(_("%s is not an importable object" % value))
 
 
 def impobj_or_str(val):
@@ -128,7 +121,8 @@ def impobj_or_str(val):
     elif is_imported(val):
         return fullname(val), val
     else:
-        raise InvalidValue(_('%r is not an object class' % val))
+        raise InvalidValue(_("%r is not an object class" % val))
+
 
 def impobj_or_str_arr(array):
     s_a = o_a = []
@@ -139,7 +133,6 @@ def impobj_or_str_arr(array):
     return s_a, o_a
 
 
-@take_arrays(0)
 def is_module(value):
     """
     Test if value is a module
@@ -152,7 +145,6 @@ def is_module(value):
     return inspect.ismodule(value)
 
 
-@take_arrays(0)
 def is_class(value):
     """
     Test if value is a class
@@ -165,7 +157,6 @@ def is_class(value):
     return inspect.isclass(value)
 
 
-@take_arrays(0)
 def is_method(value):
     """
     Test if value is a method
@@ -176,11 +167,12 @@ def is_method(value):
         except Exception as er:
             return False
     if inspect.isclass(value):
-        return hasattr(value,'__call__')
+        return hasattr(value, "__call__")
+    if type(value) is staticmethod:
+        return True
     return inspect.ismethod(value) or inspect.ismethoddescriptor(value)
 
 
-@take_arrays(0)
 def is_function(value):
     """
     Test if value is a function
@@ -191,11 +183,10 @@ def is_function(value):
         except Exception as er:
             return False
     if inspect.isclass(value):
-        return hasattr(value,'__call__')
+        return hasattr(value, "__call__")
     return inspect.isfunction(value)
 
 
-@take_arrays(0)
 def is_imported(value):
     """
     Test if a symbol is importable/imported
@@ -205,16 +196,14 @@ def is_imported(value):
             value = import_from_string(value)
         except Exception as er:
             return False
-    return is_class(value) or is_method(value) or is_module(
-        value) or is_function(value)
+    return is_class(value) or is_method(value) or is_module(value) or is_function(value)
 
 
-@take_arrays(0)
 def is_instance(value):
     """
     Test if value is an instance of a class
     """
-    if getattr(value, '__class__'):
+    if getattr(value, "__class__"):
         return isinstance(value, value.__class__)
     return False
 
@@ -232,8 +221,7 @@ def is_sequence(value):
     """
     Test if value is a sequence (list, tuple, deque)
     """
-    if isinstance(value,
-                  collections.Sequence) and not isinstance(value, basestring):
+    if isinstance(value, collections.Sequence) and not isinstance(value, basestring):
         return True
     if isinstance(value, collections.deque):
         return True
@@ -267,6 +255,7 @@ def apply_through_collection(coll, func):
             coll[i] = func(i, v)
             apply_through_collection(v, func)
 
+
 def only_keys(icontainer, keys, recursive=False):
     """
     Keep only specific keys in a container
@@ -277,6 +266,7 @@ def only_keys(icontainer, keys, recursive=False):
     :param recursive: process container recursively
     """
     ocontainer = copy.deepcopy(icontainer)
+
     def delete_fields_not_of(container, fields, recursive):
         if is_mapping(container):
             to_del = fields.difference(set(container.keys()))
@@ -290,8 +280,10 @@ def only_keys(icontainer, keys, recursive=False):
             for i, v in enumerate(container):
                 container[i] = delete_fields_not_of(v, fields, recursive)
         return container
+
     ocontainer = delete_fields_not_of(ocontainer, set(keys), recursive)
     return ocontainer
+
 
 def but_keys(icontainer, keys, recursive=False):
     """
@@ -303,6 +295,7 @@ def but_keys(icontainer, keys, recursive=False):
     :param recursive: process container recursively
     """
     ocontainer = copy.deepcopy(icontainer)
+
     def delete_fields(container, fields, recursive):
         if is_mapping(container):
             to_del = fields.intersection(set(container.keys()))
@@ -316,16 +309,18 @@ def but_keys(icontainer, keys, recursive=False):
             for i, v in enumerate(container):
                 container[i] = delete_fields(v, fields, recursive)
         return container
+
     ocontainer = delete_fields(ocontainer, set(keys), recursive)
     return ocontainer
 
+
 def process_collection(data, **opts):
-    if 'only_fields' in opts:
-        rec = opts.get('fields_recursive', False)
-        data = utils.only_keys(data, opts['only_fields'], rec)
-    if 'but_fields' in opts:
-        rec = opts.get('fields_recursive', False)
-        data = utils.but_keys(data, opts['only_fields'], rec)
-    if 'objectClass' in opts:
-        return opts['objectClass'](**data)
+    if "only_fields" in opts:
+        rec = opts.get("fields_recursive", False)
+        data = utils.only_keys(data, opts["only_fields"], rec)
+    if "but_fields" in opts:
+        rec = opts.get("fields_recursive", False)
+        data = utils.but_keys(data, opts["only_fields"], rec)
+    if "objectClass" in opts:
+        return opts["objectClass"](**data)
     return data

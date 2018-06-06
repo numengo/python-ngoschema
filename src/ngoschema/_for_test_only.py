@@ -6,6 +6,6 @@ from .classbuilder import ProtocolBase
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
-class Project(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    schemaPath = os.path.join(dirpath,'../../tests/schemas/project.json')
 
+class Project(with_metaclass(SchemaMetaclass, ProtocolBase)):
+    schemaPath = os.path.join(dirpath, "../../tests/schemas/project.json")

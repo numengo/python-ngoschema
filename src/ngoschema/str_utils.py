@@ -27,8 +27,9 @@ _ = gettext.gettext
 
 def _multiple_replacer(replace_dict):
     replacement_function = lambda match: replace_dict[match.group(0)]
-    pattern = re.compile("|".join(
-        [re.escape(k) for k, v in list(replace_dict.items())]), re.M)
+    pattern = re.compile(
+        "|".join([re.escape(k) for k, v in list(replace_dict.items())]), re.M
+    )
     return lambda string: pattern.sub(replacement_function, string)
 
 
@@ -57,35 +58,34 @@ class CaseInsensitiveDict(dict):
         self._convert_keys()
 
     def __getitem__(self, key):
-        return super(CaseInsensitiveDict, self).__getitem__(
-            self.__class__._k(key))
+        return super(CaseInsensitiveDict, self).__getitem__(self.__class__._k(key))
 
     def __setitem__(self, key, value):
-        super(CaseInsensitiveDict, self).__setitem__(
-            self.__class__._k(key), value)
+        super(CaseInsensitiveDict, self).__setitem__(self.__class__._k(key), value)
 
     def __delitem__(self, key):
-        return super(CaseInsensitiveDict, self).__delitem__(
-            self.__class__._k(key))
+        return super(CaseInsensitiveDict, self).__delitem__(self.__class__._k(key))
 
     def __contains__(self, key):
-        return super(CaseInsensitiveDict, self).__contains__(
-            self.__class__._k(key))
+        return super(CaseInsensitiveDict, self).__contains__(self.__class__._k(key))
 
     def has_key(self, key):
         return super(CaseInsensitiveDict, self).has_key(self.__class__._k(key))
 
     def pop(self, key, *args, **kwargs):
         return super(CaseInsensitiveDict, self).pop(
-            self.__class__._k(key), *args, **kwargs)
+            self.__class__._k(key), *args, **kwargs
+        )
 
     def get(self, key, *args, **kwargs):
         return super(CaseInsensitiveDict, self).get(
-            self.__class__._k(key), *args, **kwargs)
+            self.__class__._k(key), *args, **kwargs
+        )
 
     def setdefault(self, key, *args, **kwargs):
         return super(CaseInsensitiveDict, self).setdefault(
-            self.__class__._k(key), *args, **kwargs)
+            self.__class__._k(key), *args, **kwargs
+        )
 
     def update(self, E={}, **F):
         super(CaseInsensitiveDict, self).update(self.__class__(E))
@@ -109,8 +109,7 @@ def split_string(string, delimiters=" ", strip=True):
     """
     if delimiters:
         specials = "[\^$.|?*+(){}"
-        dels = ['\%s' % d if d in specials else d for d in delimiters]
-        regex = '|'.join([d for d in dels])
+        dels = ["\%s" % d if d in specials else d for d in delimiters]
+        regex = "|".join([d for d in dels])
         return [w.strip() if strip else w for w in re.split(regex, string)]
     return [string]
-

@@ -21,15 +21,20 @@ class NgoSchemaException(Exception):
     this class.
     """
 
+
 class SchemaError(NgoSchemaException, jsonschema.exceptions.SchemaError):
     """
     Raised if an error is detected in a schema
     """
 
-class InvalidValue(NgoSchemaException, jsonschema.exceptions.ValidationError, ValueError):
+
+class InvalidValue(
+    NgoSchemaException, jsonschema.exceptions.ValidationError, ValueError
+):
     """
     Raised if an invalid value is detected in a validator
     """
+
 
 class PropertyNotInSchema(NgoSchemaException):
     """
@@ -37,9 +42,10 @@ class PropertyNotInSchema(NgoSchemaException):
     """
 
     def __init__(prop):
-        message = (_('[%(prop)s] does not exist in schema' % {
-            'prop': str(prop)
-        }), message)
+        message = (
+            _("[%(prop)s] does not exist in schema" % {"prop": str(prop)}),
+            message,
+        )
         super(NgoSchemaException, self).__init__(message)
 
 
@@ -49,7 +55,5 @@ class PropertyUndefined(NgoSchemaException):
     """
 
     def __init__(prop):
-        message = (_('[%(prop)s] is not defined' % {
-            'prop': str(prop)
-        }), message)
+        message = (_("[%(prop)s] is not defined" % {"prop": str(prop)}), message)
         super(NgoSchemaException, self).__init__(message)

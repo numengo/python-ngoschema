@@ -37,7 +37,7 @@ def extends_ngo_draft1(validator, extends, instance, schema):
     if validator.is_type(extends, "array"):
         for ref in extends:
             try:
-                _format_checker(validator).check(ref, 'uri-reference')
+                _format_checker(validator).check(ref, "uri-reference")
                 scope, resolved = validator.resolver.resolve(ref)
             except FormatError as er:
                 yield ValidationError(str(error), cause=error.cause)
@@ -49,26 +49,23 @@ def properties_ngo_draft1(validator, properties, instance, schema):
     if not validator.is_type(instance, "object"):
         return
 
-    if 'schema' in instance:
-        scope, schema = validator.resolver.resolve(instance['schema'])
+    if "schema" in instance:
+        scope, schema = validator.resolver.resolve(instance["schema"])
         validator.resolver.push_scope(scope)
-        properties = schema.get('properties')
+        properties = schema.get("properties")
 
     for property, subschema in iteritems(properties):
-        if getattr(validator, '_setDefault', False):
+        if getattr(validator, "_setDefault", False):
             if "default" in subschema and not isinstance(instance, list):
                 instance.setdefault(property, subschema["default"])
 
         if property in instance:
             for error in validator.descend(
-                    instance[property],
-                    subschema,
-                    path=property,
-                    schema_path=property,
+                instance[property], subschema, path=property, schema_path=property
             ):
                 yield error
 
-    if 'schema' in instance:
+    if "schema" in instance:
         validator.resolver.pop_scope()
 
 
@@ -76,33 +73,30 @@ def properties_ngo_draft2(validator, properties, instance, schema):
     if not validator.is_type(instance, "object"):
         return
 
-    if 'schemaUri' in instance:
-        scope, schema = validator.resolver.resolve(instance['schemaUri'])
+    if "schemaUri" in instance:
+        scope, schema = validator.resolver.resolve(instance["schemaUri"])
         validator.resolver.push_scope(scope)
-        properties = schema.get('properties')
+        properties = schema.get("properties")
 
     for property, subschema in iteritems(properties):
-        if getattr(validator, '_setDefault', False):
+        if getattr(validator, "_setDefault", False):
             if "default" in subschema and not isinstance(instance, list):
                 instance.setdefault(property, subschema["default"])
 
         if property in instance:
             for error in validator.descend(
-                    instance[property],
-                    subschema,
-                    path=property,
-                    schema_path=property,
+                instance[property], subschema, path=property, schema_path=property
             ):
                 yield error
 
-    if 'schemaUri' in instance:
+    if "schemaUri" in instance:
         validator.resolver.pop_scope()
 
 
 def ref_ngo_draft1(validator, ref, instance, schema):
     # override reference with schema defined in instance
-    if isinstance(instance, collections.Iterable) and 'schema' in instance:
-        ref = instance['schema']
+    if isinstance(instance, collections.Iterable) and "schema" in instance:
+        ref = instance["schema"]
 
     resolve = getattr(validator.resolver, "resolve", None)
     if resolve is None:
@@ -122,8 +116,8 @@ def ref_ngo_draft1(validator, ref, instance, schema):
 
 def ref_ngo_draft2(validator, ref, instance, schema):
     # override reference with schema defined in instance
-    if isinstance(instance, collections.Iterable) and 'schemaUri' in instance:
-        ref = instance['schemaUri']
+    if isinstance(instance, collections.Iterable) and "schemaUri" in instance:
+        ref = instance["schemaUri"]
 
     resolve = getattr(validator.resolver, "resolve", None)
     if resolve is None:
@@ -135,13 +129,14 @@ def ref_ngo_draft2(validator, ref, instance, schema):
             scope, resolved = validator.resolver.resolve(ref)
             validator.resolver.push_scope(scope)
         except RefResolutionError as error:
-            yield ValidationError("%s. Resolution scope=%s" %
-                                  (error, validator.resolver.resolution_scope))
+            yield ValidationError(
+                "%s. Resolution scope=%s" % (error, validator.resolver.resolution_scope)
+            )
             return
 
         try:
             for error in validator.descend(instance, resolved):
                 yield error
         finally:
-            #pass
+            # pass
             validator.resolver.pop_scope()

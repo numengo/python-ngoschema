@@ -24,35 +24,44 @@ from ngoschema.serializers import JsonSerializer
 _ = gettext.gettext
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('python_jsonschema_objects.classbuilder').setLevel(logging.INFO)
+logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(logging.INFO)
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
+
 class Cookiecutter(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    schemaPath = os.path.join(dirpath,'schemas','cookiecutter.json')
+    schemaPath = os.path.join(dirpath, "schemas", "cookiecutter.json")
+
 
 def test_json2yaml():
 
     # json -> yaml
-    js = pathlib.Path(dirpath,'objects','cc_ngoschema.json')
+    js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
     cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
 
-    yml = js.with_name('cc_ngoschema_serialized.yaml')
-    YamlSerializer().dump(cc_js, yml, overwrite=True)
-    cc_yml = YamlDeserializer().load(yml, objectClass=Cookiecutter)
+    yml = js.with_name("cc_ngoschema_serialized.yaml")
+    YamlSerializer().dump({"default_context": cc_js.as_dict()}, yml, overwrite=True)
+    cc_yml = YamlDeserializer().load(yml)
+    cc_yml = cc_yml["default_context"]
+    cc_yml = Cookiecutter(**cc_yml)
     assert cc_yml == cc_js
+
 
 def test_yaml2json():
     # json -> yaml
-    yml = pathlib.Path(dirpath,'objects','cc_ngoschema.yaml')
-    cc_yml = YamlDeserializer().load(yml, objectClass=Cookiecutter)
+    yml = pathlib.Path(dirpath, "objects", "cc_ngoschema.yaml")
+    cc_yml = YamlDeserializer().load(yml)
+    cc_yml = cc_yml["default_context"]
+    cc_yml = Cookiecutter(**cc_yml)
 
-    js = yml.with_name('cc_ngoschema_serialized.json')
+    js = yml.with_name("cc_ngoschema_serialized.json")
     JsonSerializer().dump(cc_yml, js, overwrite=True)
     cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
     assert cc_yml == cc_js
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_json2yaml()
     test_yaml2json()
