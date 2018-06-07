@@ -82,6 +82,14 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
+
+        # convert arguments that might are given as imported objects
+        propnames = self.__prop_names__.values()
+        for k, v in kwargs.items():
+            if k in propnames and not utils.is_string(v) and utils.is_imported(v):
+                kwargs[k] = utils.fullname(v)
+
+        # initialize Protocol Base
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
         # we wait for init to be done in protocolbase, as many things to get

@@ -31,7 +31,6 @@ _ = gettext.gettext
 class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    @decorators.log_exceptions
     @decorators.assert_arg(1, validators.SCH_PATH_FILE)
     def load(self, path, **opts):
         """

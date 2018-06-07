@@ -35,7 +35,6 @@ _ = gettext.gettext
 class Serializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    @decorators.log_exceptions
     def dump(self, obj, path, overwrite=False, **opts):
         """
         Serialize an object to a file like object string

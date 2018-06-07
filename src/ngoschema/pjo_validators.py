@@ -24,7 +24,7 @@ from python_jsonschema_objects.validators import formatter_registry
 from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import type_registry
 
-from .utils import is_sequence
+from . import utils
 
 _ = gettext.gettext
 
@@ -133,10 +133,16 @@ def check_datetime_type(param, value, _):
 # converters
 ############
 
+@converter_registry.register(name="string")
+def convert_string(param, value, detail):
+    if not utils.is_string(value) and utils.is_imported(value):
+        return utils.fullname(value)
+    return value
+
 
 @converter_registry.register(name="array")
 def convert_array(param, value, detail):
-    if is_sequence(value):
+    if utils.is_sequence(value):
         return value
     return list(value)
 

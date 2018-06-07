@@ -37,14 +37,12 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
         try:
-            self._properties["from"], self._from = utils.impobj_or_str(
-                kwargs["from"])
-        except Exception:
+            self._from = utils.import_from_string(str(self['from']))
+        except Exception as er:
             self._from = None
         try:
-            self._properties["to"], self._to = utils.impobj_or_str(
-                kwargs["to"])
-        except Exception:
+            self._to = utils.import_from_string(str(self['to']))
+        except Exception as er:
             self._to = None
 
         complexTransformFrom = kwargs.get("complexTransformFrom", {})
@@ -140,3 +138,17 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 opts["objectClass"] = self._from
 
         return utils.process_collection(from_, **opts)
+
+    def transform(self, from_, **opts):
+        if hasattr(from_, "as_dict"):
+            if isinstance(from_, self._from):
+                return transform_from(from_, **opts)
+            if isinstance(from_, self._to):
+                return transform_to(from_, **opts)
+        if 'objectClass' in opts:
+            oc = opts['objectClass']
+            if issubclass(oc, self._to):
+                return transform_from(from_, **opts)
+            if issubclass(oc, self._from):
+                return transform_to(from_, **opts)
+        raise ValueError('cannot determine which transformation to do.')

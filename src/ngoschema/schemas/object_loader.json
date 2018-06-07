@@ -1,0 +1,14 @@
+{
+  "$schema": "http://numengo.org/draft-04/schema", 
+  "$id": "http://numengo.org/draft-04/ngoschema/object_loader",
+  "title": "ObjectLoader", 
+  "type": "object", 
+  "additionalProperties": false, 
+  "properties": {
+    "primaryKey": { "type": "string", "default": "name" },
+    "objectClass": { "type": "string" },
+    "deserializers": {
+      "type": "array", "items": {"type": "string"}
+    }
+  }
+}

@@ -67,7 +67,6 @@ def is_string(value):
     return isinstance(value, (str, basestring))
 
 
-@take_arrays(0)
 def is_pattern(value):
     """
     Test if value is a pattern, ie contains {{ }} formatted content 
@@ -115,33 +114,28 @@ def import_from_string(value):
     raise InvalidValue(_("%s is not an importable object" % value))
 
 
-def impobj_or_str(val):
-    if is_string(val):
-        return val, import_from_string(val)
-    elif is_imported(val):
-        return fullname(val), val
-    else:
-        raise InvalidValue(_("%r is not an object class" % val))
-
-
-def impobj_or_str_arr(array):
-    s_a = o_a = []
-    for e in array:
-        s, o = impobj_or_str(e)
-        s_a.append(s)
-        o_a.append(o)
-    return s_a, o_a
+#def impobj_or_str(val):
+#    if is_string(val):
+#        return val, import_from_string(val)
+#    elif is_imported(val):
+#        return fullname(val), val
+#    else:
+#        raise InvalidValue(_("%r is not an object class" % val))
+#
+#
+#def impobj_or_str_arr(array):
+#    s_a = o_a = []
+#    for e in array:
+#        s, o = impobj_or_str(e)
+#        s_a.append(s)
+#        o_a.append(o)
+#    return s_a, o_a
 
 
 def is_module(value):
     """
     Test if value is a module
     """
-    if is_string(value):
-        try:
-            value = import_from_string(value)
-        except Exception as er:
-            return False
     return inspect.ismodule(value)
 
 
@@ -149,55 +143,7 @@ def is_class(value):
     """
     Test if value is a class
     """
-    if is_string(value):
-        try:
-            value = import_from_string(value)
-        except Exception as er:
-            return False
     return inspect.isclass(value)
-
-
-def is_method(value):
-    """
-    Test if value is a method
-    """
-    if is_string(value):
-        try:
-            value = import_from_string(value)
-        except Exception as er:
-            return False
-    if inspect.isclass(value):
-        return hasattr(value, "__call__")
-    if type(value) is staticmethod:
-        return True
-    return inspect.ismethod(value) or inspect.ismethoddescriptor(value)
-
-
-def is_function(value):
-    """
-    Test if value is a function
-    """
-    if is_string(value):
-        try:
-            value = import_from_string(value)
-        except Exception as er:
-            return False
-    if inspect.isclass(value):
-        return hasattr(value, "__call__")
-    return inspect.isfunction(value)
-
-
-def is_imported(value):
-    """
-    Test if a symbol is importable/imported
-    """
-    if is_string(value):
-        try:
-            value = import_from_string(value)
-        except Exception as er:
-            return False
-    return is_class(value) or is_method(value) or is_module(
-        value) or is_function(value)
 
 
 def is_instance(value):
@@ -205,8 +151,65 @@ def is_instance(value):
     Test if value is an instance of a class
     """
     if getattr(value, "__class__"):
-        return isinstance(value, value.__class__)
+        return isinstance(value, value.__class__) and not inspect.isclass(value)
     return False
+
+
+def is_callable(value):
+    """
+    Test if value is a class
+    """
+    return is_instance(value) and hasattr(value, "__call__")
+
+
+def is_static_method(value):
+    """
+    Test if value is a static method
+    """
+    return type(value) is staticmethod
+
+
+def is_method(value, with_callable=True, with_static=True, with_method_descriptor=True):
+    """
+    Test if value is a method
+    """
+    if with_callable and is_callable(value):
+        return True
+    if with_static and is_static_method(value):
+        return True
+    if with_method_descriptor and inspect.ismethoddescriptor(value):
+        return True
+    return inspect.ismethod(value)
+
+
+def is_function(value, with_callable=True):
+    """
+    Test if value is a function
+    """
+    if with_callable and is_callable(value):
+        return True
+    return inspect.isfunction(value)
+
+
+def is_imported(value):
+    """
+    Test if a symbol is importable/imported
+    """
+    return is_class(value) or is_method(value) or is_module(
+        value) or is_function(value)
+
+
+def is_importable(value):
+    """
+    Test if value is imported symbol or importable string
+    """
+    if is_string(value):
+        try:
+            value = import_from_string(value)
+            return True
+        except Exception as er:
+            return False
+    return is_imported(value)
 
 
 def is_mapping(value):
