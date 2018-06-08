@@ -88,6 +88,9 @@ install_requires = [
     'ruamel.yaml',
 ]
 
+post_install_requires = [i for i in install_requires if ('-' in i or ':' in i)]
+install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
+
 
 # for setuptools to work properly, we need to install packages with - or : separately
 # and for that we need a hook
@@ -96,13 +99,11 @@ class PostInstallCommand(install):
     """Post-installation for installation mode."""
 
     def run(self):
-        cmd = ['pip', 'install', '-q'
-               ] + [i for i in install_requires if '-' in i or ':' in i]
-        subprocess.check_call(cmd)
+        if post_install_requires:
+            cmd = ['pip', 'install', '-q'] + post_install_requires
+            subprocess.check_call(cmd)
         install.run(self)
 
-
-install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
 
 test_requires = [
     'pytest',
@@ -165,6 +166,7 @@ setup(
     ],
     cmdclass={
         'install': PostInstallCommand,
+        'develop': PostInstallCommand,
     },
 )
 

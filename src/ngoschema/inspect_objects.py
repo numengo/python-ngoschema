@@ -111,8 +111,10 @@ def visit_FunctionDef(node):
         for arg, doc, doctype in zip(node.args.args, docs, doctypes)
     ]
 
-    _keywords = node.args.kwarg
-    _varargs = node.args.vararg
+    _keywords = node.args.kwarg.arg if hasattr(node.args.kwarg,
+                                               'arg') else node.args.kwarg
+    _varargs = node.args.vararg.arg if hasattr(node.args.vararg,
+                                               'arg') else node.args.vararg
     _defaults = [ast.literal_eval(d) for d in node.args.defaults]
     for d, p in zip(reversed(_defaults), reversed(_params)):
         p.default = d
@@ -123,7 +125,10 @@ def visit_FunctionDef(node):
         if isinstance(n, ast.Call):
             name = n.func.attr if isinstance(n.func,
                                              ast.Attribute) else _id(n.func)
-            args = [ast.literal_eval(d) for d in n.args]
+            args = [
+                d.attr if isinstance(d, ast.Attribute) else ast.literal_eval(d)
+                for d in n.args
+            ]
         else:
             name = n.attr if isinstance(n, ast.Attribute) else _id(n)
             args = []
@@ -278,8 +283,10 @@ class ClassInspector(object):
         # avoid builtin
         def is_builtin(obj):
             mn = obj.__module__
-            return (mn is None or mn == str.__class__.__module__
-                    or mn == "future.types.newobject")
+            return (mn in [
+                None, str.__class__.__module__, "future.types.newobject",
+                "__builtin__"
+            ])
 
         if not is_builtin(self.klass):
             node = ast.parse(inspect.getsource(self.klass))

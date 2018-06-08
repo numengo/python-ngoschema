@@ -86,7 +86,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         # convert arguments that might are given as imported objects
         propnames = self.__prop_names__.values()
         for k, v in kwargs.items():
-            if k in propnames and not utils.is_string(v) and utils.is_imported(v):
+            if k in propnames and not utils.is_string(v) and utils.is_imported(
+                    v):
                 kwargs[k] = utils.fullname(v)
 
         # initialize Protocol Base

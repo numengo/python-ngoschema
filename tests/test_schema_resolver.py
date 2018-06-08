@@ -2,7 +2,6 @@
 """
 Unit tests for validators of NgoProject
 
-test_validators.py - created on 2018/05/06
 author: Cedric ROMAN
 email: roman@numengo.com
 licence: GNU GPLv3
@@ -12,16 +11,23 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
+import os.path
 import logging
 
 from jsonschema import RefResolver
 
 from ngoschema import DEFAULT_MS_URI
-from ngoschema import MS_STORE
 from ngoschema.resolver import ExpandingResolver
 from ngoschema.resolver import get_resolver
+from ngoschema.schemas_loader import get_all_schemas_store
+from ngoschema.schemas_loader import load_schema_file
 
 logging.basicConfig(level=logging.INFO)
+
+test_dir = os.path.dirname(os.path.realpath(__file__))
+defs_fp = os.path.join(test_dir, "schemas", "ngo-defs-draft-XX.json")
+DEFS_URI, DEFS = load_schema_file(defs_fp)
+MS_STORE = get_all_schemas_store()
 
 resolver = ExpandingResolver(DEFAULT_MS_URI, MS_STORE[DEFAULT_MS_URI],
                              MS_STORE)

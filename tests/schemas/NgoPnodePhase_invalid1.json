@@ -1,10 +1,10 @@
 {
-  "$id": "http://numengo.org/draft-03/Ngo/Fl/NgoPnodePhase", 
+  "$id": "http://numengo.org/draft-04/Ngo/Fl/NgoPnodePhase", 
   "name": "NgoPnodePhase", 
   "canonicalName": "Ngo.Fl.NgoPnodePhase", 
   "description": "subphase of thermodynamic state", 
   "extends": [
-    "http://numengo.org/draft-03/Ngo/Fl#/componentDefinitions/2"
+    "http://numengo.org/draft-04/Ngo/Fl#/componentDefinitions/2"
   ], 
   "initializeFromInputs": "true", 
   "variableGroups": [
@@ -13,7 +13,7 @@
       "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters", 
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-03/defs-schema#/definitions/variable/definitions/EnumerationVariable", 
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/EnumerationVariable", 
           "name": "phase", 
           "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase", 
           "description": "phase at port", 
@@ -54,13 +54,13 @@
       "canonicalName": "Ngo.Fl.NgoPnodePhase.Variables", 
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-03/defs-schema#/definitions/variable/definitions/ObjectVariable", 
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable", 
           "name": "overallPnode", 
           "canonicalName": "Ngo.Fl.NgoPnodePhase.Variables.overallPnode", 
           "receivesValueFrom": "#/ports/0/variables/0", 
           "causality": "Input", 
           "isPlottable": false, 
-          "externalClass": "http://numengo.org/draft-03/Ngo/Fl#/externalClassRegistry/externalClasses/5"
+          "externalClass": "http://numengo.org/draft-04/Ngo/Fl#/externalClassRegistry/externalClasses/5"
         }
       ]
     }
@@ -73,7 +73,7 @@
       "inputVariables": [
         "#/variableGroups/1/variables/0"
       ], 
-      "returnVariable": "http://numengo.org/draft-03/Ngo/Fl/NgoPnode#/variableGroups/1/variables/0", 
+      "returnVariable": "http://numengo.org/draft-04/Ngo/Fl/NgoPnode#/variableGroups/1/variables/0", 
       "replaceable": true
     }
   ], 
@@ -81,10 +81,10 @@
     {
       "name": "overallPort", 
       "canonicalName": "Ngo.Fl.NgoPnodePhase.overallPort", 
-      "portType": "http://numengo.org/draft-03/Ngo/Fl#/portDefinitions/2", 
+      "portType": "http://numengo.org/draft-04/Ngo/Fl#/portDefinitions/2", 
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-03/defs-schema#/definitions/variable/definitions/ObjectVariable", 
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable", 
           "name": "pnode", 
           "canonicalName": "Ngo.Fl.NgoPnodePhase.overallPort.pnode", 
           "sendsValueTo": [
@@ -92,7 +92,7 @@
           ], 
           "causality": "Input", 
           "alias": "Reference", 
-          "externalClass": "http://numengo.org/draft-03/Ngo/Fl#/externalClassRegistry/externalClasses/5"
+          "externalClass": "http://numengo.org/draft-04/Ngo/Fl#/externalClassRegistry/externalClasses/5"
         }
       ]
     }
@@ -114,7 +114,7 @@
     ]
   }, 
   "referred": [
-    "http://numengo.org/draft-03/Ngo", 
-    "http://numengo.org/draft-03/Ngo/Fl/NgoPnode"
+    "http://numengo.org/draft-04/Ngo", 
+    "http://numengo.org/draft-04/Ngo/Fl/NgoPnode"
   ]
 }

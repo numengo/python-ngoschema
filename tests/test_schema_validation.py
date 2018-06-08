@@ -23,20 +23,21 @@ from jsonschema import Draft6Validator
 from jsonschema import RefResolver
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema import DEFAULT_DEFS_URI
-from ngoschema import MS_STORE
 from ngoschema import validators
+from ngoschema.schemas_loader import load_schema_file
+from ngoschema.schemas_loader import get_all_schemas_store
 from ngoschema.resolver import ExpandingResolver
 from ngoschema.validators import DefaultValidator
 
 logging.basicConfig(level=logging.INFO)
 
-DEFS_URI = DEFAULT_DEFS_URI
-
-resolver = ExpandingResolver(DEFS_URI, MS_STORE[DEFS_URI], MS_STORE)
-orig_resolver = RefResolver(DEFS_URI, MS_STORE[DEFS_URI], MS_STORE)
-
 test_dir = os.path.dirname(os.path.realpath(__file__))
+defs_fp = os.path.join(test_dir, "schemas", "ngo-defs-draft-XX.json")
+DEFS_URI, DEFS = load_schema_file(defs_fp)
+MS_STORE = get_all_schemas_store()
+
+resolver = ExpandingResolver(DEFS_URI, DEFS, MS_STORE)
+orig_resolver = RefResolver(DEFS_URI, DEFS, MS_STORE)
 
 
 def test_validate_extends():
@@ -85,7 +86,7 @@ def test_validate_subschemas():
         assert error.validator == "additionalProperties"
         assert error.instance.get("schemaUri")
 
-    # NgoDraft1Validator handles derived types and should not raise errors
+    # NgoDraft4Validator handles derived types and should not raise errors
     v_modif.validate(instance)
 
     # the error is in the main expanded schema

@@ -151,7 +151,8 @@ def is_instance(value):
     Test if value is an instance of a class
     """
     if getattr(value, "__class__"):
-        return isinstance(value, value.__class__) and not inspect.isclass(value)
+        return isinstance(value,
+                          value.__class__) and not inspect.isclass(value)
     return False
 
 
@@ -169,7 +170,10 @@ def is_static_method(value):
     return type(value) is staticmethod
 
 
-def is_method(value, with_callable=True, with_static=True, with_method_descriptor=True):
+def is_method(value,
+              with_callable=True,
+              with_static=True,
+              with_method_descriptor=True):
     """
     Test if value is a method
     """

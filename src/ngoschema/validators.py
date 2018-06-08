@@ -36,16 +36,7 @@ SCH_DATE = pmap({"type": "date"})
 SCH_TIME = pmap({"type": "time"})
 SCH_DATETIME = pmap({"type": "datetime"})
 
-NgoDraft01Validator = extend(
-    Draft6Validator,
-    validators={
-        "$ref": _validators.ref_ngo_draft1,
-        "extends": _validators.extends_ngo_draft1,
-        "properties": _validators.properties_ngo_draft1,
-    },
-)
-
-NgoDraft02Validator = extend(
+NgoDraft04Validator = extend(
     Draft6Validator,
     validators={
         "$ref": _validators.ref_ngo_draft2,
@@ -53,14 +44,8 @@ NgoDraft02Validator = extend(
         "properties": _validators.properties_ngo_draft2,
     },
 )
-NgoDraft02Validator.META_SCHEMA = _load_schema("ngo-draft-02")
-
-NgoDraft03Validator = extend(NgoDraft02Validator)
-NgoDraft03Validator.META_SCHEMA = _load_schema("ngo-draft-03")
-
-NgoDraft04Validator = extend(NgoDraft03Validator)
 NgoDraft04Validator._setDefaults = False
-NgoDraft04Validator.META_SCHEMA = _load_schema("ngo-draft-04")
+NgoDraft04Validator.META_SCHEMA = _load_schema("draft-04/ngo-draft-04")
 
 DefaultValidator = NgoDraft04Validator
 

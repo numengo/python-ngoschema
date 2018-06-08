@@ -32,7 +32,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to do simple model to model transformation
     """
 
-    schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/ObjectTransform"
+    schemaUri = "http://numengo.org/draft-04/ngoschema/object_transform"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
@@ -142,13 +142,13 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def transform(self, from_, **opts):
         if hasattr(from_, "as_dict"):
             if isinstance(from_, self._from):
-                return transform_from(from_, **opts)
+                return self.transform_from(from_, **opts)
             if isinstance(from_, self._to):
-                return transform_to(from_, **opts)
+                return self.transform_to(from_, **opts)
         if 'objectClass' in opts:
             oc = opts['objectClass']
             if issubclass(oc, self._to):
-                return transform_from(from_, **opts)
+                return self.transform_from(from_, **opts)
             if issubclass(oc, self._from):
-                return transform_to(from_, **opts)
+                return self.transform_to(from_, **opts)
         raise ValueError('cannot determine which transformation to do.')

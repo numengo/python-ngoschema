@@ -28,18 +28,18 @@ def test_transform():
     class Cookiecutter(with_metaclass(SchemaMetaclass, ProtocolBase)):
         schemaPath = os.path.join(dirpath, "schemas", "cookiecutter.json")
 
+    class Project(with_metaclass(SchemaMetaclass, ProtocolBase)):
+        schemaPath = os.path.join(dirpath, "schemas", "project.json")
+
     js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
     cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
 
     mtm_fp = pathlib.Path(dirpath, "transforms", "cookiecutter2project.mtm")
     mtm = JsonDeserializer().load(mtm_fp, objectClass=ObjectTransform)
 
-    proj = mtm.transform_from(cc_js)
+    proj = mtm.transform_from(cc_js, objectClass=Project)
     # field equivalence transform
     assert proj.authorEmail == cc_js.email
-    # complex transform with jinja template
-    assert len(proj.keywords) == len(cc_js.keywords.for_json().split(","))
-    # missing complex transform with external function
 
 
 if __name__ == "__main__":

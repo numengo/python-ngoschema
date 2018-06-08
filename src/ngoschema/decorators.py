@@ -184,14 +184,15 @@ def log_exceptions(method, instance, args, kwargs):
     try:
         if hasattr(instance, "logger"):
             instance.logger.debug("CALL " + _format_call_msg(
-                "%r.%s" % (instance, method.__name__), args, kwargs))
+                "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                args, kwargs))
         return method(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
         if hasattr(instance, "logger"):
             instance.logger.error("CALL " + _format_call_msg(
-                "%r.%s" % (instance, method.__name__), args, kwargs) +
-                                  "\n\tERROR %s: %s" % (etype.__name__, value))
+                "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                args, kwargs) + "\n\tERROR %s: %s" % (etype.__name__, value))
         try:
             six.reraise(etype, value, trace)
         finally:

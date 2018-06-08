@@ -9,38 +9,36 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngofile import LoadedModules
-from ngofile import list_files
+#from ngofile import LoadedModules
+#from ngofile import list_files
 
+from ngoschema.schemas_loader import load_module_schemas
+from ngoschema.deserializers import Deserializer
 from ngoschema.inspect_objects import ClassInspector
 from ngoschema.inspect_objects import FunctionInspector
 
 
 def test_FunctionInspector():
-    fi = FunctionInspector(list_files)
-    assert fi.parameters[0].name == "src"
-    assert fi.parameters[1].name == "includes"
-    assert not fi.parameters[3].default
-    assert fi.parameters[3].doc
-    assert fi.parameters[3].name == "recursive"
+    fi = FunctionInspector(load_module_schemas)
+    assert fi.parameters[0].name == "module"
+    assert fi.parameters[1].name == "schemas_store"
+    assert fi.parameters[0].doc
     assert fi.returns
-    assert len(fi.parameters) == 7
+    assert len(fi.parameters) == 2
     assert not fi.keywords
     assert not fi.varargs
     assert not fi.decorators
 
 
 def test_ClassInspector():
-    ci = ClassInspector(LoadedModules)
-    assert ci.methodsAll["exists"].parameters[0]
-    assert ci.methods["list_files"].shortDescription
-    assert ci.methods["list_files"].parameters[2].name == "recursive"
-    assert not ci.methods["list_files"].parameters[2].default
-    assert ci.methods["list_files"].parameters[2].doc is None
-    assert ci.mro[0].methods["list_files"].parameters[2].doc
+    ci = ClassInspector(Deserializer)
+    assert ci.methods["load"].shortDescription
+    assert ci.methods["load"].parameters[0].name == "path"
+    assert not ci.methods["load"].parameters[0].default
+    assert ci.methods["load"].parameters[0].doc
+    assert ci.methods["load"].keywords == 'opts'
 
 
 if __name__ == "__main__":
     test_FunctionInspector()
     test_ClassInspector()
-    print("")

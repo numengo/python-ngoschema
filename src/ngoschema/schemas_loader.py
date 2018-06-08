@@ -27,7 +27,7 @@ _ = gettext.gettext
 _all_schemas_store = URIDict()
 
 
-def _get_all_schemas_store():
+def get_all_schemas_store():
     return _all_schemas_store
 
 
@@ -103,7 +103,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
 
     if schemas_store is None:
         schemas_store = URIDict()
-    for ms in list_files(libpath, "schemas/*.json"):
+    for ms in list_files(libpath, "schemas/*.json", recursive=True):
         try:
             uri, sch = load_schema_file(ms, schemas_store)
         except Exception as er:

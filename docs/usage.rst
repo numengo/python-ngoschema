@@ -9,8 +9,8 @@ To add a schema to a class, user needs to have the class use the ``SchemaMetaCla
     from future.utils import with_metaclass
     from ngoschema import SchemaMetaclass, ProtocolBase
 
-    class SchemaBase(with_metaclass(SchemaMetaclass, ProtocolBase)):
-        schemaUri = "http://numengo.org/draft-04/defs-schema#/definitions/Class"
+    class MySchemaBasedClass(with_metaclass(SchemaMetaclass, ProtocolBase)):
+        schemaUri = "http://numengo.org/draft-04/MySchema"
 
     def __init__(self, *args, **kwargs):
         ProtocolBase.__init__(self, **kwargs)

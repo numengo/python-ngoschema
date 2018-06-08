@@ -133,6 +133,7 @@ def check_datetime_type(param, value, _):
 # converters
 ############
 
+
 @converter_registry.register(name="string")
 def convert_string(param, value, detail):
     if not utils.is_string(value) and utils.is_imported(value):

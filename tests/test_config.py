@@ -6,7 +6,7 @@ import gettext
 import logging
 import os.path
 
-from ngoschema._for_test_only import Project
+from ngoschema.object_loader import ObjectLoader
 from ngoschema.config import ConfigLoader
 
 _ = gettext.gettext
@@ -28,8 +28,8 @@ def test_config():
     assert cm.section("Section:subsection")["OnlyInSection"] == "yes"
     assert cm.section("Section:subsection")["InSubsection"] == "yes"
 
-    prj = Project()
-    assert prj.authorName == "John Doe"
+    prj = ObjectLoader()
+    assert prj.primaryKey == "NotTheDefaultOne"
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ import dpath.util
 from jsonschema.compat import urldefrag
 from jsonschema.validators import RefResolver
 
-from .schemas_loader import _get_all_schemas_store
+from .schemas_loader import get_all_schemas_store
 
 _ = gettext.gettext
 
@@ -31,7 +31,6 @@ def uri_ngo(name, draft=CURRENT_DRAFT):
 
 
 DEFAULT_MS_URI = uri_ngo("schema")
-DEFAULT_DEFS_URI = uri_ngo("defs-schema")
 
 _def_store = dict()
 
@@ -127,9 +126,10 @@ class ExpandingResolver(RefResolver):
         :type name: string
         :rtype: tuple
         """
+        res_scope = self.resolution_scope.split('#')[0]
         uris = list(self.store.keys())
-        uris.remove(self.resolution_scope)
-        uris.insert(0, self.resolution_scope)
+        uris.remove(res_scope)
+        uris.insert(0, res_scope)
 
         for uri in uris:
             s = self.store[uri]
@@ -157,7 +157,7 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     """
     global _resolver
     base_uri, dummy = urldefrag(base_uri)
-    ms = _get_all_schemas_store()
+    ms = get_all_schemas_store()
     if base_uri not in ms:
         raise IOError(
             _("%s not found in loaded schemas (%s)" % (base_uri, ", ".join(

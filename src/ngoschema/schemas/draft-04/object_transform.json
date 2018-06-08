@@ -1,0 +1,33 @@
+{
+  "$schema": "http://numengo.org/draft-04/schema", 
+  "$id": "http://numengo.org/draft-04/ngoschema/object_transform",
+  "title": "ObjectTransform", 
+  "additionalProperties": false, 
+  "type": "object", 
+  "properties": {
+    "to": {
+      "type": "string"
+    }, 
+    "from": {
+      "type": "string"
+    }, 
+    "complexTransformFrom": {
+      "additionalProperties": {
+        "type": "string"
+      }, 
+      "type": "object"
+    }, 
+    "fieldsEquivalence": {
+      "additionalProperties": {
+        "type": "string"
+      }, 
+      "type": "object"
+    }, 
+    "complexTransformTo": {
+      "additionalProperties": {
+        "type": "string"
+      }, 
+      "type": "object"
+    }
+  }
+}

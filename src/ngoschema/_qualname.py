@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import copy
 import ast
 import inspect
 """
@@ -107,6 +108,18 @@ def qualname(obj):
         visitor = _Visitor()
         visitor.visit(node)
         _cache[filename] = qualnames = visitor.qualnames
+        # add treatment to avoid problems with decorators
+        lines = source.splitlines()
+        orig_qualnames = copy.copy(visitor.qualnames)
+        for i, v in orig_qualnames.items():
+            i2 = i
+            while True:
+                if lines[i2 - 1].strip().startswith('@'):
+                    i2 += 1
+                    qualnames[i2] = v
+                else:
+                    break
+        _cache[filename] = qualnames
     try:
         return qualnames[lineno]
     except KeyError:
