@@ -285,7 +285,7 @@ class ClassInspector(object):
             mn = obj.__module__
             return (mn in [
                 None, str.__class__.__module__, "future.types.newobject",
-                "__builtin__"
+                "__builtin__", '_abcoll'
             ])
 
         if not is_builtin(self.klass):
@@ -294,7 +294,6 @@ class ClassInspector(object):
 
         self.mro = []
         for mro in inspect.getmro(self.klass)[1:]:
-            # if mro.__module__ in ['future.types.newobject', '__builtin__']:
             if is_builtin(mro):
                 break
             ci_mro = ClassInspector(mro)
@@ -321,7 +320,7 @@ class ClassInspector(object):
     def methodsPublic(self):
         return {
             n: m
-            for n, m in self.methodsAll()
+            for n, m in self.methodsAll.items()
             if n not in list(self.properties.keys() +
                              self.propertiesInherited.keys())
             and not n.startswith("_")

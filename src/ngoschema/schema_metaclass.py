@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 import gettext
 import logging
+import copy
 
 from jsonschema.compat import iteritems
 import python_jsonschema_objects.util as pjo_util
@@ -20,7 +21,7 @@ from . import utils
 from .classbuilder import ClassBuilder
 from .inspect_objects import FunctionInspector
 from .resolver import get_resolver
-from .schemas_loader import load_module_schemas
+#from .schemas_loader import load_module_schemas
 from .schemas_loader import load_schema
 from .schemas_loader import load_schema_file
 from .validators import DefaultValidator
@@ -28,9 +29,6 @@ from .validators import DefaultValidator
 _ = gettext.gettext
 
 logger = logging.getLogger(__name__)
-
-# necessary to load schemas before any resolution can be done
-load_module_schemas()
 
 
 class SchemaMetaclass(type):
@@ -54,13 +52,15 @@ class SchemaMetaclass(type):
         builder = ClassBuilder(resolver)
         if attrs.get("schema"):
             schemaUri, schema = load_schema(attrs["schema"])
-            schema = resolver.expand(schemaUri, schema)
+            schema = resolver._expand(schemaUri, schema)
         elif attrs.get("schemaPath"):
             schemaUri, schema = load_schema_file(attrs["schemaPath"])
             schema = resolver._expand(schemaUri, schema)
         elif attrs.get("schemaUri"):
             schemaUri, schema = resolver.resolve(attrs["schemaUri"])
         if schema:
+            # make a copy as building class will modify the dict and mess a lot things
+            schema = copy.deepcopy(schema)
             # validate schema with its meta-schema
             metaschema = DefaultValidator.META_SCHEMA
             if schema.get("$schema"):

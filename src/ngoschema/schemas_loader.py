@@ -18,7 +18,7 @@ from builtins import str
 import inflection
 import six
 from jsonschema._utils import URIDict
-from ngofile import list_files
+from ngofile.list_files import list_files
 
 from .exceptions import SchemaError
 
@@ -105,7 +105,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
         schemas_store = URIDict()
     for ms in list_files(libpath, "schemas/*.json", recursive=True):
         try:
-            uri, sch = load_schema_file(ms, schemas_store)
+            load_schema_file(ms, schemas_store)
         except Exception as er:
             logger.error(_("Impossible to load file %s." % ms))
             logger.error(_("%s" % er))

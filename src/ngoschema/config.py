@@ -11,16 +11,30 @@ from __future__ import unicode_literals
 import copy
 import gettext
 import logging
+import appdirs
+import pathlib
+
 from builtins import object
 from builtins import str
 
 from backports import configparser2
 from dpath.util import merge
+from ngofile.pathlist import PathList
 
 from .deserializers import Deserializer
 from .str_utils import CaseInsensitiveDict
 
 _ = gettext.gettext
+
+
+def search_app_config_files(appname=None, appauthor=None, version=None):
+    pl = PathList()
+    cdirs = (appdirs.user_config_dir(appname, appauthor, version),
+             appdirs.site_config_dir(appname, appauthor, version))
+    for cdir in cdirs:
+        if pathlib.Path(cdir).exists():
+            pl.add(cdir)
+    return list(pl.list_files(['*.cfg', '*.ini']))
 
 
 class ConfigParser(Deserializer):
@@ -36,7 +50,6 @@ class ConfigLoader(object):
     """
     Object to deal with multiple config files and merge them.
 
-    Singleton mode allow to have one instance shared among all objects.
     When requesting a section, user retrieves a merged version of all section of
     same name in the different loaded files, including DEFAULT section, and
     inherited sections (using : as a separator between subsections).
@@ -46,25 +59,12 @@ class ConfigLoader(object):
     corresponding dictionary with keys properly cased.
     """
 
-    _instance = None
-    _registry = {}
-    _sections = {}
-
-    def __new__(cls, *args, **kwargs):
-        singleton = kwargs.pop("singleton", False)
-        if not singleton:
-            instance = super(ConfigLoader, cls).__new__(cls)
-            instance._registry = {}
-            instance._sections = {}
-            return instance
-        if cls._instance is None:
-            cls._instance = super(ConfigLoader, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self, *args, **kwargs):
         """
         User can supply a list of config files to merge
         """
+        self._registry = {}
+        self._sections = {}
         for f in args:
             self.add_config(f)
 

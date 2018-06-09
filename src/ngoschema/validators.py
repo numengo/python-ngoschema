@@ -45,7 +45,7 @@ NgoDraft04Validator = extend(
     },
 )
 NgoDraft04Validator._setDefaults = False
-NgoDraft04Validator.META_SCHEMA = _load_schema("draft-04/ngo-draft-04")
+NgoDraft04Validator.META_SCHEMA = _load_schema("ngo-draft-04")
 
 DefaultValidator = NgoDraft04Validator
 

@@ -1,6 +1,6 @@
 {
   "$schema": "http://numengo.org/draft-04/schema", 
-  "$id": "http://numengo.org/draft-04/ngoschema/object_loader",
+  "$id": "http://numengo.org/ngoschema/object_loader",
   "title": "ObjectLoader", 
   "type": "object", 
   "additionalProperties": false, 

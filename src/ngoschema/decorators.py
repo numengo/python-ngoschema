@@ -208,7 +208,7 @@ def log_init(init, instance, args, kwargs):
         _format_call_msg("INIT <%s>.__init__" % instance.__class__.__name__,
                          args, kwargs))
     try:
-        init(*args, **kwargs)
+        return init(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
         instance.logger.error("CALL " + _format_call_msg(

@@ -12,7 +12,7 @@ import gettext
 
 from future.utils import with_metaclass
 
-from ngofile import list_files
+from ngofile.list_files import list_files
 
 from . import utils
 from .classbuilder import ProtocolBase
@@ -29,7 +29,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    schemaUri = "http://numengo.org/draft-04/ngoschema/object_loader"
+    schemaUri = "http://numengo.org/ngoschema/object_loader"
     _deserializers = [JsonDeserializer, YamlDeserializer]
     primaryKey = "name"
 
@@ -51,7 +51,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         Register an object transformation
         """
         transfo_ = transfo if hasattr(
-            transfo, 'as_dict') else ObjectTransformation(**transfo)
+            transfo, 'as_dict') else ObjectTransform(**transfo)
         if transfo_._from is None or transfo._to is None:
             raise ValueError(
                 'transformation needs to have fully qualified from/to ' +
@@ -115,7 +115,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         Load from a search in a directory
         """
-        for f in list_files(src, includes, excludes, recursive):
+        for fp in list_files(src, includes, excludes, recursive):
             try:
                 yield self.load_from_file(fp, **opts)
             except Exception as er:

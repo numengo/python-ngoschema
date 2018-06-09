@@ -70,6 +70,9 @@ def find_getter_setter_defv(propname, class_attrs):
     return getter, setter, defv
 
 
+objects_config_loader = ConfigLoader()
+
+
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
@@ -82,36 +85,34 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
-
-        # convert arguments that might are given as imported objects
-        propnames = self.__prop_names__.values()
-        for k, v in kwargs.items():
-            if k in propnames and not utils.is_string(v) and utils.is_imported(
-                    v):
-                kwargs[k] = utils.fullname(v)
-
         # initialize Protocol Base
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
 
-        # we wait for init to be done in protocolbase, as many things to get
-        # attribute lookup need to be done
-        try:
-            defconf = ConfigLoader(singleton=True).get_values(
-                self.fullname, self.__prop_names__.values())
-            for k, v in defconf.items():
-                if k not in kwargs:
-                    try:
-                        self.logger.debug(
-                            "CONFIG SET %s.%s = %s" % (self.alt_repr(), k, v))
-                        setattr(self, k, v)
-                    except Exception as er:
-                        pass
-        except Exception as er:
-            pass
+    def set_configfiles_defaults(self, overwrite=False):
+        """
+        Look for default values in objects_config_loader to initialize properties
+        in the object.
+
+        :param overwrite: overwrite values already set
+        """
+        defconf = objects_config_loader.get_values(self._fullname,
+                                                   self._property_list)
+        for k, v in defconf.items():
+            if self._properties.get(k, None) or overwrite:
+                try:
+                    self.logger.debug(
+                        "CONFIG SET %s.%s = %s" % (self.alt_repr(), k, v))
+                    setattr(self, k, v)
+                except Exception as er:
+                    self.logger.error(er)
 
     @property
-    def fullname(self):
+    def _fullname(self):
         return utils.fullname(self.__class__)
+
+    @property
+    def _property_list(self):
+        return self._properties.keys() + self._extended_properties.keys()
 
     def alt_repr(self):
         return "<%s id=%i>" % (self.__class__.__name__, id(self))
@@ -184,7 +185,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if hasattr(self.__subclass__, name):
                 return getattr(self._value, name)
             else:
-                return object.__getattr__(self, name)
+                return pjo_literals.LiteralValue.__getattribute__(self, name)
 
         return type(
             native_str(nm),

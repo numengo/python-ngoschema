@@ -19,6 +19,9 @@ from .schema_metaclass import SchemaMetaclass
 
 _ = gettext.gettext
 
+# loader to register module with a transforms folder where to look for model transformations
+transforms_module_loader = utils.GenericModuleFileLoader('transforms')
+
 
 def _process_transform(string):
     if utils.is_pattern(string):
@@ -32,7 +35,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to do simple model to model transformation
     """
 
-    schemaUri = "http://numengo.org/draft-04/ngoschema/object_transform"
+    schemaUri = "http://numengo.org/ngoschema/object_transform"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)

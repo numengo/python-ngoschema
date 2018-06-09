@@ -9,9 +9,6 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-#from ngofile import LoadedModules
-#from ngofile import list_files
-
 from ngoschema.schemas_loader import load_module_schemas
 from ngoschema.deserializers import Deserializer
 from ngoschema.inspect_objects import ClassInspector

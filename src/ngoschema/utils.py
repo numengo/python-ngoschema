@@ -15,10 +15,12 @@ import gettext
 import importlib
 import inspect
 import re
+import pathlib
 from builtins import object
 from builtins import str
 
 from past.builtins import basestring
+from ngofile.pathlist import PathList
 
 from ._qualname import qualname
 from .decorators import take_arrays
@@ -41,6 +43,30 @@ class GenericRegistry(object):
 
     def __call__(self, name):
         return self.registry.get(name)
+
+
+class GenericModuleFileLoader(object):
+    def __init__(self, subfolder_name):
+        self.registry = {}
+        self.subfolderName = subfolder_name
+
+    def register(self, module, subfolder_name=None):
+        m = importlib.import_module(module)
+        subfolder_name = subfolder_name or self.subfolderName
+        subfolder = pathlib.Path(
+            m.__file__).with_name(subfolder_name).resolve()
+        if subfolder.exists():
+            self.registry['%s/%s' % (module, subfolder_name)] = subfolder
+        return subfolder
+
+    def find(self, name):
+        """
+        find first name/pattern in loader's pathlist
+
+        :param name: path or pattern
+        :rtype: path
+        """
+        return PathList(*self.registry.values()).pick_first(name)
 
 
 def gcs(*classes):
@@ -95,7 +121,7 @@ def import_from_string(value):
     """
     Imports a symbol from a string
     """
-    poss = [m.start() for m in re.finditer("\.", "%s." % value)]
+    poss = [m.start() for m in re.finditer(r"\.", "%s." % value)]
     # going backwards
     for pos in reversed(poss):
         try:

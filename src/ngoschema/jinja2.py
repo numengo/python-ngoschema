@@ -25,45 +25,23 @@ from .serializers import serializer_registry
 
 _ = gettext.gettext
 
-filters_registry = utils.GenericRegistry()
+templates_module_loader = utils.GenericModuleFileLoader('templates')
+
+# default jinja2 environment instance
+_default_jinja_env = None
 
 
-class DefaultJinja2Environment(jinja2.Environment):
-    logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")
-
-    def __init__(self, package_path="templates", **kwargs):
-        # prepare prefixed loader with all loaded modules with package_path
-        ms = {
-            k: m
-            for k, m in sys.modules.items() if m and inspect.ismodule(m)
-            and not inspect.isbuiltin(m) and not k.startswith("_")
-        }
-        to_load = {
-            k: m
-            for k, m in ms.items() if hasattr(m, "__file__")
-            and pathlib.Path(m.__file__).with_name(package_path).is_dir()
-        }
-        loader = jinja2.PrefixLoader({
-            k: jinja2.PackageLoader(m, package_path)
-            for k, m in to_load.items()
-        })
-
-        opts = {
-            "trim_blocks": True,
-            "lstrip_blocks": True,
-            "keep_trailing_newline": True,
-        }
-        opts.update(kwargs)
-        jinja2.Environment.__init__(self, loader=loader, **opts)
-
-        # add filters
-        for k, v in filters_registry.registry.items():
-            self.filters[k] = v
+def default_jinja2_env():
+    """
+    Return the default Jinja2 Environment with prefixed modules
+    """
+    global _default_jinja_env
+    if _default_jinja_env is None:
+        _default_jinja_env = ModulePrefixedJinja2Environment()
+    return _default_jinja_env
 
 
-_def_jinja_env = DefaultJinja2Environment()
-
-regex_has_dot = re.compile("(\{\{\s*\w+\.)")
+regex_has_dot = re.compile(r"(\{\{\s*\w+\.)")
 
 
 class templatedString(object):
@@ -73,7 +51,7 @@ class templatedString(object):
 
     def __init__(self, templated_str):
         self.templated_str = templated_str
-        self.template = _def_jinja_env.from_string(templated_str)
+        self.template = default_jinja2_env().from_string(templated_str)
         self.has_dot = regex_has_dot.search(templated_str) is not None
 
     def __call__(self, obj):
@@ -89,7 +67,7 @@ class Jinja2Serializer(Serializer):
 
     def __init__(self, template, environment=None):
         """ initialize with given template """
-        self.jinja = environment or _def_jinja_env
+        self.jinja = environment or default_jinja2_env()
         self.template = template
 
     def dumps(self, obj, **opts):
@@ -100,11 +78,13 @@ class Jinja2Serializer(Serializer):
 
 # ADDITIONAL FILTERS FROM INFLECTION
 
+filters_registry = utils.GenericRegistry()
+
 
 @filters_registry.register()
-def uncamelize(string, uppercase_first_letter=True):
-    __doc__ = inflection.uncamelize.__doc__
-    return inflection.uncamelize(string, uppercase_first_letter)
+def camelize(string, uppercase_first_letter=True):
+    __doc__ = inflection.camelize.__doc__
+    return inflection.camelize(string, uppercase_first_letter)
 
 
 @filters_registry.register()
@@ -165,3 +145,37 @@ def transliterate(string):
 def underscore(word):
     __doc__ = inflection.underscore.__doc__
     return inflection.underscore(word)
+
+
+class ModulePrefixedJinja2Environment(jinja2.Environment):
+    logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")
+
+    def __init__(self, package_path="templates", **kwargs):
+        # prepare prefixed loader with all loaded modules with package_path
+        ms = {
+            k: m
+            for k, m in sys.modules.items()
+            if m and '.' not in k and not k.startswith("_")
+            and inspect.ismodule(m) and not inspect.isbuiltin(m)
+        }
+        to_load = {
+            k: m
+            for k, m in ms.items() if hasattr(m, "__file__")
+            and pathlib.Path(m.__file__).with_name(package_path).is_dir()
+        }
+        loader = jinja2.PrefixLoader({
+            k: jinja2.PackageLoader(utils.fullname(m), package_path)
+            for k, m in to_load.items()
+        })
+
+        opts = {
+            "trim_blocks": True,
+            "lstrip_blocks": True,
+            "keep_trailing_newline": True,
+        }
+        opts.update(kwargs)
+        jinja2.Environment.__init__(self, loader=loader, **opts)
+
+        # add filters
+        for k, v in filters_registry.registry.items():
+            self.filters[k] = v
