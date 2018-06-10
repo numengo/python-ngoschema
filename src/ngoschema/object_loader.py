@@ -86,7 +86,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 pass
         else:
             raise IOError(
-                "Impossible to load %s with parsers %s" % (fp, parsers))
+                "Impossible to load %s with parsers %s.\n%s" % (fp, parsers, er))
 
         foc = opts.get('fromObjectClass') or self._oc
         try:
@@ -99,7 +99,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     tf.transform(tobj, objectClass=self._oc) for tobj in tobjs
                 ]
         except Exception as er:
-            raise IOError("Impossible to load %s from %s" % (foc, fp))
+            raise IOError("Impossible to load %s from %s.\n%s" % (foc, fp, er))
 
         for obj in objs:
             ref = "%s#%s" % (fp, obj[str(self.primaryKey)])
@@ -132,7 +132,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 if v != kwargs[k]:
                     break
             else:
-                yield path, obj
+                yield obj
 
     def pick_first(self, **kwargs):
         """

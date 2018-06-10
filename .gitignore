@@ -36,6 +36,7 @@ TODO
 *.egg-info
 dist
 build
+eggs
 .eggs
 parts
 bin
@@ -43,6 +44,7 @@ binaries
 binaries-dbg
 var
 sdist
+wheelhouse
 develop-eggs
 .installed.cfg
 lib
@@ -65,6 +67,7 @@ logs
 .tox
 .coverage.*
 nosetests.xml
+coverage.xml
 htmlcov
 
 # Translations
@@ -79,6 +82,7 @@ htmlcov
 *.komodoproject
 *.pyproj
 *.sln
+.vs
 
 # Complexity
 output/*.html
@@ -91,9 +95,14 @@ docs/_build
 *~
 .*.sw[po]
 .build
-.vs
+.ve
+.env
+.cache
+.pytest
 .bootstrap
 .pypirc
+.appveyor.token
+*.bak
 
 # Cookiecutter
 .cookiecutterrc
