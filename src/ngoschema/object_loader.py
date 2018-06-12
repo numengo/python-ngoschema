@@ -139,3 +139,16 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         Pick first object corresponding to query
         """
         return next(self.query(**kwargs), None)
+
+    @property
+    def objects(self):
+        """
+        Return a list of all objects loaded
+        """
+        return self._objects.values()
+
+    def get(self, pk):
+        """
+        Return the first object with the corresponding primary key
+        """
+        return self.pick_first(**{str(self.primaryKey): pk})

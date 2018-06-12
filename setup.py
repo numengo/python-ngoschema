@@ -38,7 +38,7 @@ def get_version(package):
 name = 'ngoschema'
 package = 'ngoschema'
 description = 'definition of classes with json-schema, object management and code-generation'
-url = 'https://github.com/RomanCedric/python-ngoschema'
+url = 'https://github.com/numengo/python-ngoschema'
 author = 'Cédric ROMAN',
 author_email = 'roman@numengo.com',
 license = 'GNU General Public License v3'
