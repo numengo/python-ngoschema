@@ -63,7 +63,6 @@ def get_package_data(package):
 
 setup_requires = [
     'matrix',
-    'pytest-runner',
 ]
 
 install_requires = [
