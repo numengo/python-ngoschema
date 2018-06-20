@@ -40,9 +40,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/ngoschema
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/numengo/python-ngoschema/v0.1.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/numengo/python-ngoschema/v0.2.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/numengo/python-ngoschema/compare/v0.1.0...master
+    :target: https://github.com/numengo/python-ngoschema/compare/v0.2.0...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/ngoschema.svg
     :alt: PyPI Wheel
