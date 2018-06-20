@@ -18,7 +18,7 @@ import python_jsonschema_objects.util as pjo_util
 
 from . import decorators
 from . import utils
-from .classbuilder import ClassBuilder
+from .classbuilder import get_builder
 from .inspect_objects import FunctionInspector
 from .resolver import get_resolver
 #from .schemas_loader import load_module_schemas
@@ -47,9 +47,10 @@ class SchemaMetaclass(type):
 
         # base schema, should be overwritten
         schema = {}
+        schemaUri = None
         # default resolver and builder
-        resolver = get_resolver()
-        builder = ClassBuilder(resolver)
+        builder = get_builder()
+        resolver = builder.resolver
         if attrs.get("schema"):
             schemaUri, schema = load_schema(attrs["schema"])
             schema = resolver._expand(schemaUri, schema)
@@ -77,44 +78,48 @@ class SchemaMetaclass(type):
 
             # reset resolver and builder to use the schemaUri as base
             resolver = get_resolver(schemaUri)
-            builder = ClassBuilder(resolver)
+            builder = get_builder(resolver)
             # building inner definitions
             for nm, defn in iteritems(schema.get("definitions", {})):
                 uri = pjo_util.resolve_ref_uri(schemaUri,
                                                "#/definitions/" + nm)
-                builder.construct(uri, defn, attrs.get("nm", {}))
+                builder.construct(uri, defn, attrs.get(nm, {}))
         else:
             schema["type"] = "object"
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, etc...
         for k, fn in attrs.items():
-            if not attrs.get("__decorate__", True):
-                break
             if not (utils.is_method(fn) or utils.is_function(fn)):
                 continue
+            __add_logging__ = attrs.get("__add_logging__", False)
+            __assert_props__ = attrs.get("__assert_props__", True)
 
-            if k == "__init__":
+            if __add_logging__ and k == "__init__":
                 logger.debug(
                     _("decorate <%s>.__init__ with init logger" % (clsname)))
                 fn = decorators.log_init(fn)
 
             # add argument checking
-            fi = FunctionInspector(fn)
-            for pos, p in enumerate(fi.parameters):
-                if p.type:
-                    logger.debug(
-                        _("decorate <%s>.%s " % (clsname, k) +
-                          "with argument %i validity check." % pos))
-                    fn = decorators.assert_arg(pos, p.type)(fn)
+            if __assert_props__:
+                fi = FunctionInspector(fn)
+                for pos, p in enumerate(fi.parameters):
+                    if p.type:
+                        logger.debug(
+                            _("decorate <%s>.%s " % (clsname, k) +
+                              "with argument %i validity check." % pos))
+                        fn = decorators.assert_arg(pos, p.type)(fn)
 
             # add exception logging
-            if not k.startswith("__"):
+            if __add_logging__ and not k.startswith("__"):
                 logger.debug(
                     _("decorate <%s>.%s with exception logger" % (clsname, k)))
                 fn = decorators.log_exceptions(fn)
 
             attrs[k] = fn
 
-        return builder.construct(
+        cls = builder.construct(
             clsname, schema, parent=bases, class_attrs=dict(attrs))
+        if schemaUri is not None:
+            builder.resolved[schemaUri] = cls
+        return cls

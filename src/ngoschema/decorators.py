@@ -121,15 +121,13 @@ def assert_arg(arg, schema):
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            new_args = list(args)
-            if instance:
-                new_args.insert(0, instance)
-
+            arg_i2 = arg_i if not instance and arg_i is not None else arg_i - 1
+            args = list(args)
             try:
                 if arg_s in kwargs:
                     kwargs[arg_s] = convert_validate(kwargs[arg_s], schema)
-                elif type(arg_i) is int and arg_i < len(new_args):
-                    new_args[arg_i] = convert_validate(new_args[arg_i], schema)
+                elif type(arg_i2) is int and arg_i2 < len(args):
+                    args[arg_i2] = convert_validate(args[arg_i2], schema)
                 else:
                     raise Exception("unknown error")
             except ValidationError as er:
@@ -137,13 +135,11 @@ def assert_arg(arg, schema):
                     raise ValidationError(
                         _("%s=%r is not valid. %s") % (arg_s, kwargs[arg_s],
                                                        er))
-                elif type(arg_i) is int and arg_i < len(new_args):
+                elif type(arg_i) is int and arg_i2 < len(args):
                     raise ValidationError(
-                        _("%s=%r is not valid. %s") % (arg_s, new_args[arg_i],
+                        _("%s=%r is not valid. %s") % (arg_s, args[arg_i2],
                                                        er))
-            if instance:
-                new_args.pop(0)
-            return wrapped(*new_args, **kwargs)
+            return wrapped(*args, **kwargs)
 
         decorated = wrapper(wrapped)
 

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for validators of NgoProject
 
 author: Cedric ROMAN
 email: roman@numengo.com

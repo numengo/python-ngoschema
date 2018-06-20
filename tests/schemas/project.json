@@ -47,10 +47,6 @@
       "type": "string", 
       "format": "uri-reference"
     }, 
-    "serializers": {
-      "default": "ngoproject._vs2017.Vs2017Serializer", 
-      "type": "string"
-    }, 
     "lic": {
       "type": "string"
     }, 

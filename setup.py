@@ -62,14 +62,12 @@ def get_package_data(package):
 
 
 setup_requires = [
-    'pathlib',
     'matrix',
-    #'pytest-runner',
+    'pytest-runner',
 ]
 
 install_requires = [
     'pathlib',
-    'apipkg',
     'future',
     'python-gettext',
     'click',
@@ -166,7 +164,6 @@ setup(
     ],
     cmdclass={
         'install': PostInstallCommand,
-        'develop': PostInstallCommand,
     },
 )
 

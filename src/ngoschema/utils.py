@@ -16,6 +16,9 @@ import importlib
 import inspect
 import re
 import pathlib
+import logging
+import sys
+import subprocess
 from builtins import object
 from builtins import str
 
@@ -56,7 +59,9 @@ class GenericModuleFileLoader(object):
         subfolder = pathlib.Path(
             m.__file__).with_name(subfolder_name).resolve()
         if subfolder.exists():
-            self.registry['%s/%s' % (module, subfolder_name)] = subfolder
+            if module not in self.registry:
+                self.registry[module] = []
+            self.registry[module].append(subfolder)
         return subfolder
 
     def find(self, name):
@@ -66,7 +71,13 @@ class GenericModuleFileLoader(object):
         :param name: path or pattern
         :rtype: path
         """
-        return PathList(*self.registry.values()).pick_first(name)
+        name = name.replace('\\', '/')
+        if '/' in name:
+            module, path = name.split('/', 1)
+            if module in self.registry:
+                return PathList(*self.registry[module]).pick_first(path)
+        all_paths = list(sum(self.registry.values(), []))
+        return PathList(*all_paths).pick_first(name)
 
 
 def gcs(*classes):
@@ -140,24 +151,6 @@ def import_from_string(value):
     raise InvalidValue(_("%s is not an importable object" % value))
 
 
-#def impobj_or_str(val):
-#    if is_string(val):
-#        return val, import_from_string(val)
-#    elif is_imported(val):
-#        return fullname(val), val
-#    else:
-#        raise InvalidValue(_("%r is not an object class" % val))
-#
-#
-#def impobj_or_str_arr(array):
-#    s_a = o_a = []
-#    for e in array:
-#        s, o = impobj_or_str(e)
-#        s_a.append(s)
-#        o_a.append(o)
-#    return s_a, o_a
-
-
 def is_module(value):
     """
     Test if value is a module
@@ -196,9 +189,17 @@ def is_static_method(value):
     return type(value) is staticmethod
 
 
+def is_class_method(value):
+    """
+    Test if value is a class method
+    """
+    return type(value) is classmethod
+
+
 def is_method(value,
               with_callable=True,
               with_static=True,
+              with_class=True,
               with_method_descriptor=True):
     """
     Test if value is a method
@@ -206,6 +207,8 @@ def is_method(value,
     if with_callable and is_callable(value):
         return True
     if with_static and is_static_method(value):
+        return True
+    if with_class and is_class_method(value):
         return True
     if with_method_descriptor and inspect.ismethoddescriptor(value):
         return True
@@ -359,3 +362,27 @@ def process_collection(data, **opts):
     if "objectClass" in opts:
         return opts["objectClass"](**data)
     return data
+
+
+def logging_call(popenargs,
+                 logger=None,
+                 stdout_log_level=logging.DEBUG,
+                 stderr_log_level=logging.ERROR,
+                 **kwargs):
+    """
+    Variant of subprocess.call that accepts a logger instead of stdout/stderr,
+    and logs stdout messages via logger.debug and stderr messages via
+    logger.error.
+
+    inspired from code https://gist.github.com/1402841/231d4ae00325892ad30f6d9587446bc55c56dcb6
+    """
+    _logger = logger or logging.getLogger(__name__)
+    out, err = subprocess.Popen(
+        popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        **kwargs).communicate()
+    #print out, err
+    enc = sys.stdout.encoding or "cp850"
+    if out:
+        _logger.log(stdout_log_level, unicode(out, enc))
+    if err:
+        _logger.log(stderr_log_level, unicode(err, enc))

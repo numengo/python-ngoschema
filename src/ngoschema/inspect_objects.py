@@ -33,6 +33,10 @@ _ = gettext.gettext
 
 logger = logging.getLogger(__name__)
 
+EXCLUDED_MODULES = [
+    None, str.__class__.__module__, "future.types.newobject",
+    "__builtin__", '_abcoll', 'abc'
+]
 
 class Argument(object):
     """
@@ -175,7 +179,7 @@ class FunctionInspector(object):
         if is_string(function):
             function = import_from_string(function)
         if not (inspect.isfunction(function) or inspect.ismethod(function)
-                or type(function) is staticmethod):
+                or type(function) in [staticmethod, classmethod]):
             raise InvalidValue(
                 _("%r is not a function or a method" % function))
         self.function = function
@@ -183,11 +187,13 @@ class FunctionInspector(object):
         if self.doc:
             self.doc = self.doc.strip()
 
-        if not type(function) is staticmethod:
+        if not type(function) in [staticmethod, classmethod]:
             self.name = getattr(function, "__name__", None)
             _module = importlib.import_module(function.__module__)
             self.module = _module
             self.moduleName = _module.__name__
+            if self.moduleName in EXCLUDED_MODULES:
+                return
 
         def _visit_FunctionDef(node):
             if (node.name == self.name
@@ -283,10 +289,7 @@ class ClassInspector(object):
         # avoid builtin
         def is_builtin(obj):
             mn = obj.__module__
-            return (mn in [
-                None, str.__class__.__module__, "future.types.newobject",
-                "__builtin__", '_abcoll'
-            ])
+            return (mn in EXCLUDED_MODULES)
 
         if not is_builtin(self.klass):
             node = ast.parse(inspect.getsource(self.klass))

@@ -13,6 +13,8 @@ from __future__ import unicode_literals
 import collections
 import datetime
 import gettext
+import itertools
+import copy
 import inspect
 import logging
 import pathlib
@@ -30,6 +32,8 @@ from future.utils import text_to_native_str as native_str
 from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
+from .resolver import get_resolver
+from .resolver import DEFAULT_MS_URI
 from .config import ConfigLoader
 
 _ = gettext.gettext
@@ -37,6 +41,19 @@ _ = gettext.gettext
 logger = pjo_classbuilder.logger
 
 _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
+
+_default_builder = None
+
+
+def get_builder(resolver=None):
+    global _default_builder
+    if _default_builder is None:
+        _default_builder = ClassBuilder(resolver or get_resolver())
+    else:
+        base_uri = _default_builder.resolver.base_uri
+        resolver = resolver or get_resolver(base_uri)
+        _default_builder.resolver = resolver
+    return _default_builder
 
 
 def find_getter_setter_defv(propname, class_attrs):
@@ -79,14 +96,36 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __class_attr_list__ = set()
 
     def __new__(cls, *args, **kwargs):
-        new = super(pjo_classbuilder.ProtocolBase, cls).__new__
+        if 'schemaUri' in kwargs:
+            builder = get_builder()
+            schemaUri = kwargs.pop("schemaUri")
+            uri = pjo_util.resolve_ref_uri(builder.resolver.resolution_scope,
+                                           schemaUri)
+            if uri in builder.resolved:
+                cls = builder.resolved[uri]
+            else:
+                uri, detail = builder.resolver.resolve(schemaUri)
+                cls = builder.construct(uri, detail, (ProtocolBase, ))
+            return cls(*args, **kwargs)
+        new = super(ProtocolBase, cls).__new__
         if new is object.__new__:
             return new(cls)
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         # initialize Protocol Base
+        self._name2attr = {}
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
+        if getattr(self, '__attr_by_name__', False):
+            for k, p in self.items():
+                if not p:
+                    continue
+                if hasattr(p, "name"):
+                    self._name2attr[str(p.name)] = (k, None)
+                elif hasattr(p, "validate_items"):
+                    for i, e in enumerate(p):
+                        if hasattr(e, "name"):
+                            self._name2attr[str(e.name)] = (k, i)
 
     def set_configfiles_defaults(self, overwrite=False):
         """
@@ -112,7 +151,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     @property
     def _property_list(self):
-        return self._properties.keys() + self._extended_properties.keys()
+        return itertools.chain(self._properties.keys(),
+                               self._extended_properties.keys())
 
     def alt_repr(self):
         return "<%s id=%i>" % (self.__class__.__name__, id(self))
@@ -127,6 +167,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         elif name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
         else:
+            if name in self._name2attr:
+                n2a = self._name2attr[name]
+                return getattr(self, n2a[0]) if n2a[1] is None else getattr(
+                    self, n2a[0])[n2a[1]]
             return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
 
     def __setattr__(self, name, val):
@@ -134,7 +178,15 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if name.startswith("_"):
             collections.MutableMapping.__setattr__(self, name, val)
         else:
-            pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
+            if name in self._name2attr:
+                n2a = self._name2attr[name]
+                if na2[1] is None:
+                    pjo_classbuilder.ProtocolBase.__setattr__(
+                        self, n2a[0], val)
+                else:
+                    getattr(self, n2a[0])[n2a[1]] = val
+            else:
+                pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
     def _set_prop_value(self, prop, value):
         """
@@ -232,19 +284,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # necessary to build type
         clsname = native_str(nm.split("/")[-1])
 
-        props = {}
+        props = dict()
         defaults = set()
 
         class_attrs = kw.get("class_attrs", {})
 
         # setup logger and make it a property
         if "logger" not in class_attrs:
-            class_attrs["__logger__"] = logging.getLogger(clsname)
-
-            def get_logger(self):
-                return self.__logger__
-
-            class_attrs["logger"] = property(get_logger, doc="class logger")
+            class_attrs["logger"] = logging.getLogger(clsname)
 
         # create a setter for logLevel
         if "logLevel" in clsdata.get("properties", {}):
@@ -264,14 +311,23 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props["__class_attr_list__"] = set(class_attrs.keys())
 
-        properties = {}
+        properties = dict()
 
-        for p in parents:
+        # parent classes
+        for ext in clsdata.get("extends", []):
+            uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, ext)
+            if uri in self.resolved:
+                base = self.resolved[uri]
+                if not any([issubclass(p, base) for p in parents]):
+                    parents = (base, ) + parents
+
+        for p in reversed(parents):
             properties = pjo_util.propmerge(properties,
                                             getattr(p, "__propinfo__", {}))
 
         if "properties" in clsdata:
-            properties = pjo_util.propmerge(properties, clsdata["properties"])
+            properties = pjo_util.propmerge(
+                properties, copy.deepcopy(clsdata["properties"]))
 
         name_translation = {}
 
@@ -296,7 +352,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if defv is not None:
                 detail["default"] = defv
 
-            if detail.get("default", None) is not None:
+            if detail.get("default") is None and detail.get("enum") is not None:
+                detail['default'] = detail["enum"][0]
+
+            if detail.get("default") is None and detail.get("type") == 'array':
+                detail['default'] = []
+
+            if detail.get("default") is not None:
                 defaults.add(prop)
 
             if detail.get("type", None) == "object":
@@ -571,6 +633,11 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif pjo_util.safe_issubclass(info["type"],
                                       pjo_wrapper_types.ArrayWrapper):
             # An array type may have already been converted into an ArrayValidator
+            val = info["type"](val)
+            val.validate()
+        elif hasattr(info["type"], "validate_items"):
+            # THIS SHOULD NOT HAPPEN, SHOULD ALREADY TESTED TRUE JUST BEFORE
+            raise Exception("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             val = info["type"](val)
             val.validate()
 

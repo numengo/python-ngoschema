@@ -45,7 +45,7 @@ class Deserializer(with_metaclass(ABCMeta)):
         self.logger.info(_("LOAD from file %s" % (path)))
         # with codecs.open(str(path), ptcl, enc) as f:
         #    return self.loads(f, **opts)
-        with codecs.open(str(path), ptcl, enc) as f:
+        with codecs.open(str(path.resolve()), ptcl, enc) as f:
             try:
                 return self.loads(f.read(), **opts)
             except Exception as er:

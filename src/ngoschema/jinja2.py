@@ -15,6 +15,7 @@ import pathlib
 import re
 import sys
 from builtins import object
+from builtins import str
 
 import inflection
 import jinja2
@@ -90,61 +91,61 @@ def camelize(string, uppercase_first_letter=True):
 @filters_registry.register()
 def dasherize(word):
     __doc__ = inflection.dasherize.__doc__
-    return inflection.dasherize(word)
+    return inflection.dasherize(str(word))
 
 
 @filters_registry.register()
 def ordinal(number):
     __doc__ = inflection.ordinal.__doc__
-    return inflection.ordinal(number)
+    return inflection.ordinal(int(number))
 
 
 @filters_registry.register()
 def ordinalize(number):
     __doc__ = inflection.ordinalize.__doc__
-    return inflection.ordinalize(number)
+    return inflection.ordinalize(int(number))
 
 
 @filters_registry.register()
 def parameterize(string, separator="-"):
     __doc__ = inflection.parameterize.__doc__
-    return inflection.parameterize(string, separator)
+    return inflection.parameterize(str(string), separator)
 
 
 @filters_registry.register()
 def pluralize(word):
     __doc__ = inflection.pluralize.__doc__
-    return inflection.pluralize(word)
+    return inflection.pluralize(str(word))
 
 
 @filters_registry.register()
 def singularize(word):
     __doc__ = inflection.singularize.__doc__
-    return inflection.singularize(word)
+    return inflection.singularize(str(word))
 
 
 @filters_registry.register()
 def tableize(word):
     __doc__ = inflection.tableize.__doc__
-    return inflection.tableize(word)
+    return inflection.tableize(str(word))
 
 
 @filters_registry.register()
 def titleize(word):
     __doc__ = inflection.titleize.__doc__
-    return inflection.titleize(word)
+    return inflection.titleize(str(word))
 
 
 @filters_registry.register()
 def transliterate(string):
     __doc__ = inflection.transliterate.__doc__
-    return inflection.transliterate(string)
+    return inflection.transliterate(str(string))
 
 
 @filters_registry.register()
 def underscore(word):
     __doc__ = inflection.underscore.__doc__
-    return inflection.underscore(word)
+    return inflection.underscore(str(word))
 
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):

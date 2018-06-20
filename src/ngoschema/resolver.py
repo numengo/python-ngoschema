@@ -60,8 +60,6 @@ class ExpandingResolver(RefResolver):
         :rtype: dict
         """
         uri = self._urljoin_cache(self.resolution_scope, uri)
-        if uri in _def_store:
-            return _def_store[uri]
 
         doc_scope, frag = urldefrag(uri)
 
@@ -70,9 +68,14 @@ class ExpandingResolver(RefResolver):
         if ref:
             ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
+            if uri_ in _def_store:
+                return _def_store[uri_]
             sch = self._expand(uri_, schema_)
-            _def_store[uri] = sch
+            _def_store[uri_] = sch
             return sch
+
+        if uri in _def_store:
+            return _def_store[uri]
 
         schema_exp = {}
 
@@ -93,29 +96,22 @@ class ExpandingResolver(RefResolver):
                     extends_.append(e)
             schema_exp["extends"] = extends_
 
-        _def_store[uri] = schema_exp
+        #_def_store[uri] = schema_exp
         return schema_exp
 
-    def resolve_no_expand(self, ref):
-        """
-        Resolve reference without expanding result.
-        """
-        return self.resolve(ref, False)
-
-    def resolve(self, ref, expand=True):
+    def resolve_from_url(self, url, expand=True):
         """
         Resolve a reference and returns its URI and the corresponding schema.
 
-        :param ref: reference to look for
-        :type ref: string
+        :param url: reference to look for
+        :type url: string
         :param expand: expand result if schema extends others
         :rtype: [string, dict]
         """
-        __doc__ = RefResolver.__doc__
-        url, schema = RefResolver.resolve(self, ref)
+        schema = RefResolver.resolve_from_url(self, url)
         if expand:
             schema = self._expand(url, schema)
-        return url, schema
+        return schema
 
     def resolve_by_name(self, name, expand=True):
         """

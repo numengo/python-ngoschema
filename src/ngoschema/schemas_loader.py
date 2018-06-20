@@ -41,6 +41,7 @@ def _load_schema(name):
 
     """
     data = pkgutil.get_data("ngoschema", "schemas/{0}.json".format(name))
+    #return json.loads(data.decode("utf-8"), object_pairs_hook=collections.OrderedDict)
     return json.loads(data.decode("utf-8"))
 
 
@@ -55,7 +56,7 @@ def load_schema(schema, schemas_store=None):
     :param schemas_store: optional schemas_store to fill 
     :type schemas_store: dict
     """
-    uri = _id_of(schema)
+    uri = _id_of(schema).rstrip('#')
     if not uri and "title" in schema:
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")
     if not uri:
@@ -80,6 +81,7 @@ def load_schema_file(schema_path, schemas_store=None):
     :rtype: dict
     """
     with open(str(schema_path), "rb") as f:
+        #schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
         schema = json.loads(f.read().decode("utf-8"))
         return load_schema(schema, schemas_store)
 

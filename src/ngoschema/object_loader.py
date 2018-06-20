@@ -9,6 +9,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import gettext
+import six
 
 from future.utils import with_metaclass
 
@@ -30,7 +31,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
 
     schemaUri = "http://numengo.org/ngoschema/object_loader"
-    _deserializers = [JsonDeserializer, YamlDeserializer]
+    deserializers = [JsonDeserializer, YamlDeserializer]
     primaryKey = "name"
 
     def __init__(self, **kwargs):
@@ -86,7 +87,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 pass
         else:
             raise IOError(
-                "Impossible to load %s with parsers %s.\n%s" % (fp, parsers, er))
+                "Impossible to load %s with parsers %s.\n%s" % (fp, parsers))
 
         foc = opts.get('fromObjectClass') or self._oc
         try:
@@ -114,12 +115,16 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                             **opts):
         """
         Load from a search in a directory
+       
+        :type src: path
         """
+        objs = []
         for fp in list_files(src, includes, excludes, recursive):
             try:
-                yield self.load_from_file(fp, **opts)
+                objs += self.load_from_file(fp, **opts)
             except Exception as er:
                 self.logger.warning(er)
+        return objs
 
     def query(self, **kwargs):
         """
@@ -146,6 +151,9 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         Return a list of all objects loaded
         """
         return self._objects.values()
+
+    def __iter__(self):
+        return six.itervalues(self._objects)
 
     def get(self, pk):
         """
