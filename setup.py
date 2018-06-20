@@ -70,6 +70,7 @@ install_requires = [
     'future',
     'python-gettext',
     'click',
+    'git+https://github.com/Julian/jsonschema.git@draft7',
     'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
     'ngofile',
     'attrs',
