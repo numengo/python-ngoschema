@@ -16,4 +16,4 @@ __all__ = [
 
 __author__ = "Cédric ROMAN"
 __email__ = "roman@numengo.com"
-__version__ = "__version__ = '0.2.1'"
+__version__ = "__version__ = '0.2.2'"
