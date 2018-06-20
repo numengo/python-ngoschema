@@ -85,8 +85,8 @@ install_requires = [
     'ruamel.yaml',
 ]
 
-post_install_requires = [i for i in install_requires if ('-' in i or ':' in i)]
-install_requires = [i for i in install_requires if not ('-' in i or ':' in i)]
+post_install_requires = [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]
+install_requires = [i for i in install_requires if not ('-' in i or ':' in i or '.' in i)]
 
 
 # for setuptools to work properly, we need to install packages with - or : separately
@@ -139,7 +139,6 @@ setup(
     extras_require=extras_requires,
     entry_points={
         'console_scripts': [
-            'obj_manager=ngoschema.cli:obj_manager_cli',
         ]
     },
     classifiers=[
