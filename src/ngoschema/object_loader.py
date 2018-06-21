@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import gettext
 import six
+import re
 
 from future.utils import with_metaclass
 
@@ -46,6 +47,13 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         self._transforms = {}
         self._objects = {}
+
+    _pk = None
+    @property
+    def pk(self):
+        if self._pk is None:
+            self._pk = re.sub(r"[^a-zA-z0-9\-_]+", "", str(self.primaryKey))
+        return self._pk
 
     def add_transformation(self, transfo):
         """
@@ -103,7 +111,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
             raise IOError("Impossible to load %s from %s.\n%s" % (foc, fp, er))
 
         for obj in objs:
-            ref = "%s#%s" % (fp, obj[str(self.primaryKey)])
+            ref = "%s#%s" % (fp, obj[self.pk])
             self._objects[ref] = obj
         return objs
 
@@ -130,11 +138,11 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         Make a generator for a query in loaded objects
         """
-        for path, obj in self._objects.items():
-            for k in kwargs.keys():
-                v = obj[k].for_json() if hasattr(obj[k],
-                                                 "for_json") else obj[k]
-                if v != kwargs[k]:
+        for obj in self:
+            for k, v2 in kwargs.items():
+                o = obj[k]
+                v = o.for_json() if hasattr(o, "for_json") else o
+                if v != v2:
                     break
             else:
                 yield obj
@@ -159,4 +167,4 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         Return the first object with the corresponding primary key
         """
-        return self.pick_first(**{str(self.primaryKey): pk})
+        return self.pick_first(**{self.pk: pk})
