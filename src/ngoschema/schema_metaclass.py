@@ -101,7 +101,7 @@ class SchemaMetaclass(type):
                 fn = decorators.log_init(fn)
 
             # add argument checking
-            if __assert_props__:
+            if __assert_props__ and fn.__doc__:
                 fi = FunctionInspector(fn)
                 for pos, p in enumerate(fi.parameters):
                     if p.type:
