@@ -90,6 +90,12 @@ _module = None
 def _id(arg):
     return getattr(arg, "id", None) or getattr(arg, "arg")
 
+def ast_name(ast_attr):
+    if isinstance(ast_attr, ast.Attribute):
+        return ast_attr.attr
+    if isinstance(ast_attr, (ast.Name, ast.Call)):
+        return _id(ast_attr)
+    return ast.literal_eval(ast_attr)
 
 def visit_FunctionDef(node):
     """ ast node visitor """
@@ -127,14 +133,10 @@ def visit_FunctionDef(node):
     for n in node.decorator_list:
         name = ""
         if isinstance(n, ast.Call):
-            name = n.func.attr if isinstance(n.func,
-                                             ast.Attribute) else _id(n.func)
-            args = [
-                d.attr if isinstance(d, ast.Attribute) else ast.literal_eval(d)
-                for d in n.args
-            ]
+            name = ast_name(n.func)
+            args = [ast_name(d) for d in n.args]
         else:
-            name = n.attr if isinstance(n, ast.Attribute) else _id(n)
+            name = ast_name(n)
             args = []
         dec = getattr(_module, name, None)
         if not dec:
@@ -351,9 +353,9 @@ def inspect_file(file_):
         [d.name for d in t.body if isinstance(d, ast.FunctionDef)],
         [d.name for d in t.body if isinstance(d, ast.ClassDef)],
         [
-            _id(d.targets[0]) for d in t.body
+            ast_name(d.targets[0]) for d in t.body
             if isinstance(d, ast.Assign) and (
                 hasattr(d.targets[0], "id") or hasattr(d.targets[0], "id"))
-            and _id(d.targets[0])[0].isupper()
+            and ast_name(d.targets[0])[0].isupper()
         ],
     )
