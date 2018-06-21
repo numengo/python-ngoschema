@@ -15,6 +15,7 @@ from pprint import pformat
 
 import six
 import wrapt
+from pyrsistent import pmap
 from python_jsonschema_objects.validators import ValidationError
 
 from .exceptions import InvalidValue
@@ -94,6 +95,20 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
         return decorated
 
     return to_decorate
+
+
+# useful schemas shortcuts
+SCH_STR = pmap({"type": "string"})
+SCH_INT = pmap({"type": "integer"})
+SCH_NUM = pmap({"type": "number"})
+SCH_STR_ARRAY = pmap({"type": "array", "items": {"type": "string"}})
+SCH_PATH = pmap({"type": "path"})
+SCH_PATH_DIR = pmap({"type": "path", "isPathDir": True})
+SCH_PATH_FILE = pmap({"type": "path", "isPathFile": True})
+SCH_PATH_EXISTS = pmap({"type": "path", "isPathExisting": True})
+SCH_DATE = pmap({"type": "date"})
+SCH_TIME = pmap({"type": "time"})
+SCH_DATETIME = pmap({"type": "datetime"})
 
 
 def assert_arg(arg, schema):

@@ -23,7 +23,6 @@ from six import reraise as raise_
 
 from . import decorators
 from . import utils
-from . import validators
 
 _ = gettext.gettext
 
@@ -31,7 +30,7 @@ _ = gettext.gettext
 class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    @decorators.assert_arg(1, validators.SCH_PATH_FILE)
+    @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
     def load(self, path, **opts):
         """
         Deserialize a file like object and returns the object

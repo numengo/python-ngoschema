@@ -13,7 +13,6 @@ import gettext
 import six
 from jsonschema.validators import Draft6Validator
 from jsonschema.validators import extend
-from pyrsistent import pmap
 from python_jsonschema_objects.validators import ValidationError
 from python_jsonschema_objects.validators import converter_registry
 from python_jsonschema_objects.validators import registry
@@ -22,19 +21,6 @@ from . import js_validators as _validators
 from .schemas_loader import _load_schema
 
 _ = gettext.gettext
-
-# useful schemas shortcuts
-SCH_STR = pmap({"type": "string"})
-SCH_INT = pmap({"type": "integer"})
-SCH_NUM = pmap({"type": "number"})
-SCH_STR_ARRAY = pmap({"type": "array", "items": {"type": "string"}})
-SCH_PATH = pmap({"type": "path"})
-SCH_PATH_DIR = pmap({"type": "path", "isPathDir": True})
-SCH_PATH_FILE = pmap({"type": "path", "isPathFile": True})
-SCH_PATH_EXISTS = pmap({"type": "path", "isPathExisting": True})
-SCH_DATE = pmap({"type": "date"})
-SCH_TIME = pmap({"type": "time"})
-SCH_DATETIME = pmap({"type": "datetime"})
 
 NgoDraft04Validator = extend(
     Draft6Validator,

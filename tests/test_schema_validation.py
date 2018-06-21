@@ -24,6 +24,7 @@ from jsonschema import RefResolver
 from python_jsonschema_objects.validators import ValidationError
 
 from ngoschema import validators
+from ngoschema import decorators
 from ngoschema.schemas_loader import load_schema_file
 from ngoschema.schemas_loader import get_all_schemas_store
 from ngoschema.resolver import ExpandingResolver
@@ -135,13 +136,13 @@ def test_convert_validate():
             "maxItems": 2
         })
 
-    p = validators.convert_validate(__file__, validators.SCH_PATH_FILE)
+    p = validators.convert_validate(__file__, decorators.SCH_PATH_FILE)
     assert isinstance(p, pathlib.Path)
 
     with pytest.raises(ValidationError):
-        validators.convert_validate(__file__, validators.SCH_PATH_DIR)
+        validators.convert_validate(__file__, decorators.SCH_PATH_DIR)
 
-    d = validators.convert_validate("25/05/2018", validators.SCH_DATE)
+    d = validators.convert_validate("25/05/2018", decorators.SCH_DATE)
     assert isinstance(d, datetime.date)
 
     e = validators.convert_validate(1, {"enum": ["A", "B", "C"]})
