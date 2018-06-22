@@ -95,7 +95,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 pass
         else:
             raise IOError(
-                "Impossible to load %s with parsers %s.\n%s" % (fp, parsers))
+                "Impossible to load %s with parsers %s." % (fp, parsers))
 
         foc = opts.get('fromObjectClass') or self._oc
         try:
@@ -127,7 +127,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         :type src: path
         """
         objs = []
-        for fp in list_files(src, includes, excludes, recursive):
+        for fp in list_files(src, includes, excludes, recursive, folders=0):
             try:
                 objs += self.load_from_file(fp, **opts)
             except Exception as er:
