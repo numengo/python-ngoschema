@@ -118,8 +118,8 @@ class SchemaMetaclass(type):
 
             attrs[k] = fn
 
+        if schemaUri is not None:
+            clsname = schemaUri
         cls = builder.construct(
             clsname, schema, parent=bases, class_attrs=dict(attrs))
-        if schemaUri is not None:
-            builder.resolved[schemaUri] = cls
         return cls
