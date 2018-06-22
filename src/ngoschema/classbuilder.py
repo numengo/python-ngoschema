@@ -15,9 +15,11 @@ import datetime
 import gettext
 import itertools
 import copy
+import re
 import inspect
 import logging
 import pathlib
+import weakref
 from builtins import object
 
 import arrow
@@ -89,12 +91,29 @@ def find_getter_setter_defv(propname, class_attrs):
 
 objects_config_loader = ConfigLoader()
 
+_to_resolve = weakref.WeakValueDictionary()
+
+def get_unresolved_refs():
+    return [o._ref for o in _to_resolve.values()]
+
+def fill_unresolved_from(*objs):
+    all_ids = {str(obj.id).rstrip("#") : obj for obj in objs if hasattr(obj,"id")}
+    resolved = []
+    for k, to_res in _to_resolve.items():
+        for _id, _obj in all_ids.items():
+            if _id == to_res._ref:
+                for a in _obj:
+                    if _obj[a] is not None:
+                        to_res[a] = _obj[a]
+                resolved.append(k)
+    for res in resolved:
+        del _to_resolve[res]
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
     __class_attr_list__ = set()
-
+ 
     def __new__(cls, *args, **kwargs):
         if 'schemaUri' in kwargs:
             builder = get_builder()
@@ -114,18 +133,29 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     def __init__(self, *args, **kwargs):
         # initialize Protocol Base
-        self._name2attr = {}
+        self._key2attr = {}
+        if '$ref' in kwargs:
+            global _to_resolve
+            self._ref = kwargs.pop('$ref').rstrip("#")
+            _to_resolve[id(self)] = self
         pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
+        self._set_key2attr()
+
+    def _set_key2attr(self, key="name"):
+        """
+        create a map of object key to attributes
+        """
+        self._key2attr = {}
         if getattr(self, '__attr_by_name__', False):
             for k, p in self.items():
                 if not p:
                     continue
-                if hasattr(p, "name"):
-                    self._name2attr[str(p.name)] = (k, None)
+                if hasattr(p, key) and getattr(p, key, ""):
+                    self._key2attr[str(p.name)] = (k, None)
                 elif hasattr(p, "validate_items"):
                     for i, e in enumerate(p):
-                        if hasattr(e, "name"):
-                            self._name2attr[str(e.name)] = (k, i)
+                        if hasattr(e, key) and getattr(e, key, ""):
+                            self._key2attr[str(e.name)] = (k, i)
 
     def set_configfiles_defaults(self, overwrite=False):
         """
@@ -167,10 +197,12 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         elif name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
         else:
-            if name in self._name2attr:
-                n2a = self._name2attr[name]
+            if name in self._key2attr:
+                n2a = self._key2attr[name]
                 return getattr(self, n2a[0]) if n2a[1] is None else getattr(
                     self, n2a[0])[n2a[1]]
+            if name in self.__prop_translated__:
+                name = self.__prop_translated__[name]
             return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
 
     def __setattr__(self, name, val):
@@ -178,14 +210,16 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if name.startswith("_"):
             collections.MutableMapping.__setattr__(self, name, val)
         else:
-            if name in self._name2attr:
-                n2a = self._name2attr[name]
+            if name in self._key2attr:
+                n2a = self._key2attr[name]
                 if na2[1] is None:
                     pjo_classbuilder.ProtocolBase.__setattr__(
                         self, n2a[0], val)
                 else:
                     getattr(self, n2a[0])[n2a[1]] = val
             else:
+                if name in self.__prop_translated__:
+                    name = self.__prop_translated__[name]
                 pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
     def _set_prop_value(self, prop, value):
@@ -327,15 +361,30 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         if "properties" in clsdata:
             properties = pjo_util.propmerge(
-                properties, copy.deepcopy(clsdata["properties"]))
+                properties, clsdata["properties"])
 
         name_translation = {}
-
+        name_translated = {}
+#
+        #for prop, detail in properties.items():
+        #    translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
+        #    name_translation[translated] = prop
+        #    if translated != prop:
+        #        name_translated[prop] = translated
+        #    detail['raw_name'] = prop
+#
+        #properties = { name_translated.get(prop, prop) : detail 
+        #               for prop, detail in properties.items()}
+            
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
-            properties[prop]["raw_name"] = prop
-            name_translation[prop] = prop.replace("@", "").replace("$", "")
+            #properties[prop]["raw_name"] = prop
+            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
+            name_translation[prop] = translated
+            if translated != prop:
+                name_translated[translated] = prop
+            ##name_translation[prop] = prop.replace("@", "").replace("$", "")
             prop = name_translation[prop]
 
             # look for getter/setter/defaultvalue first in class definition
@@ -409,6 +458,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     desc=desc)
 
             elif "type" in detail and detail["type"] == "array":
+                # for resolution in create in wrapper_types
+                detail['classbuilder'] = self
                 if "items" in detail and isinstance(detail["items"], dict):
                     if "$ref" in detail["items"]:
                         uri = pjo_util.resolve_ref_uri(
@@ -449,7 +500,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 pjo_wrapper_types.ArrayWrapper.create(
                                     uri,
                                     item_constraint=typ,
-                                    addl_constraints=detail),
+                                    **detail),
                             }
                         except NotImplementedError:
                             typ = detail["items"]
@@ -460,7 +511,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 pjo_wrapper_types.ArrayWrapper.create(
                                     uri,
                                     item_constraint=typ,
-                                    addl_constraints=detail),
+                                   **detail),
                             }
 
                     props[prop] = make_property(
@@ -499,6 +550,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             nm, clsdata, self)
 
         props["__prop_names__"] = name_translation
+        props['__prop_translated__'] = name_translated
 
         props["__propinfo__"] = properties
         # required = set.union(*[p.__required__ for p in parents])
@@ -535,7 +587,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
-        self.logger.debug("GET %s.%s" % (self.alt_repr(), prop))
+        if getattr(self, "__add_logging__", False):
+            self.logger.debug("GET %s.%s" % (self.alt_repr(), prop))
         if fget:
             try:
                 RO_active = False
@@ -555,7 +608,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise AttributeError(_("No attribute %s" % prop))
 
     def setprop(self, val):
-        self.logger.debug("SET %s.%s=%s" % (self.alt_repr(), prop, val))
+        if getattr(self, "__add_logging__", False):
+            self.logger.debug("SET %s.%s=%s" % (self.alt_repr(), prop, val))
         if RO_active:
             raise AttributeError(_("'%s' is read only" % prop))
 
@@ -635,11 +689,6 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             # An array type may have already been converted into an ArrayValidator
             val = info["type"](val)
             val.validate()
-        elif hasattr(info["type"], "validate_items"):
-            # THIS SHOULD NOT HAPPEN, SHOULD ALREADY TESTED TRUE JUST BEFORE
-            raise Exception("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            val = info["type"](val)
-            val.validate()
 
         elif getattr(info["type"], "isLiteralClass", False) is True:
             if not isinstance(val, info["type"]):
@@ -684,7 +733,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         self._properties[prop] = val
 
     def delprop(self):
-        self.logger.debug("DEL %s.%s" % (self.alt_repr(), prop))
+        if getattr(self, "__add_logging__", False):
+            self.logger.debug("DEL %s.%s" % (self.alt_repr(), prop))
         if prop in self.__required__:
             raise AttributeError(_("'%s' is required" % prop))
         else:
