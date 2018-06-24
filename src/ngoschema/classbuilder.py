@@ -14,6 +14,7 @@ import collections
 import datetime
 import gettext
 import itertools
+import six
 import copy
 import re
 import inspect
@@ -113,6 +114,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
     __class_attr_list__ = set()
+    _short_repr_ = True
  
     def __new__(cls, *args, **kwargs):
         if 'schemaUri' in kwargs:
@@ -123,8 +125,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             if uri in builder.resolved:
                 cls = builder.resolved[uri]
             else:
-                uri, detail = builder.resolver.resolve(schemaUri)
-                cls = builder.construct(uri, detail, (ProtocolBase, ))
+                with builder.resolver.resolving(schemaUri) as resolved:
+                    cls = builder.construct(schemaUri, resolved, (ProtocolBase, ))
+                #uri, detail = builder.resolver.resolve(schemaUri)
+                #cls = builder.construct(uri, detail, (ProtocolBase, ))
             return cls(*args, **kwargs)
         new = super(ProtocolBase, cls).__new__
         if new is object.__new__:
@@ -147,7 +151,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         self._key2attr = {}
         if getattr(self, '__attr_by_name__', False):
-            for k, p in self.items():
+            for k, p in itertools.chain(six.iteritems(self._properties),
+                                 six.iteritems(self._extended_properties)):
                 if not p:
                     continue
                 if hasattr(p, key) and getattr(p, key, ""):
@@ -170,7 +175,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             if self._properties.get(k, None) or overwrite:
                 try:
                     self.logger.debug(
-                        "CONFIG SET %s.%s = %s" % (self.alt_repr(), k, v))
+                        "CONFIG SET %r.%s = %s" % (self, k, v))
                     setattr(self, k, v)
                 except Exception as er:
                     self.logger.error(er)
@@ -184,8 +189,13 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return itertools.chain(self._properties.keys(),
                                self._extended_properties.keys())
 
-    def alt_repr(self):
-        return "<%s id=%i>" % (self.__class__.__name__, id(self))
+    def __repr__(self):
+        if not self._short_repr_:
+            return pjo_classbuilder.ProtocolBase.__repr__(self)
+        class_name = self.__class__.__name__
+        if 'name' in self:
+            class_name += ' name=%s' % self['name']
+        return "<%s id=%i>" % (class_name, id(self))
 
     def __getattr__(self, name):
         """
@@ -212,7 +222,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         else:
             if name in self._key2attr:
                 n2a = self._key2attr[name]
-                if na2[1] is None:
+                if n2a[1] is None:
                     pjo_classbuilder.ProtocolBase.__setattr__(
                         self, n2a[0], val)
                 else:
@@ -314,6 +324,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # To support circular references, we tag objects that we're
         # currently building as "under construction"
         self.under_construction.add(nm)
+        current_scope = self.resolver.resolution_scope
 
         # necessary to build type
         clsname = native_str(nm.split("/")[-1])
@@ -349,7 +360,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # parent classes
         for ext in clsdata.get("extends", []):
-            uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, ext)
+            uri = pjo_util.resolve_ref_uri(current_scope, ext)
             if uri in self.resolved:
                 base = self.resolved[uri]
                 if not any([issubclass(p, base) for p in parents]):
@@ -427,7 +438,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             elif "type" not in detail and "$ref" in detail:
                 ref = detail["$ref"]
                 # TODO CRN: shouldn't we retrieve also the reference and construct from it??
-                uri = pjo_util.resolve_ref_uri(self.resolver.resolution_scope,
+                uri = pjo_util.resolve_ref_uri(current_scope,
                                                ref)
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
@@ -463,7 +474,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 if "items" in detail and isinstance(detail["items"], dict):
                     if "$ref" in detail["items"]:
                         uri = pjo_util.resolve_ref_uri(
-                            self.resolver.resolution_scope,
+                            current_scope,
                             detail["items"]["$ref"])
                         typ = self.construct(uri, detail["items"])
                         propdata = {
@@ -484,7 +495,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                     if "$ref" not in item_detail else
                                     self.construct(
                                         pjo_util.resolve_ref_uri(
-                                            self.resolver.resolution_scope,
+                                            current_scope,
                                             item_detail["$ref"],
                                         ),
                                         item_detail,
@@ -572,8 +583,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props["__required__"] = required
         props["__has_default__"] = defaults
-        if required and kw.get("strict"):
-            props["__strict__"] = True
+        props["__add_logging__"] = class_attrs.get('__add_logging__', False)
+        props["__attr_by_name__"] = class_attrs.get('__attr_by_name__', False)
+        props["__strict__"] = required and kw.get("strict")
 
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
@@ -588,7 +600,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
     def getprop(self):
         if getattr(self, "__add_logging__", False):
-            self.logger.debug("GET %s.%s" % (self.alt_repr(), prop))
+            self.logger.debug("GET %r.%s" % (self, prop))
         if fget:
             try:
                 RO_active = False
@@ -609,7 +621,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
     def setprop(self, val):
         if getattr(self, "__add_logging__", False):
-            self.logger.debug("SET %s.%s=%s" % (self.alt_repr(), prop, val))
+            self.logger.debug("SET %r.%s=%s" % (self, prop, val))
         if RO_active:
             raise AttributeError(_("'%s' is read only" % prop))
 
@@ -734,7 +746,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
     def delprop(self):
         if getattr(self, "__add_logging__", False):
-            self.logger.debug("DEL %s.%s" % (self.alt_repr(), prop))
+            self.logger.debug("DEL %r.%s" % (self, prop))
         if prop in self.__required__:
             raise AttributeError(_("'%s' is required" % prop))
         else:
