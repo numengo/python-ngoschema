@@ -23,7 +23,7 @@ dirpath = os.path.dirname(os.path.realpath(__file__))
 
 
 def test_transform():
-    from ngoschema.transforms import ObjectTransform
+    from ngoschema.object_transform import ObjectTransform
 
     class Cookiecutter(with_metaclass(SchemaMetaclass, ProtocolBase)):
         schemaPath = os.path.join(dirpath, "schemas", "cookiecutter.json")
