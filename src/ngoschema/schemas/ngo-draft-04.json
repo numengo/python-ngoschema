@@ -1,335 +1,330 @@
 {
-  "$schema": "http://numengo.org/draft-04/schema#", 
-  "$id": "http://numengo.org/draft-04/schema#", 
-  "title": "numenGo core schema meta-schema", 
+  "$schema": "http://numengo.org/draft-04/schema#",
+  "$id": "http://numengo.org/draft-04/schema#",
+  "title": "numenGo core schema meta-schema",
   "type": [
-    "object", 
+    "object",
     "boolean"
-  ], 
-  "default": true, 
+  ],
   "definitions": {
-    "nonNegativeInteger": {
-      "minimum": 0, 
-      "type": "integer"
-    }, 
+    "schemaArray": {
+      "items": {
+        "$ref": "#"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
     "nonNegativeIntegerDefault0": {
       "allOf": [
         {
           "$ref": "#/definitions/nonNegativeInteger"
-        }, 
+        },
         {
           "default": 0
         }
       ]
-    }, 
+    },
     "simpleTypes": {
       "enum": [
-        "array", 
-        "boolean", 
-        "integer", 
-        "null", 
-        "number", 
-        "object", 
+        "array",
+        "boolean",
+        "integer",
+        "null",
+        "number",
+        "object",
         "string"
       ]
-    }, 
-    "schemaArray": {
-      "minItems": 1, 
-      "items": {
-        "$ref": "#"
-      }, 
-      "type": "array"
-    }, 
+    },
+    "nonNegativeInteger": {
+      "minimum": 0,
+      "type": "integer"
+    },
     "stringArray": {
-      "uniqueItems": true, 
+      "uniqueItems": true,
       "items": {
         "type": "string"
-      }, 
-      "default": [], 
+      },
+      "default": [],
       "type": "array"
-    }, 
+    },
     "complexTypes": {
       "enum": [
-        "path", 
-        "date", 
-        "time", 
+        "path",
+        "date",
+        "time",
         "datetime"
       ]
-    }, 
-    "Metadata": {
-      "additionalProperties": false, 
-      "type": "object", 
+    },
+    "metadata": {
       "properties": {
-        "schemaUri": {
-          "type": "string", 
-          "format": "uri-reference"
-        }, 
-        "name": {
-          "type": "string"
-        }, 
         "parent": {
-          "type": "object", 
-          "opposite": "#/definitions/Metadata/children"
-        }, 
-        "title": {
+          "format": "uri-reference",
+          "opposite": "#/definitions/metadata/children",
           "type": "string"
-        }, 
-        "$id": {
-          "type": "string"
-        }, 
-        "referred": {
-          "items": {
-            "type": "string", 
-            "format": "uri"
-          }, 
-          "type": "array"
-        }, 
+        },
         "children": {
           "items": {
-            "type": "object"
-          }, 
-          "type": "array", 
-          "opposite": "#/definitions/Metadata/parent"
-        }, 
-        "schemaPath": {
+            "format": "uri-reference",
+            "type": "string"
+          },
+          "opposite": "#/definitions/metadata/parent",
+          "type": "array"
+        },
+        "title": {
           "type": "string"
-        }, 
+        },
+        "$id": {
+          "type": "string"
+        },
+        "schemaUri": {
+          "format": "uri-reference",
+          "type": "string"
+        },
         "description": {
           "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "schemaPath": {
+          "type": "string"
         }
-      }
+      },
+      "type": "object",
+      "additionalProperties": false
     }
-  }, 
+  },
+  "default": true,
   "properties": {
-    "minProperties": {
-      "$ref": "#/definitions/nonNegativeIntegerDefault0"
-    }, 
-    "propertyNames": {
-      "$ref": "#"
-    }, 
-    "not": {
-      "$ref": "#"
-    }, 
-    "minimum": {
-      "type": "number"
-    }, 
-    "examples": {
-      "items": true, 
-      "type": "array"
-    }, 
-    "maxItems": {
-      "$ref": "#/definitions/nonNegativeInteger"
-    }, 
-    "$schema": {
-      "type": "string", 
-      "format": "uri"
-    }, 
-    "exclusiveMinimum": {
-      "type": "number"
-    }, 
-    "$ref": {
-      "type": "string", 
-      "format": "uri-reference"
-    }, 
-    "exclusiveMaximum": {
-      "type": "number"
-    }, 
-    "const": true, 
-    "title": {
-      "type": "string"
-    }, 
-    "$id": {
-      "type": "string", 
-      "format": "uri-reference"
-    }, 
-    "pattern": {
-      "type": "string", 
-      "format": "regex"
-    }, 
-    "contains": {
-      "$ref": "#"
-    }, 
-    "patternProperties": {
-      "additionalProperties": {
-        "$ref": "#"
-      }, 
-      "propertyNames": {
-        "format": "regex"
-      }, 
-      "default": {}, 
-      "type": "object"
-    }, 
-    "multipleOf": {
-      "exclusiveMinimum": 0, 
-      "type": "number"
-    }, 
     "maxProperties": {
       "$ref": "#/definitions/nonNegativeInteger"
-    }, 
-    "if": {
-      "$ref": "#"
-    }, 
-    "type": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/simpleTypes"
-        }, 
-        {
-          "minItems": 1, 
-          "items": {
-            "$ref": "#/definitions/simpleTypes"
-          }, 
-          "uniqueItems": true, 
-          "type": "array"
-        }, 
-        {
-          "$ref": "#/definitions/complexTypes"
-        }
-      ]
-    }, 
-    "then": {
-      "$ref": "#"
-    }, 
-    "description": {
+    },
+    "title": {
       "type": "string"
-    }, 
-    "format": {
+    },
+    "anyOf": {
+      "$ref": "#/definitions/schemaArray"
+    },
+    "contentMediaType": {
       "type": "string"
-    }, 
+    },
+    "minProperties": {
+      "$ref": "#/definitions/nonNegativeIntegerDefault0"
+    },
+    "minItems": {
+      "$ref": "#/definitions/nonNegativeIntegerDefault0"
+    },
     "minLength": {
       "$ref": "#/definitions/nonNegativeIntegerDefault0"
-    }, 
-    "enum": {
-      "minItems": 1, 
-      "items": true, 
-      "uniqueItems": true, 
-      "type": "array"
-    }, 
+    },
+    "exclusiveMaximum": {
+      "type": "number"
+    },
+    "properties": {
+      "default": {},
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      }
+    },
+    "$schema": {
+      "format": "uri",
+      "type": "string"
+    },
+    "definitions": {
+      "default": {},
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      }
+    },
+    "contentEncoding": {
+      "type": "string"
+    },
+    "not": {
+      "$ref": "#"
+    },
     "oneOf": {
       "$ref": "#/definitions/schemaArray"
-    }, 
-    "else": {
+    },
+    "$comment": {
+      "type": "string"
+    },
+    "propertyNames": {
       "$ref": "#"
-    }, 
-    "readOnly": {
-      "default": false, 
+    },
+    "uniqueItems": {
+      "default": false,
       "type": "boolean"
-    }, 
+    },
+    "pattern": {
+      "format": "regex",
+      "type": "string"
+    },
+    "contains": {
+      "$ref": "#"
+    },
+    "exclusiveMinimum": {
+      "type": "number"
+    },
+    "multipleOf": {
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "additionalProperties": {
+      "$ref": "#"
+    },
     "dependencies": {
+      "type": "object",
       "additionalProperties": {
         "anyOf": [
           {
             "$ref": "#"
-          }, 
+          },
           {
             "$ref": "#/definitions/stringArray"
           }
         ]
-      }, 
-      "type": "object"
-    }, 
-    "anyOf": {
-      "$ref": "#/definitions/schemaArray"
-    }, 
-    "maxLength": {
-      "$ref": "#/definitions/nonNegativeInteger"
-    }, 
-    "uniqueItems": {
-      "default": false, 
-      "type": "boolean"
-    }, 
-    "$comment": {
+      }
+    },
+    "description": {
       "type": "string"
-    }, 
-    "properties": {
-      "additionalProperties": {
-        "$ref": "#"
-      }, 
-      "default": {}, 
-      "type": "object"
-    }, 
+    },
+    "const": true,
+    "$id": {
+      "format": "uri-reference",
+      "type": "string"
+    },
     "additionalItems": {
       "$ref": "#"
-    }, 
-    "minItems": {
-      "$ref": "#/definitions/nonNegativeIntegerDefault0"
-    }, 
+    },
+    "default": true,
+    "maximum": {
+      "type": "number"
+    },
+    "enum": {
+      "uniqueItems": true,
+      "items": true,
+      "minItems": 1,
+      "type": "array"
+    },
+    "format": {
+      "type": "string"
+    },
+    "examples": {
+      "items": true,
+      "type": "array"
+    },
+    "patternProperties": {
+      "propertyNames": {
+        "format": "regex"
+      },
+      "default": {},
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      }
+    },
+    "$ref": {
+      "format": "uri-reference",
+      "type": "string"
+    },
+    "minimum": {
+      "type": "number"
+    },
+    "required": {
+      "$ref": "#/definitions/stringArray"
+    },
+    "maxLength": {
+      "$ref": "#/definitions/nonNegativeInteger"
+    },
+    "allOf": {
+      "$ref": "#/definitions/schemaArray"
+    },
+    "then": {
+      "$ref": "#"
+    },
+    "if": {
+      "$ref": "#"
+    },
     "items": {
-      "default": true, 
       "anyOf": [
         {
           "$ref": "#"
-        }, 
+        },
         {
           "$ref": "#/definitions/schemaArray"
         }
-      ]
-    }, 
-    "required": {
-      "$ref": "#/definitions/stringArray"
-    }, 
-    "maximum": {
-      "type": "number"
-    }, 
-    "contentEncoding": {
-      "type": "string"
-    }, 
-    "default": true, 
-    "contentMediaType": {
-      "type": "string"
-    }, 
-    "additionalProperties": {
+      ],
+      "default": true
+    },
+    "maxItems": {
+      "$ref": "#/definitions/nonNegativeInteger"
+    },
+    "else": {
       "$ref": "#"
-    }, 
-    "definitions": {
-      "additionalProperties": {
-        "$ref": "#"
-      }, 
-      "default": {}, 
-      "type": "object"
-    }, 
-    "allOf": {
-      "$ref": "#/definitions/schemaArray"
-    }, 
+    },
+    "readOnly": {
+      "default": false,
+      "type": "boolean"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/simpleTypes"
+        },
+        {
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/simpleTypes"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "$ref": "#/definitions/complexTypes"
+        }
+      ]
+    },
+    "isPathExisting": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
     "isAbstract": {
-      "default": false, 
-      "$comment": "for code generation", 
-      "type": "boolean"
-    }, 
-    "isPathFile": {
-      "$comment": "for complexType path", 
-      "type": "boolean"
-    }, 
+      "default": false,
+      "type": "boolean",
+      "$comment": "for code generation"
+    },
+    "targetSchemaUri": {
+      "format": "uri-reference",
+      "type": "string",
+      "$comment": "to indicate an URI should point to a fragment respecting a given schema"
+    },
     "isPathDir": {
-      "$comment": "for complexType path", 
-      "type": "boolean"
-    }, 
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "schemaUri": {
+      "format": "uri-reference",
+      "type": "string",
+      "$comment": "for object subclassing"
+    },
     "extends": {
       "items": {
-        "type": "string", 
-        "format": "uri-reference"
-      }, 
-      "$comment": "for inheritance...", 
-      "type": "array"
-    }, 
+        "format": "uri-reference",
+        "type": "string"
+      },
+      "type": "array",
+      "$comment": "for inheritance..."
+    },
     "opposite": {
-      "$comment": "for DB auto construction", 
-      "type": "string", 
-      "format": "uri-reference"
-    }, 
-    "isPathExisting": {
-      "$comment": "for complexType path", 
-      "type": "boolean"
-    }, 
-    "targetSchemaUri": {
-      "$comment": "to indicate an URI should point to a fragment respecting a given schema", 
-      "type": "string", 
-      "format": "uri-reference"
-    }, 
-    "schemaUri": {
-      "$comment": "for object subclassing", 
-      "type": "string", 
-      "format": "uri-reference"
+      "format": "uri-reference",
+      "type": "string",
+      "$comment": "for DB auto construction"
+    },
+    "isPathFile": {
+      "type": "boolean",
+      "$comment": "for complexType path"
     }
   }
 }
