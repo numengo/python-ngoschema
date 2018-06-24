@@ -1,7 +1,7 @@
 {
   "$schema": "http://numengo.org/draft-04/schema", 
-  "$id": "http://numengo.org/ngoschema/object_transform",
-  "title": "ObjectTransform", 
+  "$id": "http://numengo.org/ngoschema/object-transform",
+  "title": "Object Transform", 
   "additionalProperties": false, 
   "type": "object", 
   "properties": {

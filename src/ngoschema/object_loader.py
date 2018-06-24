@@ -19,7 +19,7 @@ from ngofile.list_files import list_files
 from . import utils
 from .classbuilder import ProtocolBase
 from .schema_metaclass import SchemaMetaclass
-from .transforms import ObjectTransform
+from .object_transform import ObjectTransform
 from .deserializers import YamlDeserializer
 from .deserializers import JsonDeserializer
 
@@ -31,7 +31,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    schemaUri = "http://numengo.org/ngoschema/object_loader"
+    schemaUri = "http://numengo.org/ngoschema/object-loader"
     deserializers = [JsonDeserializer, YamlDeserializer]
     primaryKey = "name"
 
