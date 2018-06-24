@@ -18,6 +18,7 @@ import re
 import pathlib
 import logging
 import sys
+import six
 import subprocess
 from builtins import object
 from builtins import str
@@ -383,6 +384,7 @@ def logging_call(popenargs,
     #print out, err
     enc = sys.stdout.encoding or "cp850"
     if out:
-        _logger.log(stdout_log_level, unicode(out, enc))
+        
+        _logger.log(stdout_log_level, six.text_type(out, enc, errors='ignore'))
     if err:
-        _logger.log(stderr_log_level, unicode(err, enc))
+        _logger.log(stderr_log_level, six.text_type(err, enc, errors='ignore'))

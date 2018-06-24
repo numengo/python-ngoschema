@@ -41,12 +41,15 @@ class Deserializer(with_metaclass(ABCMeta)):
         """
         ptcl = opts.get("protocol", "r")
         enc = opts.get("encoding", "utf-8")
-        self.logger.info(_("LOAD from file %s" % (path)))
+
         # with codecs.open(str(path), ptcl, enc) as f:
         #    return self.loads(f, **opts)
         with codecs.open(str(path.resolve()), ptcl, enc) as f:
             try:
-                return self.loads(f.read(), **opts)
+                obj = self.loads(f.read(), **opts)
+                self.logger.info(_("LOAD file %s" % (path)))
+                self.logger.debug(_("data:\n%r " % (obj)))
+                return obj
             except Exception as er:
                 type, value, traceback = sys.exc_info()
                 msg = "Problem occured loading file %s.\n%s" % (path, value)

@@ -48,7 +48,8 @@ class Serializer(with_metaclass(ABCMeta)):
         ptcl = opts.get("protocol", "w")
         enc = opts.get("encoding", "utf-8")
 
-        self.logger.info(_("DUMP %r to file %s" % (obj, path)))
+        self.logger.info(_("DUMP file %s" % (path)))
+        self.logger.debug(_("data:\n%r " % (obj)))
 
         if path.exists() and not overwrite:
             raise IOError(_("file %s already exists" % str(path)))
