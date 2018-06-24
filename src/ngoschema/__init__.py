@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from .schemas_loader import load_module_schemas
+from ngoschema.jinja2 import templates_module_loader
+
 load_module_schemas('ngoschema')
+templates_module_loader.register('ngoschema')
 
 from .classbuilder import ProtocolBase
 from .resolver import DEFAULT_MS_URI
