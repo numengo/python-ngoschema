@@ -45,8 +45,12 @@ logger = pjo_classbuilder.logger
 
 _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
-_default_builder = None
 
+# loader to register module with a transforms folder where to look for model transformations
+models_module_loader = utils.GenericModuleFileLoader('models')
+
+
+_default_builder = None
 
 def get_builder(resolver=None):
     global _default_builder
@@ -138,6 +142,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     def __init__(self, *args, **kwargs):
         # initialize Protocol Base
         self._key2attr = {}
+        self._parent = None
         if '$ref' in kwargs:
             global _to_resolve
             self._ref = kwargs.pop('$ref').rstrip("#")
@@ -161,6 +166,16 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                     for i, e in enumerate(p):
                         if hasattr(e, key) and getattr(e, key, ""):
                             self._key2attr[str(e.name)] = (k, i)
+
+    _cname = None
+    def get_cname(self, key="name"):
+        if self._cname is None:
+            self._cname = re.sub(r"[^a-zA-z0-9\-_]+", "", str(getattr(self, key)))
+            if self._parent is not None:
+                self._cname = '%s.%s'%(self._parent.get_cname(key), self._cname)
+        return self._cname
+    
+    cname = property(get_cname)
 
     def set_configfiles_defaults(self, overwrite=False):
         """
@@ -585,7 +600,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props["__has_default__"] = defaults
         props["__add_logging__"] = class_attrs.get('__add_logging__', False)
         props["__attr_by_name__"] = class_attrs.get('__attr_by_name__', False)
-        props["__strict__"] = required and kw.get("strict")
+        props["__strict__"] = required or kw.get("strict")
 
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
@@ -612,8 +627,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         try:
             val = self._properties[prop]
             if hasattr(val, "_pattern"):
-                evaluated = jinja2.templatedString(val._pattern)(self)
+                evaluated = jinja2.TemplatedString(val._pattern)(self)
                 val._value = evaluated
+                # we flag patterns as not validated as they depend on other props
+                val._validated = False
                 val.validate()
             return val
         except KeyError:
@@ -672,6 +689,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                             _("Failed to coerce to '%s': %s" % (typ, e)))
                     else:
                         val.validate()
+                        val._parent = self
                         ok = True
                         break
                 elif pjo_util.safe_issubclass(typ,
@@ -683,6 +701,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                             _(("Failed to coerce to '%s': %s") % (typ, e)))
                     else:
                         val.validate()
+                        val._parent = self
                         ok = True
                         break
 
@@ -695,12 +714,18 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif info["type"] == "array":
             val = info["validator"](val)
             val.validate()
+            for e in val:
+                if isinstance(e, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                    e._parent = self
 
         elif pjo_util.safe_issubclass(info["type"],
                                       pjo_wrapper_types.ArrayWrapper):
             # An array type may have already been converted into an ArrayValidator
             val = info["type"](val)
             val.validate()
+            for e in val:
+                if isinstance(e, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                    e._parent = self
 
         elif getattr(info["type"], "isLiteralClass", False) is True:
             if not isinstance(val, info["type"]):
@@ -721,8 +746,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif pjo_util.safe_issubclass(info["type"], ProtocolBase):
             if not isinstance(val, info["type"]):
                 val = info["type"](**pjo_util.coerce_for_expansion(val))
-
             val.validate()
+            val._parent = self
 
         elif isinstance(info["type"], pjo_classbuilder.TypeProxy):
             val = info["type"](val)
