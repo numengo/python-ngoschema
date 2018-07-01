@@ -35,13 +35,16 @@ _ = gettext.gettext
 class Serializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    def dump(self, obj, path, overwrite=False, **opts):
+    def dump(self, obj, path, only=(), but=(), many=False, overwrite=False, **opts):
         """
         Serialize an object to a file like object string
 
-        :param obj: object to serialize
+        :param obj: object(s) to serialize
         :param path: file path containing the object
         :type path: path
+        :param only: only keys to keep
+        :param but: keys to exclude
+        :param many: process collection as a list/sequence. if collection is
         :param overwrite: overwrites existing file
         :param opts: dictionary of option, as protocol(=w) , encoding=(utf-8)
         """
@@ -59,12 +62,15 @@ class Serializer(with_metaclass(ABCMeta)):
             outfile.write(stream)
 
     @abstractmethod
-    def dumps(self, obj, **opts):
+    def dumps(self, obj, only=(), but=(), many=False, **opts):
         """
         Serialize an object to a string
 
-        :param obj: object to serialize
-        :param opts: dictionary of options, as protocol(=w) , encoding=(utf-8), objectClass=None
+        :param obj: object(s) to serialize
+        :param only: only keys to keep
+        :param but: keys to exclude
+        :param many: process collection as a list/sequence. if collection is
+        :param opts: dictionary of options, as protocol(=w) , encoding=(utf-8), object_class=None
         """
 
 
@@ -81,9 +87,17 @@ class JsonSerializer(Serializer):
 
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
-    def dumps(self, obj, **opts):
-        data = obj.as_dict() if hasattr(obj, "as_dict") else obj
-        data = utils.process_collection(data, **opts)
+    def dumps(self, obj, only=(), but=(), many=False, **opts):
+        __doc__ = Serializer.dumps.__doc__
+
+        if many:
+            datas = list(obj) if utils.is_sequence(obj) else obj.values()
+            datas = [d.as_dict() if hasattr(d, "as_dict") else d for d in datas]
+            data = [utils.process_collection(d, only, but, **opts) for d in datas]
+        else:
+            data = obj.as_dict() if hasattr(obj, "as_dict") else obj
+            data = utils.process_collection(data, only, but, **opts)
+
         return json.dumps(
             data,
             indent=opts.get("indent", 2),
@@ -103,12 +117,20 @@ class YamlSerializer(Serializer):
         self._yaml = YAML(typ="safe", **kwargs)
         self._yaml = yaml
 
-    def dumps(self, obj, **opts):
+    def dumps(self, obj, only=(), but=(), many=False, **opts):
+        __doc__ = Serializer.dumps.__doc__
+
+        if many:
+            datas = list(obj) if utils.is_sequence(obj) else obj.values()
+            datas = [d.as_dict() if hasattr(d, "as_dict") else d for d in datas]
+            data = [utils.process_collection(d, only, but, **opts) for d in datas]
+        else:
+            data = obj.as_dict() if hasattr(obj, "as_dict") else obj
+            data = utils.process_collection(data, only, but, **opts)
+
         self._yaml.indent = opts.get("indent", 2)
         self._yaml.allow_unicode = opts.get("encoding", "utf-8") == "utf-8"
 
-        data = obj.as_dict() if hasattr(obj, "as_dict") else obj
-        data = utils.process_collection(data, **opts)
         output = StringIO()
         self._yaml.safe_dump(data, output, default_flow_style=False)
         return output.getvalue()

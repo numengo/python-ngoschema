@@ -11,13 +11,17 @@ from __future__ import unicode_literals
 import gettext
 import six
 import re
+import operator
 
 from future.utils import with_metaclass
 
 from ngofile.list_files import list_files
+from python_jsonschema_objects.util import safe_issubclass
 
 from . import utils
+from .resolver import get_resolver
 from .classbuilder import ProtocolBase
+from .classbuilder import get_builder
 from .schema_metaclass import SchemaMetaclass
 from .object_transform import ObjectTransform
 from .deserializers import YamlDeserializer
@@ -31,7 +35,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    schemaUri = "http://numengo.org/ngoschema/object-loader"
+    schemaUri = "http://numengo.org/ngoschema/ObjectLoader"
     deserializers = [JsonDeserializer, YamlDeserializer]
     primaryKey = "name"
 
@@ -70,22 +74,38 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if issubclass(self._oc, transfo_._to):
             self._transforms[transfo_._from] = transfo_
 
-    def _get_objects_from_data(self, data, objectClass, **opts):
+    def _get_objects_from_data(self, data, object_class, many=False, **opts):
         """
         Returns a list of objects found in data
         Can be overrided by subclasses to add specific treatments
         """
-        obj = objectClass(**data)
-        return [obj]
+        if 'schemaUri' in data and hasattr(object_class, 'schemaUri'):
+            data_schema_uri = data['schemaUri']
+            if data_schema_uri != object_class.schemaUri:
+                builder = get_builder()
+                if data_schema_uri in builder.resolved:
+                    data_class = builder.resolved[data_schema_uri]
+                    if not safe_issubclass(data_class, object_class):
+                        return []
+        return utils.process_collection(data, many=many, object_class=object_class, **opts)
 
-    def load_from_file(self, fp, **opts):
+    def load_from_file(self, fp, from_object_class=None, many=False, **opts):
         """
         Load objects from a file
         Call protected method _process_data
 
         :type fp: path
-        :param opts: options such as fromObjectClass
+        :param many: process collection as a list/sequence. if collection is
+        a dictionary and many=True, values are processed
+        :param opts: options such as from_object_class
         """
+        fp.resolve()
+
+        # check if already loaded
+        objs = [o for ref, o in self._objects.items() if ref.split('#')[0]==str(fp)]
+        if objs:
+            return objs if many else objs[0]
+            
         parsers = self._deserializers
         for p in parsers:
             try:
@@ -97,55 +117,81 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
             raise IOError(
                 "Impossible to load %s with parsers %s." % (fp, parsers))
 
-        foc = opts.get('fromObjectClass') or self._oc
+        foc = from_object_class or self._oc
         try:
-            if issubclass(self._oc, foc):
-                objs = self._get_objects_from_data(data, self._oc, **opts)
-            elif foc in self._transforms:
-                tobjs = self._get_objects_from_data(data, foc)
+            obj = self._get_objects_from_data(data, self._oc, many, **opts)
+            if not issubclass(self._oc, foc) and foc in self._transforms:
                 tf = self._transforms[foc]
-                objs = [
-                    tf.transform(tobj, objectClass=self._oc) for tobj in tobjs
-                ]
+                obj = tf.transform(obj, object_class=self._oc, many=many, **opts)
         except Exception as er:
             raise IOError("Impossible to load %s from %s.\n%s" % (foc, fp, er))
 
-        for obj in objs:
-            ref = "%s#%s" % (fp, obj[self.pk])
-            self._objects[ref] = obj
-        return objs
+        if obj:
+            for o in (obj if many else [obj]):
+                ref = "%s#%s" % (fp, o[self.pk])
+                self._objects[ref] = o
+        return obj
 
     def load_from_directory(self,
                             src,
                             includes=["*"],
                             excludes=[],
                             recursive=False,
+                            from_object_class=None,
+                            many=False,
                             **opts):
         """
         Load from a search in a directory
        
-        :type src: path
+        :type src: path, isPathDir: True
+        :param many: process collection as a list/sequence. if collection is
+        a dictionary and many=True, values are processed
         """
         objs = []
+        if from_object_class is not None:
+            opts['from_object_class'] = from_object_class
         for fp in list_files(src, includes, excludes, recursive, folders=0):
             try:
-                objs += self.load_from_file(fp, **opts)
+                ret =  self.load_from_file(fp, many=many, **opts)
+                objs += ret if many else [ret]
             except Exception as er:
                 self.logger.warning(er)
         return objs
 
-    def query(self, **kwargs):
+    def query(self, *attrs, **attrs_value):
         """
         Make a generator for a query in loaded objects
+
+        :param attrs: retrieve objects with given attributes defined
+        :param attrs_value: retrieve objects with given attribute/value pairs
         """
+        def get_child(obj, key_list):
+            if key_list[0] in obj:
+                child = obj[key_list[0]]
+                return child if len(key_list)==1 else get_child(child, key_list[1:])
+            return None
         for obj in self:
-            for k, v2 in kwargs.items():
-                o = obj[k]
+            for k, v2 in attrs_value.items():
+                op = getattr(operator, 'eq')
+                if '__' in k:
+                    ks = k.split('__')
+                    if ks[-1] in ['lt', 'le', 'eq', 'ne', 'ge', 'gt']:
+                        op = getattr(operator, ks[-1])
+                        ks.pop()
+                    o = get_child(obj, ks)
+                else:
+                    o = obj[k] if k in obj else None
+                if o is None:
+                    break
                 v = o.for_json() if hasattr(o, "for_json") else o
-                if v != v2:
+                if not op(v, v2):
                     break
             else:
-                yield obj
+                for k in attrs:
+                    if not hasattr(obj, k) or getattr(obj, k, None) is None:
+                        break
+                else:
+                    yield obj
 
     def pick_first(self, **kwargs):
         """

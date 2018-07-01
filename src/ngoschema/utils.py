@@ -20,6 +20,7 @@ import logging
 import sys
 import six
 import subprocess
+import inflection
 from builtins import object
 from builtins import str
 
@@ -308,8 +309,9 @@ def only_keys(icontainer, keys, recursive=False):
 
     def delete_fields_not_of(container, fields, recursive):
         if is_mapping(container):
-            to_del = fields.difference(set(container.keys()))
-            left = fields.intersection(set(container.keys()))
+            keys = set(container.keys())
+            to_del = fields.intersection(keys)
+            left = keys.difference(fields)
             for k in to_del:
                 del container[k]
             if recursive:
@@ -337,8 +339,9 @@ def but_keys(icontainer, keys, recursive=False):
 
     def delete_fields(container, fields, recursive):
         if is_mapping(container):
-            to_del = fields.intersection(set(container.keys()))
-            left = fields.difference(set(container.keys()))
+            keys = set(container.keys())
+            to_del = fields.intersection(keys)
+            left = keys.difference(fields)
             for k in to_del:
                 del container[k]
             if recursive:
@@ -353,15 +356,38 @@ def but_keys(icontainer, keys, recursive=False):
     return ocontainer
 
 
-def process_collection(data, **opts):
-    if "only_fields" in opts:
+def process_collection(data, only=(), but=(), many=False, object_class=None, schema={}, **opts):
+    """
+    process a collection keeping some/only fields.
+    If a json-schema is provided, an object is constructed according
+    to the schema.
+    If a class is provided, an object is constructed from the
+    data provided.
+
+    :param only: only keys to keep
+    :param but: keys to exclude
+    :param many: process collection as a list/sequence. if collection is
+    a dictionary and many=True, values are processed
+    """
+    if many:
+        datas = list(data) if is_sequence(data) else data.values()
+        return [process_collection(d, only, but, object_class=object_class, **opts) for d in datas]
+    if only:
         rec = opts.get("fields_recursive", False)
-        data = only_keys(data, opts["only_fields"], rec)
-    if "but_fields" in opts:
+        data = only_keys(data, only, rec)
+    if but:
         rec = opts.get("fields_recursive", False)
-        data = but_keys(data, opts["only_fields"], rec)
-    if "objectClass" in opts:
-        return opts["objectClass"](**data)
+        data = but_keys(data, but, rec)
+    if object_class is not None:
+        return object_class(**data)
+    if schema:
+        from .classbuilder import ClassBuilder
+        from .resolver import get_resolver
+        resolver = get_resolver()
+        nm = schema['title'] if 'title' in schema else schema.get('id', 'Nameless')
+        nm = inflection.parameterize(six.text_type(nm), '_')
+        klass = ClassBuilder(resolver).construct(nm, schema)
+        return klass(**data)
     return data
 
 

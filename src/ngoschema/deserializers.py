@@ -31,13 +31,17 @@ class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
     @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
-    def load(self, path, **opts):
+    def load(self, path, only=(), but=(), many=False, **opts):
         """
         Deserialize a file like object and returns the object
 
         :param path: file path containing the object
         :type path: path
-        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), objectClass=None
+        :param only: only keys to keep
+        :param but: keys to exclude
+        :param many: process collection as a list/sequence. if collection is
+        a dictionary and many=True, values are processed
+        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), object_class=None
         """
         ptcl = opts.get("protocol", "r")
         enc = opts.get("encoding", "utf-8")
@@ -46,7 +50,7 @@ class Deserializer(with_metaclass(ABCMeta)):
         #    return self.loads(f, **opts)
         with codecs.open(str(path.resolve()), ptcl, enc) as f:
             try:
-                obj = self.loads(f.read(), **opts)
+                obj = self.loads(f.read(), only, but, many, **opts)
                 self.logger.info(_("LOAD file %s" % (path)))
                 self.logger.debug(_("data:\n%r " % (obj)))
                 return obj
@@ -56,13 +60,17 @@ class Deserializer(with_metaclass(ABCMeta)):
                 raise_(IOError, msg, traceback)
 
     @abstractmethod
-    def loads(self, string, **opts):
+    def loads(self, string, only=(), but=(), many=False, **opts):
         """
         Deserialize a string and returns the object
 
         :param string: data string
         :type string: string
-        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), objectClass=None
+        :param only: only keys to keep
+        :param but: keys to exclude
+        :param many: process collection as a list/sequence. if collection is
+        a dictionary and many=True, values are processed
+        :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), object_class=None
         """
 
 
@@ -73,11 +81,12 @@ deserializer_registry = utils.GenericRegistry()
 class JsonDeserializer(Deserializer):
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
-    def loads(self, string, **opts):
+    def loads(self, string, only=(), but=(), many=False, **opts):
+        __doc__ = Deserializer.loads.__doc__
         data = json.loads(string
                           # ,encoding=opts.get('encoding', 'utf-8')
                           )
-        data = utils.process_collection(data, **opts)
+        data = utils.process_collection(data, only, but, many, **opts)
         return data
 
 
@@ -89,7 +98,8 @@ class YamlDeserializer(Deserializer):
         # default, if not specfied, is 'rt' (round-trip)
         self._yaml = YAML(typ="safe", **kwargs)
 
-    def loads(self, string, **opts):
+    def loads(self, string, only=(), but=(), many=False, **opts):
+        __doc__ = Deserializer.loads.__doc__
         data = self._yaml.load(string)
-        data = utils.process_collection(data, **opts)
+        data = utils.process_collection(data, only, but, many, **opts)
         return data

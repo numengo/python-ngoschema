@@ -33,7 +33,7 @@ def test_json2yaml():
 
     # json -> yaml
     js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
-    cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
+    cc_js = JsonDeserializer().load(js, object_class=Cookiecutter)
 
     yml = js.with_name("cc_ngoschema_serialized.yaml")
     YamlSerializer().dump(
@@ -55,7 +55,7 @@ def test_yaml2json():
 
     js = yml.with_name("cc_ngoschema_serialized.json")
     JsonSerializer().dump(cc_yml, js, overwrite=True)
-    cc_js = JsonDeserializer().load(js, objectClass=Cookiecutter)
+    cc_js = JsonDeserializer().load(js, object_class=Cookiecutter)
     assert cc_yml == cc_js
 
 
