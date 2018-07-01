@@ -45,7 +45,7 @@ def default_jinja2_env():
 regex_has_dot = re.compile(r"(\{\{\s*\w+\.)")
 
 
-class templatedString(object):
+class TemplatedString(object):
     """
     Returns a templated string for a given context
     """
