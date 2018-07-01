@@ -144,7 +144,9 @@ def assert_arg(arg, schema):
                 elif type(arg_i2) is int and arg_i2 < len(args):
                     args[arg_i2] = convert_validate(args[arg_i2], schema)
                 else:
-                    raise Exception("unknown error")
+                    # must be a default value, assume it s correct!
+                    pass
+                    #raise Exception("error with argument definition (%s,%i)"%(arg_s, arg_i2))
             except ValidationError as er:
                 if arg_s in kwargs:
                     raise ValidationError(
