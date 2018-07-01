@@ -13,6 +13,7 @@ import gettext
 import logging
 import appdirs
 import pathlib
+import six
 
 from builtins import object
 from builtins import str
@@ -90,6 +91,15 @@ class ConfigLoader(object):
             name += ":" + parents.pop(0)
             cfg.update(self._sections.get(name, {}))
         return CaseInsensitiveDict(cfg)
+
+    def __iter__(self):
+        return six.iterkeys(self._sections)
+    
+    def __getitem__(self, key):
+        try:
+            return self.section(key)
+        except AttributeError:
+            raise KeyError(key)
 
     def section(self, name):
         """
