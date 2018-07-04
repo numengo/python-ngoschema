@@ -11,7 +11,7 @@
       "type": "object", 
       "additionalProperties": false, 
       "extends": [
-        "http://numengo.org/draft-04/schema#/definitions/Metadata"
+        "http://numengo.org/draft-04/schema#/definitions/metadata"
       ], 
       "properties": {
         "name": {
@@ -34,7 +34,7 @@
       "additionalProperties": false, 
       "isAbstract": true, 
       "extends": [
-        "http://numengo.org/draft-04/schema#/definitions/Metadata"
+        "http://numengo.org/draft-04/schema#/definitions/metadata"
       ], 
       "properties": {
         "tooltip": {
@@ -54,7 +54,7 @@
       "additionalProperties": false, 
       "isAbstract": true, 
       "extends": [
-        "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+        "http://numengo.org/draft-04/schema#/definitions/metadata", 
         "#/definitions/Object"
       ], 
       "properties": {
@@ -75,7 +75,7 @@
       "type": "object", 
       "additionalProperties": false, 
       "extends": [
-        "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+        "http://numengo.org/draft-04/schema#/definitions/metadata", 
         "#/definitions/Object"
       ], 
       "properties": {
@@ -226,7 +226,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -345,7 +345,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {
@@ -374,7 +374,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {}
         }, 
@@ -383,7 +383,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "value": {
@@ -400,7 +400,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "columns": {
@@ -417,7 +417,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {}
@@ -427,7 +427,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {
@@ -441,7 +441,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {
@@ -468,7 +468,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -502,7 +502,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {}
@@ -512,7 +512,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {
@@ -531,7 +531,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {
@@ -547,7 +547,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/variable/definitions/Variable"
           ], 
           "properties": {}
@@ -557,7 +557,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "removedVariables": {
@@ -639,7 +639,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -671,7 +671,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -733,7 +733,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "implClass": {
@@ -747,7 +747,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/validity/definitions/Validity"
           ], 
           "properties": {
@@ -764,7 +764,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/validity/definitions/Validity"
           ], 
           "properties": {
@@ -796,7 +796,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "variableGroups": {
@@ -819,7 +819,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/model/definitions/IVariableGroup"
           ], 
           "properties": {
@@ -865,7 +865,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/model/definitions/IVariableGroup"
           ], 
           "properties": {}
@@ -875,7 +875,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object", 
             "#/definitions/model/definitions/IVariableGroup"
           ], 
@@ -890,7 +890,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Class", 
             "#/definitions/model/definitions/IComponentDefinition"
           ], 
@@ -949,7 +949,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object", 
             "#/definitions/model/definitions/IComponentDefinition"
           ], 
@@ -980,7 +980,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object", 
             "#/definitions/model/definitions/IPortDefinition"
           ], 
@@ -991,7 +991,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object", 
             "#/definitions/model/definitions/IPortDefinition"
           ], 
@@ -1033,7 +1033,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1074,7 +1074,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1103,7 +1103,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1120,7 +1120,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1140,7 +1140,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "string": {
@@ -1153,7 +1153,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "string": {
@@ -1166,7 +1166,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "string": {
@@ -1231,7 +1231,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1250,7 +1250,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/GenerationInfo"
           ], 
           "properties": {
@@ -1298,7 +1298,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/GenerationInfo"
           ], 
           "properties": {
@@ -1315,7 +1315,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -1352,7 +1352,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1398,7 +1398,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1452,7 +1452,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1480,7 +1480,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1519,7 +1519,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1541,7 +1541,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "name": {
@@ -1580,7 +1580,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "sourceCode": {
@@ -1594,7 +1594,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "allDirectSuperClasses": {
@@ -1953,7 +1953,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/GenerationInfo", 
             "#/definitions/generation/definitions/ComponentDefinitionAutoInfo"
           ], 
@@ -2089,7 +2089,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "fmiIndex": {
@@ -2132,7 +2132,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/GenerationInfo", 
             "#/definitions/generation/definitions/VariableInfoAuto"
           ], 
@@ -2192,7 +2192,7 @@
           "additionalProperties": false, 
           "isAbstract": true, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "arguments": {
@@ -2211,7 +2211,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/GenerationInfo", 
             "#/definitions/generation/definitions/FunctionInfoAuto"
           ], 
@@ -2233,7 +2233,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "refVariable": {
@@ -2298,7 +2298,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata"
+            "http://numengo.org/draft-04/schema#/definitions/metadata"
           ], 
           "properties": {
             "parent": {
@@ -2320,7 +2320,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Object"
           ], 
           "properties": {
@@ -2337,7 +2337,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/Class"
           ], 
           "properties": {
@@ -2383,7 +2383,7 @@
           "type": "object", 
           "additionalProperties": false, 
           "extends": [
-            "http://numengo.org/draft-04/schema#/definitions/Metadata", 
+            "http://numengo.org/draft-04/schema#/definitions/metadata", 
             "#/definitions/generation/definitions/ExternalClass"
           ], 
           "properties": {

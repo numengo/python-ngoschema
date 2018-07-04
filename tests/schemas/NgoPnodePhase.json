@@ -1,120 +1,106 @@
 {
-  "$id": "http://numengo.org/draft-04/Ngo/Fl/NgoPnodePhase", 
-  "name": "NgoPnodePhase", 
-  "canonicalName": "Ngo.Fl.NgoPnodePhase", 
-  "description": "subphase of thermodynamic state", 
+  "$id": "http://numengo.org/draft-04/Ngo/Fl/NgoPnodePhase",
+  "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/model/definitions/ComponentDefinition",
+  "name": "NgoPnodePhase",
+  "canonicalName": "Ngo.Fl.NgoPnodePhase",
+  "description": "subphase of thermodynamic state",
   "extends": [
-    "http://numengo.org/draft-04/Ngo/Fl#/componentDefinitions/2"
-  ], 
-  "initializeFromInputs": true, 
+    "Ngo.Fl.NgoPnode"
+  ],
+  "initializeFromInputs": true,
   "variableGroups": [
     {
-      "name": "Parameters", 
-      "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters", 
+      "name": "Parameters",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/EnumerationVariable", 
-          "name": "phase", 
-          "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase", 
-          "description": "phase at port", 
-          "variability": "Parameter", 
-          "recompile": false, 
-          "defaultValue": "#/variableGroups/0/variables/0/literals/0", 
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/EnumerationVariable",
+          "name": "phase",
+          "description": "phase at port",
+          "variability": "Parameter",
+          "recompile": false,
+          "defaultValue": "#Parameters.phase.OVERALL",
           "literals": [
             {
-              "name": "OVERALL", 
-              "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase.OVERALL", 
-              "description": "overall", 
+              "name": "OVERALL",
+              "description": "overall",
               "numericalValue": 1
-            }, 
+            },
             {
-              "name": "GAS", 
-              "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase.GAS", 
-              "description": "gas", 
+              "name": "GAS",
+              "description": "gas",
               "numericalValue": 2
-            }, 
+            },
             {
-              "name": "LIQUID", 
-              "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase.LIQUID", 
-              "description": "liquid", 
+              "name": "LIQUID",
+              "description": "liquid",
               "numericalValue": 3
-            }, 
+            },
             {
-              "name": "SOLID", 
-              "canonicalName": "Ngo.Fl.NgoPnodePhase.Parameters.phase.SOLID", 
-              "description": "solid", 
+              "name": "SOLID",
+              "description": "solid",
               "numericalValue": 4
             }
           ]
         }
       ]
-    }, 
+    },
     {
-      "name": "Variables", 
-      "canonicalName": "Ngo.Fl.NgoPnodePhase.Variables", 
+      "name": "Variables",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable", 
-          "name": "overallPnode", 
-          "canonicalName": "Ngo.Fl.NgoPnodePhase.Variables.overallPnode", 
-          "receivesValueFrom": "#/ports/0/variables/0", 
-          "causality": "Input", 
-          "isPlottable": false, 
-          "externalClass": "http://numengo.org/draft-04/Ngo/Fl#/externalClassRegistry/externalClasses/5"
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
+          "name": "overallPnode",
+          "receivesValueFrom": "#overallPort.pnode",
+          "causality": "Input",
+          "isPlottable": false,
+          "externalClass": "Ngo.Fl.NgoFlExternalClasses.NgoSim::NgoPnode"
         }
       ]
     }
-  ], 
+  ],
   "functions": [
     {
-      "name": "calcPnodeIndex", 
-      "canonicalName": "Ngo.Fl.NgoPnodePhase.calcPnodeIndex", 
-      "description": "override method to calculate pnode index", 
+      "name": "calcPnodeIndex",
+      "description": "override method to calculate pnode index",
       "inputVariables": [
-        "#/variableGroups/1/variables/0"
-      ], 
-      "returnVariable": "http://numengo.org/draft-04/Ngo/Fl/NgoPnode#/variableGroups/1/variables/0", 
+        "#Variables.overallPnode"
+      ],
+      "returnVariable": "Ngo.Fl.NgoPnode.Variables.pnode",
       "replaceable": true
     }
-  ], 
+  ],
   "ports": [
     {
-      "name": "overallPort", 
-      "canonicalName": "Ngo.Fl.NgoPnodePhase.overallPort", 
-      "portType": "http://numengo.org/draft-04/Ngo/Fl#/portDefinitions/2", 
+      "name": "overallPort",
+      "portType": "Ngo.Fl.SinglePIn",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable", 
-          "name": "pnode", 
-          "canonicalName": "Ngo.Fl.NgoPnodePhase.overallPort.pnode", 
+          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
+          "name": "pnode",
           "sendsValueTo": [
-            "#/variableGroups/1/variables/0"
-          ], 
-          "causality": "Input", 
-          "alias": "Reference", 
-          "externalClass": "http://numengo.org/draft-04/Ngo/Fl#/externalClassRegistry/externalClasses/5"
+            "#Variables.overallPnode"
+          ],
+          "causality": "Input",
+          "alias": "Reference",
+          "externalClass": "Ngo.Fl.NgoFlExternalClasses.NgoSim::NgoPnode"
         }
       ]
     }
-  ], 
+  ],
   "generationInfo": {
-    "name": "GenerationInfo", 
-    "description": "Generation Info", 
-    "createAdditionalWrappersUsingIndex": true, 
+    "name": "GenerationInfo",
+    "description": "Generation Info",
+    "createAdditionalWrappersUsingIndex": true,
     "extraMethodsWrappable": [
       {
-        "name": "isPhase", 
-        "description": "method to know if pnode is a subphase", 
-        "returnType": "Boolean", 
-        "virtual": true, 
+        "name": "isPhase",
+        "description": "method to know if pnode is a subphase",
+        "returnType": "Boolean",
+        "virtual": true,
         "body": {
           "sourceCode": "return true;"
         }
       }
     ]
-  }, 
-  "referred": [
-    "http://numengo.org/draft-04/Ngo", 
-    "http://numengo.org/draft-04/Ngo/Fl/NgoPnode"
-  ]
+  }
 }
