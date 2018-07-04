@@ -14,12 +14,12 @@ from builtins import object
 import pytest
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema.decorators import take_arrays
-from ngoschema.decorators import log_init
-from ngoschema.decorators import log_exceptions
+from ngoschema.decorators import SCH_INT
 from ngoschema.decorators import assert_arg
 from ngoschema.decorators import assert_prop
-from ngoschema.decorators import SCH_INT
+from ngoschema.decorators import log_exceptions
+from ngoschema.decorators import log_init
+from ngoschema.decorators import take_arrays
 from ngoschema.exceptions import InvalidValue
 
 

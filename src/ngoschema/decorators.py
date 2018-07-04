@@ -8,7 +8,6 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import inspect
 import sys
 from pprint import pformat
@@ -20,8 +19,6 @@ from python_jsonschema_objects.validators import ValidationError
 
 from .exceptions import InvalidValue
 from .validators import convert_validate
-
-_ = gettext.gettext
 
 # about decorators and why using wrapt
 # https://hynek.me/articles/decorators/
@@ -65,8 +62,8 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
                     # different size
                     else:
                         raise InvalidValue(
-                            _("arguments %s and %s must be of same size" %
-                              (narg1, narg2)))
+                            "arguments %s and %s must be of same size" %
+                            (narg1, narg2))
             else:
                 # if the first one is not a string, ignore and call func
                 return wrapped(*args, **kwargs)
@@ -136,6 +133,11 @@ def assert_arg(arg, schema):
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
+
+            # make assert optional with kwargs
+            if kwargs.get('no_assert_arg', False):
+                return wrapped(*args, **kwargs)
+
             arg_i2 = arg_i if not instance and arg_i is not None else arg_i - 1
             args = list(args)
             try:
@@ -150,12 +152,10 @@ def assert_arg(arg, schema):
             except ValidationError as er:
                 if arg_s in kwargs:
                     raise ValidationError(
-                        _("%s=%r is not valid. %s") % (arg_s, kwargs[arg_s],
-                                                       er))
+                        "%s=%r is not valid. %s" % (arg_s, kwargs[arg_s], er))
                 elif type(arg_i) is int and arg_i2 < len(args):
                     raise ValidationError(
-                        _("%s=%r is not valid. %s") % (arg_s, args[arg_i2],
-                                                       er))
+                        "%s=%r is not valid. %s" % (arg_s, args[arg_i2], er))
             return wrapped(*args, **kwargs)
 
         decorated = wrapper(wrapped)
@@ -196,16 +196,21 @@ def log_exceptions(method, instance, args, kwargs):
         instance = args[0]
     try:
         if hasattr(instance, "logger"):
-            instance.logger.debug("CALL " + _format_call_msg(
-                "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
-                args, kwargs))
+            instance.logger.debug(
+                "CALL %s",
+                _format_call_msg(
+                    "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                    args, kwargs))
         return method(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
         if hasattr(instance, "logger"):
-            instance.logger.error("CALL " + _format_call_msg(
-                "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
-                args, kwargs) + "\n\tERROR %s: %s" % (etype.__name__, value))
+            instance.logger.error(
+                "CALL %s",
+                _format_call_msg(
+                    "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                    args, kwargs) +
+                "\n\tERROR %s: %s" % (etype.__name__, value))
         try:
             six.reraise(etype, value, trace)
         finally:
@@ -218,15 +223,18 @@ def log_init(init, instance, args, kwargs):
     log init of instance and possible exceptions
     """
     instance.logger.info(
+        "%s",
         _format_call_msg("INIT <%s>.__init__" % instance.__class__.__name__,
                          args, kwargs))
     try:
         return init(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
-        instance.logger.error("CALL " + _format_call_msg(
-            "INIT <%s>.__init__" % instance.__class__.__name__, args, kwargs) +
-                              "\n\tERROR %s: %s" % (etype.__name__, value))
+        instance.logger.error(
+            "CALL %s\n\tERROR: %s: %s",
+            _format_call_msg(
+                "INIT <%s>.__init__" % instance.__class__.__name__, args,
+                kwargs), etype.__name__, value)
         try:
             six.reraise(etype, value, trace)
         finally:
@@ -245,7 +253,7 @@ def assert_prop(*args2check):
         def wrapper(wrapped, instance, args, kwargs):
             for prop in args2check:
                 if getattr(instance, prop, None) is None:
-                    raise AttributeError(_("%s is not defined." % prop))
+                    raise AttributeError("%s is not defined." % prop)
             return wrapped(*args, **kwargs)
 
         decorated = wrapper(wrapped)

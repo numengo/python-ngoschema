@@ -23,11 +23,11 @@ from jsonschema import Draft6Validator
 from jsonschema import RefResolver
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema import validators
 from ngoschema import decorators
-from ngoschema.schemas_loader import load_schema_file
-from ngoschema.schemas_loader import get_all_schemas_store
+from ngoschema import validators
 from ngoschema.resolver import ExpandingResolver
+from ngoschema.schemas_loader import get_all_schemas_store
+from ngoschema.schemas_loader import load_schema_file
 from ngoschema.validators import DefaultValidator
 
 logging.basicConfig(level=logging.INFO)

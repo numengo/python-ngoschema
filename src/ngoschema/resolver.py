@@ -13,15 +13,12 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import copy
-import gettext
 
 import dpath.util
 from jsonschema.compat import urldefrag
 from jsonschema.validators import RefResolver
 
 from .schemas_loader import get_all_schemas_store
-
-_ = gettext.gettext
 
 CURRENT_DRAFT = "draft-04"
 
@@ -155,9 +152,8 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     base_uri, dummy = urldefrag(base_uri)
     ms = get_all_schemas_store()
     if base_uri not in ms:
-        raise IOError(
-            _("%s not found in loaded schemas (%s)" % (base_uri, ", ".join(
-                ms.keys()))))
+        raise IOError("%s not found in loaded schemas (%s)" %
+                      (base_uri, ", ".join(ms.keys())))
     referrer = ms[base_uri]
     if not _resolver or len(ms) != len(_resolver.store):
         _resolver = ExpandingResolver(base_uri, referrer, ms)

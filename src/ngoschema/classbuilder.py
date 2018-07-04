@@ -12,14 +12,11 @@ from __future__ import unicode_literals
 
 import collections
 import datetime
-import gettext
-import itertools
-import six
-import copy
-import re
 import inspect
+import itertools
 import logging
 import pathlib
+import re
 import weakref
 from builtins import object
 
@@ -30,27 +27,25 @@ import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
+import six
 from future.utils import text_to_native_str as native_str
 
 from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
-from .resolver import get_resolver
-from .resolver import DEFAULT_MS_URI
 from .config import ConfigLoader
-
-_ = gettext.gettext
+from .resolver import DEFAULT_MS_URI
+from .resolver import get_resolver
 
 logger = pjo_classbuilder.logger
 
 _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
-
 # loader to register module with a transforms folder where to look for model transformations
 models_module_loader = utils.GenericModuleFileLoader('models')
 
-
 _default_builder = None
+
 
 def get_builder(resolver=None):
     global _default_builder
@@ -98,11 +93,16 @@ objects_config_loader = ConfigLoader()
 
 _to_resolve = weakref.WeakValueDictionary()
 
+
 def get_unresolved_refs():
     return [o._ref for o in _to_resolve.values()]
 
+
 def fill_unresolved_from(*objs):
-    all_ids = {str(obj.id).rstrip("#") : obj for obj in objs if hasattr(obj,"id")}
+    all_ids = {
+        str(obj.id).rstrip("#"): obj
+        for obj in objs if hasattr(obj, "id")
+    }
     resolved = []
     for k, to_res in _to_resolve.items():
         for _id, _obj in all_ids.items():
@@ -114,12 +114,13 @@ def fill_unresolved_from(*objs):
     for res in resolved:
         del _to_resolve[res]
 
+
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
     __class_attr_list__ = set()
     _short_repr_ = True
- 
+
     def __new__(cls, *args, **kwargs):
         if 'schemaUri' in kwargs:
             builder = get_builder()
@@ -130,7 +131,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 cls = builder.resolved[uri]
             else:
                 with builder.resolver.resolving(schemaUri) as resolved:
-                    cls = builder.construct(schemaUri, resolved, (ProtocolBase, ))
+                    cls = builder.construct(schemaUri, resolved,
+                                            (ProtocolBase, ))
                 #uri, detail = builder.resolver.resolve(schemaUri)
                 #cls = builder.construct(uri, detail, (ProtocolBase, ))
             return cls(*args, **kwargs)
@@ -156,8 +158,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         self._key2attr = {}
         if getattr(self, '__attr_by_name__', False):
-            for k, p in itertools.chain(six.iteritems(self._properties),
-                                 six.iteritems(self._extended_properties)):
+            for k, p in itertools.chain(
+                    six.iteritems(self._properties),
+                    six.iteritems(self._extended_properties)):
                 if not p:
                     continue
                 if hasattr(p, key) and getattr(p, key, ""):
@@ -168,13 +171,16 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                             self._key2attr[str(e.name)] = (k, i)
 
     _cname = None
+
     def get_cname(self, key="name"):
         if self._cname is None:
-            self._cname = re.sub(r"[^a-zA-z0-9\-_]+", "", str(getattr(self, key)))
+            self._cname = re.sub(r"[^a-zA-z0-9\-_]+", "",
+                                 str(getattr(self, key)))
             if self._parent is not None:
-                self._cname = '%s.%s'%(self._parent.get_cname(key), self._cname)
+                self._cname = '%s.%s' % (self._parent.get_cname(key),
+                                         self._cname)
         return self._cname
-    
+
     cname = property(get_cname)
 
     def set_configfiles_defaults(self, overwrite=False):
@@ -189,11 +195,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         for k, v in defconf.items():
             if self._properties.get(k, None) or overwrite:
                 try:
-                    self.logger.debug(
-                        "CONFIG SET %r.%s = %s" % (self, k, v))
+                    self.logger.debug("CONFIG SET %r.%s = %s", self, k, v)
                     setattr(self, k, v)
                 except Exception as er:
-                    self.logger.error(er)
+                    self.logger.error(er, exc_info=True)
 
     @property
     def _fullname(self):
@@ -386,22 +391,21 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                             getattr(p, "__propinfo__", {}))
 
         if "properties" in clsdata:
-            properties = pjo_util.propmerge(
-                properties, clsdata["properties"])
+            properties = pjo_util.propmerge(properties, clsdata["properties"])
 
         name_translation = {}
         name_translated = {}
-#
+        #
         #for prop, detail in properties.items():
         #    translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
         #    name_translation[translated] = prop
         #    if translated != prop:
         #        name_translated[prop] = translated
         #    detail['raw_name'] = prop
-#
-        #properties = { name_translated.get(prop, prop) : detail 
+        #
+        #properties = { name_translated.get(prop, prop) : detail
         #               for prop, detail in properties.items()}
-            
+
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
@@ -453,8 +457,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             elif "type" not in detail and "$ref" in detail:
                 ref = detail["$ref"]
                 # TODO CRN: shouldn't we retrieve also the reference and construct from it??
-                uri = pjo_util.resolve_ref_uri(current_scope,
-                                               ref)
+                uri = pjo_util.resolve_ref_uri(current_scope, ref)
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
                                          ref, nm, prop))
@@ -488,9 +491,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 detail['classbuilder'] = self
                 if "items" in detail and isinstance(detail["items"], dict):
                     if "$ref" in detail["items"]:
-                        uri = pjo_util.resolve_ref_uri(
-                            current_scope,
-                            detail["items"]["$ref"])
+                        uri = pjo_util.resolve_ref_uri(current_scope,
+                                                       detail["items"]["$ref"])
                         typ = self.construct(uri, detail["items"])
                         propdata = {
                             "type":
@@ -524,9 +526,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 "array",
                                 "validator":
                                 pjo_wrapper_types.ArrayWrapper.create(
-                                    uri,
-                                    item_constraint=typ,
-                                    **detail),
+                                    uri, item_constraint=typ, **detail),
                             }
                         except NotImplementedError:
                             typ = detail["items"]
@@ -535,9 +535,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 "array",
                                 "validator":
                                 pjo_wrapper_types.ArrayWrapper.create(
-                                    uri,
-                                    item_constraint=typ,
-                                   **detail),
+                                    uri, item_constraint=typ, **detail),
                             }
 
                     props[prop] = make_property(
@@ -614,8 +612,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
-        if getattr(self, "__add_logging__", False):
-            self.logger.debug("GET %r.%s" % (self, prop))
+        self.logger.debug("GET %r.%s", self, prop)
         if fget:
             try:
                 RO_active = False
@@ -623,7 +620,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             except Exception as er:
                 RO_active = RO
                 raise AttributeError(
-                    _("Error getting property %s.\n%s" % (prop, er.message)))
+                    "Error getting property %s.\n%s" % (prop, er.message))
         try:
             val = self._properties[prop]
             if hasattr(val, "_pattern"):
@@ -634,13 +631,12 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 val.validate()
             return val
         except KeyError:
-            raise AttributeError(_("No attribute %s" % prop))
+            raise AttributeError("No attribute %s" % prop)
 
     def setprop(self, val):
-        if getattr(self, "__add_logging__", False):
-            self.logger.debug("SET %r.%s=%s" % (self, prop, val))
+        self.logger.debug("SET %r.%s=%s", self, prop, val)
         if RO_active:
-            raise AttributeError(_("'%s' is read only" % prop))
+            raise AttributeError("'%s' is read only" % prop)
 
         if fset and self._properties[prop] is not None:
             # call the setter, and get the value stored in _properties
@@ -686,7 +682,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                         val = typ(**pjo_util.coerce_for_expansion(val))
                     except Exception as e:
                         errors.append(
-                            _("Failed to coerce to '%s': %s" % (typ, e)))
+                            "Failed to coerce to '%s': %s" % (typ, e))
                     else:
                         val.validate()
                         val._parent = self
@@ -698,7 +694,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                         val = typ(val)
                     except Exception as e:
                         errors.append(
-                            _(("Failed to coerce to '%s': %s") % (typ, e)))
+                            "Failed to coerce to '%s': %s" % (typ, e))
                     else:
                         val.validate()
                         val._parent = self
@@ -708,14 +704,14 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             if not ok:
                 errstr = "\n".join(errors)
                 raise pjo_validators.ValidationError(
-                    _("Object must be one of %s: \n%s" % (info["type"],
-                                                          errstr)))
+                    "Object must be one of %s: \n%s" % (info["type"], errstr))
 
         elif info["type"] == "array":
             val = info["validator"](val)
             val.validate()
             for e in val:
-                if isinstance(e, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                if isinstance(e,
+                              (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
                     e._parent = self
 
         elif pjo_util.safe_issubclass(info["type"],
@@ -724,7 +720,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             val = info["type"](val)
             val.validate()
             for e in val:
-                if isinstance(e, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                if isinstance(e,
+                              (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
                     e._parent = self
 
         elif getattr(info["type"], "isLiteralClass", False) is True:
@@ -762,18 +759,17 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             # This is the null value
             if val is not None:
                 raise pjo_validators.ValidationError(
-                    _("None is only valid value for null"))
+                    "None is only valid value for null")
 
         else:
-            raise TypeError(_("Unknown object type: '%s'" % (info["type"])))
+            raise TypeError("Unknown object type: '%s'" % info["type"])
 
         self._properties[prop] = val
 
     def delprop(self):
-        if getattr(self, "__add_logging__", False):
-            self.logger.debug("DEL %r.%s" % (self, prop))
+        self.logger.debug("DEL %r.%s", self, prop)
         if prop in self.__required__:
-            raise AttributeError(_("'%s' is required" % prop))
+            raise AttributeError("'%s' is required" % prop)
         else:
             if fdel:
                 fdel(self)

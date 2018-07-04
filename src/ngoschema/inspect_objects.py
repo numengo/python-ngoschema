@@ -11,7 +11,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import ast
-import gettext
 import importlib
 import inspect
 import itertools
@@ -29,14 +28,13 @@ from .exceptions import InvalidValue
 from .utils import import_from_string
 from .utils import is_string
 
-_ = gettext.gettext
-
 logger = logging.getLogger(__name__)
 
 EXCLUDED_MODULES = [
-    None, str.__class__.__module__, "future.types.newobject",
-    "__builtin__", '_abcoll', 'abc'
+    None, str.__class__.__module__, "future.types.newobject", "__builtin__",
+    '_abcoll', 'abc'
 ]
+
 
 class Argument(object):
     """
@@ -53,7 +51,7 @@ class Argument(object):
                 self._type = parse_type_string(doctype)
             except Exception as er:
                 logger.error(
-                    "impossible to parse valid schema from type doc %s" %
+                    "impossible to parse valid schema from type doc %s",
                     doctype)
 
     def __repr__(self):
@@ -90,12 +88,14 @@ _module = None
 def _id(arg):
     return getattr(arg, "id", None) or getattr(arg, "arg")
 
+
 def ast_name(ast_attr):
     if isinstance(ast_attr, ast.Attribute):
         return ast_attr.attr
     if isinstance(ast_attr, (ast.Name, ast.Call)):
         return _id(ast_attr)
     return ast.literal_eval(ast_attr)
+
 
 def visit_FunctionDef(node):
     """ ast node visitor """
@@ -182,8 +182,7 @@ class FunctionInspector(object):
             function = import_from_string(function)
         if not (inspect.isfunction(function) or inspect.ismethod(function)
                 or type(function) in [staticmethod, classmethod]):
-            raise InvalidValue(
-                _("%r is not a function or a method" % function))
+            raise InvalidValue("%r is not a function or a method" % function)
         self.function = function
         self.doc = self.function.__doc__
         if self.doc:
@@ -241,7 +240,7 @@ class ClassInspector(object):
         if is_string(klass):
             klass = import_from_string(klass)
         if not inspect.isclass(klass):
-            raise InvalidValue(_("%r is not a class" % klass))
+            raise InvalidValue("%r is not a class" % klass)
 
         self.klass = klass
         self.name = klass.__name__

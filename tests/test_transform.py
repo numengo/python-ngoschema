@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import logging
 import os
 import pathlib
@@ -12,8 +11,6 @@ from future.utils import with_metaclass
 from ngoschema.classbuilder import ProtocolBase
 from ngoschema.deserializers import JsonDeserializer
 from ngoschema.schema_metaclass import SchemaMetaclass
-
-_ = gettext.gettext
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(

@@ -8,7 +8,6 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import imp
 import json
 import logging
@@ -21,8 +20,6 @@ from jsonschema._utils import URIDict
 from ngofile.list_files import list_files
 
 from .exceptions import SchemaError
-
-_ = gettext.gettext
 
 _all_schemas_store = URIDict()
 
@@ -61,8 +58,8 @@ def load_schema(schema, schemas_store=None):
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")
     if not uri:
         raise SchemaError(
-            _("Impossible to load schema because `id (or `$id) and `title fields"
-              "are missing.\n%s" % schema))
+            "Impossible to load schema because `id (or `$id) and `title fields"
+            "are missing.\n%s" % schema)
     if schemas_store is not None:
         schemas_store[uri] = schema
     _all_schemas_store[uri] = schema
@@ -109,6 +106,6 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
         try:
             load_schema_file(ms, schemas_store)
         except Exception as er:
-            logger.error(_("Impossible to load file %s." % ms))
-            logger.error(_("%s" % er))
+            logger.error(
+                "Impossible to load file %s.\n%s", ms, er, exc_info=True)
     return schemas_store

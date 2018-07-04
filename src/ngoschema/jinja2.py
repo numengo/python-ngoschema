@@ -8,7 +8,6 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import inspect
 import logging
 import pathlib
@@ -23,8 +22,6 @@ import jinja2
 from . import utils
 from .serializers import Serializer
 from .serializers import serializer_registry
-
-_ = gettext.gettext
 
 templates_module_loader = utils.GenericModuleFileLoader('templates')
 

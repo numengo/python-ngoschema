@@ -10,8 +10,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
-import os.path
 import logging
+import os.path
 
 from jsonschema import RefResolver
 

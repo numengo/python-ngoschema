@@ -10,7 +10,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import collections
-import gettext
 from builtins import str
 
 from jsonschema._format import draft7_format_checker
@@ -18,8 +17,6 @@ from jsonschema.compat import iteritems
 from jsonschema.exceptions import FormatError
 from jsonschema.exceptions import RefResolutionError
 from jsonschema.exceptions import ValidationError
-
-_ = gettext.gettext
 
 
 def _format_checker(validator):

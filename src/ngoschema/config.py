@@ -9,23 +9,19 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import copy
-import gettext
 import logging
-import appdirs
 import pathlib
-import six
-
 from builtins import object
 from builtins import str
 
+import appdirs
+import six
 from backports import configparser2
 from dpath.util import merge
 from ngofile.pathlist import PathList
 
 from .deserializers import Deserializer
 from .str_utils import CaseInsensitiveDict
-
-_ = gettext.gettext
 
 
 def search_app_config_files(appname=None, appauthor=None, version=None):
@@ -96,7 +92,7 @@ class ConfigLoader(object):
 
     def __iter__(self):
         return six.iterkeys(self._sections)
-    
+
     def __getitem__(self, key):
         try:
             return self.section(key)

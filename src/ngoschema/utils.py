@@ -11,27 +11,24 @@ from __future__ import unicode_literals
 
 import collections
 import copy
-import gettext
 import importlib
 import inspect
-import re
-import pathlib
 import logging
-import sys
-import six
+import pathlib
+import re
 import subprocess
-import inflection
+import sys
 from builtins import object
 from builtins import str
 
-from past.builtins import basestring
+import inflection
+import six
 from ngofile.pathlist import PathList
+from past.builtins import basestring
 
 from ._qualname import qualname
 from .decorators import take_arrays
 from .exceptions import InvalidValue
-
-_ = gettext.gettext
 
 
 class GenericRegistry(object):
@@ -146,11 +143,11 @@ def import_from_string(value):
                 ret = getattr(ret, a, None)
                 if not ret:
                     raise InvalidValue(
-                        _("%s is not an importable object" % value))
+                        "%s is not an importable object" % value)
             return ret
         except Exception as er:
             continue
-    raise InvalidValue(_("%s is not an importable object" % value))
+    raise InvalidValue("%s is not an importable object" % value)
 
 
 def is_module(value):
@@ -356,7 +353,13 @@ def but_keys(icontainer, keys, recursive=False):
     return ocontainer
 
 
-def process_collection(data, only=(), but=(), many=False, object_class=None, schema={}, **opts):
+def process_collection(data,
+                       only=(),
+                       but=(),
+                       many=False,
+                       object_class=None,
+                       schema={},
+                       **opts):
     """
     process a collection keeping some/only fields.
     If a json-schema is provided, an object is constructed according
@@ -371,7 +374,10 @@ def process_collection(data, only=(), but=(), many=False, object_class=None, sch
     """
     if many:
         datas = list(data) if is_sequence(data) else data.values()
-        return [process_collection(d, only, but, object_class=object_class, **opts) for d in datas]
+        return [
+            process_collection(
+                d, only, but, object_class=object_class, **opts) for d in datas
+        ]
     if only:
         rec = opts.get("fields_recursive", False)
         data = only_keys(data, only, rec)
@@ -384,7 +390,8 @@ def process_collection(data, only=(), but=(), many=False, object_class=None, sch
         from .classbuilder import ClassBuilder
         from .resolver import get_resolver
         resolver = get_resolver()
-        nm = schema['title'] if 'title' in schema else schema.get('id', 'Nameless')
+        nm = schema['title'] if 'title' in schema else schema.get(
+            'id', 'Nameless')
         nm = inflection.parameterize(six.text_type(nm), '_')
         klass = ClassBuilder(resolver).construct(nm, schema)
         return klass(**data)
@@ -410,7 +417,7 @@ def logging_call(popenargs,
     #print out, err
     enc = sys.stdout.encoding or "cp850"
     if out:
-        
+
         _logger.log(stdout_log_level, six.text_type(out, enc, errors='ignore'))
     if err:
         _logger.log(stderr_log_level, six.text_type(err, enc, errors='ignore'))

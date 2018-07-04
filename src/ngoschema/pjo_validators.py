@@ -9,7 +9,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import datetime
-import gettext
 import pathlib
 from builtins import str
 from decimal import Decimal
@@ -25,8 +24,6 @@ from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import type_registry
 
 from . import utils
-
-_ = gettext.gettext
 
 string_types = (basestring, str)
 datetime_types = (datetime.datetime, arrow.Arrow)

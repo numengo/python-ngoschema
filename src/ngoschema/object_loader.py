@@ -8,26 +8,22 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
-import six
-import re
 import operator
+import re
 
+import six
 from future.utils import with_metaclass
-
 from ngofile.list_files import list_files
 from python_jsonschema_objects.util import safe_issubclass
 
 from . import utils
-from .resolver import get_resolver
 from .classbuilder import ProtocolBase
 from .classbuilder import get_builder
-from .schema_metaclass import SchemaMetaclass
-from .object_transform import ObjectTransform
-from .deserializers import YamlDeserializer
 from .deserializers import JsonDeserializer
-
-_ = gettext.gettext
+from .deserializers import YamlDeserializer
+from .object_transform import ObjectTransform
+from .resolver import get_resolver
+from .schema_metaclass import SchemaMetaclass
 
 
 class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -53,6 +49,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._objects = {}
 
     _pk = None
+
     @property
     def pk(self):
         if self._pk is None:
@@ -87,7 +84,8 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     data_class = builder.resolved[data_schema_uri]
                     if not safe_issubclass(data_class, object_class):
                         return []
-        return utils.process_collection(data, many=many, object_class=object_class, **opts)
+        return utils.process_collection(
+            data, many=many, object_class=object_class, **opts)
 
     def load_from_file(self, fp, from_object_class=None, many=False, **opts):
         """
@@ -102,10 +100,13 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         fp.resolve()
 
         # check if already loaded
-        objs = [o for ref, o in self._objects.items() if ref.split('#')[0]==str(fp)]
+        objs = [
+            o for ref, o in self._objects.items()
+            if ref.split('#')[0] == str(fp)
+        ]
         if objs:
             return objs if many else objs[0]
-            
+
         parsers = self._deserializers
         for p in parsers:
             try:
@@ -122,7 +123,8 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
             obj = self._get_objects_from_data(data, foc, many=many, **opts)
             if not issubclass(self._oc, foc) and foc in self._transforms:
                 tf = self._transforms[foc]
-                obj = tf.transform(obj, object_class=self._oc, many=many, **opts)
+                obj = tf.transform(
+                    obj, object_class=self._oc, many=many, **opts)
         except Exception as er:
             raise IOError("Impossible to load %s from %s.\n%s" % (foc, fp, er))
 
@@ -150,10 +152,11 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         objs = []
         for fp in list_files(src, includes, excludes, recursive, folders=0):
             try:
-                ret =  self.load_from_file(fp, from_object_class=from_object_class, many=many, **opts)
+                ret = self.load_from_file(
+                    fp, from_object_class=from_object_class, many=many, **opts)
                 objs += ret if many else [ret]
             except Exception as er:
-                self.logger.warning(er)
+                self.logger.warning(er, exc_info=True)
         return objs
 
     def query(self, *attrs, **attrs_value):
@@ -163,11 +166,14 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         :param attrs: retrieve objects with given attributes defined
         :param attrs_value: retrieve objects with given attribute/value pairs
         """
+
         def get_child(obj, key_list):
             if key_list[0] in obj:
                 child = obj[key_list[0]]
-                return child if len(key_list)==1 else get_child(child, key_list[1:])
+                return child if len(key_list) == 1 else get_child(
+                    child, key_list[1:])
             return None
+
         for obj in self:
             for k, v2 in attrs_value.items():
                 op = 'eq'

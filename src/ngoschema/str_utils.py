@@ -9,14 +9,12 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import re
+from builtins import str
 
 from past.builtins import basestring
 
 from .decorators import take_arrays
-
-_ = gettext.gettext
 
 
 def _multiple_replacer(replace_dict):
@@ -107,3 +105,9 @@ def split_string(string, delimiters=" ", strip=True):
         regex = "|".join([d for d in dels])
         return [w.strip() if strip else w for w in re.split(regex, string)]
     return [string]
+
+
+def get_unicode(str_or_unicode, encoding='utf-8'):
+    if isinstance(str_or_unicode, (str, basestring)):
+        return str_or_unicode
+    return str(str_or_unicode, encoding, errors='ignore')

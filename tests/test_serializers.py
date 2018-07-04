@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import logging
 import os
 import pathlib
@@ -15,8 +14,6 @@ from ngoschema.deserializers import YamlDeserializer
 from ngoschema.schema_metaclass import SchemaMetaclass
 from ngoschema.serializers import JsonSerializer
 from ngoschema.serializers import YamlSerializer
-
-_ = gettext.gettext
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(

@@ -9,7 +9,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import codecs
-import gettext
 import json
 import logging
 import sys
@@ -24,14 +23,12 @@ from six import reraise as raise_
 from . import decorators
 from . import utils
 
-_ = gettext.gettext
-
 
 class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    #@decorators.assert_arg(1, decorators.SCH_PATH_FILE)
     @classmethod
+    @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
     def load(self, path, only=(), but=(), many=False, **opts):
         """
         Deserialize a file like object and returns the object
@@ -51,9 +48,10 @@ class Deserializer(with_metaclass(ABCMeta)):
         #    return self.loads(f, **opts)
         with codecs.open(str(path.resolve()), ptcl, enc) as f:
             try:
-                obj = self.loads(f.read(), only=only, but=but, many=many, **opts)
-                self.logger.info(_("LOAD file %s" % (path)))
-                self.logger.debug(_("data:\n%r " % (obj)))
+                obj = self.loads(
+                    f.read(), only=only, but=but, many=many, **opts)
+                self.logger.info("LOAD file %s", path)
+                self.logger.debug("data:\n%r ", obj)
                 return obj
             except Exception as er:
                 type, value, traceback = sys.exc_info()

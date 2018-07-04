@@ -8,7 +8,6 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import io
 import json
 import logging
@@ -29,14 +28,19 @@ try:
 except ImportError:
     from io import StringIO
 
-_ = gettext.gettext
-
 
 class Serializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
     @classmethod
-    def dump(cls, obj, path, only=(), but=(), many=False, overwrite=False, **opts):
+    def dump(cls,
+             obj,
+             path,
+             only=(),
+             but=(),
+             many=False,
+             overwrite=False,
+             **opts):
         """
         Serialize an object to a file like object string
 
@@ -52,11 +56,11 @@ class Serializer(with_metaclass(ABCMeta)):
         ptcl = opts.get("protocol", "w")
         enc = opts.get("encoding", "utf-8")
 
-        cls.logger.info(_("DUMP file %s" % (path)))
-        cls.logger.debug(_("data:\n%r " % (obj)))
+        cls.logger.info("DUMP file %s", path)
+        cls.logger.debug("data:\n%r ", obj)
 
         if path.exists() and not overwrite:
-            raise IOError(_("file %s already exists" % str(path)))
+            raise IOError("file %s already exists" % str(path))
         with io.open(str(path), ptcl, encoding=enc) as outfile:
             stream = cls.dumps(obj, **opts)
             stream = six.text_type(stream)
@@ -95,8 +99,12 @@ class JsonSerializer(Serializer):
 
         if many:
             datas = list(obj) if utils.is_sequence(obj) else obj.values()
-            datas = [d.as_dict() if hasattr(d, "as_dict") else d for d in datas]
-            data = [utils.process_collection(d, only, but, **opts) for d in datas]
+            datas = [
+                d.as_dict() if hasattr(d, "as_dict") else d for d in datas
+            ]
+            data = [
+                utils.process_collection(d, only, but, **opts) for d in datas
+            ]
         else:
             data = obj.as_dict() if hasattr(obj, "as_dict") else obj
             data = utils.process_collection(data, only, but, **opts)
@@ -122,8 +130,12 @@ class YamlSerializer(Serializer):
 
         if many:
             datas = list(obj) if utils.is_sequence(obj) else obj.values()
-            datas = [d.as_dict() if hasattr(d, "as_dict") else d for d in datas]
-            data = [utils.process_collection(d, only, but, **opts) for d in datas]
+            datas = [
+                d.as_dict() if hasattr(d, "as_dict") else d for d in datas
+            ]
+            data = [
+                utils.process_collection(d, only, but, **opts) for d in datas
+            ]
         else:
             data = obj.as_dict() if hasattr(obj, "as_dict") else obj
             data = utils.process_collection(data, only, but, **opts)

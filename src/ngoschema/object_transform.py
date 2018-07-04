@@ -8,16 +8,12 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
-
 from future.utils import with_metaclass
 
 from . import jinja2
 from . import utils
 from .classbuilder import ProtocolBase
 from .schema_metaclass import SchemaMetaclass
-
-_ = gettext.gettext
 
 # loader to register module with a transforms folder where to look for model transformations
 transforms_module_loader = utils.GenericModuleFileLoader('transforms')

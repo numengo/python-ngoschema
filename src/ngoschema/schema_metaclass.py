@@ -9,12 +9,11 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
-import logging
 import copy
+import logging
 
-from jsonschema.compat import iteritems
 import python_jsonschema_objects.util as pjo_util
+from jsonschema.compat import iteritems
 
 from . import decorators
 from . import utils
@@ -25,8 +24,6 @@ from .resolver import get_resolver
 from .schemas_loader import load_schema
 from .schemas_loader import load_schema_file
 from .validators import DefaultValidator
-
-_ = gettext.gettext
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +71,7 @@ class SchemaMetaclass(type):
             meta_validator.validate(schema)
             DefaultValidator._setDefaults = def_bak
 
-            logger.debug(_("creating <%s> with schema" % (clsname)))
+            logger.debug("creating <%s> with schema", clsname)
 
             # reset resolver and builder to use the schemaUri as base
             resolver = get_resolver(schemaUri)
@@ -96,8 +93,8 @@ class SchemaMetaclass(type):
             __assert_props__ = attrs.get("__assert_props__", True)
 
             if __add_logging__ and k == "__init__":
-                logger.debug(
-                    _("decorate <%s>.__init__ with init logger" % (clsname)))
+                logger.debug("decorate <%s>.__init__ with init logger",
+                             clsname)
                 fn = decorators.log_init(fn)
 
             # add argument checking
@@ -106,14 +103,14 @@ class SchemaMetaclass(type):
                 for pos, p in enumerate(fi.parameters):
                     if p.type:
                         logger.debug(
-                            _("decorate <%s>.%s " % (clsname, k) +
-                              "with argument %i validity check." % pos))
+                            "decorate <%s>.%s with argument %i validity check.",
+                            clsname, k, pos)
                         fn = decorators.assert_arg(pos, p.type)(fn)
 
             # add exception logging
             if __add_logging__ and not k.startswith("__"):
-                logger.debug(
-                    _("decorate <%s>.%s with exception logger" % (clsname, k)))
+                logger.debug("decorate <%s>.%s with exception logger", clsname,
+                             k)
                 fn = decorators.log_exceptions(fn)
 
             attrs[k] = fn

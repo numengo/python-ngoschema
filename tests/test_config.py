@@ -2,15 +2,12 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
 import logging
 import os.path
 
-from ngoschema.object_loader import ObjectLoader
-from ngoschema.config import ConfigLoader
 from ngoschema.classbuilder import objects_config_loader
-
-_ = gettext.gettext
+from ngoschema.config import ConfigLoader
+from ngoschema.object_loader import ObjectLoader
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(

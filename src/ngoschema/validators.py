@@ -8,8 +8,6 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import gettext
-
 import six
 from jsonschema.validators import Draft6Validator
 from jsonschema.validators import extend
@@ -19,8 +17,6 @@ from python_jsonschema_objects.validators import registry
 
 from . import js_validators as _validators
 from .schemas_loader import _load_schema
-
-_ = gettext.gettext
 
 NgoDraft04Validator = extend(
     Draft6Validator,

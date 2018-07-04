@@ -9,10 +9,10 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoschema.schemas_loader import load_module_schemas
 from ngoschema.deserializers import Deserializer
 from ngoschema.inspect_objects import ClassInspector
 from ngoschema.inspect_objects import FunctionInspector
+from ngoschema.schemas_loader import load_module_schemas
 
 
 def test_FunctionInspector():
