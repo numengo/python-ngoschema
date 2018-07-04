@@ -64,7 +64,7 @@ def load_project_protected_regions(project):
     mlab_dir = project.repoDir.joinpath('simulink', str(project.alias),
                                         'submodels')
     user_code = {}
-    for f in PathList([src_dir, incl_dir]).list_files(
+    for f in PathList(src_dir, incl_dir).list_files(
         ['*.c', '*.cpp', '*.h', '*.mo'], recursive=True):
         user_code.update(get_protected_regions_from_file(f))
     return user_code
