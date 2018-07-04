@@ -213,8 +213,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if not self._short_repr_:
             return pjo_classbuilder.ProtocolBase.__repr__(self)
         class_name = self.__class__.__name__
-        if 'name' in self:
-            class_name += ' name=%s' % self['name']
+        if 'name' in self._properties:
+            class_name += ' name=%s' % (self._get_prop_value('name') or '')
         return "<%s id=%i>" % (class_name, id(self))
 
     def __getattr__(self, name):
@@ -612,7 +612,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
-        self.logger.debug("GET %r.%s", self, prop)
+        self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, prop))
+        #self.logger.debug("GET %r.%s", self, prop)
         if fget:
             try:
                 RO_active = False
@@ -634,7 +635,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise AttributeError("No attribute %s" % prop)
 
     def setprop(self, val):
-        self.logger.debug("SET %r.%s=%s", self, prop, val)
+        self.logger.debug(pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, prop, val))
+        #self.logger.debug("SET %r.%s=%s", self, prop, val)
         if RO_active:
             raise AttributeError("'%s' is read only" % prop)
 
@@ -767,7 +769,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         self._properties[prop] = val
 
     def delprop(self):
-        self.logger.debug("DEL %r.%s", self, prop)
+        self.logger.debug(pjo_util.lazy_format("DEL {!r}.{!s}", self, prop))
+        #self.logger.debug("DEL %r.%s", self, prop)
         if prop in self.__required__:
             raise AttributeError("'%s' is required" % prop)
         else:
