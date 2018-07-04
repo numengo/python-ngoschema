@@ -41,7 +41,9 @@ def search_app_config_files(appname=None, appauthor=None, version=None):
 class ConfigParser(Deserializer):
     logger = logging.getLogger(__name__)
 
-    def loads(self, stream, **kwargs):
+    @classmethod
+    def loads(cls, stream, **kwargs):
+        __doc__ = Deserializer.loads.__doc__
         config = configparser2.ConfigParser()
         config.read_string(stream)
         return config
@@ -73,7 +75,7 @@ class ConfigLoader(object):
         """
         Add a config file to registry
         """
-        cfg = ConfigParser().load(configFilepath)
+        cfg = ConfigParser.load(configFilepath)
         self._registry[str(configFilepath)] = cfg
 
         for name, options in dict(cfg._sections).items():

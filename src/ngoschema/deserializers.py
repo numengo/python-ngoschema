@@ -30,7 +30,8 @@ _ = gettext.gettext
 class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
+    #@decorators.assert_arg(1, decorators.SCH_PATH_FILE)
+    @classmethod
     def load(self, path, only=(), but=(), many=False, **opts):
         """
         Deserialize a file like object and returns the object
@@ -63,6 +64,7 @@ class Deserializer(with_metaclass(ABCMeta)):
     def loads(self, string, only=(), but=(), many=False, **opts):
         """
         Deserialize a string and returns the object
+        IMPORTANT: this is class method, override it with @classmethod!
 
         :param string: data string
         :type string: string
@@ -81,6 +83,7 @@ deserializer_registry = utils.GenericRegistry()
 class JsonDeserializer(Deserializer):
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
+    @classmethod
     def loads(self, string, only=(), but=(), many=False, **opts):
         __doc__ = Deserializer.loads.__doc__
         data = json.loads(string
@@ -93,11 +96,9 @@ class JsonDeserializer(Deserializer):
 @deserializer_registry.register()
 class YamlDeserializer(Deserializer):
     logger = logging.getLogger(__name__ + ".YamlDeserializer")
+    _yaml = YAML(typ="safe")
 
-    def __init__(self, **kwargs):
-        # default, if not specfied, is 'rt' (round-trip)
-        self._yaml = YAML(typ="safe", **kwargs)
-
+    @classmethod
     def loads(self, string, only=(), but=(), many=False, **opts):
         __doc__ = Deserializer.loads.__doc__
         data = self._yaml.load(string)

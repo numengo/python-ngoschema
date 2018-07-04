@@ -35,7 +35,8 @@ _ = gettext.gettext
 class Serializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
-    def dump(self, obj, path, only=(), but=(), many=False, overwrite=False, **opts):
+    @classmethod
+    def dump(cls, obj, path, only=(), but=(), many=False, overwrite=False, **opts):
         """
         Serialize an object to a file like object string
 
@@ -51,20 +52,21 @@ class Serializer(with_metaclass(ABCMeta)):
         ptcl = opts.get("protocol", "w")
         enc = opts.get("encoding", "utf-8")
 
-        self.logger.info(_("DUMP file %s" % (path)))
-        self.logger.debug(_("data:\n%r " % (obj)))
+        cls.logger.info(_("DUMP file %s" % (path)))
+        cls.logger.debug(_("data:\n%r " % (obj)))
 
         if path.exists() and not overwrite:
             raise IOError(_("file %s already exists" % str(path)))
         with io.open(str(path), ptcl, encoding=enc) as outfile:
-            stream = self.dumps(obj, **opts)
+            stream = cls.dumps(obj, **opts)
             stream = six.text_type(stream)
             outfile.write(stream)
 
     @abstractmethod
-    def dumps(self, obj, only=(), but=(), many=False, **opts):
+    def dumps(cls, obj, only=(), but=(), many=False, **opts):
         """
         Serialize an object to a string
+        IMPORTANT: this is class method, override it with @classmethod!
 
         :param obj: object(s) to serialize
         :param only: only keys to keep
@@ -87,7 +89,8 @@ class JsonSerializer(Serializer):
 
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
-    def dumps(self, obj, only=(), but=(), many=False, **opts):
+    @classmethod
+    def dumps(cls, obj, only=(), but=(), many=False, **opts):
         __doc__ = Serializer.dumps.__doc__
 
         if many:
@@ -111,13 +114,10 @@ class JsonSerializer(Serializer):
 @serializer_registry.register()
 class YamlSerializer(Serializer):
     logger = logging.getLogger(__name__ + ".YamlDeserializer")
+    _yaml = yaml
 
-    def __init__(self, **kwargs):
-        # default, if not specfied, is 'rt' (round-trip)
-        self._yaml = YAML(typ="safe", **kwargs)
-        self._yaml = yaml
-
-    def dumps(self, obj, only=(), but=(), many=False, **opts):
+    @classmethod
+    def dumps(cls, obj, only=(), but=(), many=False, **opts):
         __doc__ = Serializer.dumps.__doc__
 
         if many:
@@ -128,9 +128,9 @@ class YamlSerializer(Serializer):
             data = obj.as_dict() if hasattr(obj, "as_dict") else obj
             data = utils.process_collection(data, only, but, **opts)
 
-        self._yaml.indent = opts.get("indent", 2)
-        self._yaml.allow_unicode = opts.get("encoding", "utf-8") == "utf-8"
+        cls._yaml.indent = opts.get("indent", 2)
+        cls._yaml.allow_unicode = opts.get("encoding", "utf-8") == "utf-8"
 
         output = StringIO()
-        self._yaml.safe_dump(data, output, default_flow_style=False)
+        cls._yaml.safe_dump(data, output, default_flow_style=False)
         return output.getvalue()

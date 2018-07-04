@@ -33,14 +33,14 @@ def test_json2yaml():
 
     # json -> yaml
     js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
-    cc_js = JsonDeserializer().load(js, object_class=Cookiecutter)
+    cc_js = JsonDeserializer.load(js, object_class=Cookiecutter)
 
     yml = js.with_name("cc_ngoschema_serialized.yaml")
     YamlSerializer().dump(
         {
             "default_context": cc_js.as_dict()
         }, yml, overwrite=True)
-    cc_yml = YamlDeserializer().load(yml)
+    cc_yml = YamlDeserializer.load(yml)
     cc_yml = cc_yml["default_context"]
     cc_yml = Cookiecutter(**cc_yml)
     assert cc_yml == cc_js
@@ -49,13 +49,13 @@ def test_json2yaml():
 def test_yaml2json():
     # json -> yaml
     yml = pathlib.Path(dirpath, "objects", "cc_ngoschema.yaml")
-    cc_yml = YamlDeserializer().load(yml)
+    cc_yml = YamlDeserializer.load(yml)
     cc_yml = cc_yml["default_context"]
     cc_yml = Cookiecutter(**cc_yml)
 
     js = yml.with_name("cc_ngoschema_serialized.json")
     JsonSerializer().dump(cc_yml, js, overwrite=True)
-    cc_js = JsonDeserializer().load(js, object_class=Cookiecutter)
+    cc_js = JsonDeserializer.load(js, object_class=Cookiecutter)
     assert cc_yml == cc_js
 
 

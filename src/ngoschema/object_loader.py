@@ -109,7 +109,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         parsers = self._deserializers
         for p in parsers:
             try:
-                data = p().load(fp, **opts)
+                data = p.load(fp, **opts)
                 break
             except Exception as er:
                 pass

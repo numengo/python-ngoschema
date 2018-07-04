@@ -32,10 +32,10 @@ def test_transform():
         schemaPath = os.path.join(dirpath, "schemas", "project.json")
 
     js = pathlib.Path(dirpath, "objects", "cc_ngoschema.json")
-    cc_js = JsonDeserializer().load(js, object_class=Cookiecutter)
+    cc_js = JsonDeserializer.load(js, object_class=Cookiecutter)
 
     mtm_fp = pathlib.Path(dirpath, "transforms", "cookiecutter2project.mtm")
-    mtm = JsonDeserializer().load(mtm_fp, object_class=ObjectTransform)
+    mtm = JsonDeserializer.load(mtm_fp, object_class=ObjectTransform)
 
     proj = mtm.transform_from(cc_js, object_class=Project)
     # field equivalence transform
