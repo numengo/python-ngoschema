@@ -119,7 +119,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         foc = from_object_class or self._oc
         try:
-            obj = self._get_objects_from_data(data, self._oc, many, **opts)
+            obj = self._get_objects_from_data(data, foc, many=many, **opts)
             if not issubclass(self._oc, foc) and foc in self._transforms:
                 tf = self._transforms[foc]
                 obj = tf.transform(obj, object_class=self._oc, many=many, **opts)
@@ -148,11 +148,9 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
         a dictionary and many=True, values are processed
         """
         objs = []
-        if from_object_class is not None:
-            opts['from_object_class'] = from_object_class
         for fp in list_files(src, includes, excludes, recursive, folders=0):
             try:
-                ret =  self.load_from_file(fp, many=many, **opts)
+                ret =  self.load_from_file(fp, from_object_class=from_object_class, many=many, **opts)
                 objs += ret if many else [ret]
             except Exception as er:
                 self.logger.warning(er)
@@ -172,11 +170,11 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
             return None
         for obj in self:
             for k, v2 in attrs_value.items():
-                op = getattr(operator, 'eq')
+                op = 'eq'
                 if '__' in k:
                     ks = k.split('__')
-                    if ks[-1] in ['lt', 'le', 'eq', 'ne', 'ge', 'gt']:
-                        op = getattr(operator, ks[-1])
+                    if ks[-1] in ['lt', 'le', 'eq', 'ne', 'ge', 'gt', 'in']:
+                        op = ks[-1]
                         ks.pop()
                     o = get_child(obj, ks)
                 else:
@@ -184,7 +182,9 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 if o is None:
                     break
                 v = o.for_json() if hasattr(o, "for_json") else o
-                if not op(v, v2):
+                if op not in ['in'] and not getattr(operator, op)(v, v2):
+                    break
+                elif op == 'in' and not v in v2:
                     break
             else:
                 for k in attrs:

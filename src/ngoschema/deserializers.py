@@ -50,7 +50,7 @@ class Deserializer(with_metaclass(ABCMeta)):
         #    return self.loads(f, **opts)
         with codecs.open(str(path.resolve()), ptcl, enc) as f:
             try:
-                obj = self.loads(f.read(), only, but, many, **opts)
+                obj = self.loads(f.read(), only=only, but=but, many=many, **opts)
                 self.logger.info(_("LOAD file %s" % (path)))
                 self.logger.debug(_("data:\n%r " % (obj)))
                 return obj
