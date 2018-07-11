@@ -40,6 +40,8 @@ class Serializer(with_metaclass(ABCMeta)):
              but=(),
              many=False,
              overwrite=False,
+             protocol='w',
+             encoding="utf-8",
              **opts):
         """
         Serialize an object to a file like object string
@@ -51,23 +53,22 @@ class Serializer(with_metaclass(ABCMeta)):
         :param but: keys to exclude
         :param many: process collection as a list/sequence. if collection is
         :param overwrite: overwrites existing file
-        :param opts: dictionary of option, as protocol(=w) , encoding=(utf-8)
+        :param protocol: write mode (w for write, a for append)
+        :param encoding: encoding
+        :param opts: additional options
         """
-        ptcl = opts.get("protocol", "w")
-        enc = opts.get("encoding", "utf-8")
-
         cls.logger.info("DUMP file %s", path)
         cls.logger.debug("data:\n%r ", obj)
 
         if path.exists() and not overwrite:
             raise IOError("file %s already exists" % str(path))
-        with io.open(str(path), ptcl, encoding=enc) as outfile:
-            stream = cls.dumps(obj, **opts)
+        with io.open(str(path), protocol, encoding=encoding) as outfile:
+            stream = cls.dumps(obj, encoding=encoding, **opts)
             stream = six.text_type(stream)
             outfile.write(stream)
 
     @abstractmethod
-    def dumps(cls, obj, only=(), but=(), many=False, **opts):
+    def dumps(self, obj, only=(), but=(), many=False, **opts):
         """
         Serialize an object to a string
         IMPORTANT: this is class method, override it with @classmethod!
@@ -76,7 +77,7 @@ class Serializer(with_metaclass(ABCMeta)):
         :param only: only keys to keep
         :param but: keys to exclude
         :param many: process collection as a list/sequence. if collection is
-        :param opts: dictionary of options, as protocol(=w) , encoding=(utf-8), object_class=None
+        :param opts: additional options
         """
 
 

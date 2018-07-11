@@ -29,7 +29,8 @@ class Deserializer(with_metaclass(ABCMeta)):
 
     @classmethod
     @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
-    def load(self, path, only=(), but=(), many=False, **opts):
+    def load(self, path, only=(), but=(), many=False, encoding="utf-8",
+             **opts):
         """
         Deserialize a file like object and returns the object
 
@@ -39,14 +40,10 @@ class Deserializer(with_metaclass(ABCMeta)):
         :param but: keys to exclude
         :param many: process collection as a list/sequence. if collection is
         a dictionary and many=True, values are processed
+        :param encoding: file encoding
         :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), object_class=None
         """
-        ptcl = opts.get("protocol", "r")
-        enc = opts.get("encoding", "utf-8")
-
-        # with codecs.open(str(path), ptcl, enc) as f:
-        #    return self.loads(f, **opts)
-        with codecs.open(str(path.resolve()), ptcl, enc) as f:
+        with codecs.open(str(path.resolve()), 'r', encoding) as f:
             try:
                 obj = self.loads(
                     f.read(), only=only, but=but, many=many, **opts)
@@ -84,9 +81,7 @@ class JsonDeserializer(Deserializer):
     @classmethod
     def loads(self, string, only=(), but=(), many=False, **opts):
         __doc__ = Deserializer.loads.__doc__
-        data = json.loads(string
-                          # ,encoding=opts.get('encoding', 'utf-8')
-                          )
+        data = json.loads(string)
         data = utils.process_collection(data, only, but, many, **opts)
         return data
 

@@ -88,6 +88,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 pass
 
         # converting types than can be easily converted by evaluation
+        # for ex: convert a string containing a list to an actual list
         if self._to and hasattr(self._to, "as_dict"):
             for k, v in to_.items():
                 try:
@@ -96,8 +97,8 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 except Exception:
                     pass
 
-            if "object_class" not in opts:
-                opts["object_class"] = self._to
+            #if "object_class" not in opts:
+            #    opts["object_class"] = self._to
 
         return utils.process_collection(to_, **opts)
 
@@ -141,8 +142,8 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 except Exception:
                     pass
 
-            if "object_class" not in opts:
-                opts["object_class"] = self._from
+            #if "object_class" not in opts:
+            #    opts["object_class"] = self._from
 
         return utils.process_collection(from_, **opts)
 
