@@ -1,0 +1,69 @@
+{
+  "$schema": "http://numengo.org/draft-04/schema",
+  "$id": "http://numengo.org/ngoschema/Document",
+  "type": "object",
+  "additionalProperties": false,
+  "definitions": {
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filepath": {
+          "type": "path",
+          "isPathExisting": true
+        },
+        "url": {
+          "type": "string",
+          "format": "uri-reference",
+          "default": "{{this.uri}}"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "$id": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "mimetype": {
+          "type": "string",
+          "default": "text/plain"
+        },
+        "charset": {
+          "type": "string",
+          "default": "utf-8"
+        },
+        "version": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "content": {
+          "type": "object"
+        },
+        "dateCreated": {
+          "type": "datetime"
+        },
+        "dateModified": {
+          "type": "datetime"
+        },
+        "contentSize": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

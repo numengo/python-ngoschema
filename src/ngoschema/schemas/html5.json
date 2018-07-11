@@ -1,0 +1,161 @@
+{
+	"$schema": "http://numengo.org/draft-04/schema",
+	"$id": "http://numengo.org/ngoschema/html5",
+	"type": "object",
+	"additionalProperties": false,
+  "definitions": {
+    "header": {
+      "type": "object"
+    },
+    "footer": {
+      "type": "object"
+    },
+    "article": {
+      "type": "object"
+    },
+    "section": {
+      "type": "object"
+    },
+    "img": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "src": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        }
+      },
+      "required": ["src",
+      "alt"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "src": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "srcset": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "media": {
+          "type": "string"
+        },
+        "sizes": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "picture": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#definitions/source"
+          }
+        },
+        "img": {
+          "$ref": "#definitions/img"
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#definitions/source"
+          }
+        },
+        "autoplay": {
+          "type": "boolean",
+          "default": false
+        },
+        "controls": {
+          "type": "boolean",
+          "default": false
+        },
+        "loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "muted": {
+          "type": "boolean",
+          "default": false
+        },
+        "preload": {
+          "type": "boolean",
+          "default": false
+        },
+        "src": {
+          "type": "string",
+          "format": "uri-reference"
+        }
+      }
+    },
+    "video": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#definitions/source"
+          }
+        },
+        "autoplay": {
+          "type": "boolean",
+          "default": false
+        },
+        "controls": {
+          "type": "boolean",
+          "default": false
+        },
+        "loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "muted": {
+          "type": "boolean",
+          "default": false
+        },
+        "preload": {
+          "type": "boolean",
+          "default": false
+        },
+        "src": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "poster": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

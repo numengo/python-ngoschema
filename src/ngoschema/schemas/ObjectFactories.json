@@ -1,13 +1,36 @@
 {
-  "$schema": "http://numengo.org/draft-04/schema", 
-  "$id": "http://numengo.org/ngoschema/ObjectFactory",
-  "type": "object", 
-  "additionalProperties": false, 
-  "properties": {
-    "primaryKey": { "type": "string", "default": "name" },
-    "objectClass": { "type": "string" },
-    "deserializers": {
-      "type": "array", "items": {"type": "string"}
+  "$schema": "http://numengo.org/draft-04/schema",
+  "$id": "http://numengo.org/ngoschema/ObjectFactories",
+  "definitions": {
+    "ObjectFactory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objectClass": {
+          "type": "string"
+        },
+        "lazy_loading": {
+          "type": "boolean",
+          "default": true
+        },
+        "deserializers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ObjectLoader": {
+      "type": "object",
+      "extends": ["http://numengo.org/ngoschema/ObjectFactories#/definitions/ObjectFactory"],
+      "additionalProperties": false,
+      "properties": {
+        "primaryKey": {
+          "type": "string",
+          "default": "name"
+        }
+      }
     }
   }
 }
