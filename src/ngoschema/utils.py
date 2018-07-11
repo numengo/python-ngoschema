@@ -63,6 +63,21 @@ class GenericModuleFileLoader(object):
             self.registry[module].append(subfolder)
         return subfolder
 
+    def preload(self,
+                includes=["*"],
+                excludes=[],
+                recursive=False,
+                serializers=[]):
+        from .document import get_document_registry
+        all_paths = list(sum(self.registry.values(), []))
+        for d in all_paths:
+            get_document_registry().\
+                register_from_directory(d,
+                                        includes=includes,
+                                        excludes=excludes,
+                                        recursive=recursive,
+                                        serializers=serializers)
+
     def find(self, name):
         """
         find first name/pattern in loader's pathlist
@@ -278,19 +293,41 @@ def is_collection(value):
     return False
 
 
-def apply_through_collection(coll, func):
+def to_list(x, default=None):
+    if x is None:
+        return default
+    if not is_sequence(x):
+        return [x]
+    elif isinstance(x, list):
+        return x
+    else:
+        return list(x)
+
+
+def to_set(x):
+    if x is None:
+        return set()
+    if not isinstance(x, set):
+        return set(to_list(x))
+    else:
+        return x
+
+
+def apply_through_collection(coll, func, recursive=True):
     """
     Generic method to go through a complex collection
     and apply a transformation function on elements
     """
     if is_mapping(coll):
         for k, v in coll.items():
-            coll[k] = func(k, v)
-            apply_through_collection(v, func)
+            func(coll, k)
+            if recursive:
+                apply_through_collection(v, func, True)
     elif is_sequence(coll):
         for i, v in enumerate(coll):
-            coll[i] = func(i, v)
-            apply_through_collection(v, func)
+            func(coll, i)
+            if recursive:
+                apply_through_collection(v, func, True)
 
 
 def only_keys(icontainer, keys, recursive=False):
@@ -302,6 +339,7 @@ def only_keys(icontainer, keys, recursive=False):
     :type keys: list
     :param recursive: process container recursively
     """
+    # can't use apply_through_collection because we would delete while iterating
     ocontainer = copy.deepcopy(icontainer)
 
     def delete_fields_not_of(container, fields, recursive):
@@ -316,7 +354,7 @@ def only_keys(icontainer, keys, recursive=False):
                     delete_fields_not_of(container[k], fields, recursive)
         elif is_sequence(container):
             for i, v in enumerate(container):
-                container[i] = delete_fields_not_of(v, fields, recursive)
+                delete_fields_not_of(container[i], fields, recursive)
         return container
 
     ocontainer = delete_fields_not_of(ocontainer, set(keys), recursive)
@@ -332,6 +370,7 @@ def but_keys(icontainer, keys, recursive=False):
     :type keys: list
     :param recursive: process container recursively
     """
+    # can't use apply_through_collection because we would delete while iterating
     ocontainer = copy.deepcopy(icontainer)
 
     def delete_fields(container, fields, recursive):
@@ -346,7 +385,7 @@ def but_keys(icontainer, keys, recursive=False):
                     delete_fields(container[k], fields, recursive)
         elif is_sequence(container):
             for i, v in enumerate(container):
-                container[i] = delete_fields(v, fields, recursive)
+                delete_fields(container[i], fields, recursive)
         return container
 
     ocontainer = delete_fields(ocontainer, set(keys), recursive)
@@ -358,7 +397,7 @@ def process_collection(data,
                        but=(),
                        many=False,
                        object_class=None,
-                       schema={},
+                       object_from_schema={},
                        **opts):
     """
     process a collection keeping some/only fields.
@@ -386,15 +425,16 @@ def process_collection(data,
         data = but_keys(data, but, rec)
     if object_class is not None:
         return object_class(**data)
-    if schema:
+    if object_from_schema:
         from .classbuilder import ClassBuilder
         from .resolver import get_resolver
         resolver = get_resolver()
+        schema = object_from_schema
         nm = schema['title'] if 'title' in schema else schema.get(
             'id', 'Nameless')
         nm = inflection.parameterize(six.text_type(nm), '_')
-        klass = ClassBuilder(resolver).construct(nm, schema)
-        return klass(**data)
+        object_class = ClassBuilder(resolver).construct(nm, schema)
+        return object_class(**data)
     return data
 
 

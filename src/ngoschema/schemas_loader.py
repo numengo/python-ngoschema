@@ -63,6 +63,9 @@ def load_schema(schema, schemas_store=None):
     if schemas_store is not None:
         schemas_store[uri] = schema
     _all_schemas_store[uri] = schema
+    # also register in uri_identifier document store
+    from .uri_identifier import register_document_with_uri_id
+    register_document_with_uri_id(schema, uri)
     return uri, schema
 
 
