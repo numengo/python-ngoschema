@@ -32,7 +32,7 @@ def extends_ngo_draft1(validator, extends, instance, schema):
             except FormatError as er:
                 yield ValidationError(str(er), cause=er.cause)
             except RefResolutionError as er:
-                yield ValidationError(str(er), cause=er.cause)
+                yield ValidationError(str(er))
 
 
 def properties_ngo_draft1(validator, properties, instance, schema):
@@ -45,7 +45,7 @@ def properties_ngo_draft1(validator, properties, instance, schema):
         properties = schema.get("properties")
 
     for property, subschema in iteritems(properties):
-        if getattr(validator, "_setDefault", False):
+        if getattr(validator, "_setDefaults", False):
             if "default" in subschema and not isinstance(instance, list):
                 instance.setdefault(property, subschema["default"])
 
@@ -71,8 +71,15 @@ def properties_ngo_draft2(validator, properties, instance, schema):
         properties = schema.get("properties")
 
     for property, subschema in iteritems(properties):
-        if getattr(validator, "_setDefault", False):
-            if "default" in subschema and not isinstance(instance, list):
+        if getattr(validator, "_setDefaults", False):
+            if property not in [
+                    'definitions', 'properties', 'additionalProperties',
+                    'patternProperties', 'uniqueItems', 'readOnly',
+                    'isAbstract', 'items'
+            ] and isinstance(
+                    subschema,
+                    dict) and "default" in subschema and not isinstance(
+                        instance, list):
                 instance.setdefault(property, subschema["default"])
 
         if property in instance:

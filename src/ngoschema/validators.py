@@ -8,7 +8,21 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+from datetime import date
+from datetime import datetime
+from datetime import time
+from pathlib import Path
+
 import six
+from arrow import Arrow
+from jsonschema._types import TypeChecker
+from jsonschema._types import is_array
+from jsonschema._types import is_bool
+from jsonschema._types import is_integer
+from jsonschema._types import is_null
+from jsonschema._types import is_number
+from jsonschema._types import is_object
+from jsonschema._types import is_string
 from jsonschema.validators import Draft6Validator
 from jsonschema.validators import extend
 from python_jsonschema_objects.validators import ValidationError
@@ -18,6 +32,42 @@ from python_jsonschema_objects.validators import registry
 from . import js_validators as _validators
 from .schemas_loader import _load_schema
 
+ngodraft04_type_checker = TypeChecker(
+    {
+        u"array": is_array,
+        u"boolean": is_bool,
+        u"integer": lambda checker, instance: (
+            is_integer(checker, instance) or
+            isinstance(instance, float) and instance.is_integer()
+        ),
+        u"object": is_object,
+        u"null": is_null,
+        u"number": is_number,
+        u"string": is_string,
+        u"path": lambda checker, instance: (
+            is_string(checker, instance) or
+            isinstance(instance, Path)
+        ),
+        u"date": lambda checker, instance: (
+            is_string(checker, instance) or
+            isinstance(instance, Arrow) or
+            isinstance(instance, datetime) or
+            isinstance(instance, date)
+        ),
+        u"time": lambda checker, instance: (
+            is_string(checker, instance) or
+            isinstance(instance, Arrow) or
+            isinstance(instance, datetime) or
+            isinstance(instance, time)
+        ),
+        u"datetime": lambda checker, instance: (
+            is_string(checker, instance) or
+            isinstance(instance, Arrow) or
+            isinstance(instance, datetime)
+        )
+    },
+)
+
 NgoDraft04Validator = extend(
     Draft6Validator,
     validators={
@@ -25,7 +75,7 @@ NgoDraft04Validator = extend(
         "extends": _validators.extends_ngo_draft1,
         "properties": _validators.properties_ngo_draft2,
     },
-)
+    type_checker=ngodraft04_type_checker)
 NgoDraft04Validator._setDefaults = False
 NgoDraft04Validator.META_SCHEMA = _load_schema("ngo-draft-04")
 
