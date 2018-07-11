@@ -83,7 +83,9 @@ install_requires = [
     'arrow',
     'inflection',
     'six',
+    'requests',
     'ruamel.yaml',
+    'python-magic-bin'
 ]
 
 post_install_requires = [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]
