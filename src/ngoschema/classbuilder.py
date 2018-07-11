@@ -11,13 +11,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import collections
+import copy
 import datetime
 import inspect
 import itertools
 import logging
 import pathlib
 import re
-import weakref
 from builtins import object
 
 import arrow
@@ -33,9 +33,14 @@ from future.utils import text_to_native_str as native_str
 from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
+from .canonical_name import CN_KEY
+from .canonical_name import get_cname
 from .config import ConfigLoader
 from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
+from .uri_identifier import norm_uri
+from .uri_identifier import resolve_uri
+from .validators import DefaultValidator
 
 logger = pjo_classbuilder.logger
 
@@ -43,6 +48,9 @@ _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
 # loader to register module with a transforms folder where to look for model transformations
 models_module_loader = utils.GenericModuleFileLoader('models')
+
+# loader of objects default configuration
+objects_config_loader = ConfigLoader()
 
 _default_builder = None
 
@@ -58,128 +66,148 @@ def get_builder(resolver=None):
     return _default_builder
 
 
-def find_getter_setter_defv(propname, class_attrs):
+def get_descendant(obj, key_list, load_lazy=False):
     """
-    Helper to retrieve getters/setters/default value in class attribute
-    dictionary for a given property name
+    Get descendant in an object/dictionary by providing the path as a list of keys
+    :param obj: object to iterate
+    :param key_list: list of keys
+    :param load_lazy: in case of lazy loaded object, force loading
     """
-    getter = None
-    setter = None
-    defv = None
-    pn = propname
-    gpn = "get_%s" % pn
-    spn = "set_%s" % pn
-    if pn in class_attrs:
-        a = class_attrs[pn]
-        if inspect.isfunction(a) or inspect.ismethod(a):
-            logger.warning(
-                pjo_util.lazy_format("{} will be overwritten", propname))
-        elif inspect.isdatadescriptor(a):
-            pass
-        else:
-            defv = a
-    if gpn in class_attrs:
-        a = class_attrs[gpn]
-        if inspect.isfunction(a) or inspect.ismethod(a):
-            getter = a
-    if spn in class_attrs:
-        a = class_attrs[spn]
-        if inspect.isfunction(a) or inspect.ismethod(a):
-            setter = a
-    return getter, setter, defv
-
-
-objects_config_loader = ConfigLoader()
-
-_to_resolve = weakref.WeakValueDictionary()
-
-
-def get_unresolved_refs():
-    return [o._ref for o in _to_resolve.values()]
-
-
-def fill_unresolved_from(*objs):
-    all_ids = {
-        str(obj.id).rstrip("#"): obj
-        for obj in objs if hasattr(obj, "id")
-    }
-    resolved = []
-    for k, to_res in _to_resolve.items():
-        for _id, _obj in all_ids.items():
-            if _id == to_res._ref:
-                for a in _obj:
-                    if _obj[a] is not None:
-                        to_res[a] = _obj[a]
-                resolved.append(k)
-    for res in resolved:
-        del _to_resolve[res]
+    if load_lazy and getattr(obj, '_lazy_loading', {}):
+        obj.load_lazy()
+    elif getattr(obj, '_lazy_loading', {}):
+        try:
+            return get_cname(key_list, obj._lazy_loading)
+        except Exception as er:
+            return None
+    k0 = key_list[0]
+    if hasattr(obj, k0):
+        child = getattr(obj, k0)
+    else:
+        child = obj[k0] if k0 in obj else None
+    return child if len(key_list) == 1 else get_descendant(
+        child, key_list[1:], load_lazy)
 
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
 
+    # additional private and protected props
     __class_attr_list__ = set()
     _short_repr_ = True
+    _name = None
+    _parent = None
+    _key2attr = {}
+    _lazy_loading = {}
+    _ref = None
+    _validator = None
 
-    def __new__(cls, *args, **kwargs):
-        if 'schemaUri' in kwargs:
+    def __new__(cls, schemaUri=None, *args, **props):
+        if props.get('lazy_loading', False) and props.get(
+                'validate_lazy', True) and cls._validator is None:
+            cls._validator = DefaultValidator(
+                cls.__schema__, resolver=get_resolver())
+            cls._validator._setDefaults = True
+        # specific treatment in case schemaUri redefines the class to create
+        if schemaUri is not None and schemaUri != cls.__schema__.get('$id'):
             builder = get_builder()
-            schemaUri = kwargs.pop("schemaUri")
             uri = pjo_util.resolve_ref_uri(builder.resolver.resolution_scope,
                                            schemaUri)
             if uri in builder.resolved:
-                cls = builder.resolved[uri]
+                cls2 = builder.resolved[uri]
             else:
                 with builder.resolver.resolving(schemaUri) as resolved:
-                    cls = builder.construct(schemaUri, resolved,
-                                            (ProtocolBase, ))
-                #uri, detail = builder.resolver.resolve(schemaUri)
-                #cls = builder.construct(uri, detail, (ProtocolBase, ))
-            return cls(*args, **kwargs)
+                    cls2 = builder.construct(schemaUri, resolved,
+                                             (ProtocolBase, ))
+            return cls2(*args, **props)
         new = super(ProtocolBase, cls).__new__
         if new is object.__new__:
             return new(cls)
-        return new(cls, *args, **kwargs)
+        return new(cls, *args, **props)
 
-    def __init__(self, *args, **kwargs):
-        # initialize Protocol Base
-        self._key2attr = {}
-        self._parent = None
-        if '$ref' in kwargs:
-            global _to_resolve
-            self._ref = kwargs.pop('$ref').rstrip("#")
-            _to_resolve[id(self)] = self
-        pjo_classbuilder.ProtocolBase.__init__(self, **kwargs)
-        self._set_key2attr()
+    def __init__(self, lazy_loading=False, validate_lazy=True, *args, **props):
+        if self._name is not None:
+            # already initialized calling __new__ with schemaUri
+            # no workaround found tricking __new__ to subclass on the fly
+            return
 
-    def _set_key2attr(self, key="name"):
-        """
-        create a map of object key to attributes
-        """
+        # reference to property extern to document to be resolved later
+        if '$ref' in props:
+            self._ref = props.pop('$ref')
+            self._load_ref()
+
+        self._set_key2attr(props)
+
+        if lazy_loading:
+            # validate data to make sure no problem will appear at creation
+            if validate_lazy:
+                self._validator.validate(props)
+            # lazy loading treatment: add a flag to 1st level objects data only
+            # in level 1, lazy_loading is removed calling __init__
+            for k, v in props.items():
+                if utils.is_mapping(v):
+                    v['lazy_loading'] = True
+                if utils.is_sequence(v):
+                    for i, v2 in enumerate(v):
+                        if utils.is_mapping(v2):
+                            v2['lazy_loading'] = True
+            self._lazy_loading = props
+
+        if not self._lazy_loading and not self._ref:
+            self._set_key2attr(props)
+            pjo_classbuilder.ProtocolBase.__init__(self, **props)
+        else:
+            # necessary for proper behaviour of object, normally done in init
+            self._extended_properties = dict()
+            self._properties = dict(
+                zip(self.__prop_names__.values(),
+                    [None
+                     for x in six.moves.xrange(len(self.__prop_names__))]))
+
+    def _load_ref(self):
+        try:
+            data = resolve_uri(self._ref)
+            self._validator.validate(data)
+            self._set_key2attr(data)
+            self._lazy_loading = data
+            self._ref = None
+        except Exception as er:
+            logger.warning(er, exc_info=True)
+
+    def _load_lazy(self):
+        # lazy loading: initialize the object with data stored in _lazyloading attribute
+        # will only initialize 1st level ones (and do a proper validation)
+        data = self._lazy_loading
+        try:
+            self._lazy_loading = {}
+            pjo_classbuilder.ProtocolBase.__init__(self, **data)
+        except Exception as er:
+            self._lazy_loading = data
+            logger.warning(er, exc_info=True)
+
+    def _load_missing(self):
+        if self._ref:
+            self._load_ref()
+        if self._lazy_loading:
+            self._load_lazy()
+
+    def _set_key2attr(self, props):
+        self._name = re.sub(r"[^a-zA-z0-9\-_]+", "", props.get(
+            CN_KEY, "")) or "<anonymous>"
+        # create the map associating canonical names to properties
         self._key2attr = {}
         if getattr(self, '__attr_by_name__', False):
-            for k, p in itertools.chain(
-                    six.iteritems(self._properties),
-                    six.iteritems(self._extended_properties)):
-                if not p:
-                    continue
-                if hasattr(p, key) and getattr(p, key, ""):
-                    self._key2attr[str(p.name)] = (k, None)
-                elif hasattr(p, "validate_items"):
-                    for i, e in enumerate(p):
-                        if hasattr(e, key) and getattr(e, key, ""):
-                            self._key2attr[str(e.name)] = (k, i)
+            for k, v in props.items():
+                if utils.is_mapping(v) and CN_KEY in v:
+                    self._key2attr[v[CN_KEY]] = (k, None)
+                if utils.is_sequence(v):
+                    for i, v2 in enumerate(v):
+                        if utils.is_mapping(v2) and CN_KEY in v2:
+                            self._key2attr[v2[CN_KEY]] = (k, i)
 
-    _cname = None
-
-    def get_cname(self, key="name"):
-        if self._cname is None:
-            self._cname = re.sub(r"[^a-zA-z0-9\-_]+", "",
-                                 str(getattr(self, key)))
-            if self._parent is not None:
-                self._cname = '%s.%s' % (self._parent.get_cname(key),
-                                         self._cname)
-        return self._cname
+    def get_cname(self):
+        return '%s.%s' % (self._parent.cname,
+                          self._name) if self._parent else self._name
 
     cname = property(get_cname)
 
@@ -212,10 +240,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     def __repr__(self):
         if not self._short_repr_:
             return pjo_classbuilder.ProtocolBase.__repr__(self)
-        class_name = self.__class__.__name__
-        if 'name' in self._properties:
-            class_name += ' name=%s' % (self._get_prop_value('name') or '')
-        return "<%s id=%i>" % (class_name, id(self))
+        repr = self.__class__.__name__
+        if self.cname:
+            repr += ' name=%s' % self.cname
+        return "<%s id=%i>" % (repr, id(self))
 
     def __getattr__(self, name):
         """
@@ -227,10 +255,11 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         elif name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
         else:
+            self._load_missing()
             if name in self._key2attr:
-                n2a = self._key2attr[name]
-                return getattr(self, n2a[0]) if n2a[1] is None else getattr(
-                    self, n2a[0])[n2a[1]]
+                prop, index = self._key2attr[name]
+                return getattr(self, prop) if index is None else getattr(
+                    self, prop)[index]
             if name in self.__prop_translated__:
                 name = self.__prop_translated__[name]
             return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
@@ -240,13 +269,13 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if name.startswith("_"):
             collections.MutableMapping.__setattr__(self, name, val)
         else:
+            self._load_missing()
             if name in self._key2attr:
-                n2a = self._key2attr[name]
-                if n2a[1] is None:
-                    pjo_classbuilder.ProtocolBase.__setattr__(
-                        self, n2a[0], val)
+                prop, index = self._key2attr[name]
+                if index is None:
+                    pjo_classbuilder.ProtocolBase.__setattr__(self, prop, val)
                 else:
-                    getattr(self, n2a[0])[n2a[1]] = val
+                    getattr(self, prop)[index] = val
             else:
                 if name in self.__prop_translated__:
                     name = self.__prop_translated__[name]
@@ -376,6 +405,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props["__class_attr_list__"] = set(class_attrs.keys())
 
+        props["__schema__"] = copy.deepcopy(clsdata)
+        props["__schema__"]["$id"] = nm
+
         properties = dict()
 
         # parent classes
@@ -393,18 +425,39 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         if "properties" in clsdata:
             properties = pjo_util.propmerge(properties, clsdata["properties"])
 
+        def find_getter_setter_defv(propname, class_attrs):
+            """
+            Helper to retrieve getters/setters/default value in class attribute
+            dictionary for a given property name
+            """
+            getter = None
+            setter = None
+            defv = None
+            pn = propname
+            gpn = "get_%s" % pn
+            spn = "set_%s" % pn
+            if pn in class_attrs:
+                a = class_attrs[pn]
+                if inspect.isfunction(a) or inspect.ismethod(a):
+                    logger.warning(
+                        pjo_util.lazy_format("{} will be overwritten",
+                                             propname))
+                elif inspect.isdatadescriptor(a):
+                    pass
+                else:
+                    defv = a
+            if gpn in class_attrs:
+                a = class_attrs[gpn]
+                if inspect.isfunction(a) or inspect.ismethod(a):
+                    getter = a
+            if spn in class_attrs:
+                a = class_attrs[spn]
+                if inspect.isfunction(a) or inspect.ismethod(a):
+                    setter = a
+            return getter, setter, defv
+
         name_translation = {}
         name_translated = {}
-        #
-        #for prop, detail in properties.items():
-        #    translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
-        #    name_translation[translated] = prop
-        #    if translated != prop:
-        #        name_translated[prop] = translated
-        #    detail['raw_name'] = prop
-        #
-        #properties = { name_translated.get(prop, prop) : detail
-        #               for prop, detail in properties.items()}
 
         for prop, detail in properties.items():
             logger.debug(
@@ -612,6 +665,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     RO_active = RO
 
     def getprop(self):
+        self._load_missing()
         self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, prop))
         #self.logger.debug("GET %r.%s", self, prop)
         if fget:
@@ -635,7 +689,9 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise AttributeError("No attribute %s" % prop)
 
     def setprop(self, val):
-        self.logger.debug(pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, prop, val))
+        self._load_missing()
+        self.logger.debug(
+            pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, prop, val))
         #self.logger.debug("SET %r.%s=%s", self, prop, val)
         if RO_active:
             raise AttributeError("'%s' is read only" % prop)
@@ -718,6 +774,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
         elif pjo_util.safe_issubclass(info["type"],
                                       pjo_wrapper_types.ArrayWrapper):
+            raise Exception('WAS I EVER THERE???')
             # An array type may have already been converted into an ArrayValidator
             val = info["type"](val)
             val.validate()
@@ -769,6 +826,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         self._properties[prop] = val
 
     def delprop(self):
+        self._load_missing()
         self.logger.debug(pjo_util.lazy_format("DEL {!r}.{!s}", self, prop))
         #self.logger.debug("DEL %r.%s", self, prop)
         if prop in self.__required__:
