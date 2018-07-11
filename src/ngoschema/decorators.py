@@ -110,7 +110,9 @@ SCH_DATETIME = pmap({"type": "datetime"})
 
 def assert_arg(arg, schema):
     """
-    Decorator to add a schema to validate a given argument against a json-schema
+    Decorator to add a schema to validate a given argument against a json-schema.
+    If the decorated function has a keyword argument `assert_args`, it is used as
+    a flag to enable/disable argument validation/conversion.
 
     :param arg: argument to convert/validate, can be position (start 0) or name
     :type arg: [str, int]
@@ -135,7 +137,7 @@ def assert_arg(arg, schema):
         def wrapper(wrapped, instance, args, kwargs):
 
             # make assert optional with kwargs
-            if kwargs.get('no_assert_arg', False):
+            if not kwargs.get('assert_args', True):
                 return wrapped(*args, **kwargs)
 
             arg_i2 = arg_i if not instance and arg_i is not None else arg_i - 1

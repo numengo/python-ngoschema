@@ -90,7 +90,7 @@ class SchemaMetaclass(type):
             if not (utils.is_method(fn) or utils.is_function(fn)):
                 continue
             __add_logging__ = attrs.get("__add_logging__", False)
-            __assert_props__ = attrs.get("__assert_props__", True)
+            __assert_args__ = attrs.get("__assert_args__", True)
 
             if __add_logging__ and k == "__init__":
                 logger.debug("decorate <%s>.__init__ with init logger",
@@ -98,7 +98,7 @@ class SchemaMetaclass(type):
                 fn = decorators.log_init(fn)
 
             # add argument checking
-            if __assert_props__ and fn.__doc__:
+            if __assert_args__ and fn.__doc__:
                 fi = FunctionInspector(fn)
                 for pos, p in enumerate(fi.parameters):
                     if p.type:
