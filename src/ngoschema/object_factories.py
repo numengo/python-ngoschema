@@ -105,8 +105,14 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         process_opts[
             'object_class'] = None  # to make sure object is not created here
-        ret = utils.process_collection(data, many=many, **process_opts)
+        ret = utils.process_collection(data, many=many, replace_refs=True, **process_opts)
         return ret
+
+    def register(self, *objs):
+        """
+        Register objects in factory
+        """
+        self._objects.extend(objs)
 
     def create(self,
                data,
@@ -131,12 +137,12 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
         objs = []
         try:
             objs_data = self.process_object_data(
-                data, foc, many=many, **process_opts)
+                data, foc, many=many, process_opts=process_opts)
             if objs_data:
                 for data in (objs_data if many else [objs_data]):
                     objs.append(
-                        self._objectClass(lazy_loading=self._lz, **data))
-                self._objects.extend(objs)
+                        self._objectClass(_lazy_loading=self._lz, **data))
+                self.register(*objs)
                 return objs if many else objs[0]
         except Exception as er:
             raise IOError(
@@ -192,12 +198,24 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
     @property
     def objects(self):
         """
-        Return a list of all objects loaded
+        Return a query set of all objects loaded
         """
-        return self._objects
+        return Query(self._objects)
 
     def __iter__(self):
-        return six.itervalues(self._objects)
+        return iter(self._objects)
+
+    def filter(self,
+               load_lazy=False,
+               order_by=False,
+               distinct=False,
+               *attrs,
+               **attrs_value):
+        """
+        Make a Query on managed objects
+        """ + Query._filter_or_exclude.__doc__
+        return Query(self._objects, order_by=order_by, distinct=distinct).\
+            filter(load_lazy=load_lazy, *attrs, **attrs_value)
 
 
 class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
@@ -245,4 +263,10 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
         """
         Return the first object with the corresponding primary key
         """
-        return Query(self._objects).select(**{self.pk: pk})[0]
+        return Query(self._objects).get(**{self.pk: pk})
+
+    def __contains__(self, query):
+        if not utils.is_string(query):
+            query = query[self.pk]
+        return bool(Query(self._objects).filter(**{self.pk: query}).first())
+
