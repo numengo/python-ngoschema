@@ -81,9 +81,6 @@ def test_validate_subschemas():
     # instances of errors should have a 'schema' field which override the actual schema with all missing properties
     errors = sorted(v_orig.iter_errors(instance), key=lambda e: e.path)
     for error in errors:
-        # print(error.message)
-        # print(list(error.path),list(error.schema_path))
-        # pprint(error.instance)
         assert error.validator == "additionalProperties"
         assert error.instance.get("schemaUri")
 

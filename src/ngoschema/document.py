@@ -21,6 +21,7 @@ from six.moves.urllib.request import urlopen
 from . import utils
 from .canonical_name import CN_ID
 from .canonical_name import register_document_with_cname
+from .canonical_name import resolve_cname
 from .classbuilder import ProtocolBase
 from .decorators import SCH_PATH_DIR
 from .decorators import SCH_PATH_FILE
@@ -30,6 +31,7 @@ from .query import Query
 from .schema_metaclass import SchemaMetaclass
 from .uri_identifier import URI_ID
 from .uri_identifier import register_document_with_uri_id
+from .uri_identifier import resolve_uri
 
 
 class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -251,9 +253,18 @@ class DocumentRegistry(object):
         """
         Make a `Query` on registered documents
         """
-        __doc__ = Query.select.__doc__
-        return Query(self.registry.values()).select(
+        __doc__ = Query.filter.__doc__
+        return Query(self.registry.values()).filter(
             order_by=order_by, *attrs, **attrs_value)
 
     def __iter__(self):
         return six.itervalues(self.registry)
+
+
+def resolve_ref(ref):
+    if not utils.is_string(ref):
+        ref = str(ref)
+    if '/' in ref:
+        return resolve_uri(ref)
+    else:
+        return resolve_cname(ref)

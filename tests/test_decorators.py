@@ -49,9 +49,6 @@ def test_decorators():
     with pytest.raises(InvalidValue):
         add([1, 2], [1, 2, 3])
 
-    print(help(time2))
-    print(help(add))
-
     class MyException(Exception):
         pass
 
@@ -102,8 +99,7 @@ def test_decorators():
 
     logging.basicConfig(level=logging.DEBUG)
     a = A()
-    print(help(a.bar2))
-    print(help(a.bar3))
+
     with pytest.raises(MyException) as e_info:
         a.raise_exc()
     with pytest.raises(ValidationError) as e_info:

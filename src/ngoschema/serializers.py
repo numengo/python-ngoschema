@@ -42,6 +42,7 @@ class Serializer(with_metaclass(ABCMeta)):
              overwrite=False,
              protocol='w',
              encoding="utf-8",
+             logger=None,
              **opts):
         """
         Serialize an object to a file like object string
@@ -57,8 +58,9 @@ class Serializer(with_metaclass(ABCMeta)):
         :param encoding: encoding
         :param opts: additional options
         """
-        cls.logger.info("DUMP file %s", path)
-        cls.logger.debug("data:\n%r ", obj)
+        logger = logger or cls.logger
+        logger.info("DUMP file %s", path)
+        logger.debug("data:\n%r ", obj)
 
         if path.exists() and not overwrite:
             raise IOError("file %s already exists" % str(path))

@@ -23,13 +23,17 @@ from six import reraise as raise_
 from . import decorators
 from . import utils
 
+import warnings
+from ruamel.yaml import error
+warnings.simplefilter('ignore', error.MantissaNoDotYAML1_1Warning)
+
 
 class Deserializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
 
     @classmethod
     @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
-    def load(self, path, only=(), but=(), many=False, encoding="utf-8",
+    def load(cls, path, only=(), but=(), many=False, encoding="utf-8", logger=None,
              **opts):
         """
         Deserialize a file like object and returns the object
@@ -43,12 +47,13 @@ class Deserializer(with_metaclass(ABCMeta)):
         :param encoding: file encoding
         :param opts: dictionary of options, as protocol(=r) , encoding=(utf-8), object_class=None
         """
+        logger = logger or cls.logger
         with codecs.open(str(path.resolve()), 'r', encoding) as f:
             try:
-                obj = self.loads(
+                obj = cls.loads(
                     f.read(), only=only, but=but, many=many, **opts)
-                self.logger.info("LOAD file %s", path)
-                self.logger.debug("data:\n%r ", obj)
+                logger.info("LOAD file %s", path)
+                logger.debug("data:\n%r ", obj)
                 return obj
             except Exception as er:
                 type, value, traceback = sys.exc_info()

@@ -8,6 +8,8 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import io
+import six
 import inspect
 import logging
 import pathlib
@@ -67,6 +69,26 @@ class Jinja2Serializer(Serializer):
         """ initialize with given template """
         self.jinja = environment or default_jinja2_env()
         self.template = template
+
+    def dump(self,
+             obj,
+             path,
+             overwrite=False,
+             protocol='w',
+             encoding="utf-8",
+             logger=None,
+             **opts):
+        __doc__ = Serializer.dump.__doc__
+        logger = logger or self.logger
+        logger.info("DUMP file %s", path)
+        logger.debug("data:\n%r ", obj)
+
+        if path.exists() and not overwrite:
+            raise IOError("file %s already exists" % str(path))
+        with io.open(str(path), protocol, encoding=encoding) as outfile:
+            stream = self.dumps(obj, encoding=encoding, **opts)
+            stream = six.text_type(stream)
+            outfile.write(stream)
 
     def dumps(self, obj, **opts):
         data = obj.as_dict() if hasattr(obj, "as_dict") else obj
@@ -148,22 +170,11 @@ def underscore(word):
 class ModulePrefixedJinja2Environment(jinja2.Environment):
     logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")
 
-    def __init__(self, package_path="templates", **kwargs):
-        # prepare prefixed loader with all loaded modules with package_path
-        ms = {
-            k: m
-            for k, m in sys.modules.items()
-            if m and '.' not in k and not k.startswith("_")
-            and inspect.ismodule(m) and not inspect.isbuiltin(m)
-        }
-        to_load = {
-            k: m
-            for k, m in ms.items() if hasattr(m, "__file__")
-            and pathlib.Path(m.__file__).with_name(package_path).is_dir()
-        }
+    def __init__(self):
         loader = jinja2.PrefixLoader({
-            k: jinja2.PackageLoader(utils.fullname(m), package_path)
-            for k, m in to_load.items()
+            mname: jinja2.PackageLoader(mname, path.name)
+            for mname, paths in templates_module_loader.registry.items()
+            for path in paths
         })
 
         opts = {
@@ -171,9 +182,8 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
             "lstrip_blocks": True,
             "keep_trailing_newline": True,
         }
-        opts.update(kwargs)
         jinja2.Environment.__init__(self, loader=loader, **opts)
 
         # add filters
         for k, v in filters_registry.registry.items():
-            self.filters[k] = v
+            self.filters[k] = v        

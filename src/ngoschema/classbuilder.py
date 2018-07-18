@@ -34,7 +34,7 @@ from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
 from .canonical_name import CN_KEY
-from .canonical_name import get_cname
+from .canonical_name import resolve_cname
 from .config import ConfigLoader
 from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
@@ -74,10 +74,10 @@ def get_descendant(obj, key_list, load_lazy=False):
     :param load_lazy: in case of lazy loaded object, force loading
     """
     if load_lazy and getattr(obj, '_lazy_loading', {}):
-        obj.load_lazy()
+        obj._load_lazy()
     elif getattr(obj, '_lazy_loading', {}):
         try:
-            return get_cname(key_list, obj._lazy_loading)
+            return resolve_cname(key_list, obj._lazy_loading)
         except Exception as er:
             return None
     k0 = key_list[0]
@@ -85,9 +85,14 @@ def get_descendant(obj, key_list, load_lazy=False):
         child = getattr(obj, k0)
     else:
         child = obj[k0] if k0 in obj else None
-    return child if len(key_list) == 1 else get_descendant(
-        child, key_list[1:], load_lazy)
+    return get_descendant(child, key_list[1:], load_lazy) \
+            if child and len(key_list)>1 else child
 
+_reserved_fields_defaults = {
+    '_lazy_loading' : False,
+    '_validate_lazy' : True,
+    '_attr_by_name' : False,
+}
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__
@@ -102,13 +107,14 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     _ref = None
     _validator = None
 
-    def __new__(cls, schemaUri=None, *args, **props):
-        if props.get('lazy_loading', False) and props.get(
-                'validate_lazy', True) and cls._validator is None:
+    def __new__(cls, *args, **props):
+        if props.get('_lazy_loading', False) and props.get(
+                '_validate_lazy', True) and cls._validator is None:
             cls._validator = DefaultValidator(
                 cls.__schema__, resolver=get_resolver())
             cls._validator._setDefaults = True
         # specific treatment in case schemaUri redefines the class to create
+        schemaUri = props.get('schemaUri', None)
         if schemaUri is not None and schemaUri != cls.__schema__.get('$id'):
             builder = get_builder()
             uri = pjo_util.resolve_ref_uri(builder.resolver.resolution_scope,
@@ -125,37 +131,47 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             return new(cls)
         return new(cls, *args, **props)
 
-    def __init__(self, lazy_loading=False, validate_lazy=True, *args, **props):
+    def __init__(self, *args, **props):
         if self._name is not None:
             # already initialized calling __new__ with schemaUri
             # no workaround found tricking __new__ to subclass on the fly
             return
+
+        # remove options from props dictionary and set them as attributes
+        for f, d in _reserved_fields_defaults.items():
+            setattr(self, f, props.pop(f, d))
+        self._attr_by_name = self._attr_by_name or self.__attr_by_name__
+        # propagate non default options to children
+        for k, v in props.items():
+            if utils.is_mapping(v):
+                for f, d in _reserved_fields_defaults.items():
+                    if getattr(self, f) != d:
+                        v[f] = getattr(self, f)
+            if utils.is_sequence(v):
+                for i, v2 in enumerate(v):
+                    if utils.is_mapping(v2):
+                        for f, d in _reserved_fields_defaults.items():
+                            if getattr(self, f) != d:
+                                v2[f] = getattr(self, f)
 
         # reference to property extern to document to be resolved later
         if '$ref' in props:
             self._ref = props.pop('$ref')
             self._load_ref()
 
-        self._set_key2attr(props)
-
-        if lazy_loading:
+        if self._lazy_loading:
             # validate data to make sure no problem will appear at creation
-            if validate_lazy:
-                self._validator.validate(props)
+            if self._validate_lazy:
+                dont_check = list(_reserved_fields_defaults.keys()) + ['$ref']
+                #self._validator.validate(utils.process_collection(props, replace_refs=True, but=dont_check, fields_recursive=True))
             # lazy loading treatment: add a flag to 1st level objects data only
             # in level 1, lazy_loading is removed calling __init__
-            for k, v in props.items():
-                if utils.is_mapping(v):
-                    v['lazy_loading'] = True
-                if utils.is_sequence(v):
-                    for i, v2 in enumerate(v):
-                        if utils.is_mapping(v2):
-                            v2['lazy_loading'] = True
             self._lazy_loading = props
 
         if not self._lazy_loading and not self._ref:
-            self._set_key2attr(props)
             pjo_classbuilder.ProtocolBase.__init__(self, **props)
+            # we set key2attr after to avoid collusion at initialization between
+            self._set_key2attr(props)
         else:
             # necessary for proper behaviour of object, normally done in init
             self._extended_properties = dict()
@@ -181,6 +197,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         try:
             self._lazy_loading = {}
             pjo_classbuilder.ProtocolBase.__init__(self, **data)
+            # we set key2attr after to avoid collusion at initialization between
+            self._set_key2attr(data)
         except Exception as er:
             self._lazy_loading = data
             logger.warning(er, exc_info=True)
@@ -196,7 +214,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             CN_KEY, "")) or "<anonymous>"
         # create the map associating canonical names to properties
         self._key2attr = {}
-        if getattr(self, '__attr_by_name__', False):
+        if self._attr_by_name:
             for k, v in props.items():
                 if utils.is_mapping(v) and CN_KEY in v:
                     self._key2attr[v[CN_KEY]] = (k, None)
@@ -206,10 +224,30 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                             self._key2attr[v2[CN_KEY]] = (k, i)
 
     def get_cname(self):
+        cn = self._get_prop_value('canonicalName')
+        if cn:
+            return cn
         return '%s.%s' % (self._parent.cname,
                           self._name) if self._parent else self._name
 
     cname = property(get_cname)
+
+    def resolve_cname(self, ref_cname):
+        ref_cname = str(ref_cname).strip('#').split('.')
+        cname = str(self.cname).strip('#').split('.')
+        if ref_cname[0:len(cname)] == cname:
+            ref_cname = ref_cname[len(cname):]
+        try:
+            o = self
+            for n in ref_cname:
+                o = getattr(o, n)
+            return o
+        except Exception as er:
+            self.logger.error('impossible to resolve canonical name %s in %s', '.'.join(ref_cname), self)
+
+    @classmethod
+    def issubclass(cls, klass):
+        return pjo_util.safe_issubclass(cls, klass)    
 
     def set_configfiles_defaults(self, overwrite=False):
         """
@@ -275,7 +313,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 if index is None:
                     pjo_classbuilder.ProtocolBase.__setattr__(self, prop, val)
                 else:
-                    getattr(self, prop)[index] = val
+                    attr = getattr(self, prop)
+                    attr[index] = val
             else:
                 if name in self.__prop_translated__:
                     name = self.__prop_translated__[name]
@@ -292,12 +331,13 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         else:
             self._properties[prop] = value
 
-    def _get_prop_value(self, prop):
+    def _get_prop_value(self, prop, default=None):
         """
         Get a property shorcutting the setter. To be used in setters
         """
         if self._properties.get(prop, None) is not None:
             return self._properties[prop].for_json()
+        return default
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):

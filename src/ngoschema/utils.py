@@ -321,13 +321,13 @@ def apply_through_collection(coll, func, recursive=True):
     if is_mapping(coll):
         for k, v in coll.items():
             func(coll, k)
-            if recursive:
-                apply_through_collection(v, func, True)
+            if recursive and (is_mapping(v) or is_sequence(v)):
+                apply_through_collection(coll[k], func, True)
     elif is_sequence(coll):
         for i, v in enumerate(coll):
             func(coll, i)
-            if recursive:
-                apply_through_collection(v, func, True)
+            if recursive and (is_mapping(v) or is_sequence(v)):
+                apply_through_collection(coll[i], func, True)
 
 
 def only_keys(icontainer, keys, recursive=False):
@@ -396,8 +396,9 @@ def process_collection(data,
                        only=(),
                        but=(),
                        many=False,
+                       replace_refs=False,
                        object_class=None,
-                       object_from_schema={},
+                       object_from_schema=None,
                        **opts):
     """
     process a collection keeping some/only fields.
@@ -411,20 +412,37 @@ def process_collection(data,
     :param many: process collection as a list/sequence. if collection is
     a dictionary and many=True, values are processed
     """
+    logger = opts.get('logger') or logging.getLogger(__name__)
+
     if many:
         datas = list(data) if is_sequence(data) else data.values()
         return [
             process_collection(
                 d, only, but, object_class=object_class, **opts) for d in datas
         ]
+
+    if replace_refs:
+        from .document import resolve_ref
+        def _replace_refs(coll, key):
+            if is_mapping(coll[key]) and '$ref' in coll[key]:
+                ref = coll[key]['$ref']
+                try:
+                    coll[key] = copy.deepcopy(resolve_ref(ref))
+                except Exception as er:
+                    logger.warning('unable to resolve reference %s', ref, exc_info=True)
+        apply_through_collection(data, _replace_refs, recursive=True)
+
     if only:
         rec = opts.get("fields_recursive", False)
         data = only_keys(data, only, rec)
+
     if but:
         rec = opts.get("fields_recursive", False)
         data = but_keys(data, but, rec)
+
     if object_class is not None:
         return object_class(**data)
+
     if object_from_schema:
         from .classbuilder import ClassBuilder
         from .resolver import get_resolver
@@ -435,6 +453,7 @@ def process_collection(data,
         nm = inflection.parameterize(six.text_type(nm), '_')
         object_class = ClassBuilder(resolver).construct(nm, schema)
         return object_class(**data)
+
     return data
 
 
