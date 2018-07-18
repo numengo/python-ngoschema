@@ -21,7 +21,7 @@ def register_document_with_cname(doc, cname):
     _doc_cn_store[cname] = doc
 
 
-def resolve_cname(cn, parent=None, cn_key=CN_KEY):
+def resolve_cname_path(cn, parent=None, cn_key=CN_KEY):
     """
     Resolve a document and a path from a canonical name.
     Return a tuple of the parent document as a dict, and the path to the element
@@ -37,11 +37,13 @@ def resolve_cname(cn, parent=None, cn_key=CN_KEY):
     is used.
     :param cn_key: key to use to build canonical name (default is CN_KEY='name')
     """
+    cn_path = cn if utils.is_sequence(cn) else cn.strip('#').strip(
+            '.').split('.')
+    cur_cn = []
+
     #  parent document is provided, just convert cn to list path
     if isinstance(parent, dict):
         parent_doc = parent
-        cn_path = cn if utils.is_sequence(cn) else cn.strip('#').strip(
-            '.').split('.')
     else:
         # find parent document if not provided
         if parent is None:
@@ -53,44 +55,41 @@ def resolve_cname(cn, parent=None, cn_key=CN_KEY):
                 parent = parents[0]
             else:
                 raise Exception('no parent found for cn %s' % cn)
-        fragment = cn.split(parent)[-1].strip('.')
-        cn_path = fragment.split('.')
         parent_doc = _doc_cn_store[parent]
-    cur = parent_doc
-    path = []
-    for i, p in enumerate(cn_path):
-        found = False
-        # last element: can take element directly in collection
-        if i == (len(cn_path) - 1) and p in cur:
-            found = True
-            path.append(p)
-            break
-        # go through collection and look for element with key corresponding to path elem
-        for k, v in cur.items():
-            if isinstance(v, dict) and v.get(cn_key) == p:
-                found = True
-                path.append(k)
-                cur = v
-                break
-            elif isinstance(v, list):
-                for i2, v2 in enumerate(v):
-                    if isinstance(v2, dict) and v2.get(cn_key) == p:
-                        found = True
-                        path.append(k)
-                        path.append(i2)
-                        cur = v2
-                        break
-        if not found:
-            raise Exception(
-                'Unresolvable canonical name %s in %s' % (cn, parent))
-    return parent_doc, path
+        cur_cn = parent.split('.')[:-1]
 
+    # use generators because of 'null' which might lead to different paths
+    def _search_path(cn, cur, cur_cn, cur_path):
+        if isinstance(cur, dict):
+            cn2 = cur_cn+[cur.get(cn_key, 'null')]
+            if cn2 == cn[0:len(cn2)]:
+                if cn2 == cn:
+                    yield cur, cn2, cur_path
+                for k, v in cur.items():
+                    if isinstance(v, dict) or isinstance(v, list):
+                        for _ in _search_path(cn, v, cn2, cur_path+[k]):
+                            yield _
+        if isinstance(cur, list):
+            for i, v in enumerate(cur):
+                for _ in _search_path(cn, v, cur_cn, cur_path+[i]):
+                    yield _
+                
+    # first search without last element, as last one might not be a named object
+    # but the name of an attribute
+    for d, c, p in _search_path(cn_path[:-1], parent_doc, cur_cn, []):
+        if d.get(cn_key) == cn_path[-1]:
+            return parent_doc, p.append(cn_path[-1])
+        # we can continue the search from last point. we remove the last element of the
+        # canonical name which is going to be read again
+        for  d2, c2, p2 in _search_path(cn_path, d, c[:-1], p):
+            return parent_doc, p2
+    raise Exception('Unresolvable canonical name %s in %s' % (cn, parent))
 
-def get_cname(cn, parent=None, cn_key=CN_KEY):
+def resolve_cname(cn, parent=None, cn_key=CN_KEY):
     """
-    Returns the element resolved by `resolve_cname`
+    Returns the element resolved by `resolve_cname_path`
     """
-    cur, path = resolve_cname(cn, parent, cn_key)
+    cur, path = resolve_cname_path(cn, parent, cn_key)
     for p in path:
         cur = cur[p]
     return cur
