@@ -31,7 +31,7 @@ def search_app_config_files(appname=None, appauthor=None, version=None):
     for cdir in cdirs:
         if pathlib.Path(cdir).exists():
             pl.add(cdir)
-    return list(pl.list_files(['*.cfg', '*.ini']))
+    return pl.list_files(['*.cfg', '*.ini'])
 
 
 class ConfigParser(Deserializer):
