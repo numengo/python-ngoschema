@@ -337,12 +337,11 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             return collections.MutableMapping.__getattribute__(self, name)
         else:
             self._load_missing()
-            if name in self._key2attr:
-                prop, index = self._key2attr[name]
+            prop, index = self._key2attr.get(name, (None, None))
+            if prop:
                 return getattr(self, prop) if index is None else getattr(
                     self, prop)[index]
-            if name in self.__prop_translated__:
-                name = self.__prop_translated__[name]
+            name = self.__prop_translated__.get(name, name)
             return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
 
     def __setattr__(self, name, val):
@@ -351,16 +350,15 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             collections.MutableMapping.__setattr__(self, name, val)
         else:
             self._load_missing()
-            if name in self._key2attr:
-                prop, index = self._key2attr[name]
+            prop, index = self._key2attr.get(name, (None, None))
+            if prop:
                 if index is None:
                     pjo_classbuilder.ProtocolBase.__setattr__(self, prop, val)
                 else:
                     attr = getattr(self, prop)
                     attr[index] = val
             else:
-                if name in self.__prop_translated__:
-                    name = self.__prop_translated__[name]
+                name = self.__prop_translated__.get(name, name)
                 pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
 
     def _set_prop_value(self, prop, value):
@@ -555,7 +553,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for ext in cls_schema.get("extends", []):
             uri = pjo_util.resolve_ref_uri(current_scope, ext)
             if uri not in self.resolved:
-                logger.error('resolving inherited class for %s', uri)
+                logger.debug('resolving inherited class for %s', uri)
                 schemaUri, schema = self.resolver.resolve(uri)
                 self.resolved[uri] = self._build_object(uri, schema, (ProtocolBase, ))
             base = self.resolved[uri]
@@ -820,10 +818,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         dp = nm.split('definitions/')
         dp = [_.strip('/') for _ in dp]
         if len(dp)>1:
-            print(dp[1:])
             import dpath.util
             dpath.util.new(self.definitions, dp[1:], cls)
+            logger.info('CREATE %s', '.'.join(dp[1:]))
         else:
+            logger.info('CREATE %s', clsname)
             self.definitions[clsname] = cls
 
         return cls
