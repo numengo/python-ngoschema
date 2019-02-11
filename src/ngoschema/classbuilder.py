@@ -54,17 +54,21 @@ models_module_loader = utils.GenericModuleFileLoader('models')
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
 
+# default builder global variable
 _default_builder = None
 
 
 def get_builder(resolver=None):
+    """retrieves the default class builder
+
+    :param resolver: non default resolver to use in builder (default None uses get_resolver)
+    :return default ClassBuilder instance
+    """
     global _default_builder
     if _default_builder is None:
         _default_builder = ClassBuilder(resolver or get_resolver())
     else:
         if resolver:
-            #base_uri = _default_builder.resolver.base_uri
-            #resolver = resolver or get_resolver(base_uri)
             _default_builder.resolver = resolver
     return _default_builder
 
@@ -119,7 +123,29 @@ def iter_instances(cls):
 
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
-    __doc__ = pjo_classbuilder.ProtocolBase.__doc__
+    __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
+    
+    Protocol shared by all instances created by the class builder. It extends
+    the ProtocolBase object available in python-jsonschema-objects and add some features:
+    
+    * metamodel has a richer vocabulary, and class definition supports inheritance, and database
+    persistence
+    
+    * hybrid classes: classes have a json schema defining all its members, but have some business
+    implementation done in python and where default setters/getters can be overriden. 
+    
+    * string literal value with patterns: a string literal value can be defined as a formatted string
+    which can depend on other properties.
+    
+    * complex literal types: path/date/datetime are automatically created and can be handled as expected
+    python objects, and will then be properly serialized
+    
+    * allow lazy loading on member access
+        
+    * all instances created are registered and can then be queried using Query
+    
+    * default values can be configured in the config files
+    """
 
     # additional private and protected props
     __class_attr_list__ = set()
@@ -131,6 +157,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     _validator = None
 
     def __new__(cls, *args, **props):
+        """
+        function creating the class with a special treatment to resolve subclassing
+        """
         if props.get('_lazy_loading', False) and props.get(
                 '_validate_lazy', True) and cls._validator is None:
             cls._validator = DefaultValidator(
@@ -163,6 +192,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         # return new(cls, *args, **props) super ProtocolBase does not support args
 
     def __init__(self, *args, **props):
+        """
+        main initialization method, dealing with lazy loading
+        """
         #if self._iname is not None:
         #    # already initialized calling __new__ with schemaUri
         #    # no workaround found tricking __new__ to subclass on the fly
@@ -230,6 +262,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                      for x in six.moves.xrange(len(self.__prop_names__))]))
 
     def for_json(self):
+        """
+        serialization method, removing all members flagged as NotSerialized
+        """
         if self.__not_serialized__:
             return self.as_dict()
         return {k: v for k, v in self.as_dict().items() if k not in self.__not_serialized__}
@@ -249,8 +284,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             logger.warning(er, exc_info=True)
 
     def _load_lazy(self):
-        # lazy loading: initialize the object with data stored in _lazyloading attribute
-        # will only initialize 1st level ones (and do a proper validation)
+        """
+        lazy loading: initialize the object with data stored in _lazyloading attribute
+        will only initialize 1st level ones (and do a proper validation)
+        """
         data = self._lazy_loading
         try:
             self._lazy_loading = {}
@@ -271,13 +308,14 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             logger.warning(er, exc_info=True)
 
     def _load_missing(self):
+        """entry point to trigger methods which are supposed to load missing data (or lazy load)"""
         if self._ref:
             self._load_ref()
         if self._lazy_loading:
             self._load_lazy()
 
     def _set_key2attr(self, props):
-        # create the map associating canonical names to properties
+        """create the map associating canonical names to properties"""
         from .metadata import Metadata
         if isinstance(self, Metadata):
             if CN_KEY in props:
@@ -297,6 +335,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     @classmethod
     def issubclass(cls, klass):
+        """subclass specific method"""
         return pjo_util.safe_issubclass(cls, klass)
 
     def set_configfiles_defaults(self, overwrite=False):
@@ -322,14 +361,16 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     @property
     def _property_list(self):
+        """list of all available properties"""
         return itertools.chain(self._properties.keys(),
                                self._extended_properties.keys())
 
 
     def __getattr__(self, name):
         """
-        Allow getting class attributes, protected attributes and
-        protocolBase attributes
+        Allow getting class attributes, protected attributes and protocolBase attributes
+        as optimally as possible. attributes can be looked up base on their name, or by
+        their canonical name, using a correspondence map done with _set_key2attr
         """
         if name in self.__class_attr_list__:
             collections.MutableMapping.__getattribute__(self, name)
