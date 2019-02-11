@@ -12,19 +12,19 @@ import codecs
 import json
 import logging
 import sys
+import warnings
 from abc import ABCMeta
 from abc import abstractmethod
 from builtins import str
 
 from future.utils import with_metaclass
 from ruamel.yaml import YAML
+from ruamel.yaml import error
 from six import reraise as raise_
 
 from . import decorators
 from . import utils
 
-import warnings
-from ruamel.yaml import error
 warnings.simplefilter('ignore', error.MantissaNoDotYAML1_1Warning)
 
 
@@ -33,7 +33,13 @@ class Deserializer(with_metaclass(ABCMeta)):
 
     @classmethod
     @decorators.assert_arg(1, decorators.SCH_PATH_FILE)
-    def load(cls, path, only=(), but=(), many=False, encoding="utf-8", logger=None,
+    def load(cls,
+             path,
+             only=(),
+             but=(),
+             many=False,
+             encoding="utf-8",
+             logger=None,
              **opts):
         """
         Deserialize a file like object and returns the object

@@ -34,8 +34,8 @@ orig_resolver = RefResolver(DEFAULT_MS_URI, MS_STORE[DEFAULT_MS_URI], MS_STORE)
 
 
 def test_resolver():
-    ref1 = "%s#/definitions/metadata" % DEFAULT_MS_URI
-    ref2 = "#/definitions/metadata"
+    ref1 = "%s#/definitions/Metadata" % DEFAULT_MS_URI
+    ref2 = "#/definitions/Metadata"
     assert resolver.resolve(ref1) == resolver.resolve(ref2)
     assert resolver.resolve("http://json-schema.org/geo")
 

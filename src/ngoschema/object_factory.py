@@ -10,7 +10,6 @@ from __future__ import unicode_literals
 
 import itertools
 
-import six
 from future.utils import with_metaclass
 from python_jsonschema_objects.util import safe_issubclass
 
@@ -33,14 +32,14 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    schemaUri = "http://numengo.org/ngoschema/ObjectFactories#/definitions/ObjectFactory"
+    schemaUri = "http://numengo.org/draft-05/schema/object-factories#/definitions/ObjectFactory"
     deserializers = [JsonDeserializer, YamlDeserializer]
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
 
-        self._objectClass = utils.import_from_string(str(
-            self.objectClass)) if self.objectClass else None
+        if self.objectClass:
+            self._objectClass = utils.import_from_string(str(self.objectClass))
 
         self._deserializers = [
             utils.import_from_string(str(ds)) for ds in self.deserializers
@@ -49,7 +48,6 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._lz = bool(self.lazy_loading)
 
         self._transforms = {}
-        self._objects = []
 
     def add_transformation(self, transfo):
         """
@@ -105,14 +103,10 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         process_opts[
             'object_class'] = None  # to make sure object is not created here
-        ret = utils.process_collection(data, many=many, replace_refs=True, **process_opts)
+        ret = utils.process_collection(
+            #data, many=many, replace_refs=True, **process_opts)
+            data, many=many, replace_refs=True, **process_opts)
         return ret
-
-    def register(self, *objs):
-        """
-        Register objects in factory
-        """
-        self._objects.extend(objs)
 
     def create(self,
                data,
@@ -142,7 +136,6 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 for data in (objs_data if many else [objs_data]):
                     objs.append(
                         self._objectClass(_lazy_loading=self._lz, **data))
-                self.register(*objs)
                 return objs if many else objs[0]
         except Exception as er:
             raise IOError(
@@ -194,79 +187,3 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
             process_opts=process_opts,
             deserializers=deserializers,
             transform_opts=transform_opts)
-
-    @property
-    def objects(self):
-        """
-        Return a query set of all objects loaded
-        """
-        return Query(self._objects)
-
-    def __iter__(self):
-        return iter(self._objects)
-
-    def filter(self,
-               load_lazy=False,
-               order_by=False,
-               distinct=False,
-               *attrs,
-               **attrs_value):
-        """
-        Make a Query on managed objects
-        """ + Query._filter_or_exclude.__doc__
-        return Query(self._objects, order_by=order_by, distinct=distinct).\
-            filter(load_lazy=load_lazy, *attrs, **attrs_value)
-
-
-class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
-    """
-    Class to load and translate models from files. Each document is only loaded
-    once and if a document is loaded multiple times, the same instance is returned.
-    """
-
-    schemaUri = "http://numengo.org/ngoschema/ObjectFactories#/definitions/ObjectLoader"
-    primaryKey = "name"
-
-    def __init__(self, **kwargs):
-        ObjectFactory.__init__(self, **kwargs)
-        self._document_objects = {}
-
-    _pk = None
-
-    @property
-    def pk(self):
-        if self._pk is None:
-            self._pk = str(self.primaryKey)
-        return self._pk
-
-    def create_from_document(self,
-                             doc,
-                             from_object_class=None,
-                             many=False,
-                             deserializers=[],
-                             process_opts=None,
-                             transform_opts=None):
-        __doc__ = ObjectFactory.create_from_document.__doc__
-        if doc.identifier not in self._document_objects:
-            self._document_objects[
-                doc.identifier] = ObjectFactory.create_from_document(
-                    self,
-                    doc,
-                    from_object_class=from_object_class,
-                    many=many,
-                    process_opts=process_opts,
-                    deserializers=deserializers,
-                    transform_opts=transform_opts)
-        return self._document_objects[doc.identifier]
-
-    def get(self, pk):
-        """
-        Return the first object with the corresponding primary key
-        """
-        return Query(self._objects).get(**{self.pk: pk})
-
-    def __contains__(self, query):
-        if not utils.is_string(query):
-            query = query[self.pk]
-        return bool(Query(self._objects).filter(**{self.pk: query}).first())
-

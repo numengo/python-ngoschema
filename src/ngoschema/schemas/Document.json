@@ -1,10 +1,10 @@
 {
-  "$schema": "http://numengo.org/draft-04/schema",
-  "$id": "http://numengo.org/ngoschema/Document",
+  "$schema": "http://numengo.org/draft-05/schema",
+  "$id": "http://numengo.org/draft-05/schema/document",
   "type": "object",
   "additionalProperties": false,
   "definitions": {
-    "document": {
+    "Document": {
       "type": "object",
       "additionalProperties": false,
       "properties": {

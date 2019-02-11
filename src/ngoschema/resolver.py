@@ -19,8 +19,10 @@ from jsonschema.compat import urldefrag
 from jsonschema.validators import RefResolver
 
 from .schemas_loader import get_all_schemas_store
+from .utils import apply_through_collection
+from .utils import is_string
 
-CURRENT_DRAFT = "draft-04"
+CURRENT_DRAFT = "draft-05"
 
 
 def uri_ngo(name, draft=CURRENT_DRAFT):
@@ -43,7 +45,7 @@ class ExpandingResolver(RefResolver):
 
     _expanding = True
 
-    def _expand(self, uri, schema):
+    def _expand(self, uri, schema, doc_scope):
         """ expand a schema to add properties of all definitions it extends 
         if a URI is given, it will be used to identify the schema in a cache store.
         If no resolver is given, use a resolver with local schema store, with the
@@ -58,7 +60,7 @@ class ExpandingResolver(RefResolver):
         """
         uri = self._urljoin_cache(self.resolution_scope, uri)
 
-        doc_scope, frag = urldefrag(uri)
+        schema_scope, frag = urldefrag(uri)
 
         ref = schema.get("$ref")
 
@@ -67,7 +69,7 @@ class ExpandingResolver(RefResolver):
             uri_, schema_ = RefResolver.resolve(self, ref)
             if uri_ in _def_store:
                 return _def_store[uri_]
-            sch = self._expand(uri_, schema_)
+            sch = self._expand(uri_, schema_, doc_scope)
             _def_store[uri_] = sch
             return sch
 
@@ -77,13 +79,22 @@ class ExpandingResolver(RefResolver):
         schema_exp = {}
 
         extends = schema.get("extends", [])
-        for ref in extends:
+        for i, ref in enumerate(extends):
             ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
-            sch = self._expand(uri_, schema_)
-            dpath.util.merge(schema_exp, copy.deepcopy(sch))
+            extends[i] = uri_
+            sch = self._expand(uri_, schema_, doc_scope)
+            # sch is returned from _expand and is already "a copy", no need to deepcopy it
+            dpath.util.merge(schema_exp, sch, flags=dpath.util.MERGE_REPLACE)
 
-        dpath.util.merge(schema_exp, copy.deepcopy(schema))
+        schema_copy = copy.deepcopy(schema)
+        def replace_relative_uris(coll, key):
+            val = coll[key]
+            if is_string(val) and val.startswith('#/'):
+                coll[key] = self._urljoin_cache(schema_scope, val)
+        apply_through_collection(schema_copy, replace_relative_uris, recursive=True)
+
+        dpath.util.merge(schema_exp, schema_copy, flags=dpath.util.MERGE_REPLACE)
 
         extends = schema.get("extends", [])
         if extends:
@@ -107,7 +118,9 @@ class ExpandingResolver(RefResolver):
         """
         schema = RefResolver.resolve_from_url(self, url)
         if expand:
-            schema = self._expand(url, schema)
+            url_scoped = self._urljoin_cache(self.resolution_scope, url)
+            res_scope, frag = urldefrag(url_scoped)
+            schema = self._expand(url, schema, res_scope)
         return schema
 
     def resolve_by_name(self, name, expand=True):
@@ -119,7 +132,7 @@ class ExpandingResolver(RefResolver):
         :type name: string
         :rtype: tuple
         """
-        res_scope = self.resolution_scope.split('#')[0]
+        res_scope, _ = urldefrag(self.resolution_scope)
         uris = list(self.store.keys())
         uris.remove(res_scope)
         uris.insert(0, res_scope)
@@ -131,7 +144,7 @@ class ExpandingResolver(RefResolver):
                 id = "%s#/definitions/%s" % (uri, p)
                 if expand:
                     self.push_scope(uri)
-                    d = self._expand(id, d)
+                    d = self._expand(id, d, res_scope)
                     self.pop_scope()
                 return id, d
 
@@ -155,7 +168,7 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
         raise IOError("%s not found in loaded schemas (%s)" %
                       (base_uri, ", ".join(ms.keys())))
     referrer = ms[base_uri]
-    if not _resolver or len(ms) != len(_resolver.store):
+    if not _resolver or set(ms.keys()).difference(set(_resolver.store)):
         _resolver = ExpandingResolver(base_uri, referrer, ms)
     if base_uri != _resolver.base_uri:
         _resolver.push_scope(base_uri)

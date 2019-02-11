@@ -79,7 +79,19 @@ NgoDraft04Validator = extend(
 NgoDraft04Validator._setDefaults = False
 NgoDraft04Validator.META_SCHEMA = _load_schema("ngo-draft-04")
 
-DefaultValidator = NgoDraft04Validator
+NgoDraft05Validator = extend(
+    Draft6Validator,
+    validators={
+        "$ref": _validators.ref_ngo_draft2,
+        "extends": _validators.extends_ngo_draft1,
+        "properties": _validators.properties_ngo_draft2,
+    },
+    type_checker=ngodraft04_type_checker)
+
+NgoDraft05Validator._setDefaults = False
+NgoDraft05Validator.META_SCHEMA = _load_schema("ngo-draft-05")
+
+DefaultValidator = NgoDraft05Validator
 
 
 def convert_validate(value, schema):

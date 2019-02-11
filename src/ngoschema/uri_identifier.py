@@ -10,6 +10,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import requests
+from six.moves.urllib.parse import urlparse
+import sys
+import posixpath
 from jsonschema._utils import URIDict
 from jsonschema.compat import urldefrag
 from six.moves.urllib.parse import unquote
@@ -61,3 +64,12 @@ def resolve_uri(uri_id, doc=None, remote=False):
     if doc is None:
         doc = resolve_doc(uri, remote)
     return resolve_fragment(doc, frag)
+
+def relative_url(target, base):
+    base=urlparse(base)
+    target=urlparse(target)
+    if base.netloc != target.netloc:
+        raise ValueError('target and base netlocs do not match')
+    base_dir='.'+posixpath.dirname(base.path)
+    target='.'+target.path
+    return posixpath.relpath(target,start=base_dir)

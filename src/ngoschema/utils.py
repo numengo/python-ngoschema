@@ -318,15 +318,19 @@ def apply_through_collection(coll, func, recursive=True):
     Generic method to go through a complex collection
     and apply a transformation function on elements
     """
-    if is_mapping(coll):
+    #if is_mapping(coll):
+    if isinstance(coll, dict):
         for k, v in coll.items():
             func(coll, k)
-            if recursive and (is_mapping(v) or is_sequence(v)):
+            # if recursive and (is_sequence(v) or is_mapping(v)):
+            if recursive and isinstance(v, (list, dict)):
                 apply_through_collection(coll[k], func, True)
-    elif is_sequence(coll):
+    #elif is_sequence(coll):
+    elif isinstance(coll, list):
         for i, v in enumerate(coll):
             func(coll, i)
-            if recursive and (is_mapping(v) or is_sequence(v)):
+            #if recursive and (is_sequence(v) or is_mapping(v)):
+            if recursive and isinstance(v, (list, dict)):
                 apply_through_collection(coll[i], func, True)
 
 
@@ -423,13 +427,17 @@ def process_collection(data,
 
     if replace_refs:
         from .document import resolve_ref
+
         def _replace_refs(coll, key):
-            if is_mapping(coll[key]) and '$ref' in coll[key]:
+            if isinstance(coll[key], dict) and '$ref' in coll[key]:
                 ref = coll[key]['$ref']
                 try:
-                    coll[key] = copy.deepcopy(resolve_ref(ref))
+                    #coll[key] = copy.deepcopy(resolve_ref(ref))
+                    coll[key] = resolve_ref(ref)
                 except Exception as er:
-                    logger.warning('unable to resolve reference %s', ref, exc_info=True)
+                    logger.warning(
+                        'unable to resolve reference %s', ref, exc_info=True)
+
         apply_through_collection(data, _replace_refs, recursive=True)
 
     if only:

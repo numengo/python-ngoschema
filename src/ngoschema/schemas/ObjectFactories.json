@@ -1,6 +1,6 @@
 {
-  "$schema": "http://numengo.org/draft-04/schema",
-  "$id": "http://numengo.org/ngoschema/ObjectFactories",
+  "$schema": "http://numengo.org/draft-05/schema",
+  "$id": "http://numengo.org/draft-05/schema/object-factories",
   "definitions": {
     "ObjectFactory": {
       "type": "object",
@@ -23,7 +23,7 @@
     },
     "ObjectLoader": {
       "type": "object",
-      "extends": ["http://numengo.org/ngoschema/ObjectFactories#/definitions/ObjectFactory"],
+      "extends": ["#/definitions/ObjectFactory"],
       "additionalProperties": false,
       "properties": {
         "primaryKey": {

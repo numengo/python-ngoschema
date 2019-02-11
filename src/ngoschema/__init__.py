@@ -10,6 +10,8 @@ from .schemas_loader import load_module_schemas
 load_module_schemas('ngoschema')
 templates_module_loader.register('ngoschema')
 
+from .metadata import Metadata
+
 __all__ = [
     "DEFAULT_MS_URI",
     "get_resolver",

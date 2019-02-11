@@ -40,13 +40,13 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    schemaUri = r"http://numengo.org/ngoschema/Document#definitions/document"
+    schemaUri = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
     __add_logging__ = False
     __assert_args__ = False
     __attr_by_name__ = False
     _contentRaw = None
     _loaded = False
-    _deserialized = False
+    _is_deserialized = False
 
     _identifier = None
 
@@ -106,7 +106,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             raise IOError("Impossible to load %s with deserializers %s." %
                           (self.identifier, ds))
         self._content = doc
-        self._deserialized = True
+        self._is_deserialized = True
         if CN_ID in doc:
             register_document_with_cname(doc, doc[CN_ID])
         if URI_ID in doc:
@@ -114,8 +114,8 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return doc
 
     @property
-    def deserialized(self):
-        return self._deserialized
+    def isDeserialized(self):
+        return self._is_deserialized
 
     def get_dateCreated(self):
         return arrow.get(self.filepath.stat().st_ctime)
@@ -189,7 +189,7 @@ class DocumentRegistry(object):
             # no need for lazy loading as deserialize will load it anyway
             self.registry[str(fp)] = Document(filepath=fp)
         doc = self.registry[str(fp)]
-        if deserialize and not doc.deserialized:
+        if deserialize and not doc.isDeserialized:
             doc.deserialize(deserializers=deserializers, **deserializers_opts)
         return doc
 
@@ -249,13 +249,13 @@ class DocumentRegistry(object):
                     src, includes, excludes, recursive, folders=0)
         ]
 
-    def query(self, order_by=False, *attrs, **attrs_value):
+    def query(self, *attrs, order_by=False, **attrs_value):
         """
         Make a `Query` on registered documents
         """
         __doc__ = Query.filter.__doc__
         return Query(self.registry.values()).filter(
-            order_by=order_by, *attrs, **attrs_value)
+            *attrs, order_by=order_by, **attrs_value)
 
     def __iter__(self):
         return six.itervalues(self.registry)
@@ -265,6 +265,14 @@ def resolve_ref(ref):
     if not utils.is_string(ref):
         ref = str(ref)
     if '/' in ref:
-        return resolve_uri(ref)
+        try:
+            return resolve_uri(ref)
+        except:
+            try:
+                doc = get_document_registry().register_from_file(ref)
+                doc.deserialize()
+                return doc.content
+            except:
+                raise ValueError('Impossible to resolve %s as a URI or a file' % ref)
     else:
         return resolve_cname(ref)

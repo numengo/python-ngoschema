@@ -46,7 +46,7 @@ class SchemaMetaclass(type):
         schema = {}
         schemaUri = None
         # default resolver and builder
-        builder = get_builder()
+        builder = get_builder(get_resolver())
         resolver = builder.resolver
         if attrs.get("schema"):
             schemaUri, schema = load_schema(attrs["schema"])
@@ -80,7 +80,8 @@ class SchemaMetaclass(type):
             for nm, defn in iteritems(schema.get("definitions", {})):
                 uri = pjo_util.resolve_ref_uri(schemaUri,
                                                "#/definitions/" + nm)
-                builder.construct(uri, defn, attrs.get(nm, {}))
+                from .classbuilder import ProtocolBase
+                builder.construct(uri, defn, (ProtocolBase, ), attrs.get(nm, {}))
         else:
             schema["type"] = "object"
 
