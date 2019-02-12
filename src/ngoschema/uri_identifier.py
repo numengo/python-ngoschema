@@ -13,6 +13,7 @@ import requests
 from six.moves.urllib.parse import urlparse
 import sys
 import posixpath
+import functools
 from jsonschema._utils import URIDict
 from jsonschema.compat import urldefrag
 from six.moves.urllib.parse import unquote
@@ -33,10 +34,12 @@ def register_document_with_uri_id(doc, uri_id):
     _doc_id_store[norm_uri(uri_id)] = doc
 
 
+@functools.lru_cache(30)
 def resolve_doc(uri_id, remote=False):
     uri, frag = urldefrag(uri_id)
-    if uri in _doc_id_store:
-        return _doc_id_store[uri]
+    ret = _doc_id_store.get(uri)
+    if ret:
+        return ret
     if remote:
         # we could load the resource
         doc = requests.get(uri).json()

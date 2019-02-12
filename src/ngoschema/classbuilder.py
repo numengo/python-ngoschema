@@ -125,22 +125,27 @@ def iter_instances(cls):
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
     
-    Protocol shared by all instances created by the class builder. It extends
-    the ProtocolBase object available in python-jsonschema-objects and add some features:
+    Protocol shared by all instances created by the class builder. It extends the 
+    ProtocolBase object available in python-jsonschema-objects and add some features:
     
-    * metamodel has a richer vocabulary, and class definition supports inheritance, and database
-    persistence
+    * metamodel has a richer vocabulary, and class definition supports inheritance, and 
+    database persistence
     
-    * hybrid classes: classes have a json schema defining all its members, but have some business
-    implementation done in python and where default setters/getters can be overriden. 
+    * hybrid classes: classes have a json schema defining all its members, but have some 
+    business implementation done in python and where default setters/getters can be 
+    overriden. 
     
-    * string literal value with patterns: a string literal value can be defined as a formatted string
-    which can depend on other properties.
+    * string literal value with patterns: a string literal value can be defined as a 
+    formatted string which can depend on other properties.
     
-    * complex literal types: path/date/datetime are automatically created and can be handled as expected
-    python objects, and will then be properly serialized
+    * complex literal types: path/date/datetime are automatically created and can be 
+    handled as expected python objects, and will then be properly serialized
     
     * allow lazy loading on member access
+
+    * methods are automatically decorated to add logging possibility, exception handling
+    and argument validation/conversion to the proper type (type can be given as a schema
+    through a decorator or simply by documenting the docstring with a schema)
         
     * all instances created are registered and can then be queried using Query
     
@@ -418,8 +423,6 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             propval.validate()
             # should be enough... set it back anyway ?
             #self._properties[prop] = value
-        elif propval:
-            self._properties[prop] = propval.__init__(value)
         # a validator is available
         elif issubclass(propinfo.get('_type'), pjo_literals.LiteralValue):
             val = propinfo['_type'](value)
@@ -584,7 +587,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props["__class_attr_list__"] = set(class_attrs.keys())
 
-        cls_schema = copy.deepcopy(clsdata)
+        #cls_schema = copy.deepcopy(clsdata)
+        cls_schema = clsdata
         props["__schema__"] = cls_schema
         props["__schema__"]["$id"] = nm
 
@@ -593,20 +597,20 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # parent classes
         for ext in cls_schema.get("extends", []):
             uri = pjo_util.resolve_ref_uri(current_scope, ext)
-            if uri not in self.resolved:
+            base = self.resolved.get(uri)
+            if not base:
                 logger.debug('resolving inherited class for %s', uri)
                 schemaUri, schema = self.resolver.resolve(uri)
-                self.resolved[uri] = self._build_object(uri, schema, (ProtocolBase, ))
-            base = self.resolved[uri]
+                base = self.resolved[uri] = self._build_object(schemaUri, schema, (ProtocolBase, ))
             if not any([issubclass(p, base) for p in parents]):
                 parents = (base, ) + parents
 
         for p in reversed(parents):
-            properties = pjo_util.propmerge(properties,
-                                            getattr(p, "__propinfo__", {}))
+            if issubclass(p, ProtocolBase):
+                properties = pjo_util.propmerge(properties,
+                                                p.__propinfo__)
 
-        if "properties" in cls_schema:
-            properties = pjo_util.propmerge(properties, cls_schema["properties"])
+        properties = pjo_util.propmerge(properties, cls_schema.get("properties",{}))
 
         def find_getter_setter_defv(propname, class_attrs):
             """
@@ -871,7 +875,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def from_uri(self, schemaUri):
         resolver = self.resolver
         schemaUri, schema = resolver.resolve(schemaUri)
-        schema = copy.deepcopy(schema)
+        # default resolver uses _expand and already return a copy
+        #schema = copy.deepcopy(schema)
         return self.construct(schemaUri, schema)
 
 

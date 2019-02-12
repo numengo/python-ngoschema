@@ -46,19 +46,26 @@ class SchemaMetaclass(type):
         schema = {}
         schemaUri = None
         # default resolver and builder
+        # default resolver is the one with expanding facility => it expand the schema
+        # according to the classes it extends, it resolves partial URI non relative to
+        # the document, etc...
         builder = get_builder(get_resolver())
         resolver = builder.resolver
         if attrs.get("schema"):
             schemaUri, schema = load_schema(attrs["schema"])
+            #expand the schema
             schema = resolver._expand(schemaUri, schema)
         elif attrs.get("schemaPath"):
             schemaUri, schema = load_schema_file(attrs["schemaPath"])
+            #expand the schema
             schema = resolver._expand(schemaUri, schema)
         elif attrs.get("schemaUri"):
+            # the schema is automatically expanded when resolved by the resolver
             schemaUri, schema = resolver.resolve(attrs["schemaUri"])
         if schema:
             # make a copy as building class will modify the dict and mess a lot things
-            schema = copy.deepcopy(schema)
+            # expand already makes a copy
+            #schema = copy.deepcopy(schema)
             # validate schema with its meta-schema
             metaschema = DefaultValidator.META_SCHEMA
             if schema.get("$schema"):

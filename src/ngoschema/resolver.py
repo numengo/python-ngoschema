@@ -13,6 +13,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import copy
+import functools
 
 import dpath.util
 from jsonschema.compat import urldefrag
@@ -67,14 +68,16 @@ class ExpandingResolver(RefResolver):
         if ref:
             ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
-            if uri_ in _def_store:
-                return _def_store[uri_]
+            ret = _def_store.get(uri_)
+            if ret:
+                return ret
             sch = self._expand(uri_, schema_, doc_scope)
             _def_store[uri_] = sch
             return sch
 
-        if uri in _def_store:
-            return _def_store[uri]
+        ret = _def_store.get(uri)
+        if ret:
+            return ret
 
         schema_exp = {}
 
@@ -97,16 +100,14 @@ class ExpandingResolver(RefResolver):
         dpath.util.merge(schema_exp, schema_copy, flags=dpath.util.MERGE_REPLACE)
 
         extends = schema.get("extends", [])
-        if extends:
-            extends_ = []
-            for e in extends:
-                if e not in extends_:
-                    extends_.append(e)
-            schema_exp["extends"] = extends_
+        extends_ = []
+        [extends_.append(x) for x in extends if x not in extends_]        
+        schema_exp["extends"] = extends_
 
         #_def_store[uri] = schema_exp
         return schema_exp
 
+    @functools.lru_cache(50)
     def resolve_from_url(self, url, expand=True):
         """
         Resolve a reference and returns its URI and the corresponding schema.
