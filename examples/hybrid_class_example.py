@@ -56,10 +56,14 @@ def external_schema_class():
 
     class B(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """An external schema can be referred using the schemaUri class argument
-        The resolver will look for the schema in schema loaded using load_module_schemas
-        to load schema in a module folder. Other loader are available. Schemas are loaded
-        and then referred using their $id or id argument, which is the URI where it is 
-        supposed to be available online"""
+        The resolver will look for the schema in schemas loaded using 
+        load_module_schemas. 
+        In this case, load_module_schemas is called when importing ngoschema, and all 
+        schemas available in ngoschema/schemas were loaded. Schemas are then referred 
+        using their $id or id argument, which is the URI where it is supposed to be 
+        available online.
+        Other schema loaders are available to load a json-schema, a file or a directory.
+        """
         schemaUri = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
 
     # schema has an attribute author
