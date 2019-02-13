@@ -443,6 +443,50 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             return validator
         return default
 
+    @classmethod
+    def get(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+        
+        Query can used all usual operators"""
+        from .query import Query
+        ret = list(
+            Query(iter_instances(cls))._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+        if len(ret) == 0:
+            raise ValueError('Entry %s does not exist' % attrs_value)
+        elif len(ret) > 1:
+            import logging
+            cls.logger.error(ret)
+            raise ValueError('Multiple objects returned')
+        return ret[0]
+
+    @classmethod
+    def one_or_none(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+        
+        Query can used all usual operators"""
+        from .query import Query
+        ret = list(
+            Query(iter_instances(cls))._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+        if len(ret) == 0:
+            return None
+        elif len(ret) > 1:
+            import logging
+            cls.logger.error(ret)
+            raise ValueError('Multiple objects returned')
+        return ret[0]
+
+    @classmethod
+    def list(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves a list of instances corresponding to query
+        
+        Query can used all usual operators"""
+        from .query import Query
+        return list(
+            Query(iter_instances(cls))._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
@@ -524,13 +568,16 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase, ), **kw):
-        if clsdata.get("type") not in ("path", "date", "time", "datetime") \
+        if clsdata.get("type") not in ("string", "path", "date", "time", "datetime") \
             and 'foreignKey' not in clsdata:
             return pjo_classbuilder.ClassBuilder._construct(
                     self, uri, clsdata, parent, **kw)
 
         typ = clsdata["type"]
 
+        if typ == "string":
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, str)
         if typ == "path":
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, pathlib.Path)
@@ -944,7 +991,9 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         self.logger.debug(
             pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, prop, val))
         if info['RO_active'] and prop in self.__read_only__:
-            raise AttributeError("'%s' is read only" % prop)
+            # in case default has not been set yet
+            if not (prop in self.__has_default__ and self._properties.get(prop) is None):
+                raise AttributeError("'%s' is read only" % prop)
 
         infotype = info["type"]
 
@@ -954,7 +1003,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 validator = infotype
                 self._properties[prop] = validated = validator(val)
                 fset(self, validated)
-                val = validated
+                # fset is supposed to set the property with set_prop_value
+                val = self._properties[prop]
             else:
                 self._properties[prop] = val
                 fset(self, val)

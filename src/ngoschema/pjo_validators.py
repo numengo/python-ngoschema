@@ -130,6 +130,26 @@ def check_datetime_type(param, value, _):
 # converters
 ############
 
+@converter_registry.register(name="integer")
+def convert_integer(param, value, detail):
+    try:
+        return int(value)
+    except:
+        pass
+    return value
+
+
+@converter_registry.register(name="number")
+def convert_integer(param, value, detail):
+    try:
+        return int(value)
+    except:
+        try:
+            return float(value)
+        except:
+            pass
+    return value
+
 
 @converter_registry.register(name="string")
 def convert_string(param, value, detail):
@@ -257,6 +277,10 @@ def convert_path_type(param, value, _):
 # formatters
 ############
 
+@formatter_registry.register(name="path")
+def format_path(param, value, details):
+    return str(value)
+
 
 @formatter_registry.register(name="date")
 def format_date(param, value, details):
@@ -279,4 +303,4 @@ def format_arrow(param, value, details):
     if "format" in details:
         frmt = details["format"]
         return value.format(frmt)
-    return value
+    return str(value)

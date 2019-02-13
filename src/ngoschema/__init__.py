@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-from ngoschema.jinja2 import templates_module_loader
+from .jinja2 import templates_module_loader
 
 from .classbuilder import ProtocolBase
+from .classbuilder import get_builder
 from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
 from .schema_metaclass import SchemaMetaclass
 from .schemas_loader import load_module_schemas
+from . import pjo_validators
+from python_jsonschema_objects import ValidationError
 
 load_module_schemas('ngoschema')
 templates_module_loader.register('ngoschema')
@@ -13,10 +16,12 @@ templates_module_loader.register('ngoschema')
 from .metadata import Metadata
 
 __all__ = [
-    "DEFAULT_MS_URI",
-    "get_resolver",
-    "ProtocolBase",
-    "SchemaMetaclass",
+    'DEFAULT_MS_URI',
+    'get_resolver',
+    'get_builder',
+    'ProtocolBase',
+    'SchemaMetaclass',
+    'ValidationError'
 ]
 
 __author__ = "Cédric ROMAN"

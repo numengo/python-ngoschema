@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import imp
 import json
 import logging
+import pathlib
 import pkgutil
 from builtins import str
 
@@ -83,6 +84,7 @@ def load_schema_file(schema_path, schemas_store=None):
     with open(str(schema_path), "rb") as f:
         #schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
         schema = json.loads(f.read().decode("utf-8"))
+        schema.setdefault('$id', pathlib.Path(schema_path).stem)
         return load_schema(schema, schemas_store)
 
 

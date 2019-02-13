@@ -52,13 +52,14 @@ class SchemaMetaclass(type):
         builder = get_builder(get_resolver())
         resolver = builder.resolver
         if attrs.get("schema"):
+            attrs["schema"].setdefault('$id', clsname)
             schemaUri, schema = load_schema(attrs["schema"])
             #expand the schema
-            schema = resolver._expand(schemaUri, schema)
+            schema = resolver._expand(schemaUri, schema, schemaUri)
         elif attrs.get("schemaPath"):
             schemaUri, schema = load_schema_file(attrs["schemaPath"])
             #expand the schema
-            schema = resolver._expand(schemaUri, schema)
+            schema = resolver._expand(schemaUri, schema, schemaUri)
         elif attrs.get("schemaUri"):
             # the schema is automatically expanded when resolved by the resolver
             schemaUri, schema = resolver.resolve(attrs["schemaUri"])
