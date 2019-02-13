@@ -62,6 +62,8 @@ def external_schema_class():
         schemas available in ngoschema/schemas were loaded. Schemas are then referred 
         using their $id or id argument, which is the URI where it is supposed to be 
         available online.
+        In this case, the file in ngoschema/schemas/Document.json was loaded and found
+        through its id which was registered among all other schemas and metaschemas.
         Other schema loaders are available to load a json-schema, a file or a directory.
         """
         schemaUri = r'http://numengo.org/draft-05/schema/document#/definitions/Document'

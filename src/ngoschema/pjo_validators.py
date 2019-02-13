@@ -140,12 +140,12 @@ def convert_integer(param, value, detail):
 
 
 @converter_registry.register(name="number")
-def convert_integer(param, value, detail):
+def convert_number(param, value, detail):
     try:
         return int(value)
     except:
         try:
-            return float(value)
+            return value if isinstance(value, Decimal) else float(value)
         except:
             pass
     return value

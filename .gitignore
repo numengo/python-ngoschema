@@ -110,3 +110,4 @@ docs/_build
 output/
 boilerplate/
 python-nameless
+*.pyperf
