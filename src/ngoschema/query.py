@@ -12,9 +12,12 @@ import itertools
 import operator
 import re
 
+from python_jsonschema_objects.literals import LiteralValue
+
 from . import utils
 from .classbuilder import get_descendant
-from python_jsonschema_objects.literals import LiteralValue
+from .classbuilder import ProtocolBase
+from .canonical_name import CN_KEY
 
 _operators = [
     # operator library
@@ -42,6 +45,8 @@ _operators = [
 
 
 def _comparable(obj):
+    if isinstance(obj, ProtocolBase):
+        obj = obj[CN_KEY]
     if isinstance(obj, LiteralValue):
         return obj.for_json()
     return obj
@@ -311,6 +316,11 @@ class Query(object):
             self._filter_or_exclude(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
+    def next(self, *attrs, load_lazy=False, **attrs_value):
+        return next(
+            self._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+
     def first(self):
         try:
             return self[0]
@@ -322,7 +332,6 @@ class Query(object):
             return self[-1]
         except IndexError:
             return None
-
     def reverse(self):
         ret = self._chain()
         ret._iterable = reversed(self._cache_result())

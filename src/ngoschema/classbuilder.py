@@ -37,6 +37,7 @@ from . import utils
 from .canonical_name import CN_KEY
 from .canonical_name import resolve_cname
 from .config import ConfigLoader
+from .decorators import classproperty
 from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
 from .uri_identifier import norm_uri
@@ -285,8 +286,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             self._set_key2attr(data)
             self._lazy_loading = data
             self._ref = None
+            return True
         except Exception as er:
             logger.warning(er, exc_info=True)
+            return False
 
     def _load_lazy(self):
         """
@@ -307,17 +310,20 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 pjo_classbuilder.ProtocolBase.__init__(self, **data)
             # we set key2attr after to avoid collusion at initialization between
             self._set_key2attr(data)
+            return True
         except Exception as er:
             self._lazy_loading = data
             logger.warning('problem lazy loading %s' % self)
             logger.warning(er, exc_info=True)
+            return False
 
     def _load_missing(self):
         """entry point to trigger methods which are supposed to load missing data (or lazy load)"""
         if self._ref:
-            self._load_ref()
+            return self._load_ref()
         if self._lazy_loading:
-            self._load_lazy()
+            return self._load_lazy()
+        return False
 
     def _set_key2attr(self, props):
         """create the map associating canonical names to properties"""
@@ -325,9 +331,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if isinstance(self, Metadata):
             if CN_KEY in props:
                 self.set_name(props[CN_KEY])
-            # we add it to _lazy_loading dictionary to make it queriable
-            if self._lazy_loading:
-                self._lazy_loading['canonicalName'] = self.cname
+            if 'canonicalName' in props:
+                self._set_prop_value('canonicalName', props['canonicalName'])
         self._key2attr = {}
         if self._attr_by_name:
             for k, v in props.items():
@@ -413,7 +418,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         # if the component is lazy loaded, dont force its loading now
         # add the value to the data to be loaded later and return
-        if self._lazy_loading and isinstance(self, dict):
+        if self._lazy_loading and isinstance(self._lazy_loading, dict):
             self._lazy_loading[prop] = value
             return
         propval = self._properties.get(prop)
@@ -436,12 +441,15 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         Get a property shorcutting the setter. To be used in setters
         """
-        validator = self._properties.get(prop, None)
+        if self._lazy_loading and isinstance(self._lazy_loading, dict):
+            return self._lazy_loading.get(prop, default)
+        validator = self._properties.get(prop)
         if validator is not None:
             if is_property_dirty(validator):
                 validator.validate()
             return validator
         return default
+
 
     @classmethod
     def get(cls, *attrs, load_lazy=False, **attrs_value):
@@ -487,6 +495,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             Query(iter_instances(cls))._filter_or_exclude(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
+    @classproperty
+    def instances(cls):
+        return list(iter_instances(cls))
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
@@ -678,6 +689,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                              propname))
                 elif inspect.isdatadescriptor(a):
                     pass
+                    #getter = a.fget
+                    #setter = a.fset
                 else:
                     defv = a
             if gpn in class_attrs:
@@ -899,6 +912,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props["__required__"] = required
         props["__read_only__"] = read_only
         props["__not_serialized__"] = not_serialized
+        # default value on children force its resolution at each init
+        # seems the best place to treat this special case
+        #props["__has_default__"] = defaults.difference(['children'])
         props["__has_default__"] = defaults
         props["__add_logging__"] = class_attrs.get('__add_logging__', False)
         props["__attr_by_name__"] = class_attrs.get('__attr_by_name__', False)
@@ -933,8 +949,8 @@ def touch_property(prop):
         prop._validated = False
     elif isinstance(prop, pjo_wrapper_types.ArrayWrapper):
         prop._dirty = True
-        for c in prop._typed:
-            touch_property(c)
+        #for c in prop._typed:
+        #    touch_property(c)
 
 
 def is_property_dirty(prop):
@@ -1009,7 +1025,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 self._properties[prop] = val
                 fset(self, val)
             if val and isinstance(val, Metadata):
-                val._set_prop_value('parent', self)
+                if val._lazy_loading:
+                    val._set_prop_value('parent', self)
+                else:
+                    val.parent = self
             return
 
         if isinstance(infotype, (list, tuple)):
@@ -1081,7 +1100,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             val.validate()
             for e in val:
                 if isinstance(e, Metadata):
-                    e._set_prop_value('parent', self)
+                    if e._lazy_loading:
+                        e._set_prop_value('parent', self)
+                    else:
+                        e.parent = self
 
         elif getattr(infotype, "isLiteralClass", False) is True:
             if not isinstance(val, infotype):
@@ -1129,7 +1151,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             raise TypeError("Unknown object type: '%s'" % infotype)
 
         if val and isinstance(val, Metadata):
-            val._set_prop_value('parent', self)
+            if val._lazy_loading:
+                val._set_prop_value('parent', self)
+            else:
+                val.parent = self
         self._properties[prop] = val
 
     def delprop(self):

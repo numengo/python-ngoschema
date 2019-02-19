@@ -68,17 +68,6 @@ ngodraft04_type_checker = TypeChecker(
     },
 )
 
-NgoDraft04Validator = extend(
-    Draft6Validator,
-    validators={
-        "$ref": _validators.ref_ngo_draft2,
-        "extends": _validators.extends_ngo_draft1,
-        "properties": _validators.properties_ngo_draft2,
-    },
-    type_checker=ngodraft04_type_checker)
-NgoDraft04Validator._setDefaults = False
-NgoDraft04Validator.META_SCHEMA = _load_schema("ngo-draft-04")
-
 NgoDraft05Validator = extend(
     Draft6Validator,
     validators={

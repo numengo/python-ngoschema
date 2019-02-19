@@ -8,7 +8,7 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import itertools
+import weakref
 
 from future.utils import with_metaclass
 from python_jsonschema_objects.util import safe_issubclass
@@ -60,7 +60,13 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     _parent = None
     def set_parent(self, value):
-        self._parent = self._properties['parent']
+        # value is already properly casted
+        if self._parent and self._parent != value and self._parent.ref:
+            touch_property(self._parent.ref.children)
+            #weakref.finalize(self._parent.ref, Metadata._update_cname, self)
+        if not self._parent:
+            weakref.finalize(value.ref, Metadata._update_cname, self)
+        self._parent = value
         self._update_cname()
 
     @property
@@ -82,16 +88,22 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     # cache for canonical name
     _cname = None
-    def _update_cname(self):
-        self._cname = '%s.%s' % (self._parent.ref.cname,
-                          self.iname) if self._parent else self.iname
-        touch_all_refs(self)
+    def _update_cname(self, value=None):
+        if value:
+            self._cname = value
+        else:
+            self._cname = '%s.%s' % (self._parent.ref.cname, self.iname) \
+                            if self._parent and self._parent.ref \
+                            else self.iname
         # this function is called at early stage of component initialiation
         # when _properties is not yet allocated => just a safegard
         if hasattr(self, '_properties'):
             self._set_prop_value('canonicalName', self._cname)
-            for child in self.children:
-                child.ref._update_cname()
+            if not self._lazy_loading:
+                #for child in getattr(self, 'children', []):
+                for child in self.children:
+                    child.ref._update_cname()
+        touch_all_refs(self)
 
     @property
     def cname(self):
@@ -99,6 +111,10 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if not self._cname and self._iname and self._parent:
             self._update_cname()
         return self._cname or self.iname
+
+    def set_canonicalName(self, value):
+        if value != self._cname:
+            self._update_cname(value)
 
     def get_canonicalName(self):
         return self.cname

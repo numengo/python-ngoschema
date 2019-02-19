@@ -172,9 +172,6 @@
           "type": "boolean"
         }
       },
-      "readOnly": [
-        "canonicalName"
-      ],
       "additionalProperties": true,
       "notSerialized": [
         "parent",

@@ -105,7 +105,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
     def __contains__(self, query):
         if not utils.is_string(query):
             query = query[self.pk]
-        return bool(Query(self._objects.values()).filter(**{self.pk: query}).first())
+        return bool(Query(self._objects.values()).filter(**{self.pk: query}).count())
 
     def filter(self,
                *attrs,
