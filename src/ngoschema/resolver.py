@@ -56,7 +56,8 @@ class ExpandingResolver(RefResolver):
         :type schema: dict 
         :param uri: schema uri
         :type uri: string
-        :param resolver: resolver to use instead of default resolver.
+        :param doc_scope: current doc uri
+        :type doc_scope: string
         :rtype: dict
         """
         uri = self._urljoin_cache(self.resolution_scope, uri)

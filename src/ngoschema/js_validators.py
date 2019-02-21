@@ -72,11 +72,11 @@ def properties_ngo_draft2(validator, properties, instance, schema):
 
     for property, subschema in iteritems(properties):
         if getattr(validator, "_setDefaults", False):
-            if property not in [
+            if property not in (
                     'definitions', 'properties', 'additionalProperties',
                     'patternProperties', 'uniqueItems', 'readOnly',
                     'isAbstract', 'items'
-            ] and isinstance(
+            ) and isinstance(
                     subschema,
                     dict) and "default" in subschema and not isinstance(
                         instance, list):

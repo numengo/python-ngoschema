@@ -42,11 +42,11 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
         @wrapt.decorator
         def wrapper(method, instance, args, kwargs):
             # case first argument is an array
-            if type(args[narg1]) in [list, set, tuple]:
+            if type(args[narg1]) in (list, set, tuple):
                 ret = []
                 new_args = list(args)
                 # only first argument is an array
-                if (narg2 == -1 or not type(args[narg2]) in [list, set, tuple]
+                if (narg2 == -1 or not type(args[narg2]) in (list, set, tuple)
                         or len(args[narg2]) == 1):
                     for v in args[narg1]:
                         new_args[narg1] = v

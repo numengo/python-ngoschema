@@ -193,7 +193,7 @@ def convert_date_type(param, value, detail):
     if isinstance(value, datetime.date):
         return value
     if isinstance(value, string_types):
-        if value in ["now", "today"]:
+        if value in ('now', 'today'):
             a = arrow.utcnow()
             return a.date()
         try:
@@ -229,7 +229,7 @@ def convert_time_type(param, value, _):
             1, 1, 1):
         return value.time()
     if isinstance(value, string_types):
-        if value in ["now"]:
+        if value in ('now'):
             a = arrow.utcnow()
             return a.time()
         try:
@@ -248,7 +248,7 @@ def convert_datetime_type(param, value, _):
     if isinstance(value, datetime.datetime):
         return arrow.get(value)
     if isinstance(value, string_types):
-        if value in ["now"]:
+        if value in ('now'):
             a = arrow.utcnow()
             return a
     try:

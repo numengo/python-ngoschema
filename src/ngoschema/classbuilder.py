@@ -452,7 +452,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
 
     @classmethod
-    def get(cls, *attrs, load_lazy=False, **attrs_value):
+    def one(cls, *attrs, load_lazy=False, **attrs_value):
         """retrieves exactly one instance corresponding to query
         
         Query can used all usual operators"""
@@ -486,7 +486,17 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         return ret[0]
 
     @classmethod
-    def list(cls, *attrs, load_lazy=False, **attrs_value):
+    def first(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+        
+        Query can used all usual operators"""
+        from .query import Query
+        return next(
+            Query(iter_instances(cls))._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+
+    @classmethod
+    def filter(cls, *attrs, load_lazy=False, **attrs_value):
         """retrieves a list of instances corresponding to query
         
         Query can used all usual operators"""
@@ -497,7 +507,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
 
     @classproperty
     def instances(cls):
-        return list(iter_instances(cls))
+        return iter_instances(cls)
+
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
@@ -651,6 +662,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props["__schema__"]["$id"] = nm
 
         properties = dict()
+        parent_properties = dict()
 
         # parent classes
         for ext in cls_schema.get("extends", []):
@@ -670,6 +682,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         properties = pjo_util.propmerge(properties, cls_schema.get("properties",{}))
 
+
         def find_getter_setter_defv(propname, class_attrs):
             """
             Helper to retrieve getters/setters/default value in class attribute
@@ -688,7 +701,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         pjo_util.lazy_format("{} will be overwritten",
                                              propname))
                 elif inspect.isdatadescriptor(a):
-                    pass
+                    if propname not in parent_properties:
+                        parent_properties[propname] = (a, class_attrs['__propinfo__'].get(propname, {}).get('_type'))
                     #getter = a.fget
                     #setter = a.fset
                 else:
@@ -739,6 +753,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if detail.get("default") is not None:
                 defaults.add(prop)
+
+            if prop in parent_properties:
+                pprop, _typ = parent_properties[prop]
+                props[prop] = pprop
+                if _typ:
+                    properties[prop]["type"] = _typ
+                continue
 
             if detail.get("type", None) == "object":
                 uri = "{0}/{1}_{2}".format(nm, prop, "<anonymous>")
@@ -1097,13 +1118,15 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
         elif infotype == "array":
             val = info["validator"](val)
-            val.validate()
-            for e in val:
-                if isinstance(e, Metadata):
-                    if e._lazy_loading:
-                        e._set_prop_value('parent', self)
-                    else:
-                        e.parent = self
+            # only validate if items are not foreignKey
+            if not hasattr(info["validator"].__itemtype__, '_foreignClass'):
+                val.validate()
+                for e in val:
+                    if isinstance(e, Metadata):
+                        if e._lazy_loading:
+                            e._set_prop_value('parent', self)
+                        else:
+                            e.parent = self
 
         elif getattr(infotype, "isLiteralClass", False) is True:
             if not isinstance(val, infotype):
@@ -1111,12 +1134,13 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 # handle case of patterns
                 if utils.is_pattern(val):
                     validator._pattern = val
-                # only validate if it s not a pattern
+                # only validate if it s not a pattern or a foreign key
                 else:
                     # it s not a pattern, remove
                     if hasattr(validator, "_pattern"):
                         delattr(validator, "_pattern")
-                    validator.validate()
+                    if not hasattr(validator, '_foreignClass'):
+                        validator.validate()
                 if validator._value is not None:
                     # This allows setting of default Literal values
                     val = validator

@@ -27,9 +27,9 @@ def _register_foreign_key(fkey):
     _foreign_keys_ref[id(fkey)] = fkey
 
 def touch_all_refs(instance):
-    for ref in [fk() for fk in _foreign_keys_ref.valuerefs() if fk().ref is instance]:
+    for ref in (fk() for fk in _foreign_keys_ref.valuerefs() if fk()._ref and fk()._ref() is instance):
         ref._validated = False
-        ref.validate()
+        #ref.validate()
 
 class ForeignKey(pjo_literals.LiteralValue):
     _keys = None
@@ -119,19 +119,19 @@ class ForeignKey(pjo_literals.LiteralValue):
             return
         if isinstance(value, self.foreignClass):
             self._ref = weakref.ref(value)
-            fkey_value = value._get_prop_value(self.key)
-            pjo_literals.LiteralValue.__init__(self, fkey_value)
+            self._value = str(value._get_prop_value(self.key))
+            self._validated = True
         else:
             self._ref = None
-            pjo_literals.LiteralValue.__init__(self, value)
+            self._value = str(value)
+            self._validated = False
         # to force resolution of reference and backpopulates
-        self._validated = False
-        self.validate()
+        #self._validated = False
+        #self.validate()
     
     def for_json(self):
         return None if not self._value else pjo_literals.LiteralValue.for_json(self)
  
-    _backrefs = None
     def validate(self):
         from .query import Query
         from .classbuilder import iter_instances
@@ -140,38 +140,13 @@ class ForeignKey(pjo_literals.LiteralValue):
         if not self._value or not is_property_dirty(self):
             return
         pjo_literals.LiteralValue.validate(self)
-        kwargs = { self.key: self._value }
+        #kwargs = { self.key: self._value }
         # literal value is validated, now let s see if it corresponds to reference
-        if not self.ref:
-            if self._value is None:
-                return
-            try:
-                ref = self.foreignClass.get(**kwargs)
-                self._ref = weakref.ref(ref)
-            except Exception as er:
-                # ref does not exist (any more??)
-                try:
-                    from .metadata import Metadata
-                    ancestors = [i for i in Metadata.instances if self._value.startswith(str(i.cname))]
-                    ancestors = sorted(ancestors, key=lambda a: len(a.cname), reverse=True)
-                    best_parent = ancestors[0]
-                    path = self._value[len(best_parent.cname)+1:]
-                    ref = best_parent.get(path.split('.'))
-                    self._ref = weakref.ref(ref)
-                except Exception as er:
-                    logger.warning('impossible to resolve %s %s=%s', 
-                                    self.foreignClass, self.key, self._value)
-                    self._ref = None
-                    return
-        else:
+        if self._ref:
             ref_key_prop = self.ref._get_prop_value(self.key)
             # if key_prop is different, update the value
             if ref_key_prop != self._value:
                 self._value = str(ref_key_prop)
-        
-        def touch_on_delete(prop):
-            touch_property(prop)
-        weakref.finalize(self.ref, touch_on_delete, self)
 
 
         def validate_backref(instance):
@@ -187,7 +162,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                     instance._validated = True
                     return
                 # if not, make a query and initialize
-                backref = foreignClass.get(**instance.propinfo('fkey'))
+                backref = foreignClass.first(**instance.propinfo('fkey'))
                 if not instance.ref is backref:
                     instance.__init__(backref) 
             else:
@@ -203,6 +178,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                 if instance.data and instance._typed and len(instance.data) != len(instance._typed):
                     old_typed_elems = instance._typed
                     old_typed_elems_ref = [e.ref for e in old_typed_elems]
+                    # we use validate items to create new proper typed items
                     instance.validate_items()
                     for fk in instance.typed_elems:
                         if is_property_dirty(fk):
@@ -222,7 +198,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                     del old_typed_elems_ref
 
                 # we resolve all backreferences
-                backrefs = foreignClass.list(**backref_validator._fkey)
+                backrefs = foreignClass.filter(**backref_validator._fkey)
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
 
@@ -247,6 +223,38 @@ class ForeignKey(pjo_literals.LiteralValue):
 
     @property
     def ref(self):
+        from .classbuilder import touch_property
+        def touch_on_delete(prop):
+            touch_property(prop)
+        if not self._ref:
+            if self._value is None:
+                return
+            try:
+                ref = self.foreignClass.first(**{ self.key: self._value })
+                weakref.finalize(ref, touch_on_delete, self)
+                self._ref = weakref.ref(ref)
+            except Exception as er:
+                # ref does not exist (any more??)
+                try:
+                    from .metadata import Metadata
+                    first_ancestor = next(filter(lambda i: self._value.startswith('%s.' % i.cname), Metadata.instances))
+                    #ancestors = [i for i in Metadata.instances if self._value.startswith('%s.' % i.cname)]
+                    #ancestors = sorted(ancestors, key=lambda a: len(a.cname), reverse=True)
+                    #best_parent = ancestors[0]
+                    best_parent = first_ancestor
+                    path = self._value
+                    path2 = best_parent.resolve_cname(path)
+                    ref = best_parent
+                    for p in path2:
+                        ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
+                    self._ref = weakref.ref(ref)
+                    weakref.finalize(ref, touch_on_delete, self)
+                    logger.info('HERE %s / %s', self._value, path2)
+                except Exception as er:
+                    logger.error(er)
+                    logger.warning('impossible to resolve %s %s=%s', 
+                                    self.foreignClass, self.key, self._value)
+                    self._ref = None
         if self._ref:
             return self._ref()
 

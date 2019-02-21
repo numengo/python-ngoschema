@@ -65,7 +65,7 @@ def _sort_criteria(criteria):
 
 def _apply_ops_test(ops, negate, a, b):
     def _apply_op(op, a, b):
-        if op in ['startswith', 'endswith', 'ieq', 'istartswith', 'iendswith', 'icontains', 'regex']:
+        if op in ('startswith', 'endswith', 'ieq', 'istartswith', 'iendswith', 'icontains', 'regex'):
             if not utils.is_string(a):
                 raise TypeError("%s requires a string (%s not a string)" % (op, a))
             if not utils.is_string(b):
@@ -310,11 +310,6 @@ class Query(object):
             logging.error(ret)
             raise Exception('Multiple objects returned')
         return ret[0]
-
-    def list(self, *attrs, load_lazy=False, **attrs_value):
-        return list(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
 
     def next(self, *attrs, load_lazy=False, **attrs_value):
         return next(

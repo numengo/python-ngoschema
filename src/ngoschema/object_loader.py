@@ -161,7 +161,9 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
         """
         Return a query set of all objects loaded
         """
-        return Query([ref() for ref in map(lambda ref: ref(), self._objects.values())])
+        return Query(self._objects.values())
+        #return Query([ref() for ref in map(lambda ref: ref(), self._objects.values())])
 
     def __iter__(self):
-        return iter([ref() for ref in map(lambda ref: ref(), self._objects.values())])
+        return iter(self._objects.values())
+        #return iter([ref() for ref in map(lambda ref: ref(), self._objects.values())])

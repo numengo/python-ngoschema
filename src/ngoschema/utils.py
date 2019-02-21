@@ -488,3 +488,14 @@ def logging_call(popenargs,
         _logger.log(stdout_log_level, six.text_type(out, enc, errors='ignore'))
     if err:
         _logger.log(stderr_log_level, six.text_type(err, enc, errors='ignore'))
+
+
+def grouper( page_size, iterable ):
+    """group iterable by pages of page_size and generate an iterator on pages"""
+    page= []
+    for item in iterable:
+        page.append( item )
+        if len(page) == page_size:
+            yield page
+            page= []
+    yield page
