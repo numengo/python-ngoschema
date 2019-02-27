@@ -249,7 +249,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                         ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
                     self._ref = weakref.ref(ref)
                     weakref.finalize(ref, touch_on_delete, self)
-                    logger.info('HERE %s / %s', self._value, path2)
+                    #logger.info('HERE %s / %s', self._value, path2)
                 except Exception as er:
                     logger.error(er)
                     logger.warning('impossible to resolve %s %s=%s', 

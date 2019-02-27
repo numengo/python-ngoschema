@@ -38,14 +38,20 @@ def test_factory_and_query():
     doc_loader = ObjectLoader(objectClass='ngoschema.document.Document')
     objs = doc_loader.create([doc1, doc2, doc3], many=True)
 
+    assert len(doc_loader.filter(filepath__suffix__not=".ngoprj").all())==2
+    l2 = list(doc_loader.filter(filepath__suffix__not=".ngoprj"))
+    assert len(l2)==2, l2
+
     assert len(doc_loader.filter(keywords__size__ge=2, load_lazy=True)) == 2
     assert len(doc_loader.filter_any_of(filepath__suffix=".ngoprj", author__endswith="2", load_lazy=True)) == 2, doc_loader.filter_any_of(filepath__suffix=".ngoprj", author__endswith="2")
     assert len(doc_loader.filter(keywords__intersects=["schemas", "python"])) == 2
     with pytest.raises(TypeError):
-        assert len(doc_loader.filter(keywords__intersects="python")) == 2
+        assert len(doc_loader.filter(keywords__intersects="python")) == 2, len(doc_loader.filter(keywords__intersects="python"))
     assert len(doc_loader.exclude(filepath__suffix=".ngoprj")) == 2
     assert len(doc_loader.filter(filepath__suffix=".ngoprj")) == 1
     assert len(doc_loader.filter(filepath__suffix__not=".ngoprj")) == 2
+    
+
     assert len(doc_loader.filter(filepath__suffix__not=".ngoprj", author__istartswith="doc")) == 1
     assert len(doc_loader.filter(author__istartswith="doc")) == 2
     assert len(doc_loader.filter(author__icontains="doc")) == 3

@@ -19,6 +19,7 @@ import logging
 import pathlib
 import re
 import weakref
+import dpath.util
 from builtins import object
 
 import arrow
@@ -492,7 +493,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         Query can used all usual operators"""
         from .query import Query
         return next(
-            Query(iter_instances(cls))._filter_or_exclude(
+            Query(iter_instances(cls)).filter(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
     @classmethod
@@ -502,7 +503,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         Query can used all usual operators"""
         from .query import Query
         return list(
-            Query(iter_instances(cls))._filter_or_exclude(
+            Query(iter_instances(cls)).filter(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
     @classproperty
@@ -701,8 +702,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         pjo_util.lazy_format("{} will be overwritten",
                                              propname))
                 elif inspect.isdatadescriptor(a):
-                    if propname not in parent_properties:
-                        parent_properties[propname] = (a, class_attrs['__propinfo__'].get(propname, {}).get('_type'))
+                    par_prop_sch = list(dpath.util.search(class_attrs, "__schema__/properties/"+propname, yielded=True))
+                    prop_sch = list(dpath.util.search(cls_schema, "properties/"+propname, yielded=True))
+                    par_prop_sch = par_prop_sch[0] if par_prop_sch else {}
+                    prop_sch = prop_sch[0] if prop_sch else {}
+                    if all(k in prop_sch and par_prop_sch[k] == prop_sch[k] 
+                        for k in par_prop_sch):
+                        if propname not in parent_properties:
+                            parent_properties[propname] = (a, class_attrs['__propinfo__'].get(propname, {}).get('_type'))
                     #getter = a.fget
                     #setter = a.fset
                 else:
@@ -732,7 +739,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             prop = name_translation[prop]
 
             # look for getter/setter/defaultvalue first in class definition
-            getter, setter, defv = find_getter_setter_defv(prop, class_attrs)
+            ogetter, osetter, odefv = find_getter_setter_defv(prop, class_attrs)
+            getter, setter, defv = ogetter, osetter, odefv
             # look for missing getter/setter/defaultvalue in parent classes
             for p in reversed(parents):
                 par_attrs = p.__dict__
@@ -756,10 +764,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if prop in parent_properties:
                 pprop, _typ = parent_properties[prop]
-                props[prop] = pprop
-                if _typ:
-                    properties[prop]["type"] = _typ
-                continue
+                pass
+                #props[prop] = pprop
+                #if _typ:
+                #    properties[prop]["type"] = _typ
+                #continue
 
             if detail.get("type", None) == "object":
                 uri = "{0}/{1}_{2}".format(nm, prop, "<anonymous>")
@@ -947,7 +956,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         dp = nm.split('definitions/')
         dp = [_.strip('/') for _ in dp]
         if len(dp)>1:
-            import dpath.util
             dpath.util.new(self.definitions, dp[1:], cls)
             logger.info('CREATE %s', '.'.join(dp[1:]))
         else:

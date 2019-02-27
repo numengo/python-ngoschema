@@ -99,31 +99,38 @@ def _apply_ops_test(ops, negate, a, b):
         if op == 'regex':
             return re.match(b, a)
 
-    try:
-        for op in ops:
-            a = _apply_op(op, a, b)
-        return not a if negate else a
-    except:
-        return False
+    for op in ops:
+        a = _apply_op(op, a, b)
+    return not a if negate else a
 
 
 class Query(object):
-    _result_cache = None
 
-    def __init__(self, iterable, distinct=False, order_by=False):
+    def __init__(self, iterable, distinct=False, order_by=False, reverse=False):
+        """
+        :param iterable: iterator on which to perform the query
+        :param distinct: flag to only return distinct objects
+        :type distinct: boolean
+        :param order_by: column to use for order
+        :type order_by: string
+        :param reverse: boolean to reverse order
+        :type reverse: boolean
+        """
         self._iterable = iterable
         self._distinct = distinct
         self._order_by = order_by
-        self._seen = set()
+        self._reverse = reverse
 
     def _chain(self):
-        return Query(self._iterable, self._distinct, self._order_by)
+        return Query(self._iterable, self._distinct, self._order_by, self._reverse)
 
-    def _filter_or_exclude(self,
+    @staticmethod
+    def _filter_or_exclude(iterable,
                            *attrs,
                            load_lazy=False,
                            negate=False,
                            any_of=False,
+                           distinct=False,
                            **attrs_value):
         """
         Make a filter/exclude generator for an iterable. The flag `negate` allow to return 
@@ -138,12 +145,13 @@ class Query(object):
 
         :param iterable: iterable to process
         :param load_lazy: in case of lazy loaded object, force loading
-        :param select: returns the selected/rejected objects corresponding to the query
-        :param distinct: flag to only returns distinct objects
         :param attrs: select/reject objects with given attributes defined
         :param attrs_value: select/objects objects with given attribute/value pairs
         """
-        for obj in self._iterable:
+        seen = set()
+        for obj in iterable:
+            if not obj:
+                continue
             test = not any_of
             for k, v2 in attrs_value.items():
                 ks, ops = _sort_criteria(k)
@@ -187,72 +195,97 @@ class Query(object):
                 elif not test:
                     break
             if test is not negate:
-                if self._distinct:
+                if distinct:
                     comparable = _comparable(obj)
-                    if comparable not in self._seen:
-                        self._seen.add(comparable)
+                    if comparable not in seen:
+                        seen.add(comparable)
                     else:
                         continue
                 yield obj
 
     def filter(self,
                *attrs,
-               load_lazy=False,
-               order_by=False,
-               distinct=False,
+               load_lazy=None,
+               order_by=None,
+               reverse=None,
+               distinct=None,
                **attrs_value):
         return Query(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value),
-            order_by=order_by or self._order_by,
-            distinct=distinct or self._distinct)
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
+                                                    load_lazy=load_lazy, 
+                                                    distinct=distinct or self._distinct,
+                                                    **attrs_value)),
+                order_by=order_by or self._order_by,
+                reverse=reverse or self._reverse,
+                distinct=distinct or self._distinct)
 
     def exclude(self,
-                *attrs,
-                load_lazy=False,
-                order_by=False,
-                distinct=False,
+               *attrs,
+                load_lazy=None,
+                order_by=None,
+                reverse=None,
+                distinct=None,
                 **attrs_value):
         return Query(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, negate=True, **attrs_value),
-            order_by=order_by or self._order_by,
-            distinct=distinct or self._distinct)
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
+                                                    load_lazy=load_lazy, 
+                                                    negate=True, 
+                                                    distinct=distinct or self._distinct,
+                                                    **attrs_value)),
+                order_by=order_by or self._order_by,
+                reverse=reverse or self._reverse,
+                distinct=distinct or self._distinct)
 
     def filter_any_of(self,
                *attrs,
-               load_lazy=False,
-               order_by=False,
-               distinct=False,
+               load_lazy=None,
+               order_by=None,
+               reverse=None,
+               distinct=None,
                **attrs_value):
         return Query(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, any_of=True, **attrs_value),
-            order_by=order_by or self._order_by,
-            distinct=distinct or self._distinct)
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
+                                                    load_lazy=load_lazy, 
+                                                    any_of=True,
+                                                    distinct=distinct or self._distinct,
+                                                    **attrs_value)),
+                order_by=order_by or self._order_by,
+                reverse=reverse or self._reverse,
+                distinct=distinct or self._distinct)
 
     def exclude_any_of(self,
                 *attrs,
-                load_lazy=False,
-                order_by=False,
-                distinct=False,
+                load_lazy=None,
+                order_by=None,
+                reverse=None,
+                distinct=None,
                 **attrs_value):
         return Query(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, any_of=True, negate=True, **attrs_value),
-            order_by=order_by or self._order_by,
-            distinct=distinct or self._distinct)
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
+                                                    load_lazy=load_lazy, 
+                                                    any_of=True, 
+                                                    negate=True, 
+                                                    distinct=distinct or self._distinct,
+                                                    **attrs_value)),
+                order_by=order_by or self._order_by,
+                reverse=reverse or self._reverse,
+                distinct=distinct or self._distinct)
 
     def __iter__(self):
-        return self._iterable
+        return (x for x in self.result_cache)
 
-    def _cache_result(self):
-        self._result_cache = list(self._iterable)
+    _result_cache = None
+    @property
+    def result_cache(self):
+        if self._result_cache is None:
+            self._result_cache = list(self._iterable)
 
-        if self._order_by:
-            ks = self._order_by.split('__')
-            self._result_cache = sorted(self._result_cache,
-                                        lambda x: get_descendant(x, ks))
+            if self._order_by:
+                ks = self._order_by.split('__')
+                self._result_cache = sorted(self._result_cache,
+                                            lambda x: get_descendant(x, ks))
+            if self._reverse:
+                self._result_cache = reversed(self._result_cache)
         return self._result_cache
 
     def __getitem__(self, k):
@@ -264,13 +297,10 @@ class Query(object):
                  (k.stop is None or k.stop >= 0))), \
             "Negative indexing is not supported."
 
-        if self._result_cache is None:
-            self._cache_result()
-
-        return self._result_cache[k]
+        return self.result_cache[k]
 
     def __len__(self):
-        return len(self.all())
+        return len(self.result_cache)
 
     def __contains__(self, obj):
         v = _comparable(obj)
@@ -280,29 +310,31 @@ class Query(object):
         return False
 
     def union(self, *others):
-        res = self._cache_result()
+        res = self.result_cache
         for o in others:
-            res += o._cache_result()
+            res += o.result_cache
         return Query(res, self._distinct, self._order_by)
 
     def intersection(self, *others):
-        res = self._cache_result()
+        res = self.result_cache
         for o in others:
-            ores = o._cache_result()
+            ores = o.result_cache
             res = [r for r in res if r in ores]
         return Query(res, self._distinct, self._order_by)
 
     def difference(self, *others):
-        res = self._cache_result()
+        res = self.result_cache
         for o in others:
-            ores = o._cache_result()
+            ores = o.result_cache
             res = [r for r in res if r not in ores]
         return Query(res, self._distinct, self._order_by)
 
     def get(self, *attrs, load_lazy=False, **attrs_value):
-        ret = list(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
+        ret = list(Query._filter_or_exclude(self._iterable,
+                                        *attrs, 
+                                        load_lazy=load_lazy,
+                                        distinct=self._distinct,
+                                        **attrs_value))
         if len(ret) == 0:
             raise Exception('Entry %s does not exist' % attrs_value)
         elif len(ret) > 1:
@@ -313,8 +345,11 @@ class Query(object):
 
     def next(self, *attrs, load_lazy=False, **attrs_value):
         return next(
-            self._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
+                Query._filter_or_exclude(self._iterable,
+                                         *attrs, 
+                                         distinct=self._distinct,
+                                         load_lazy=load_lazy, 
+                                         **attrs_value))
 
     def first(self):
         try:
@@ -327,21 +362,20 @@ class Query(object):
             return self[-1]
         except IndexError:
             return None
+
     def reverse(self):
         ret = self._chain()
-        ret._iterable = reversed(self._cache_result())
+        ret._iterable = reversed(self.result_cache)
         return ret
 
     def count(self):
         return len(self)
 
-    def order_by(self, order_by):
-        return Query(self._iterable, self._distinct, order_by)
+    def order_by(self, order_by, reverse=False):
+        return Query(self._iterable, self._distinct, order_by, reverse=reverse)
 
     def all(self):
         """
         Return all results of query set
         """
-        if self._result_cache is None:
-            self._cache_result()
-        return self._result_cache
+        return self.result_cache

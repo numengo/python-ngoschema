@@ -377,7 +377,6 @@
     },
     "isPrimaryKey": {
       "$comment": "to flag a primary key of an object",
-      "default": false,
       "type": "boolean"
     },
     "foreignKey": {
