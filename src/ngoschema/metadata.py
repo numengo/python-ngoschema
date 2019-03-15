@@ -99,25 +99,26 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                             else self.iname
         # this function is called at early stage of component initialiation
         # when _properties is not yet allocated => just a safegard
-        if hasattr(self, '_properties'):
-            self._set_prop_value('canonicalName', self._cname)
-            if not self._lazy_loading:
-                pass
-                #for child in getattr(self, 'children', []):
-                #for child in self.children:
-                #    child.ref._update_cname()
         self._cname_touched = False
         if self._cname != old_value:
             touch_all_refs(self)
+        if hasattr(self, '_properties'):
+            if not self._lazy_loading:
+                #self.canonicalName = self._cname
+                for child in self.children:
+                    child.ref._update_cname()
+            #else:
+            #    self._set_prop_value('canonicalName', self._cname)
+            #    #for child in getattr(self, 'children', []):
     
     def touch_cname(self):
         self._cname_touched = True
-        if hasattr(self, '_properties'):
-            touch_property(self.canonicalName)
+        #if hasattr(self, '_properties'):
+        #    touch_property(self.canonicalName)
         if not self._lazy_loading:
             if 'children' in self:
                 for child in self.children:
-                    if not child._cname_touched:
+                    if not child.ref._cname_touched:
                         child.ref.touch_cname()
 
     @property
@@ -130,10 +131,11 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def set_canonicalName(self, value):
         if self._cname != str(value):
-            self.touch_cname()
+            self._update_cname(str(value))
+            #self.touch_cname()
 
     def get_canonicalName(self):
-        return self.cname
+        return self._get_prop_value('canonicalName', self.cname)
 
     def resolve_cname(self, ref_cname):
         # use generators because of 'null' which might lead to different paths

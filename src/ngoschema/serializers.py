@@ -31,6 +31,7 @@ except ImportError:
 
 class Serializer(with_metaclass(ABCMeta)):
     logger = logging.getLogger(__name__)
+    default_ext = '.txt'
 
     @classmethod
     def dump(cls,
@@ -94,6 +95,7 @@ class JsonSerializer(Serializer):
     ensure_ascii: False
     """
 
+    default_ext = '.json'
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
     @classmethod
@@ -124,6 +126,7 @@ class JsonSerializer(Serializer):
 
 @serializer_registry.register()
 class YamlSerializer(Serializer):
+    default_ext = '.yaml'
     logger = logging.getLogger(__name__ + ".YamlDeserializer")
     _yaml = yaml
 

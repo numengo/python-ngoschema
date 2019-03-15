@@ -82,18 +82,24 @@ def get_descendant(obj, key_list, load_lazy=False):
     :param key_list: list of keys
     :param load_lazy: in case of lazy loaded object, force loading
     """
+    logger = logging.getLogger(__name__)
     if load_lazy and getattr(obj, '_lazy_loading', {}):
         obj._load_lazy()
     elif getattr(obj, '_lazy_loading', {}):
         try:
             return resolve_cname(key_list, obj._lazy_loading)
         except Exception as er:
+            #logger.warning(er)
             return None
     k0 = key_list[0]
-    if hasattr(obj, k0):
-        child = getattr(obj, k0)
-    else:
-        child = obj[k0] if k0 in obj else None
+    try:
+        child = obj[k0]
+    except Exception as er:
+        child = None
+    #if hasattr(obj, k0):
+    #    child = getattr(obj, k0)
+    #else:
+    #    child = obj[k0] if k0 in obj else None
     return get_descendant(child, key_list[1:], load_lazy) \
             if child and len(key_list)>1 else child
 
@@ -236,8 +242,9 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         # we set name now, but it will be overwritten when data is loaded
         # important for canonical names
         from .metadata import Metadata
-        if isinstance(self, Metadata) and CN_KEY in props:
-            self.set_name(props[CN_KEY])
+        if isinstance(self, Metadata): 
+            if CN_KEY in props:
+                self.set_name(props[CN_KEY])
 
         # remove initial values of readonly members
         for k in self.__read_only__.intersection(props.keys()):
@@ -254,7 +261,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             self._lazy_loading = props
             # we add it to _lazy_loading dictionary to make it queriable
             if isinstance(self, Metadata):
-                self._lazy_loading['canonicalName'] = self.cname
+                self._lazy_loading.setdefault('canonicalName', self.cname)
 
         if not self._lazy_loading and not self._ref:
             pjo_classbuilder.ProtocolBase.__init__(self, **props)
@@ -268,13 +275,30 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                     [None
                      for x in six.moves.xrange(len(self.__prop_names__))]))
 
-    def for_json(self):
+    def for_json(self, no_defaults=True):
         """
         serialization method, removing all members flagged as NotSerialized
         """
-        if self.__not_serialized__:
-            return self.as_dict()
-        return {k: v for k, v in self.as_dict().items() if k not in self.__not_serialized__}
+        out = {}
+        for prop in self:
+            # remove items flagged as not_serilalized
+            if prop in self.__not_serialized__:
+                continue
+            propval = getattr(self, prop)
+            if hasattr(propval, 'for_json'):
+                out[prop] = propval.for_json()
+            elif isinstance(propval, list):
+                out[prop] = [getattr(x, 'for_json', lambda:x)() for x in propval]
+            elif isinstance(propval, (ProtocolBase, pjo_literals.LiteralValue)):
+                out[prop] = propval.as_dict()
+            elif propval is not None:
+                out[prop] = propval
+            # evaluate default value and drop it from json
+            if no_defaults and prop in self.__has_default__:
+                default_value = self.__propinfo__[prop]['default']
+                if out[prop] == default_value:
+                    out.pop(prop)
+        return out
 
     def _load_ref(self):
         try:
@@ -333,7 +357,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             if CN_KEY in props:
                 self.set_name(props[CN_KEY])
             if 'canonicalName' in props:
-                self._set_prop_value('canonicalName', props['canonicalName'])
+                if self._lazy_loading:
+                    self._set_prop_value('canonicalName', props['canonicalName'])
+                else:
+                    self.canonicalName = props['canonicalName']
         self._key2attr = {}
         if self._attr_by_name:
             for k, v in props.items():
@@ -428,7 +455,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             propval.__init__(value)
             propval.validate()
             # should be enough... set it back anyway ?
-            #self._properties[prop] = value
+            self._properties[prop] = value
         # a validator is available
         elif issubclass(propinfo.get('_type'), pjo_literals.LiteralValue):
             val = propinfo['_type'](value)
@@ -1007,8 +1034,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     def getprop(self):
         self._load_missing()
         self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, prop))
-        if fget:
+        val = self._properties.get(prop)
+        if fget and (val is None or is_property_dirty(val)):
             try:
+                #self._properties[prop] = val
                 info['RO_active'] = False
                 setprop(self, fget(self))
             except Exception as er:
@@ -1046,8 +1075,9 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             # call the setter, and get the value stored in _properties
             if infotype:
                 validator = infotype
-                self._properties[prop] = validated = validator(val)
-                fset(self, validated)
+                val = validator(val)
+                self._properties[prop] = val
+                fset(self, val)
                 # fset is supposed to set the property with set_prop_value
                 val = self._properties[prop]
             else:

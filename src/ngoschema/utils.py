@@ -428,12 +428,36 @@ def process_collection(data,
     if replace_refs:
         from .document import resolve_ref
 
+        # first replace relative canonical names before expanding $ref s
+        cn = data.get('canonicalName')
+        if cn:
+            def _replace_relative_refs(coll, key, cname):
+                value = coll[key]
+                try:
+                    if value[0] == '#' and '/' not in value:
+                        if cname:
+                            coll[key] = value.replace('#', '%s.' % cname , 1)
+                        else:
+                            return value[1:]
+                except Exception:
+                    pass
+            
+            apply_through_collection(data, 
+                                     lambda c, k: _replace_relative_refs(c, k, cn), 
+                                     recursive=True)
+
         def _replace_refs(coll, key):
             if isinstance(coll[key], dict) and '$ref' in coll[key]:
                 ref = coll[key]['$ref']
                 try:
                     #coll[key] = copy.deepcopy(resolve_ref(ref))
                     coll[key] = resolve_ref(ref)
+                    # replace internal canonical name references
+                    cn = coll[key].get('canonicalName')
+                    if cn:
+                        apply_through_collection(coll[key], 
+                                     lambda c, k: _replace_relative_refs(c, k, cn), 
+                                     recursive=True)
                 except Exception as er:
                     logger.warning(
                         'unable to resolve reference %s', ref, exc_info=True)

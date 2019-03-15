@@ -29,6 +29,7 @@ warnings.simplefilter('ignore', error.MantissaNoDotYAML1_1Warning)
 
 
 class Deserializer(with_metaclass(ABCMeta)):
+    default_ext = '.txt'
     logger = logging.getLogger(__name__)
 
     @classmethod
@@ -87,6 +88,7 @@ deserializer_registry = utils.GenericRegistry()
 
 @deserializer_registry.register()
 class JsonDeserializer(Deserializer):
+    default_ext = '.json'
     logger = logging.getLogger(__name__ + ".JsonDeserializer")
 
     @classmethod
@@ -99,6 +101,7 @@ class JsonDeserializer(Deserializer):
 
 @deserializer_registry.register()
 class YamlDeserializer(Deserializer):
+    default_ext = '.yaml'
     logger = logging.getLogger(__name__ + ".YamlDeserializer")
     _yaml = YAML(typ="safe")
 

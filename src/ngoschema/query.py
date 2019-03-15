@@ -46,7 +46,8 @@ _operators = [
 
 def _comparable(obj):
     if isinstance(obj, ProtocolBase):
-        obj = obj[CN_KEY]
+        #obj = obj[CN_KEY]
+        obj = obj.cname
     if isinstance(obj, LiteralValue):
         return obj.for_json()
     return obj
@@ -149,12 +150,20 @@ class Query(object):
         :param attrs_value: select/objects objects with given attribute/value pairs
         """
         seen = set()
+        attrs_ops = {}
+        for k, v2 in attrs_value.items():
+            ks, ops = _sort_criteria(k)
+            ops_negate = 'not' in ops
+            if ops_negate:
+                ops.remove('not')
+            attrs_ops[k] = (ks, ops, ops_negate)
+
         for obj in iterable:
             if not obj:
                 continue
             test = not any_of
             for k, v2 in attrs_value.items():
-                ks, ops = _sort_criteria(k)
+                ks, ops, ops_negate = attrs_ops[k]
                 o = get_descendant(obj, ks, load_lazy)
                 if o is None:
                     # breaking the look we never go in the for/ELSE statement where 
@@ -163,8 +172,7 @@ class Query(object):
                     break
                 elif ops and utils.is_mapping(o):
                     # check if it s not a child
-                    ops2 = ops
-                    for op in ops2:
+                    for op in ops:
                         o2 = get_descendant(o, op, load_lazy)
                         if o2:
                             o = o2
@@ -172,9 +180,6 @@ class Query(object):
                         else:
                             test = False
                             break
-                ops_negate = 'not' in ops
-                if ops_negate:
-                    ops.remove('not')
                 ops = ops or ['eq']
                 v = _comparable(o)
                 test2 = bool(_apply_ops_test(ops, ops_negate, v, v2))
@@ -183,8 +188,8 @@ class Query(object):
                     if test2:
                         break
                 elif not test:
-                    break
-            
+                    break            
+
             for k in attrs:
                 ks = k.split('__') 
                 test2 = get_descendant(obj, ks, load_lazy) is not None
