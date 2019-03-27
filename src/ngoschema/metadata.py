@@ -61,13 +61,14 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _parent = None
     def set_parent(self, value):
         # value is already properly casted
-        if self._parent and self._parent != value and self._parent.ref:
+        if not self._parent or self._parent != value and value.ref:
+            self._parent = value
             touch_property(self._parent.ref.children)
             #weakref.finalize(self._parent.ref, Metadata._update_cname, self)
         #if not self._parent:
         #    weakref.finalize(value.ref, Metadata._update_cname, self)
-        self._parent = value
-        self.touch_cname()
+        self._update_cname()
+        #self.touch_cname()
 
     @property
     def parent_ref(self):
@@ -77,10 +78,12 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     # iname to store in a cache the name of the instance as a string
     _iname = None
     def set_name(self, value):
-        if self._iname != str(value):
-            self._iname = str(value)
-            self.touch_cname()
-
+        self._iname = str(value)
+        self._update_cname()
+        #if self._iname != str(value):
+        #    self._iname = str(value)
+        #    self.touch_cname()
+#
     @property
     def iname(self):
         """instane name as a string property"""
@@ -101,20 +104,21 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
         # when _properties is not yet allocated => just a safegard
         self._cname_touched = False
         if self._cname != old_value:
-            touch_all_refs(self)
+            self.touch_cname()
         if hasattr(self, '_properties'):
             if not self._lazy_loading:
-                #self.canonicalName = self._cname
+                self.canonicalName = self._cname
                 for child in self.children:
                     child.ref._update_cname()
-            #else:
-            #    self._set_prop_value('canonicalName', self._cname)
+            else:
+                self._set_prop_value('canonicalName', self._cname)
             #    #for child in getattr(self, 'children', []):
     
     def touch_cname(self):
-        self._cname_touched = True
-        #if hasattr(self, '_properties'):
-        #    touch_property(self.canonicalName)
+        #self._cname_touched = True
+        touch_all_refs(self)
+        if hasattr(self, '_properties'):
+            touch_property(self.canonicalName)
         if not self._lazy_loading:
             if 'children' in self:
                 for child in self.children:
@@ -134,8 +138,8 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
             self._update_cname(str(value))
             #self.touch_cname()
 
-    def get_canonicalName(self):
-        return self._get_prop_value('canonicalName', self.cname)
+    #def get_canonicalName(self):
+    #    return self._get_prop_value('canonicalName', self.cname)
 
     def resolve_cname(self, ref_cname):
         # use generators because of 'null' which might lead to different paths

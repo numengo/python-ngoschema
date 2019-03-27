@@ -168,6 +168,17 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     _lazy_loading = {}
     _ref = None
     _validator = None
+    __dependencies__ = {}
+    __properties_depends_on__ = {}
+    __properties_depends_of__ = {}
+
+    def _set_dependencies(self, **dependencies):
+        for prop, depends_of in dependencies.items():
+            depends_of = utils.to_list(depends_of)
+            self.__properties_depends_on__[prop] = depends_of
+            for prop2 in depends_of:
+                self.__properties_depends_of__.setdefault(prop2, [])
+                self.__properties_depends_of__[prop2].append(prop)
 
     def __new__(cls, *args, **props):
         """
@@ -214,6 +225,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         #    return
 
         register_instance(self)
+
+        self._set_dependencies(**self.__dependencies__)
 
         # remove options from props dictionary and set them as attributes
         for f, d in _reserved_fields_defaults.items():
@@ -659,6 +672,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props = dict()
         defaults = set()
+        dependencies = dict()
 
         class_attrs = kw.get("class_attrs", {})
 
@@ -788,6 +802,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if detail.get("default") is not None:
                 defaults.add(prop)
+
+            if detail.get('dependencies') is not None:
+                dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
 
             if prop in parent_properties:
                 pprop, _typ = parent_properties[prop]
@@ -967,6 +984,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     nm, invalid_requires))
 
         props["__required__"] = required
+        props["__dependencies__"] = dependencies
         props["__read_only__"] = read_only
         props["__not_serialized__"] = not_serialized
         # default value on children force its resolution at each init
@@ -1021,11 +1039,13 @@ def is_property_dirty(prop):
                 return True
     return False
 
+
 def has_property_value(prop):
     if isinstance(prop, pjo_literals.LiteralValue):
         return (prop._value is not None)
     elif isinstance(prop, pjo_wrapper_types.ArrayWrapper):
         return bool(prop._data)
+
 
 def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     # flag to know if variable is readOnly check is active
@@ -1058,6 +1078,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             return val
         except KeyError as er:
             raise AttributeError("No attribute %s" % prop)
+
 
     def setprop(self, val):
         from .metadata import Metadata
@@ -1171,6 +1192,12 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 validator = infotype(val)
                 # handle case of patterns
                 if utils.is_pattern(val):
+                    vars = jinja2.get_variables(val)
+                    self.__properties_depends_on__.setdefault(prop, [])
+                    self.__properties_depends_on__[prop].extend(vars)
+                    for var in vars:
+                        self.__properties_depends_of__.setdefault(var, [])
+                        self.__properties_depends_of__[var].append(prop)
                     validator._pattern = val
                 # only validate if it s not a pattern or a foreign key
                 else:
@@ -1182,6 +1209,11 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 if validator._value is not None:
                     # This allows setting of default Literal values
                     val = validator
+                    if not val == self._properties.get(prop):
+                        for p in self.__properties_depends_of__.get(prop, []):
+                            _p = self._properties.get(prop)
+                            if _p:
+                                touch_property(_p)
 
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
             if not isinstance(val, infotype):
@@ -1218,6 +1250,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             else:
                 val.parent = self
         self._properties[prop] = val
+
 
     def delprop(self):
         self._load_missing()

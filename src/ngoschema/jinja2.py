@@ -16,6 +16,7 @@ from builtins import str
 
 import inflection
 import jinja2
+import jinja2.parser
 import six
 
 from . import utils
@@ -149,8 +150,25 @@ class Jinja2Serializer(Serializer):
         print(to_render)
         return self.jinja.from_string(to_render).render(ctx)
 
-
-
+def get_variables(source):
+    """return the list of variables in jinja2 source (no filters)"""
+    env = default_jinja2_env()
+    parser = jinja2.parser.Parser(env, source)
+    vars = []
+    var = []
+    processing = False
+    for t in parser.stream:
+        if t.type == 'variable_begin':
+            processing = True
+            continue
+        if processing:
+            if t.type == 'variable_end' or t.value == '|':
+                processing=False
+                vars.append(''.join(var).replace('this.', '').replace('self.', ''))
+                var = []
+                continue
+            var.append(t.value)
+    return vars
 # ADDITIONAL FILTERS FROM INFLECTION
 
 filters_registry = utils.GenericRegistry()

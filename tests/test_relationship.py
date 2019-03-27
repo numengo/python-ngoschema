@@ -13,17 +13,17 @@ def test_fkey_relationship():
     B = Metadata(name="B")
     C = Metadata(name="C")
 
-    assert str(A.canonicalName) == 'A'
-    assert str(B.canonicalName) == 'B'
+    assert str(A.canonicalName) == 'A', str(A.canonicalName)
+    assert str(B.canonicalName) == 'B', str(B.canonicalName)
 
     # set a child through parent member
     B.parent = A
     assert B.parent.ref is A
     # check canonical names
-    assert str(A.canonicalName) == 'A'
-    assert str(B.canonicalName) == 'A.B'
+    assert str(A.canonicalName) == 'A', str(A.canonicalName)
+    assert str(B.canonicalName) == 'A.B', str(B.canonicalName)
     # check children
-    assert len(A.children)==1
+    assert len(A.children)==1, len(A.children)
     assert A.children[0].ref is B
 
     # set another child through parent member

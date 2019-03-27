@@ -133,6 +133,7 @@
           "type": "string"
         },
         "title": {
+          "default": "{{this.name|titleize}}",
           "type": "string"
         },
         "schemaPath": {
@@ -142,9 +143,13 @@
           "type": "string"
         },
         "name": {
+          "default": "<anonymous>",
           "type": "string"
         },
         "canonicalName": {
+          "dependencies": {
+            "additionalProperties": ["name", "parent"]
+          },
           "type": "string"
         },
         "primaryKeys": {

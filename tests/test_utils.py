@@ -9,6 +9,9 @@ licence: GNU GPLv3
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 import collections
 import pathlib
 from builtins import str
@@ -16,6 +19,7 @@ from builtins import str
 import pytest
 import six
 from future.utils import text_to_native_str
+
 
 from ngoschema import str_utils
 from ngoschema import utils
@@ -90,8 +94,14 @@ def test_string_utils():
     assert str_utils.split_string("one,two|three",
                                   ",|") == ["one", "two", "three"]
 
+def test_jinja_tokens():
+    from ngoschema.jinja2 import get_variables
+    vars = get_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
+    print(vars)
 
 if __name__ == "__main__":
-    test_resolve_import()
-    test_utils()
-    test_string_utils()
+    test_jinja_tokens()
+    #break
+    #test_resolve_import()
+    #test_utils()
+    #test_string_utils()
