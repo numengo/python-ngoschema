@@ -31,6 +31,22 @@ def touch_all_refs(instance):
         ref._validated = False
         #ref.validate()
 
+def _on_fk_ref_delete(fkey):
+    print('on delete (%r)' % (fkey))
+    from .classbuilder import touch_property
+    #backref_validator = deleted._properties.get(fkey.backPopulates)
+    #touch_property(backref_validator)
+    fkey._ref = None
+    fkey._value = None
+    touch_property(fkey)
+
+def _on_fk_ref_delete2(ref, fkey):
+    print('on delete2 (%r) (%r)' % (ref(), fkey))
+    from .classbuilder import touch_property
+    if ref():
+        backref_validator = ref()._properties.get(fkey.backPopulates)
+        touch_property(backref_validator)
+
 class ForeignKey(pjo_literals.LiteralValue):
     _keys = None
     _foreignClass = None
@@ -121,33 +137,42 @@ class ForeignKey(pjo_literals.LiteralValue):
             self._ref = weakref.ref(value)
             self._value = str(value._get_prop_value(self.key))
             self._validated = True
+        elif isinstance(value, ForeignKey):
+            self._ref = value._ref
+            self._value = value._value
+            self._validated = value._validated
         else:
             self._ref = None
             self._value = str(value)
-            self._validated = False
+            self._validated = True
+        if self._ref and self._ref():
+            weakref.finalize(self._ref(), _on_fk_ref_delete, self)
+            weakref.finalize(self._ref(), _on_fk_ref_delete2, self._ref, self)
         # to force resolution of reference and backpopulates
         #self._validated = False
-        #self.validate()
+        self._set_backref()
     
     def for_json(self):
         return None if not self._value else pjo_literals.LiteralValue.for_json(self)
  
     def validate(self):
-        from .query import Query
-        from .classbuilder import iter_instances
-        from .classbuilder import touch_property
         from .classbuilder import is_property_dirty
         if not self._value or not is_property_dirty(self):
             return
         pjo_literals.LiteralValue.validate(self)
         #kwargs = { self.key: self._value }
         # literal value is validated, now let s see if it corresponds to reference
-        if self._ref:
+        if self._ref and self._ref():
             ref_key_prop = self.ref._get_prop_value(self.key)
             # if key_prop is different, update the value
             if ref_key_prop != self._value:
                 self._value = str(ref_key_prop)
 
+    def _set_backref(self):
+        from .classbuilder import touch_property
+        from .classbuilder import is_property_dirty, iter_instances
+        if not self.ref:
+            return
 
         def validate_backref(instance):
             if not is_property_dirty(instance):
@@ -169,7 +194,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                 assert isinstance(instance, ArrayWrapper)
 
                 # not initialized yet (while setting default for ex) 
-                if not hasattr(instance, '_fkey'):
+                if not hasattr(instance, '_init'):
                     return []
 
                 instance_key = instance.__itemtype__.key
@@ -188,7 +213,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                             if fk.ref._lazy_loading:
                                 fk.ref._set_prop_value(self.name, self._value)
                             elif fk.ref._get_prop_value(self.name) != self._value:
-                                fk.ref[self.name] = self._value
+                                fk.ref[self.name] = self.ref
                         else:
                             old_typed_elems_ref.remove(fk.ref)
                     # what is left in old_typed_elems are the deleted elements
@@ -198,7 +223,15 @@ class ForeignKey(pjo_literals.LiteralValue):
                     del old_typed_elems_ref
 
                 # we resolve all backreferences
-                backrefs = foreignClass.filter(**backref_validator._fkey)
+                ref = self._ref
+                key = self.name
+                def _access_key_ref(x):
+                    x_key = x.get(key)
+                    return x_key._ref if x_key else None
+                backrefs = [i for i in iter_instances(foreignClass) 
+                            if _access_key_ref(i) is ref]
+                #backref_validator = self.ref._properties.get(self.backPopulates)
+                #backrefs = foreignClass.filter(**backref_validator._fkey)
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
 
@@ -214,25 +247,25 @@ class ForeignKey(pjo_literals.LiteralValue):
             backref_validator = self.ref._properties.get(self.backPopulates)
             if backref_validator is not None:
                 backref_validator.__class__.validate = validate_backref
-                if self.isOne2Many:
-                    backref_validator._fkey = {self.name: self._value}
-                else:
-                    backref_validator.__propinfo__['fkey'] = {self.name: self._value}
+                backref_validator._init = True
+                #if self.isOne2Many:
+                #    backref_validator._fkey = {'%s._ref' % self.name: self._ref}
+                #else:
+                #    backref_validator.__propinfo__['fkey'] = {'%s._ref' % self.name: self._ref}
+                
                 #backref_validator._kwargs =  {self.name: self._value}
                 touch_property(backref_validator)
 
     @property
     def ref(self):
-        from .classbuilder import touch_property
-        def touch_on_delete(prop):
-            touch_property(prop)
         if not self._ref:
             if self._value is None:
                 return
             try:
                 ref = self.foreignClass.first(**{ self.key: self._value })
-                weakref.finalize(ref, touch_on_delete, self)
+                weakref.finalize(ref, _on_fk_ref_delete, self)
                 self._ref = weakref.ref(ref)
+                weakref.finalize(ref, _on_fk_ref_delete2, self._ref, self)
             except Exception as er:
                 # ref does not exist (any more??)
                 try:
@@ -248,7 +281,8 @@ class ForeignKey(pjo_literals.LiteralValue):
                     for p in path2:
                         ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
                     self._ref = weakref.ref(ref)
-                    weakref.finalize(ref, touch_on_delete, self)
+                    weakref.finalize(ref, _on_fk_ref_delete, self)
+                    weakref.finalize(ref, _on_fk_ref_delete2, self._ref, self)
                     #logger.info('HERE %s / %s', self._value, path2)
                 except Exception as er:
                     logger.error(er)

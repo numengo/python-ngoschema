@@ -61,13 +61,15 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _parent = None
     def set_parent(self, value):
         # value is already properly casted
-        if not self._parent or self._parent != value and value.ref:
+        if not self._parent or self._parent != value:
+            if self._parent and self._parent.ref:
+                touch_property(self._parent.ref.children)
             self._parent = value
-            touch_property(self._parent.ref.children)
-            #weakref.finalize(self._parent.ref, Metadata._update_cname, self)
+            if value.ref:
+                weakref.finalize(value.ref, Metadata._update_cname, self)
+            self._update_cname()
         #if not self._parent:
         #    weakref.finalize(value.ref, Metadata._update_cname, self)
-        self._update_cname()
         #self.touch_cname()
 
     @property

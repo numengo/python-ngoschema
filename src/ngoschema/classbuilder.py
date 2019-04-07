@@ -129,6 +129,10 @@ def iter_instances(cls):
     return ( ref() for ref in _class_instance_ref.setdefault(id(cls), 
         weakref.WeakValueDictionary()).valuerefs() )
 
+def iter_weakrefs(cls):
+    """iterator on alive instances of a given class"""
+    return ( ref for ref in _class_instance_ref.setdefault(id(cls), weakref.WeakValueDictionary()).valuerefs() )
+
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
@@ -417,24 +421,39 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                                self._extended_properties.keys())
 
 
-    def __getattr__(self, name):
+    def __getattr__(self, key):
         """
         Allow getting class attributes, protected attributes and protocolBase attributes
         as optimally as possible. attributes can be looked up base on their name, or by
         their canonical name, using a correspondence map done with _set_key2attr
         """
-        if name in self.__class_attr_list__:
-            collections.MutableMapping.__getattribute__(self, name)
-        elif name.startswith("_"):
-            return collections.MutableMapping.__getattribute__(self, name)
+        if key in self.__class_attr_list__:
+            collections.MutableMapping.__getattribute__(self, key)
+        elif key.startswith("_"):
+            return collections.MutableMapping.__getattribute__(self, key)
         else:
             self._load_missing()
-            prop, index = self._key2attr.get(name, (None, None))
+            prop, index = self._key2attr.get(key, (None, None))
             if prop:
                 return getattr(self, prop) if index is None else getattr(
                     self, prop)[index]
-            name = self.__prop_translated__.get(name, name)
-            return pjo_classbuilder.ProtocolBase.__getattr__(self, name)
+            key = self.__prop_translated__.get(key, key)
+            return pjo_classbuilder.ProtocolBase.__getattr__(self, key)
+
+    def __getitem__(self, key):
+        """access property as in a dict"""
+        try:
+            self._load_missing()
+            prop, index = self._key2attr.get(key, (None, None))
+            if prop:
+                _prop = self._properties[prop]
+                return _prop if index is None else _prop[index]
+            key = self.__prop_translated__.get(key, key)
+            return self._properties[key]
+        except AttributeError as er:
+            raise KeyError(key)
+        except Exception as er:
+            raise er
 
     def __setattr__(self, name, val):
         """allow setting of protected attributes"""
@@ -1097,10 +1116,14 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             if infotype:
                 validator = infotype
                 val = validator(val)
+                dirty = self._properties.get(prop) != val
                 self._properties[prop] = val
                 fset(self, val)
                 # fset is supposed to set the property with set_prop_value
                 val = self._properties[prop]
+                if dirty:
+                    for p in self.__properties_depends_on__.get(prop, []):
+                        touch_property(self._properties.get(p))
             else:
                 self._properties[prop] = val
                 fset(self, val)
