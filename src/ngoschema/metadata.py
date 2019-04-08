@@ -62,11 +62,8 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_parent(self, value):
         # value is already properly casted
         if not self._parent or self._parent != value:
-            #if self._parent and self._parent.ref:
-            #    touch_instance_prop(self._parent.ref, 'children')
             self._parent = value
             self._update_cname()
-        #self.touch_cname()
 
     @property
     def parent_ref(self):
@@ -78,11 +75,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_name(self, value):
         self._iname = str(value)
         self._update_cname()
-
-        #if self._iname != str(value):
-        #    self._iname = str(value)
-        #    self.touch_cname()
-#
+        
     @property
     def iname(self):
         """instane name as a string property"""
@@ -90,7 +83,6 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     # cache for canonical name
     _cname = None
-    _cname_touched = False
     def _update_cname(self, value=None):
         old_value = self._cname
         if value:
@@ -101,7 +93,6 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                             else self.iname
         # this function is called at early stage of component initialiation
         # when _properties is not yet allocated => just a safegard
-        self._cname_touched = False
         if self._cname != old_value:
             touch_instance_prop(self, 'canonicalName')
         if hasattr(self, '_properties'):
@@ -111,33 +102,15 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     child.ref._update_cname()
             else:
                 self._set_prop_value('canonicalName', self._cname)
-    
-    #def touch_cname(self):
-    #    #self._cname_touched = True
-    #    touch_all_refs(self, 'canonicalName')
-    #    if hasattr(self, '_properties'):
-    #        touch_instance_prop(self, 'canonicalName')
-    #    if not self._lazy_loading:
-    #        if 'children' in self:
-    #            for child in self.children:
-    #                if not child.ref._cname_touched:
-    #                    child.ref.touch_cname()
 
     @property
     def cname(self):
         """canonical name as a string property"""
-        #if not self._cname and self._iname and self._parent:
-        if self._cname_touched:
-            self._update_cname()
         return self._cname or self.iname
 
     def set_canonicalName(self, value):
         if self._cname != str(value):
             self._update_cname(str(value))
-            #self.touch_cname()
-
-    #def get_canonicalName(self):
-    #    return self._get_prop_value('canonicalName', self.cname)
 
     def resolve_cname(self, ref_cname):
         # use generators because of 'null' which might lead to different paths
