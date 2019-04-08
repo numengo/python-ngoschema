@@ -12,8 +12,6 @@ def test_fkey_relationship():
     A = Metadata(name="A")
     B = Metadata(name="B")
     C = Metadata(name="C")
-    import weakref
-    print(weakref.getweakrefcount(C))
 
     assert str(A.canonicalName) == 'A', str(A.canonicalName)
     assert str(B.canonicalName) == 'B', str(B.canonicalName)
@@ -30,7 +28,6 @@ def test_fkey_relationship():
 
     # set another child through parent member
     C.parent = A
-    print(weakref.getweakrefcount(C))
     assert len(A.children)==2
     assert len(B.children)==0
     assert len(C.children)==0
@@ -38,15 +35,11 @@ def test_fkey_relationship():
     # remove reference
     C.parent = None
     assert len(A.children)==1
-    print(weakref.getweakrefcount(C))
 
     # test adding a children
-    #A.children.append(C)
-    C.parent = A
-    print(weakref.getweakrefcount(C))
+    A.children.append(C)
     assert len(A.children)==2
     assert C.parent.ref is A
-    print(weakref.getweakrefcount(C))
 
     # change name and check propagation
     A.name = 'AA'
@@ -60,11 +53,10 @@ def test_fkey_relationship():
     A.canonicalName = 'AAA.AA'
     assert B.canonicalName == 'AAA.AA.B'
 
-    del C
-    # DOESN'T WORK, only .parent = None
-    #assert len(A.children)==1, len(A.children)
+    C.parent = None
+    assert len(A.children)==1, len(A.children)
 
-    del A
+    B.parent = None
     assert B.parent.ref is None
     assert B.canonicalName == 'B'
 

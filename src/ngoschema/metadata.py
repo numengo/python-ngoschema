@@ -18,7 +18,7 @@ import python_jsonschema_objects.classbuilder as pjo_classbuilder
 from . import utils
 from .classbuilder import ProtocolBase
 from .classbuilder import get_builder
-from .classbuilder import touch_property
+from .classbuilder import touch_instance_prop
 from .schema_metaclass import SchemaMetaclass
 from .foreign_key import ForeignKey
 from .foreign_key import touch_all_refs
@@ -62,14 +62,10 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_parent(self, value):
         # value is already properly casted
         if not self._parent or self._parent != value:
-            if self._parent and self._parent.ref:
-                touch_property(self._parent.ref.children)
+            #if self._parent and self._parent.ref:
+            #    touch_instance_prop(self._parent.ref, 'children')
             self._parent = value
-            if value.ref:
-                weakref.finalize(value.ref, Metadata._update_cname, self)
             self._update_cname()
-        #if not self._parent:
-        #    weakref.finalize(value.ref, Metadata._update_cname, self)
         #self.touch_cname()
 
     @property
@@ -82,6 +78,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_name(self, value):
         self._iname = str(value)
         self._update_cname()
+
         #if self._iname != str(value):
         #    self._iname = str(value)
         #    self.touch_cname()
@@ -106,7 +103,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
         # when _properties is not yet allocated => just a safegard
         self._cname_touched = False
         if self._cname != old_value:
-            self.touch_cname()
+            touch_instance_prop(self, 'canonicalName')
         if hasattr(self, '_properties'):
             if not self._lazy_loading:
                 self.canonicalName = self._cname
@@ -114,18 +111,17 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     child.ref._update_cname()
             else:
                 self._set_prop_value('canonicalName', self._cname)
-            #    #for child in getattr(self, 'children', []):
     
-    def touch_cname(self):
-        #self._cname_touched = True
-        touch_all_refs(self)
-        if hasattr(self, '_properties'):
-            touch_property(self.canonicalName)
-        if not self._lazy_loading:
-            if 'children' in self:
-                for child in self.children:
-                    if not child.ref._cname_touched:
-                        child.ref.touch_cname()
+    #def touch_cname(self):
+    #    #self._cname_touched = True
+    #    touch_all_refs(self, 'canonicalName')
+    #    if hasattr(self, '_properties'):
+    #        touch_instance_prop(self, 'canonicalName')
+    #    if not self._lazy_loading:
+    #        if 'children' in self:
+    #            for child in self.children:
+    #                if not child.ref._cname_touched:
+    #                    child.ref.touch_cname()
 
     @property
     def cname(self):

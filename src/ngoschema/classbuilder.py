@@ -129,10 +129,6 @@ def iter_instances(cls):
     return ( ref() for ref in _class_instance_ref.setdefault(id(cls), 
         weakref.WeakValueDictionary()).valuerefs() )
 
-def iter_weakrefs(cls):
-    """iterator on alive instances of a given class"""
-    return ( ref for ref in _class_instance_ref.setdefault(id(cls), weakref.WeakValueDictionary()).valuerefs() )
-
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
@@ -172,17 +168,15 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
     _lazy_loading = {}
     _ref = None
     _validator = None
-    __dependencies__ = {}
-    __properties_depends_on__ = {}
-    __properties_depends_of__ = {}
+    _prop_inputs = collections.defaultdict(set)
+    _prop_outputs = collections.defaultdict(set)
 
     def _set_dependencies(self, **dependencies):
         for prop, depends_of in dependencies.items():
             depends_of = utils.to_list(depends_of)
-            self.__properties_depends_on__[prop] = depends_of
-            for prop2 in depends_of:
-                self.__properties_depends_of__.setdefault(prop2, [])
-                self.__properties_depends_of__[prop2].append(prop)
+            self._prop_inputs[prop].update(depends_of)
+            for p in depends_of:
+                self._prop_outputs[p].add(prop)
 
     def __new__(cls, *args, **props):
         """
@@ -505,7 +499,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             return self._lazy_loading.get(prop, default)
         validator = self._properties.get(prop)
         if validator is not None:
-            if is_property_dirty(validator):
+            if is_instance_prop_dirty(self, prop):
                 validator.validate()
             return validator
         return default
@@ -1035,36 +1029,50 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         #schema = copy.deepcopy(schema)
         return self.construct(schemaUri, schema)
 
-
-def touch_property(prop):
+def touch_prop(prop):
     """touch a property to force its validation later"""
     if isinstance(prop, pjo_literals.LiteralValue):
         prop._validated = False
     elif isinstance(prop, pjo_wrapper_types.ArrayWrapper):
         prop._dirty = True
-        #for c in prop._typed:
-        #    touch_property(c)
 
+def touch_instance_prop(instance, prop_name):
+    """touch a property to force its validation later"""
+    from .foreign_key import touch_all_refs
+    if hasattr(instance, '_properties'):
+        prop = instance._properties.get(prop_name)
+        touch_prop(prop)
+        touch_all_refs(instance, prop_name)
+        for p in instance._prop_outputs[prop_name]:
+            touch_instance_prop(instance, p)
 
-def is_property_dirty(prop):
-    """test if a property needs validation"""
-    if isinstance(prop, pjo_literals.LiteralValue):
-        return (prop._validated == False)
+def is_prop_dirty(prop):
+    if prop is None:
+        return True
+    elif isinstance(prop, pjo_literals.LiteralValue) and not prop._validated:
+        return True
     elif isinstance(prop, pjo_wrapper_types.ArrayWrapper):
-        if prop._dirty:
+        if prop._dirty or any((is_prop_dirty(c) for c in prop._typed)):
             return True
-        for c in prop._typed:
-            if is_property_dirty(c):
-                return True
     return False
 
+def is_instance_prop_dirty(instance, prop_name):
+    """test if a property needs validation"""
+    prop = instance._properties.get(prop_name)
+    if is_prop_dirty(prop):
+        return True
+    return any((is_instance_prop_dirty(instance, p) for p in instance._prop_inputs[prop_name]))
 
-def has_property_value(prop):
-    if isinstance(prop, pjo_literals.LiteralValue):
-        return (prop._value is not None)
-    elif isinstance(prop, pjo_wrapper_types.ArrayWrapper):
-        return bool(prop._data)
-
+def validate_instance_prop(instance, prop_name):
+    prop = instance._properties.get(prop_name)
+    if is_instance_prop_dirty(instance, prop_name):
+        for p in instance._prop_inputs[prop_name]:
+            validate_instance_prop(instance, p)
+        if hasattr(prop, "_pattern"):
+            prop._value = jinja2.TemplatedString(prop._pattern)(instance)
+        if prop is not None:
+            prop.validate()
+    return prop
 
 def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     # flag to know if variable is readOnly check is active
@@ -1073,8 +1081,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
     def getprop(self):
         self._load_missing()
         self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, prop))
-        val = self._properties.get(prop)
-        if fget and (val is None or is_property_dirty(val)):
+        if fget and is_instance_prop_dirty(self, prop):
             try:
                 #self._properties[prop] = val
                 info['RO_active'] = False
@@ -1085,19 +1092,13 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 raise AttributeError(
                     "Error getting property %s.\n%s" % (prop, er))
         try:
-            val = self._properties[prop]
-            if hasattr(val, "_pattern"):
-                evaluated = jinja2.TemplatedString(val._pattern)(self)
-                val._value = evaluated
-                # we flag patterns as not validated as they depend on other props
-                val._validated = False
-                val.validate()
-            if is_property_dirty(val):
-                val.validate()
-            return val
+            return validate_instance_prop(self, prop)
         except KeyError as er:
+            logger.error(er)
             raise AttributeError("No attribute %s" % prop)
-
+        except Exception as er:
+            logger.error(er)
+            raise AttributeError(er)
 
     def setprop(self, val):
         from .metadata import Metadata
@@ -1120,10 +1121,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 self._properties[prop] = val
                 fset(self, val)
                 # fset is supposed to set the property with set_prop_value
-                val = self._properties[prop]
                 if dirty:
-                    for p in self.__properties_depends_on__.get(prop, []):
-                        touch_property(self._properties.get(p))
+                    touch_instance_prop(self, prop)
             else:
                 self._properties[prop] = val
                 fset(self, val)
@@ -1216,11 +1215,7 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 # handle case of patterns
                 if utils.is_pattern(val):
                     vars = jinja2.get_variables(val)
-                    self.__properties_depends_on__.setdefault(prop, [])
-                    self.__properties_depends_on__[prop].extend(vars)
-                    for var in vars:
-                        self.__properties_depends_of__.setdefault(var, [])
-                        self.__properties_depends_of__[var].append(prop)
+                    self._set_dependencies(**{prop: vars})
                     validator._pattern = val
                 # only validate if it s not a pattern or a foreign key
                 else:
@@ -1229,14 +1224,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                         delattr(validator, "_pattern")
                     if not hasattr(validator, '_foreignClass'):
                         validator.validate()
-                if validator._value is not None:
-                    # This allows setting of default Literal values
-                    val = validator
-                    if not val == self._properties.get(prop):
-                        for p in self.__properties_depends_of__.get(prop, []):
-                            _p = self._properties.get(prop)
-                            if _p:
-                                touch_property(_p)
+                val = validator
+                if self._properties.get(prop) != val:
+                    self._properties[prop] = val
+                    touch_instance_prop(self, prop)
 
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
             if not isinstance(val, infotype):

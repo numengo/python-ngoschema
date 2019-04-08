@@ -19,33 +19,23 @@ from . import utils
 from .decorators import classproperty
 
 # Registry of alive foreign keys
-_foreign_keys_ref = weakref.WeakValueDictionary()
+#_foreign_keys_ref = weakref.WeakValueDictionary()
+_fk_key_refs = collections.defaultdict(weakref.WeakValueDictionary)
 
 logger = logging.getLogger(__name__)
 
 def _register_foreign_key(fkey):
-    _foreign_keys_ref[id(fkey)] = fkey
+    _fk_key_refs[fkey.key][id(fkey)] = fkey
 
-def touch_all_refs(instance):
-    for ref in (fk() for fk in _foreign_keys_ref.valuerefs() if fk()._ref and fk()._ref() is instance):
+def touch_all_refs(instance, key):
+    from .classbuilder import touch_instance_prop
+    for ref in (fk() for fk in _fk_key_refs[key].valuerefs() 
+                if fk()._ref and fk()._ref() is instance):
         ref._validated = False
-        #ref.validate()
+        bp = ref.backPopulates
+        if bp:
+            touch_instance_prop(ref, bp)
 
-def _on_fk_ref_delete(fkey):
-    print('on delete (%r)' % (fkey))
-    from .classbuilder import touch_property
-    #backref_validator = deleted._properties.get(fkey.backPopulates)
-    #touch_property(backref_validator)
-    fkey._ref = None
-    fkey._value = None
-    touch_property(fkey)
-
-def _on_fk_ref_delete2(ref, fkey):
-    print('on delete2 (%r) (%r)' % (ref(), fkey))
-    from .classbuilder import touch_property
-    if ref():
-        backref_validator = ref()._properties.get(fkey.backPopulates)
-        touch_property(backref_validator)
 
 class ForeignKey(pjo_literals.LiteralValue):
     _keys = None
@@ -70,7 +60,7 @@ class ForeignKey(pjo_literals.LiteralValue):
             try:
                 cls._foreignClass = get_builder().resolve_or_build(cls.foreignSchemaUri)
             except Exception as er:
-                print('######## %s ##########\n%s' % (cls.foreignSchemaUri, er))
+                logger.error(er)
             if not issubclass(cls._foreignClass, Metadata):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
                                 % (cls._foreignClass, Metadata))
@@ -129,56 +119,51 @@ class ForeignKey(pjo_literals.LiteralValue):
     def __init__(self, value):
         _register_foreign_key(self)
         self._value = None
+        self._ref = None
+        self._validated = True
         if value is None:
-            self._ref = None
-            self._validated = True
             return
         if isinstance(value, self.foreignClass):
             self._ref = weakref.ref(value)
             self._value = str(value._get_prop_value(self.key))
-            self._validated = True
         elif isinstance(value, ForeignKey):
             self._ref = value._ref
             self._value = value._value
             self._validated = value._validated
         else:
-            self._ref = None
             self._value = str(value)
-            self._validated = True
-        if self._ref and self._ref():
-            weakref.finalize(self._ref(), _on_fk_ref_delete, self)
-            weakref.finalize(self._ref(), _on_fk_ref_delete2, self._ref, self)
         # to force resolution of reference and backpopulates
-        #self._validated = False
         self._set_backref()
     
     def for_json(self):
         return None if not self._value else pjo_literals.LiteralValue.for_json(self)
  
     def validate(self):
-        from .classbuilder import is_property_dirty
-        if not self._value or not is_property_dirty(self):
-            return
-        pjo_literals.LiteralValue.validate(self)
-        #kwargs = { self.key: self._value }
+        if self._value:
+            pjo_literals.LiteralValue.validate(self)
         # literal value is validated, now let s see if it corresponds to reference
         if self._ref and self._ref():
-            ref_key_prop = self.ref._get_prop_value(self.key)
+            ref, key = self.ref, self.key
+            ref_key_prop = ref._get_prop_value(key)
             # if key_prop is different, update the value
             if ref_key_prop != self._value:
                 self._value = str(ref_key_prop)
+        self._validated = True
 
     def _set_backref(self):
-        from .classbuilder import touch_property
-        from .classbuilder import is_property_dirty, iter_instances
-        if not self.ref:
+        from .classbuilder import touch_instance_prop, is_prop_dirty, iter_instances
+        if not self._ref or not self._ref():
             return
 
         def validate_backref(instance):
-            if not is_property_dirty(instance):
+            if not is_prop_dirty(instance):
                 return
             
             foreignClass = instance.__itemtype__.foreignClass if self.isOne2Many else instance.foreignClass
+            ref, key = (self._ref, self.name)
+            def _access_key_ref(x):
+                x_key = x.get(key)
+                return x_key._ref if x_key else None
 
             if not self.isOne2Many:
                 assert isinstance(instance, ForeignKey)
@@ -187,51 +172,44 @@ class ForeignKey(pjo_literals.LiteralValue):
                     instance._validated = True
                     return
                 # if not, make a query and initialize
-                backref = foreignClass.first(**instance.propinfo('fkey'))
-                if not instance.ref is backref:
-                    instance.__init__(backref) 
-            else:
-                assert isinstance(instance, ArrayWrapper)
-
-                # not initialized yet (while setting default for ex) 
+                for i in iter_instances(foreignClass):
+                    if _access_key_ref(i) is ref:
+                        backref = i
+                        if not instance.ref is backref:
+                            instance.__init__(backref)
+                            return
+            else: #ArrayWrapper
                 if not hasattr(instance, '_init'):
+                    # not initialized yet (while setting default for ex) 
                     return []
 
-                instance_key = instance.__itemtype__.key
-
+                data, typed = instance.data, instance._typed
                 # data might have been inserted, we might need to add the backref
-                if instance.data and instance._typed and len(instance.data) != len(instance._typed):
-                    old_typed_elems = instance._typed
-                    old_typed_elems_ref = [e.ref for e in old_typed_elems]
+                if data and typed and len(data) != len(typed):
+                    old_typed = [e.ref for e in typed]
                     # we use validate items to create new proper typed items
                     instance.validate_items()
                     for fk in instance.typed_elems:
-                        if is_property_dirty(fk):
+                        if is_prop_dirty(fk):
                             fk.validate()
-                        if fk.ref not in old_typed_elems_ref:
-                            # data has been inserted, set the backrefs
+                        if fk.ref not in old_typed:
+                            # data has been inserted, set the backref
                             if fk.ref._lazy_loading:
+                                # if lazy loading just set value
                                 fk.ref._set_prop_value(self.name, self._value)
                             elif fk.ref._get_prop_value(self.name) != self._value:
+                                # no lazy loading, use setter
                                 fk.ref[self.name] = self.ref
                         else:
-                            old_typed_elems_ref.remove(fk.ref)
+                            old_typed.remove(fk.ref)
                     # what is left in old_typed_elems are the deleted elements
                     # remove their backreference
-                    for ref in old_typed_elems_ref:
+                    for ref in old_typed:
                         ref[self.name] = None
-                    del old_typed_elems_ref
 
                 # we resolve all backreferences
-                ref = self._ref
-                key = self.name
-                def _access_key_ref(x):
-                    x_key = x.get(key)
-                    return x_key._ref if x_key else None
                 backrefs = [i for i in iter_instances(foreignClass) 
                             if _access_key_ref(i) is ref]
-                #backref_validator = self.ref._properties.get(self.backPopulates)
-                #backrefs = foreignClass.filter(**backref_validator._fkey)
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
 
@@ -242,53 +220,38 @@ class ForeignKey(pjo_literals.LiteralValue):
                 # by doing that, we set backrefs as data in the arraywrapper, which creates
                 # a reference, set it back to a foreignKey
                 instance.data = [e for e in instance._typed]
+                instance._dirty = False
 
         if self.backPopulates:
             backref_validator = self.ref._properties.get(self.backPopulates)
             if backref_validator is not None:
                 backref_validator.__class__.validate = validate_backref
                 backref_validator._init = True
-                #if self.isOne2Many:
-                #    backref_validator._fkey = {'%s._ref' % self.name: self._ref}
-                #else:
-                #    backref_validator.__propinfo__['fkey'] = {'%s._ref' % self.name: self._ref}
-                
-                #backref_validator._kwargs =  {self.name: self._value}
-                touch_property(backref_validator)
+                touch_instance_prop(self.ref, self.backPopulates)
 
     @property
     def ref(self):
-        if not self._ref:
-            if self._value is None:
-                return
-            try:
-                ref = self.foreignClass.first(**{ self.key: self._value })
-                weakref.finalize(ref, _on_fk_ref_delete, self)
-                self._ref = weakref.ref(ref)
-                weakref.finalize(ref, _on_fk_ref_delete2, self._ref, self)
-            except Exception as er:
-                # ref does not exist (any more??)
-                try:
-                    from .metadata import Metadata
-                    first_ancestor = next(filter(lambda i: self._value.startswith('%s.' % i.cname), Metadata.instances))
-                    #ancestors = [i for i in Metadata.instances if self._value.startswith('%s.' % i.cname)]
-                    #ancestors = sorted(ancestors, key=lambda a: len(a.cname), reverse=True)
-                    #best_parent = ancestors[0]
-                    best_parent = first_ancestor
-                    path = self._value
-                    path2 = best_parent.resolve_cname(path)
-                    ref = best_parent
-                    for p in path2:
-                        ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
-                    self._ref = weakref.ref(ref)
-                    weakref.finalize(ref, _on_fk_ref_delete, self)
-                    weakref.finalize(ref, _on_fk_ref_delete2, self._ref, self)
-                    #logger.info('HERE %s / %s', self._value, path2)
-                except Exception as er:
-                    logger.error(er)
-                    logger.warning('impossible to resolve %s %s=%s', 
-                                    self.foreignClass, self.key, self._value)
-                    self._ref = None
         if self._ref:
             return self._ref()
+        if self._value is None:
+            return
+        from .classbuilder import iter_instances
+        for i in iter_instances(self.foreignClass):
+            ival, val = i[self.key], self._value
+            if ival == val:
+                self._ref = weakref.ref(i)
+                return i
+            if ival.startswith('%s.' % i.cname):
+                try:
+                    ref, path = i, i.resolve_cname(val)
+                    for p in path:
+                        ref = ref[p]
+                    self._ref = weakref.ref(ref)
+                    # now it s resolved, we can set backref
+                    self._set_backref()
+                    return ref
+                except Exception as er:
+                    logger.error(er)
+        logger.warning('impossible to resolve %s %s=%s', 
+                       self.foreignClass, self.key, self._value)
 
