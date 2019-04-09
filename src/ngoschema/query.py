@@ -25,6 +25,7 @@ _operators = [
     'le',
     'eq',
     'ne',
+    'neq',
     'ge',
     'gt',
     'not',
@@ -73,6 +74,8 @@ def _apply_ops_test(ops, negate, a, b):
                 raise TypeError("%s requires a string (%s not a string)" % (op, b))
         if hasattr(operator, op):
             return getattr(operator, op)(a, b)
+        if op == 'neq':
+            return a != b
         if op == 'size':
             return len(a)
         if op.startswith('@'):

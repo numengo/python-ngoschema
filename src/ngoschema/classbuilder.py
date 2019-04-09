@@ -376,11 +376,11 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if self._attr_by_name:
             for k, v in props.items():
                 if utils.is_mapping(v) and CN_KEY in v:
-                    self._key2attr[v[CN_KEY]] = (k, None)
+                    self._key2attr[str(v[CN_KEY])] = (k, None)
                 if utils.is_sequence(v):
                     for i, v2 in enumerate(v):
                         if utils.is_mapping(v2) and CN_KEY in v2:
-                            self._key2attr[v2[CN_KEY]] = (k, i)
+                            self._key2attr[str(v2[CN_KEY])] = (k, i)
 
     @classmethod
     def issubclass(cls, klass):
@@ -438,11 +438,6 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """access property as in a dict"""
         try:
             self._load_missing()
-            prop, index = self._key2attr.get(key, (None, None))
-            if prop:
-                _prop = self._properties[prop]
-                return _prop if index is None else _prop[index]
-            key = self.__prop_translated__.get(key, key)
             return self._properties[key]
         except AttributeError as er:
             raise KeyError(key)

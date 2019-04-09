@@ -252,6 +252,25 @@ class ForeignKey(pjo_literals.LiteralValue):
                     return ref
                 except Exception as er:
                     logger.error(er)
+        # due to lazy loading, certain instances are not loaded
+        # last chance - find a parent in Metadata instances and explore children
+        try:
+            from .metadata import Metadata
+            first_ancestor = next(filter(lambda i: self._value.startswith('%s.' % i.cname), Metadata.instances))
+            #ancestors = [i for i in Metadata.instances if self._value.startswith('%s.' % i.cname)]
+            #ancestors = sorted(ancestors, key=lambda a: len(a.cname), reverse=True)
+            #best_parent = ancestors[0]
+            best_parent = first_ancestor
+            path = self._value
+            path2 = best_parent.resolve_cname(path)
+            ref = best_parent
+            for p in path2:
+                ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
+            self._ref = weakref.ref(ref)
+            return ref
+        except Exception as er:
+            logger.error(er)
+
         logger.warning('impossible to resolve %s %s=%s', 
                        self.foreignClass, self.key, self._value)
 

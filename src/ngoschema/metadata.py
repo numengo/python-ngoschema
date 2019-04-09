@@ -75,7 +75,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def set_name(self, value):
         self._iname = str(value)
         self._update_cname()
-        
+
     @property
     def iname(self):
         """instane name as a string property"""
@@ -98,8 +98,9 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if hasattr(self, '_properties'):
             if not self._lazy_loading:
                 self.canonicalName = self._cname
-                for child in self.children:
-                    child.ref._update_cname()
+                if hasattr(self, '_properties') and self.children:
+                    for child in self.children:
+                        child.ref._update_cname()
             else:
                 self._set_prop_value('canonicalName', self._cname)
 
@@ -118,7 +119,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
             if isinstance(cur, (dict, Metadata)):
                 # can' t trust the cname
                 # rebuild canonical name from name
-                cn2 = cur_cn + [str(cur.get('iname') or cur.get('name') or '<anonymous>')]
+                cn2 = cur_cn + [str(getattr(cur, 'iname') or cur.get('name') or '<anonymous>')]
                 if cn2 == cn[0:len(cn2)]:
                     if cn2 == cn:
                         yield cur, cn, cn2, cur_path
