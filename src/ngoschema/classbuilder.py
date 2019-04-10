@@ -112,22 +112,25 @@ _reserved_fields_defaults = {
 
 # Registry of alive instances using a weakref dictionary
 # For each class we have a distinct dictionary
-_class_instance_ref = {}
+_class_instance_ref = collections.defaultdict(set)
 
-def register_instance(instance):
+def _unregister_instance(instance):
+    for cls in instance.__class__.__mro__:
+        _class_instance_ref[id(cls)].discard(weakref.ref(instance))
+
+
+def _register_instance(instance):
     """
     Register an instance in the class registy
     Register it for each subclass inheriting ProtocolBase
     """
     for cls in instance.__class__.__mro__:
-        if issubclass(cls, ProtocolBase):
-            _class_instance_ref.setdefault(id(cls), weakref.WeakValueDictionary()). \
-                update({id(instance): instance})
+        weakref.finalize(instance, _unregister_instance, instance)
+        _class_instance_ref[id(cls)].add(weakref.ref(instance))
 
 def iter_instances(cls):
     """iterator on alive instances of a given class"""
-    return ( ref() for ref in _class_instance_ref.setdefault(id(cls), 
-        weakref.WeakValueDictionary()).valuerefs() )
+    return [r() for r in _class_instance_ref[id(cls)] if r()]
 
 
 class ProtocolBase(pjo_classbuilder.ProtocolBase):
@@ -217,12 +220,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         main initialization method, dealing with lazy loading
         """
-        #if self._iname is not None:
-        #    # already initialized calling __new__ with schemaUri
-        #    # no workaround found tricking __new__ to subclass on the fly
-        #    return
-
-        register_instance(self)
+        _register_instance(self)
 
         self._set_dependencies(**self.__dependencies__)
 
@@ -285,6 +283,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 zip(self.__prop_names__.values(),
                     [None
                      for x in six.moves.xrange(len(self.__prop_names__))]))
+
+    def __hash__(self):
+        """hash function to store objects references"""
+        return id(self)
 
     def for_json(self, no_defaults=True):
         """
@@ -1112,7 +1114,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             if infotype:
                 validator = infotype
                 val = validator(val)
-                dirty = self._properties.get(prop) != val
+                old = self._properties.get(prop)
+                dirty = (old != val) if isinstance(old, pjo_literals.LiteralValue) else False
                 self._properties[prop] = val
                 fset(self, val)
                 # fset is supposed to set the property with set_prop_value

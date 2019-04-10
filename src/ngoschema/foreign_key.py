@@ -19,22 +19,44 @@ from . import utils
 from .decorators import classproperty
 
 # Registry of alive foreign keys
-#_foreign_keys_ref = weakref.WeakValueDictionary()
-_fk_key_refs = collections.defaultdict(weakref.WeakValueDictionary)
+_fk_key_refs = collections.defaultdict(dict)
 
 logger = logging.getLogger(__name__)
 
+
+def _unregister_foreign_key_ref(ref):
+    id_ref = id(ref)
+    for fk_refs in _fk_key_refs.values():
+         if id_ref in fk_refs:
+             fk_refs.pop(id_ref)
+
 def _register_foreign_key(fkey):
-    _fk_key_refs[fkey.key][id(fkey)] = fkey
+    key, ref = fkey.key, fkey._ref
+    weakref.finalize(ref(), _unregister_foreign_key_ref, ref)
+    if not key in _fk_key_refs:
+        _fk_key_refs[key] = collections.defaultdict(set)
+    _fk_key_refs[key][id(ref)].add(weakref.ref(fkey))
 
 def touch_all_refs(instance, key):
+    #s = _fk_key_refs_size()
     from .classbuilder import touch_instance_prop
-    for ref in (fk() for fk in _fk_key_refs[key].valuerefs() 
-                if fk()._ref and fk()._ref() is instance):
-        ref._validated = False
-        bp = ref.backPopulates
-        if bp:
-            touch_instance_prop(ref, bp)
+    if key in _fk_key_refs:
+        ref = weakref.ref(instance)
+        id_ref = id(ref)
+        for _fk in _fk_key_refs[key].get(id_ref, []):
+            fk = _fk()
+            if fk:
+                fk._validated = False
+                bp = fk.backPopulates
+                if bp:
+                    touch_instance_prop(ref , bp)
+
+        #for ref in (fk() for fk in _fk_key_refs[key].valuerefs() 
+        #            if fk()._ref and fk()._ref() is instance):
+        #    ref._validated = False
+        #    bp = ref.backPopulates
+        #    if bp:
+        #        touch_instance_prop(ref, bp)
 
 
 class ForeignKey(pjo_literals.LiteralValue):
@@ -117,17 +139,16 @@ class ForeignKey(pjo_literals.LiteralValue):
         return cls._reverse
 
     def __init__(self, value):
-        _register_foreign_key(self)
         self._value = None
         self._ref = None
         self._validated = True
         if value is None:
             return
         if isinstance(value, self.foreignClass):
-            self._ref = weakref.ref(value)
+            self.ref = value
             self._value = str(value._get_prop_value(self.key))
         elif isinstance(value, ForeignKey):
-            self._ref = value._ref
+            self.ref = value.ref
             self._value = value._value
             self._validated = value._validated
         else:
@@ -229,8 +250,7 @@ class ForeignKey(pjo_literals.LiteralValue):
                 backref_validator._init = True
                 touch_instance_prop(self.ref, self.backPopulates)
 
-    @property
-    def ref(self):
+    def _get_ref(self):
         if self._ref:
             return self._ref()
         if self._value is None:
@@ -238,15 +258,17 @@ class ForeignKey(pjo_literals.LiteralValue):
         from .classbuilder import iter_instances
         for i in iter_instances(self.foreignClass):
             ival, val = i[self.key], self._value
+            if not ival:
+                continue
             if ival == val:
-                self._ref = weakref.ref(i)
+                self.ref = i
                 return i
             if ival.startswith('%s.' % i.cname):
                 try:
                     ref, path = i, i.resolve_cname(val)
                     for p in path:
                         ref = ref[p]
-                    self._ref = weakref.ref(ref)
+                    self.ref = ref
                     # now it s resolved, we can set backref
                     self._set_backref()
                     return ref
@@ -266,7 +288,7 @@ class ForeignKey(pjo_literals.LiteralValue):
             ref = best_parent
             for p in path2:
                 ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
-            self._ref = weakref.ref(ref)
+            self.ref = ref
             return ref
         except Exception as er:
             logger.error(er)
@@ -274,3 +296,8 @@ class ForeignKey(pjo_literals.LiteralValue):
         logger.warning('impossible to resolve %s %s=%s', 
                        self.foreignClass, self.key, self._value)
 
+    def _set_ref(self, instance):
+        self._ref = weakref.ref(instance)
+        _register_foreign_key(self)
+
+    ref = property(_get_ref, _set_ref)
