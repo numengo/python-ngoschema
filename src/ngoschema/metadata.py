@@ -85,7 +85,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _cname = None
     def _update_cname(self, value=None):
         old_value = self._cname
-        if value:
+        if value and value != self._iname and value != self.iname:
             self._cname = value
         else:
             self._cname = '%s.%s' % (self._parent.ref.cname, self.iname) \
@@ -93,8 +93,6 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                             else self.iname
         # this function is called at early stage of component initialiation
         # when _properties is not yet allocated => just a safegard
-        if self._cname != old_value:
-            touch_instance_prop(self, 'canonicalName')
         if hasattr(self, '_properties'):
             if not self._lazy_loading:
                 self.canonicalName = self._cname
@@ -103,6 +101,8 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                         child.ref._update_cname()
             else:
                 self._set_prop_value('canonicalName', self._cname)
+        if self._cname != old_value:
+            touch_instance_prop(self, 'canonicalName')
 
     @property
     def cname(self):

@@ -150,7 +150,8 @@
           "dependencies": {
             "additionalProperties": ["name", "parent"]
           },
-          "type": "string"
+          "type": "string",
+          "default": "{% if this.parent %}{{this.parent}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
         },
         "primaryKeys": {
           "items": {

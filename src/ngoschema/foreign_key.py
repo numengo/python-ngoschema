@@ -183,7 +183,7 @@ class ForeignKey(pjo_literals.LiteralValue):
             foreignClass = instance.__itemtype__.foreignClass if self.isOne2Many else instance.foreignClass
             ref, key = (self._ref, self.name)
             def _access_key_ref(x):
-                x_key = x.get(key)
+                x_key = x._get_prop_value(key)
                 return x_key._ref if x_key else None
 
             if not self.isOne2Many:

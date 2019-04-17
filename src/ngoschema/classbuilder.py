@@ -45,6 +45,7 @@ from .uri_identifier import norm_uri
 from .uri_identifier import resolve_uri
 from .validators import DefaultValidator
 from .foreign_key import ForeignKey
+from .wrapper_types import ArrayWrapper
 
 logger = pjo_classbuilder.logger
 
@@ -292,25 +293,44 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         """
         serialization method, removing all members flagged as NotSerialized
         """
-        out = {}
+        out = collections.OrderedDict()
         for prop in self:
             # remove items flagged as not_serilalized
             if prop in self.__not_serialized__:
                 continue
-            propval = getattr(self, prop)
-            if hasattr(propval, 'for_json'):
-                out[prop] = propval.for_json()
-            elif isinstance(propval, list):
-                out[prop] = [getattr(x, 'for_json', lambda:x)() for x in propval]
-            elif isinstance(propval, (ProtocolBase, pjo_literals.LiteralValue)):
-                out[prop] = propval.as_dict()
-            elif propval is not None:
-                out[prop] = propval
+            propval = self[prop]
+            if no_defaults and not propval:
+                continue
             # evaluate default value and drop it from json
             if no_defaults and prop in self.__has_default__:
                 default_value = self.__propinfo__[prop]['default']
-                if out[prop] == default_value:
-                    out.pop(prop)
+                if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                    if len(propval) != len(default_value):
+                        pass
+                    elif propval == default_value:
+                        continue
+                elif isinstance(propval, pjo_literals.LiteralValue):
+                    if propval == default_value:
+                        continue
+                    if utils.is_pattern(default_value):
+                        default_value = jinja2.TemplatedString(default_value)(self)
+                        if propval == default_value:
+                            continue
+            if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
+                if not len(propval) and no_defaults:
+                    continue
+            if hasattr(propval, 'for_json'):
+                value = propval.for_json()
+                if utils.is_pattern(value):
+                    value = jinja2.TemplatedString(value)(self)
+            elif isinstance(propval, list):
+                value = [x.for_json() for x in propval]
+            elif propval is not None:
+                value = propval
+            if not value and not isinstance(value, bool):
+                continue
+            prop = self.__prop_translated__.get(prop, prop)
+            out[prop] = value
         return out
 
     def _load_ref(self):
@@ -713,7 +733,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props["__schema__"] = cls_schema
         props["__schema__"]["$id"] = nm
 
-        properties = dict()
+        properties = collections.OrderedDict()
         parent_properties = dict()
 
         # parent classes
@@ -732,7 +752,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 properties = pjo_util.propmerge(properties,
                                                 p.__propinfo__)
 
-        properties = pjo_util.propmerge(properties, cls_schema.get("properties",{}))
+        properties = pjo_util.propmerge(properties, cls_schema.get("properties", collections.OrderedDict()))
 
 
         def find_getter_setter_defv(propname, class_attrs):
@@ -783,10 +803,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
             #properties[prop]["raw_name"] = prop
             translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
-            name_translation[prop] = translated
             if translated != prop:
                 name_translated[translated] = prop
             ##name_translation[prop] = prop.replace("@", "").replace("$", "")
+            name_translation[prop] = translated
             prop = name_translation[prop]
 
             # look for getter/setter/defaultvalue first in class definition
@@ -882,8 +902,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                             "type":
                             "array",
                             "validator":
-                            pjo_wrapper_types.ArrayWrapper.create(
-                                uri, item_constraint=typ),
+                            ArrayWrapper.create(uri, item_constraint=typ),
                         }
                     else:
                         uri = "{0}/{1}_{2}".format(nm, prop,
@@ -910,8 +929,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 "type":
                                 "array",
                                 "validator":
-                                pjo_wrapper_types.ArrayWrapper.create(
-                                    uri, item_constraint=typ, **detail),
+                                ArrayWrapper.create(uri, item_constraint=typ, **detail),
                             }
                         except NotImplementedError:
                             typ = copy.deepcopy(detail["items"])
@@ -919,8 +937,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 "type":
                                 "array",
                                 "validator":
-                                pjo_wrapper_types.ArrayWrapper.create(
-                                    uri, item_constraint=typ, **detail),
+                                ArrayWrapper.create(uri, item_constraint=typ, **detail),
                             }
 
                     props[prop] = make_property(
@@ -1230,7 +1247,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
             if not isinstance(val, infotype):
                 if not utils.is_string(val):
-                    val = infotype(**pjo_util.coerce_for_expansion(val))
+                    if pjo_util.safe_issubclass(infotype, Metadata):
+                        val = infotype(parent=self, **pjo_util.coerce_for_expansion(val))
+                    else:
+                        val = infotype(**pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
             val.validate()
@@ -1256,11 +1276,11 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         else:
             raise TypeError("Unknown object type: '%s'" % infotype)
 
-        if val and isinstance(val, Metadata):
-            if val._lazy_loading:
-                val._set_prop_value('parent', self)
-            else:
-                val.parent = self
+        #if val and isinstance(val, Metadata):
+        #    if val._lazy_loading:
+        #        val._set_prop_value('parent', self)
+        #    else:
+        #        val.parent = self
         self._properties[prop] = val
 
 
