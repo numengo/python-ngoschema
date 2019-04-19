@@ -18,17 +18,17 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
     with a dirty-tracking mechanism to avoid constant validation costs.
     """
 
-    def __delitem__(self, index):
-        pjo_wrapper_types.ArrayWrapper.__delitem__(self, index)
-
-    def insert(self, index, value):
-        pjo_wrapper_types.ArrayWrapper.insert(self, index, value)
- 
-    def __setitem__(self, index, value):
-        pjo_wrapper_types.ArrayWrapper.__delitem__(self, index, value)
-
-    def __getitem__(self, idx):
-        pjo_wrapper_types.ArrayWrapper.__getitem__(self, idx)
+    #def __delitem__(self, index):
+    #    pjo_wrapper_types.ArrayWrapper.__delitem__(self, index)
+#
+    #def insert(self, index, value):
+    #    pjo_wrapper_types.ArrayWrapper.insert(self, index, value)
+ #
+    #def __setitem__(self, index, value):
+    #    pjo_wrapper_types.ArrayWrapper.__delitem__(self, index, value)
+#
+    #def __getitem__(self, idx):
+    #    pjo_wrapper_types.ArrayWrapper.__getitem__(self, idx)
 
     def __init__(self, ary):
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
@@ -37,21 +37,39 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
         return pjo_wrapper_types.ArrayWrapper.validate(self)
 
     def validate_items(self):
-        return pjo_wrapper_types.ArrayWrapper.validate_items(self)
+        ret = pjo_wrapper_types.ArrayWrapper.validate_items(self)
+        if ret and self._parent:
+            self.set_items_parent()
+        return ret
+    
+    def set_items_parent(self):
+        from .metadata import Metadata
+        from .classbuilder import ProtocolBase
+        if not self._parent:
+            return
+        for item in self._typed:
+            if isinstance(item, ArrayWrapper) and item._parent is not self._parent:
+                item.parent = self._parent()
+            elif isinstance(item, Metadata) and \
+                (not item._parent or item._parent._ref is not self._parent):
+                if item._lazy_loading:
+                    item._set_prop_value('parent', self)
+                else:
+                    item.parent = self
 
     _parent = None
-    @property
-    def parent(self):
+
+    def get_parent(self):
         return self._parent() if self._parent else None
     
-    @parent.setter
     def set_parent(self, value):
         self._parent = weakref.ref(value)
-        from . import classbuilder
+        #from . import classbuilder
         #for elem in self._typed:
         #    if util.safe_issubclass(typ, ProtocolBase):
         #        pass
-            
+
+    parent = property(get_parent, set_parent)        
 
     @staticmethod
     def create(name, item_constraint=None, **addl_constraints):
@@ -66,9 +84,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
         constraints permitted by JSON Schema v4.
         """
         from python_jsonschema_objects.classbuilder import LiteralValue
-        from python_jsonschema_objects.classbuilder import pjo_ProtocolBase
+        from python_jsonschema_objects.classbuilder import ProtocolBase as pjo_ProtocolBase
         from python_jsonschema_objects.classbuilder import TypeProxy, TypeRef
-        from .metadata import Metadata
         from .classbuilder import ProtocolBase
         klassbuilder = addl_constraints.pop("classbuilder", None)
         props = {}

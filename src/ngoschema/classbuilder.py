@@ -1185,7 +1185,10 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                     # force conversion- thus the val rather than validator assignment
                     try:
                         if not utils.is_string(val):
-                            val = typ(**pjo_util.coerce_for_expansion(val))
+                            if pjo_util.safe_issubclass(infotype, Metadata):
+                                val = typ(parent=self, **pjo_util.coerce_for_expansion(val))
+                            else:
+                                val = typ(**pjo_util.coerce_for_expansion(val))
                         else:
                             val = typ(val)
                     except Exception as e:
@@ -1216,13 +1219,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
             val = info["validator"](val)
             # only validate if items are not foreignKey
             if not hasattr(info["validator"].__itemtype__, '_foreignClass'):
+                val.parent = self
                 val.validate()
-                for e in val:
-                    if isinstance(e, Metadata):
-                        if e._lazy_loading:
-                            e._set_prop_value('parent', self)
-                        else:
-                            e.parent = self
 
         elif getattr(infotype, "isLiteralClass", False) is True:
             if not isinstance(val, infotype):
@@ -1276,11 +1274,6 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
         else:
             raise TypeError("Unknown object type: '%s'" % infotype)
 
-        #if val and isinstance(val, Metadata):
-        #    if val._lazy_loading:
-        #        val._set_prop_value('parent', self)
-        #    else:
-        #        val.parent = self
         self._properties[prop] = val
 
 
