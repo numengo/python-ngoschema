@@ -139,6 +139,7 @@ class ForeignKey(pjo_literals.LiteralValue):
         return cls._reverse
 
     def __init__(self, value):
+        from .wrapper_types import ArrayWrapper
         self._value = None
         self._ref = None
         self._validated = True
@@ -151,6 +152,9 @@ class ForeignKey(pjo_literals.LiteralValue):
             self.ref = value.ref
             self._value = value._value
             self._validated = value._validated
+        elif isinstance(value, ArrayWrapper):
+            self.ref = value._parent()
+            self._value = str(value._parent()._get_prop_value(self.key))
         else:
             self._value = str(value)
         # to force resolution of reference and backpopulates

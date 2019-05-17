@@ -12,11 +12,12 @@ import weakref
 
 from future.utils import with_metaclass
 from python_jsonschema_objects.util import safe_issubclass
-from python_jsonschema_objects.wrapper_types import ArrayWrapper
+#from python_jsonschema_objects.wrapper_types import ArrayWrapper
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 
 from . import utils
 from .classbuilder import ProtocolBase
+from .wrapper_types import ArrayWrapper
 from .classbuilder import get_builder
 from .classbuilder import touch_instance_prop
 from .schema_metaclass import SchemaMetaclass
@@ -60,15 +61,29 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     _parent = None
     def set_parent(self, value):
-        # value is already properly casted
-        if not self._parent or self._parent != value:
-            self._parent = value
+        parent_ref = value._ref if isinstance(value, ForeignKey) else weakref.ref(value)
+        if not self._parent or self._parent() is not parent_ref():
+            self._parent = parent_ref
+            if hasattr(self, '_properties'):
+                for propname in self:
+                    prop = self[propname]
+                    if isinstance(prop, Metadata):
+                        if prop._lazy_loading:
+                            prop._set_prop_value('parent', parent_ref())
+                        else:
+                            prop.parent = parent_ref()
+                    elif isinstance(prop, ArrayWrapper):
+                        prop.parent = parent_ref()
             self._update_cname()
 
     @property
     def parent_ref(self):
-        if self._parent:
-            return self._parent.ref
+        if self.parent and self.parent.ref:
+            return self.parent.ref
+        return self._parent() if self._parent else None
+        #if not self._parent and self.parent and self.parent.ref:
+        #    self._parent = self.parent
+        #return self._parent.ref if self._parent else None
 
     # iname to store in a cache the name of the instance as a string
     _iname = None
@@ -85,24 +100,37 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _cname = None
     def _update_cname(self, value=None):
         old_value = self._cname
-        if value and value != self._iname and value != self.iname:
-            self._cname = value
-        else:
-            self._cname = '%s.%s' % (self._parent.ref.cname, self.iname) \
-                            if self._parent and self._parent.ref \
+        cname = '%s.%s' % (self.parent_ref.cname, self.iname) \
+                            if self.parent_ref \
                             else self.iname
+        if value and value != cname:
+            self._cname = value
+        elif not self._cname or self.parent_ref:
+            self._cname = cname
+        #if value and value != self._iname and value != self.iname:
+        #    self._cname = value
+        #else:
+        #    self._cname = '%s.%s' % (self._parent().cname, self.iname) \
+        #                    if self._parent and self._parent() \
+        #                    else self.iname
+        if self._lazy_loading:
+            return
         # this function is called at early stage of component initialiation
         # when _properties is not yet allocated => just a safegard
         if hasattr(self, '_properties'):
-            if not self._lazy_loading:
+            #if not self._lazy_loading:
+                #if hasattr(self, '_properties') and self.children:
+                #    for child in self.children:
+                #        child.ref._update_cname()
+            #else:
+            #    self._set_prop_value('canonicalName', self._cname)
+            if self._cname != old_value:
                 self.canonicalName = self._cname
-                if hasattr(self, '_properties') and self.children:
-                    for child in self.children:
-                        child.ref._update_cname()
-            else:
-                self._set_prop_value('canonicalName', self._cname)
-        if self._cname != old_value:
-            touch_instance_prop(self, 'canonicalName')
+                touch_instance_prop(self, 'canonicalName')
+                #for propname in self:
+                #    prop = self._properties.get(propname)
+                #    if hasattr(prop, '_update_cname'):
+                #        prop._update_cname()
 
     @property
     def cname(self):

@@ -255,6 +255,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if isinstance(self, Metadata): 
             if CN_KEY in props:
                 self.set_name(props[CN_KEY])
+            if 'parent' in props:
+                self.set_parent(props['parent'])
+            if 'canonicalName' in props:
+                self.set_canonicalName(props['canonicalName'])
 
         # remove initial values of readonly members
         for k in self.__read_only__.intersection(props.keys()):
@@ -354,6 +358,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         lazy loading: initialize the object with data stored in _lazyloading attribute
         will only initialize 1st level ones (and do a proper validation)
         """
+        if not isinstance(self._lazy_loading, dict):
+            return False
         data = self._lazy_loading
         try:
             self._lazy_loading = {}
@@ -373,6 +379,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             self._lazy_loading = data
             logger.warning('problem lazy loading %s' % self)
             logger.warning(er, exc_info=True)
+            raise er
             return False
 
     def _load_missing(self):
@@ -389,6 +396,12 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if isinstance(self, Metadata):
             if CN_KEY in props:
                 self.set_name(props[CN_KEY])
+            #if 'parent' in props:
+            #    parent = props['parent']
+            #    if self._lazy_loading:
+            #        self._set_prop_value('parent', parent)
+            #    else:
+            #        self.set_parent(parent)
             if 'canonicalName' in props:
                 if self._lazy_loading:
                     self._set_prop_value('canonicalName', props['canonicalName'])
@@ -454,13 +467,17 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 return getattr(self, prop) if index is None else getattr(
                     self, prop)[index]
             key = self.__prop_translated__.get(key, key)
-            return pjo_classbuilder.ProtocolBase.__getattr__(self, key)
+            try:
+                return pjo_classbuilder.ProtocolBase.__getattr__(self, key)
+            except Exception as er:
+                raise er
 
     def __getitem__(self, key):
         """access property as in a dict"""
         try:
             self._load_missing()
-            return self._properties[key]
+            ret = self._properties.get(key)
+            return ret if ret is not None else getattr(self, key)
         except AttributeError as er:
             raise KeyError(key)
         except Exception as er:
@@ -481,7 +498,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                     attr[index] = val
             else:
                 name = self.__prop_translated__.get(name, name)
-                pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
+                try:
+                    pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
+                except Exception as er:
+                    raise er
 
     def _set_prop_value(self, prop, value):
         """
@@ -492,34 +512,40 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
         if self._lazy_loading and isinstance(self._lazy_loading, dict):
             self._lazy_loading[prop] = value
             return
-        propval = self._properties.get(prop)
-        propinfo = self.propinfo(prop)
-        if hasattr(propval, 'validate'):
-            propval.__init__(value)
-            propval.validate()
-            # should be enough... set it back anyway ?
-            self._properties[prop] = value
-        # a validator is available
-        elif issubclass(propinfo.get('_type'), pjo_literals.LiteralValue):
-            val = propinfo['_type'](value)
-            val.validate()
-            self._properties[prop] = val
-        else:
-            prop_ = getattr(self.__class__, self.__prop_names__[prop])
-            prop_.fset(self, value)
+        try:
+            propval = self._properties.get(prop)
+            propinfo = self.propinfo(prop)
+            if hasattr(propval, 'validate'):
+                propval.__init__(value)
+                propval.validate()
+                # should be enough... set it back anyway ?
+                self._properties[prop] = value
+            # a validator is available
+            elif issubclass(propinfo.get('_type'), pjo_literals.LiteralValue):
+                val = propinfo['_type'](value)
+                val.validate()
+                self._properties[prop] = val
+            else:
+                prop_ = getattr(self.__class__, self.__prop_names__[prop])
+                prop_.fset(self, value)
+        except Exception as er:
+            raise er
 
     def _get_prop_value(self, prop, default=None):
         """
         Get a property shorcutting the setter. To be used in setters
         """
-        if self._lazy_loading and isinstance(self._lazy_loading, dict):
-            return self._lazy_loading.get(prop, default)
-        validator = self._properties.get(prop)
-        if validator is not None:
-            if is_instance_prop_dirty(self, prop):
-                validator.validate()
-            return validator
-        return default
+        try:
+            if self._lazy_loading and isinstance(self._lazy_loading, dict):
+                return self._lazy_loading.get(prop, default)
+            validator = self._properties.get(prop)
+            if validator is not None:
+                if is_instance_prop_dirty(self, prop):
+                    validator.validate()
+                return validator
+            return default
+        except Exception as er:
+            raise er
 
 
     @classmethod
@@ -1072,12 +1098,16 @@ def is_prop_dirty(prop):
 
 def is_instance_prop_dirty(instance, prop_name):
     """test if a property needs validation"""
+    if not hasattr(instance, '_properties'):
+        return False
     prop = instance._properties.get(prop_name)
     if is_prop_dirty(prop):
         return True
     return any((is_instance_prop_dirty(instance, p) for p in instance._prop_inputs[prop_name]))
 
 def validate_instance_prop(instance, prop_name):
+    if not hasattr(instance, '_properties'):
+        return None
     prop = instance._properties.get(prop_name)
     if is_instance_prop_dirty(instance, prop_name):
         for p in instance._prop_inputs[prop_name]:
