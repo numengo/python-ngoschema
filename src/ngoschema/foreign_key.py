@@ -139,6 +139,7 @@ class ForeignKey(pjo_literals.LiteralValue):
         return cls._reverse
 
     def __init__(self, value):
+        from .metadata import Metadata
         from .wrapper_types import ArrayWrapper
         self._value = None
         self._ref = None

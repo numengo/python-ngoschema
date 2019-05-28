@@ -25,6 +25,7 @@ import inflection
 import six
 from ngofile.pathlist import PathList
 from past.builtins import basestring
+from ngoschema import utils
 
 from ._qualname import qualname
 from .decorators import take_arrays
@@ -434,7 +435,7 @@ def process_collection(data,
             def _replace_relative_refs(coll, key, cname):
                 value = coll[key]
                 try:
-                    if value[0] == '#' and '/' not in value:
+                    if utils.is_string(value) and value and value[0] == '#' and '/' not in value:
                         if cname:
                             coll[key] = value.replace('#', '%s.' % cname , 1)
                         else:

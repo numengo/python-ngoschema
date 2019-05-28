@@ -61,19 +61,23 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     _parent = None
     def set_parent(self, value):
-        parent_ref = value._ref if isinstance(value, ForeignKey) else weakref.ref(value)
-        if not self._parent or self._parent() is not parent_ref():
-            self._parent = parent_ref
-            if hasattr(self, '_properties'):
+        #parent_ref = value._ref if isinstance(value, ForeignKey) else weakref.ref(value)
+        if isinstance(value, ForeignKey):
+            parent_wref = value._ref
+        else:
+            parent_wref = weakref.ref(value) if value else None
+        if not self._parent or self._parent is not parent_wref:
+            self._parent = parent_wref
+            if parent_wref and hasattr(self, '_properties'):
                 for propname in self:
                     prop = self[propname]
                     if isinstance(prop, Metadata):
                         if prop._lazy_loading:
-                            prop._set_prop_value('parent', parent_ref())
+                            prop._set_prop_value('parent', parent_wref())
                         else:
-                            prop.parent = parent_ref()
+                            prop.parent = parent_wref()
                     elif isinstance(prop, ArrayWrapper):
-                        prop.parent = parent_ref()
+                        prop.parent = parent_wref()
             self._update_cname()
 
     @property

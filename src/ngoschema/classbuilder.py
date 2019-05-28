@@ -390,6 +390,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
             return self._load_lazy()
         return False
 
+    def validate(self):
+        if not self._lazy_loading:
+            pjo_classbuilder.ProtocolBase.validate(self)
+
     def _set_key2attr(self, props):
         """create the map associating canonical names to properties"""
         from .metadata import Metadata
@@ -730,6 +734,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         defaults = set()
         dependencies = dict()
 
+        # get parent non private attributes and properties
+        parent_attrs = {}
+        for p in reversed(list(parents)):
+            _ = {k: v for k, v in dict(p.__dict__).items() 
+                    if not k.startswith('__') 
+                    and not k.startswith('_abc')
+                    and not utils.is_method(v)}
+            dpath.util.merge(
+                dst=parent_attrs, 
+                src=_, 
+                flags=dpath.util.MERGE_TYPESAFE)
+
         class_attrs = kw.get("class_attrs", {})
 
         # setup logger and make it a property
@@ -752,7 +768,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         __object_attr_list__ = pjo_classbuilder.ProtocolBase.__object_attr_list__
         props["__object_attr_list__"] = __object_attr_list__
 
-        props["__class_attr_list__"] = set(class_attrs.keys())
+        props["__class_attr_list__"] = set(list(class_attrs.keys()) + list(parent_attrs.keys()))
 
         #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
@@ -1048,6 +1064,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props["__attr_by_name__"] = class_attrs.get('__attr_by_name__', False)
         props["__strict__"] = required or kw.get("strict")
 
+        # add parent properties and attributes
+        props.update({k: v for k,v in parent_attrs.items() if k not in props})
+
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
 
@@ -1282,6 +1301,8 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
                 else:
                     val = infotype(val)
             val.validate()
+            if isinstance(val, Metadata) and val._parent is None:
+                val.parent = self
 
         elif isinstance(infotype, pjo_classbuilder.TypeProxy):
             val = infotype(val)
