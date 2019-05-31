@@ -374,6 +374,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase):
                 pjo_classbuilder.ProtocolBase.__init__(self, **data)
             # we set key2attr after to avoid collusion at initialization between
             self._set_key2attr(data)
+            self.validate()
             return True
         except Exception as er:
             self._lazy_loading = data
@@ -657,6 +658,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 return getattr(self, name)
             else:
                 return pjo_literals.LiteralValue.__getattribute__(self, name)
+        
+        def _validate_pseudo(self):
+            """validate method with an invalidation mechanism"""
+            if not getattr(self, '_validated', False):
+                self.validate()
+                self._validated = True
+
+        def touch_pseudo(self):
+            self._validated = False
 
         #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
@@ -687,6 +697,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 "__propinfo__": propinfo,
                 "__subclass__": parent,
                 "__getattr__": __getattr_pseudo__,
+                "touch": touch_pseudo,
+                "_validate": _validate_pseudo,
             },
         )
 
@@ -739,8 +751,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for p in reversed(list(parents)):
             _ = {k: v for k, v in dict(p.__dict__).items() 
                     if not k.startswith('__') 
-                    and not k.startswith('_abc')
-                    and not utils.is_method(v)}
+                    and not k.startswith('_abc')}
+                    #and not utils.is_method(v)}
             dpath.util.merge(
                 dst=parent_attrs, 
                 src=_, 
@@ -1309,10 +1321,14 @@ def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
 
         elif isinstance(infotype, pjo_classbuilder.TypeRef):
             if not isinstance(val, infotype.ref_class):
-                if utils.is_string(val):
-                    val = infotype(val)
-                else:
+                if not utils.is_string(val):
+                    if pjo_util.safe_issubclass(infotype.ref_class, Metadata):
+                        val = infotype(parent=self, **pjo_util.coerce_for_expansion(val))
+                    else:
+                        val = infotype(**pjo_util.coerce_for_expansion(val))
                     val = infotype(**val)
+                else:
+                    val = infotype(val)
 
             val.validate()
 
