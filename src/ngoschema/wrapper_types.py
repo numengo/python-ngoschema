@@ -7,11 +7,12 @@ import weakref
 from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
+from .mixins import HasCache
 
 logger = logging.getLogger(__name__)
 
 
-class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
+class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HasCache):
     """ A wrapper for array-like structures.
 
     This implements all of the array like behavior that one would want,
@@ -31,20 +32,21 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
     #    pjo_wrapper_types.ArrayWrapper.__getitem__(self, idx)
 
     def __init__(self, ary):
+        HasCache.__init__(self)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
 
-    def validate(self):
-        return pjo_wrapper_types.ArrayWrapper.validate(self)
+    #def validate(self):
+    #    return pjo_wrapper_types.ArrayWrapper.validate(self)
 
     def validate_items(self):
+        if not self._dirty:
+            return
         if not self._parent or not self._parent():
             return pjo_wrapper_types.ArrayWrapper.validate_items(self)
         from .metadata import Metadata
         from python_jsonschema_objects import classbuilder
 
         if self.__itemtype__ is None:
-            return
-        if not self._dirty:
             return
 
         type_checks = self.__itemtype__
@@ -67,7 +69,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
 
             elif util.safe_issubclass(typ, classbuilder.LiteralValue):
                 val = typ(elem)
-                val.validate()
+                val.validate_if_dirty()
                 typed_elems.append(val)
             elif util.safe_issubclass(typ, classbuilder.ProtocolBase):
                 if not isinstance(elem, typ):
@@ -83,19 +85,19 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
                                               .format(elem, typ, e))
                 else:
                     val = elem
-                val.validate()
+                val.validate_if_dirty()
                 typed_elems.append(val)
 
             elif util.safe_issubclass(typ, ArrayWrapper):
                 val = typ(elem)
                 # CRn: set parent before validation
                 val.parent = self._parent()
-                val.validate()
+                val.validate_if_dirty()
                 typed_elems.append(val)
 
             elif isinstance(typ, classbuilder.TypeRef) and isinstance(elem, typ.ref_class):
                 val = elem
-                val.validate()
+                val.validate_if_dirty()
                 typed_elems.append(val)
 
             elif isinstance(typ, (classbuilder.TypeProxy, classbuilder.TypeRef)):
@@ -110,11 +112,11 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
                     raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
                                           .format(elem, typ, e))
                 else:
-                    val.validate()
+                    val.validate_if_dirty()
                     typed_elems.append(val)
 
         self._typed = typed_elems
-        self._dirty = False
+        self.set_clean()
         #pjo_wrapper_types.ArrayWrapper.validate_items(self)
         #if self._parent:
         #    self.set_items_parent()
@@ -149,7 +151,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper):
     def set_parent(self, value):
         self._parent = weakref.ref(value)
         self.set_items_parent()
-        self._dirty = True
+        self.touch(recursive=True)
         #from . import classbuilder
         #for elem in self._typed:
         #    if util.safe_issubclass(typ, ProtocolBase):

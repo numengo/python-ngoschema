@@ -45,6 +45,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     __assert_args__ = False
     __attr_by_name__ = False
     _contentRaw = None
+    _content = None
     _loaded = False
     _is_deserialized = False
 
@@ -124,7 +125,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return arrow.get(self.filepath.stat().st_mtime)
 
     def get_contentSize(self):
-        return self.filepath.stat().st_size
+        return self.filepath.stat().st_size if self.filepath else None
 
     def get_contentSizeHuman(self):
         num = int(self.contentSize)
@@ -137,10 +138,10 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         magic.Magic(mime=True).from_file(str(self.filepath))
 
     def get_uri(self):
-        return self.filepath.as_uri()
+        return self.filepath.as_uri() if self.filepath else None
 
     def get_content(self):
-        return self._content
+        return self._content or self._contentRaw
 
     _id = None
 

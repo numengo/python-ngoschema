@@ -17,6 +17,7 @@ import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from . import utils
 from .decorators import classproperty
+from .mixins import HasCache
 
 # Registry of alive foreign keys
 _fk_key_refs = collections.defaultdict(dict)
@@ -39,6 +40,7 @@ def _register_foreign_key(fkey):
 
 def touch_all_refs(instance, key):
     #s = _fk_key_refs_size()
+    raise Exception('should not be there')
     from .classbuilder import touch_instance_prop
     if key in _fk_key_refs:
         ref = weakref.ref(instance)
@@ -59,12 +61,12 @@ def touch_all_refs(instance, key):
         #        touch_instance_prop(ref, bp)
 
 
-class ForeignKey(pjo_literals.LiteralValue):
+class ForeignKey(pjo_literals.LiteralValue, HasCache):
     _keys = None
     _foreignClass = None
     _ref = None
     _value = None
-    _validated = False
+    #_validated = False
         
     @classproperty
     def foreignSchemaUri(cls):
@@ -141,9 +143,11 @@ class ForeignKey(pjo_literals.LiteralValue):
     def __init__(self, value):
         from .metadata import Metadata
         from .wrapper_types import ArrayWrapper
+        HasCache.__init__(self)
         self._value = None
         self._ref = None
-        self._validated = True
+        #self._validated = True
+        self._dirty = False
         if value is None:
             return
         if isinstance(value, self.foreignClass):
@@ -152,10 +156,11 @@ class ForeignKey(pjo_literals.LiteralValue):
         elif isinstance(value, ForeignKey):
             self.ref = value.ref
             self._value = value._value
-            self._validated = value._validated
+            self._dirty = value._dirty
+            #self._validated = value._validated
         elif isinstance(value, ArrayWrapper):
             self.ref = value._parent()
-            self._value = str(value._parent()._get_prop_value(self.key))
+            #self._value = str(value._parent()._get_prop_value(self.key))
         else:
             self._value = str(value)
         # to force resolution of reference and backpopulates
@@ -174,7 +179,6 @@ class ForeignKey(pjo_literals.LiteralValue):
             # if key_prop is different, update the value
             if ref_key_prop != self._value:
                 self._value = str(ref_key_prop)
-        self._validated = True
 
     def _set_backref(self):
         from .classbuilder import touch_instance_prop, is_prop_dirty, iter_instances
@@ -182,7 +186,7 @@ class ForeignKey(pjo_literals.LiteralValue):
             return
 
         def validate_backref(instance):
-            if not is_prop_dirty(instance):
+            if self.is_dirty():
                 return
             
             foreignClass = instance.__itemtype__.foreignClass if self.isOne2Many else instance.foreignClass
@@ -195,7 +199,8 @@ class ForeignKey(pjo_literals.LiteralValue):
                 assert isinstance(instance, ForeignKey)
                 # check first if reference already defined and that literal corresponds
                 if instance.ref and instance.ref._get_prop_value(instance.key) == self._value:
-                    instance._validated = True
+                    #instance._validated = True
+                    instance._dirty = False
                     return
                 # if not, make a query and initialize
                 for i in iter_instances(foreignClass):
@@ -302,7 +307,8 @@ class ForeignKey(pjo_literals.LiteralValue):
                        self.foreignClass, self.key, self._value)
 
     def _set_ref(self, instance):
+        self._set_inputs(ref=instance)
         self._ref = weakref.ref(instance)
-        _register_foreign_key(self)
+        #_register_foreign_key(self)
 
     ref = property(_get_ref, _set_ref)

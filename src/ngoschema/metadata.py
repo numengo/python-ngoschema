@@ -68,7 +68,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
             parent_wref = weakref.ref(value) if value else None
         if not self._parent or self._parent is not parent_wref:
             self._parent = parent_wref
-            if parent_wref and hasattr(self, '_properties'):
+            if parent_wref and '_properties' in self.__dict__:
                 for propname in self:
                     prop = self[propname]
                     if isinstance(prop, Metadata):
