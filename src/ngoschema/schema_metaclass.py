@@ -55,11 +55,11 @@ class SchemaMetaclass(type):
             attrs["schema"].setdefault('$id', clsname)
             schemaUri, schema = load_schema(attrs["schema"])
             #expand the schema
-            schema = resolver._expand(schemaUri, schema, schemaUri)
+            #schema = resolver._expand(schemaUri, schema, schemaUri)
         elif attrs.get("schemaPath"):
             schemaUri, schema = load_schema_file(attrs["schemaPath"])
             #expand the schema
-            schema = resolver._expand(schemaUri, schema, schemaUri)
+            #schema = resolver._expand(schemaUri, schema, schemaUri)
         elif attrs.get("schemaUri"):
             # the schema is automatically expanded when resolved by the resolver
             schemaUri, schema = resolver.resolve(attrs["schemaUri"])
@@ -124,6 +124,7 @@ class SchemaMetaclass(type):
 
             attrs[k] = fn
 
+        # shouldn't we assert ProtocolBase is in mro?
         if schemaUri is not None:
             clsname = schemaUri
         cls = builder.construct(

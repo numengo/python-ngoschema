@@ -171,7 +171,8 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
                       (base_uri, ", ".join(ms.keys())))
     referrer = ms[base_uri]
     if not _resolver or set(ms.keys()).difference(set(_resolver.store)):
-        _resolver = ExpandingResolver(base_uri, referrer, ms)
+        #_resolver = ExpandingResolver(base_uri, referrer, ms)
+        _resolver = RefResolver(base_uri, referrer, ms)
     if base_uri != _resolver.base_uri:
         _resolver.push_scope(base_uri)
     return _resolver

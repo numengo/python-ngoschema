@@ -19,10 +19,8 @@ from . import utils
 from .classbuilder import ProtocolBase
 from .wrapper_types import ArrayWrapper
 from .classbuilder import get_builder
-from .classbuilder import touch_instance_prop
 from .schema_metaclass import SchemaMetaclass
 from .foreign_key import ForeignKey
-from .foreign_key import touch_all_refs
 
 class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """

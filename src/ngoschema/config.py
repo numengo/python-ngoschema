@@ -115,3 +115,47 @@ class ConfigLoader(object):
         """
         section = self._section(sname)
         return {k: section[k] for k in keys if k in section}
+
+
+
+DEFAULT_LOGGING = { 
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': { 
+        'console': {
+            'format': '%(levelname)s  %(name)s: %(message)s'
+        },
+        'standard': { 
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+        'verbose': {
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+            'format': '%(levelname) -10s %(asctime)s %(name) -35s %(funcName) -30s: %(message)s'
+        },
+    },
+    'handlers': { 
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'console',
+            'stream': 'ext://sys.stdout',  # Default is stderr
+        }
+    },
+    'loggers': { 
+        '': {  # root logger
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True
+        },
+        'ngoschema': { 
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'ngomf': { 
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+    } 
+}

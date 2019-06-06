@@ -9,8 +9,9 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import itertools
-
+import pprint
 from future.utils import with_metaclass
+
 from python_jsonschema_objects.util import safe_issubclass
 
 from . import document
@@ -138,8 +139,8 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
                         self._objectClass(_lazy_loading=self._lz, **data))
                 return objs if many else objs[0]
         except Exception as er:
-            raise IOError(
-                "Impossible to create %s from %s.\n%s" % (foc, data, er))
+            raise IOError("Impossible to create %s from %s.\n%s" 
+                % (foc, pprint.pprint(data, depth=2), er))
 
     def create_from_document(self,
                              doc,

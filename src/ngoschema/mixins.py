@@ -7,15 +7,17 @@ licence: GPL3
 """
 from __future__ import absolute_import
 from __future__ import unicode_literals
+import logging
 
+from . import utils
 from weakref import WeakValueDictionary
 
 class HasCache:
+    _inputs = WeakValueDictionary()
+    _outputs = WeakValueDictionary()
     
     def __init__(self, *args, **kwargs):
         self._dirty = True
-        self._inputs = WeakValueDictionary()
-        self._outputs = WeakValueDictionary()
     
     def _set_inputs(self, **deps):
         self._inputs = WeakValueDictionary(deps)
@@ -73,3 +75,16 @@ class HasCache:
                     _d.force_validate(recursive)
         self.validate()
         self.set_clean()
+
+
+class HasLogger:
+    logger = None
+
+    @classmethod
+    def init_class_logger(cls):
+        cls.logger = logging.getLogger(utils.fullname(cls))
+
+    @classmethod
+    def set_logLevel(cls, logLevel):
+        level = logging.getLevelName(logLevel)
+        cls.logger.setLevel(level)

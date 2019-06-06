@@ -25,33 +25,33 @@ _fk_key_refs = collections.defaultdict(dict)
 logger = logging.getLogger(__name__)
 
 
-def _unregister_foreign_key_ref(ref):
-    id_ref = id(ref)
-    for fk_refs in _fk_key_refs.values():
-         if id_ref in fk_refs:
-             fk_refs.pop(id_ref)
-
-def _register_foreign_key(fkey):
-    key, ref = fkey.key, fkey._ref
-    weakref.finalize(ref(), _unregister_foreign_key_ref, ref)
-    if not key in _fk_key_refs:
-        _fk_key_refs[key] = collections.defaultdict(set)
-    _fk_key_refs[key][id(ref)].add(weakref.ref(fkey))
-
-def touch_all_refs(instance, key):
-    #s = _fk_key_refs_size()
-    raise Exception('should not be there')
-    from .classbuilder import touch_instance_prop
-    if key in _fk_key_refs:
-        ref = weakref.ref(instance)
-        id_ref = id(ref)
-        for _fk in _fk_key_refs[key].get(id_ref, []):
-            fk = _fk()
-            if fk:
-                fk._validated = False
-                bp = fk.backPopulates
-                if bp:
-                    touch_instance_prop(ref , bp)
+#def _unregister_foreign_key_ref(ref):
+#    id_ref = id(ref)
+#    for fk_refs in _fk_key_refs.values():
+#         if id_ref in fk_refs:
+#             fk_refs.pop(id_ref)
+#
+#def _register_foreign_key(fkey):
+#    key, ref = fkey.key, fkey._ref
+#    weakref.finalize(ref(), _unregister_foreign_key_ref, ref)
+#    if not key in _fk_key_refs:
+#        _fk_key_refs[key] = collections.defaultdict(set)
+#    _fk_key_refs[key][id(ref)].add(weakref.ref(fkey))
+#
+#def touch_all_refs(instance, key):
+#    #s = _fk_key_refs_size()
+#    raise Exception('should not be there')
+#    from .classbuilder import touch_instance_prop
+#    if key in _fk_key_refs:
+#        ref = weakref.ref(instance)
+#        id_ref = id(ref)
+#        for _fk in _fk_key_refs[key].get(id_ref, []):
+#            fk = _fk()
+#            if fk:
+#                fk._validated = False
+#                bp = fk.backPopulates
+#                if bp:
+#                    touch_instance_prop(ref , bp)
 
         #for ref in (fk() for fk in _fk_key_refs[key].valuerefs() 
         #            if fk()._ref and fk()._ref() is instance):
