@@ -20,6 +20,7 @@ import subprocess
 import sys
 from builtins import object
 from builtins import str
+from contextlib import contextmanager
 
 import inflection
 import six
@@ -557,3 +558,14 @@ def grouper( page_size, iterable ):
             yield page
             page= []
     yield page
+
+
+@contextmanager
+def casted_as(instance, cls):
+    """context manager to cast an instance as a parent class"""
+    instance_cls = instance.__class__
+    if cls not in instance_cls.mro():
+        raise AttributeError("'%s' is not a parent of '%s'" % (cls, instance))
+    instance.__class__ = cls
+    yield instance
+    instance.__class__ = instance_cls

@@ -181,7 +181,6 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
                 self._value = str(ref_key_prop)
 
     def _set_backref(self):
-        from .classbuilder import touch_instance_prop, is_prop_dirty, iter_instances
         if not self._ref or not self._ref():
             return
 
@@ -203,7 +202,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
                     instance._dirty = False
                     return
                 # if not, make a query and initialize
-                for i in iter_instances(foreignClass):
+                for i in foreignClass.instances:
                     if _access_key_ref(i) is ref:
                         backref = i
                         if not instance.ref is backref:
@@ -221,7 +220,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
                     # we use validate items to create new proper typed items
                     instance.validate_items()
                     for fk in instance.typed_elems:
-                        if is_prop_dirty(fk):
+                        if fk.is_dirty():
                             fk.validate()
                         if fk.ref not in old_typed:
                             # data has been inserted, set the backref
@@ -239,7 +238,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
                         ref[self.name] = None
 
                 # we resolve all backreferences
-                backrefs = [i for i in iter_instances(foreignClass) 
+                backrefs = [i for i in foreignClass.instances 
                             if _access_key_ref(i) is ref]
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
@@ -258,15 +257,14 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
             if backref_validator is not None:
                 backref_validator.__class__.validate = validate_backref
                 backref_validator._init = True
-                touch_instance_prop(self.ref, self.backPopulates)
+                getattr(self.ref, self.backPopulates).touch()
 
     def _get_ref(self):
         if self._ref:
             return self._ref()
         if self._value is None:
             return
-        from .classbuilder import iter_instances
-        for i in iter_instances(self.foreignClass):
+        for i in self.foreignClass.instances:
             ival, val = i[self.key], self._value
             if not ival:
                 continue

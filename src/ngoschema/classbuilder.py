@@ -197,7 +197,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
         HasCache.__init__(self)
 
         # register instance
-        for cls in self.pbase_mro():
+        for cls in self.pbase_mro(ngo_base=True):
             cls._instances[id(self)] = self
 
         # remove options from props dictionary and set them as attributes
@@ -418,91 +418,80 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
 
         :param overwrite: overwrite values already set
         """
-        propnames = []
-        for c in cls.pbase_mro():
-            propnames.extend(c.__prop_names__)
+        propnames = cls.__prop_names__flatten__
+
 
         defconf = objects_config_loader.get_values(cls.fullname(), propnames)
         for k, v in defconf.items():
             if overwrite:
                 try:
-                    self.logger.debug("CONFIG SET %s.%s = %s", cls.fullname(), k, v)
+                    cls.logger.debug("CONFIG SET %s.%s = %s", cls.fullname(), k, v)
                     cls.__propinfo__[k]['default'] = v
                 except Exception as er:
-                    self.logger.error(er, exc_info=True)
+                    cls.logger.error(er, exc_info=True)
 
     @classmethod
-    def pbase_mro(cls):
+    def pbase_mro(cls, ngo_base=False):
+        base = ProtocolBase if ngo_base else pjo_classbuilder.ProtocolBase
         return (c for c in cls.__mro__ 
-                if pjo_util.safe_issubclass(c, ProtocolBase))
+                if pjo_util.safe_issubclass(c, base))
 
-    _object_attr_list_flatten = None
+    #_object_attr_list_flatten = None
+    #@classproperty
+    #def __object_attr_list_flatten__(cls):
+    #    """list of all available inherited attributes"""
+    #    if not cls._object_attr_list_flatten:
+    #        cls._object_attr_list_flatten = list(itertools.chain(*[
+    #            c.__object_attr_list__ for c in cls.pbase_mro()]))
+    #    return cls._object_attr_list_flatten
+#
+    #def get_property_list(self):
+    #    """list of all available direct properties"""
+    #    return itertools.chain(self.__prop_names__,
+    #                           self._extended_properties.keys())
+    #__property_list__ = property(get_property_list)
+
+
     @classproperty
-    def __object_attr_list_flatten__(cls):
-        """list of all available inherited attributes"""
-        if not cls._object_attr_list_flatten:
-            cls._object_attr_list_flatten = list(itertools.chain(*[
-                c.__object_attr_list__ for c in cls.pbase_mro()]))
-        return cls._object_attr_list_flatten
-
-    def get_property_list(self):
-        """list of all available direct properties"""
-        return itertools.chain(self.__prop_names__,
-                               self._extended_properties.keys())
-    __property_list__ = property(get_property_list)
-
-    @property
-    def __property_list_flatten__(self):
+    def __prop_names__flatten__(cls):
         """list of all available inherited properties"""
-        propnames = [c.__prop_names__ for c in self.pbase_mro()]
-        propnames += [self._extended_properties.keys()]
-        return list(itertools.chain(*propnames))
- 
-    def __getattr__(self, key):
+        return itertools.chain(*[getattr(c, '__prop_names__', ()) 
+            for  c in cls.pbase_mro()])
+
+
+    def __getattr__(self, name):
         """
         Allow getting class attributes, protected attributes and protocolBase attributes
         as optimally as possible. attributes can be looked up base on their name, or by
         their canonical name, using a correspondence map done with _set_key2attr
         """
-        if key.startswith("_"):
-            return collections.MutableMapping.__getattribute__(self, key)
-        elif key in self.__object_attr_list_flatten__:
-            return collections.MutableMapping.__getattribute__(self, key)
-            
+        # private and protected attributes at accessed directly
+        if name.startswith("_"):
+            return collections.MutableMapping.__getattribute__(self, name)
+
+        # check it s a standard attribute or method
+        for c in self.__class__.__mro__:
+            if pjo_util.safe_issubclass(c, pjo_classbuilder.ProtocolBase) and name in c.__object_attr_list__:
+                return object.__getattr__(self, name)
+            elif hasattr(c, name):
+                return object.__getattr__(self, name)
+
+        # load missing component
         self._load_missing()
-        # check access by attributes
-        prop, index = self._key2attr.get(key, (None, None))
-        if prop:
-            return getattr(self, prop) if index is None \
-                else getattr(self, prop)[index]
-        key = self.__prop_translated__.get(key, key)
-        if key not in self.__property_list_flatten__:
-            raise AttributeError("{0} is not a valid property of {1}".format(
-                key, self.fullname()))
 
-        elif name in self.__propinfo__:
-            # If its in __propinfo__, then it actually has a property defined.
-            # The property does special validation, so we actually need to
-            # run its setter. We get it from the class definition and call
-            # it directly. XXX Heinous.
-            prop = getattr(self.__class__, self.__prop_names__[name])
-            prop.fset(self, val)
+        propname = self.__prop_translated_fletten__.get(name, name)
 
-        mro = self.pbase_mro()
-        if key in next(mro).get_property_list(self):
-            return pjo_classbuilder.ProtocolBase.__getattr__(self, key)
+        # check it s not a schema defined property, we should not reach there
         for c in self.pbase_mro():
-            if key in c.__propinfo__:
-                prop = getattr(c, c.__prop_names__[name])
-                return prop.fset(self, val)
-        try:
-            val = self.__extensible__.instantiate(name, val)
-        except Exception as e:
-            raise validators.ValidationError(
-                "Attempted to set unknown property '{0}': {1} "
-                .format(name, e))
+            if propname in c.__propinfo__:
+                raise KeyError(name)
+        # check it s an extended property
+        if name in self._extended_properties:
+            return self._extended_properties[name]
 
-        self._extended_properties[name] = val
+        raise AttributeError("{0} is not a valid property of {1}".format(
+                             name, self.__class__.__name__))
+
 
     def __getitem__(self, key):
         """access property as in a dict"""
@@ -523,27 +512,39 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
             return collections.MutableMapping.__setattr__(self, name, val)
 
         self._load_missing()
+
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
             if index is None:
-                return pjo_classbuilder.ProtocolBase.__setattr__(self, prop, val)
+                return ProtocolBase.__setattr__(self, prop, val)
             else:
                 attr = getattr(self, prop)
                 attr[index] = val
                 return
+        
+        propname = self.__prop_translated_fletten__.get(name, name)
 
-        name = self.__prop_translated__.get(name, name)
-        if name not in self.__property_list_flatten__:
-            _ = self.__property_list_flatten__
+        for c in self.pbase_mro():
+            if name in c.__object_attr_list__:
+                return object.__setattr__(self, name, val)
+            elif name in c.__propinfo__:
+                # If its in __propinfo__, then it actually has a property defined.
+                # The property does special validation, so we actually need to
+                # run its setter. We get it from the class definition and call
+                # it directly. XXX Heinous.
+                prop = getattr(c, c.__prop_names__[propname])
+                prop.fset(self, val)
+                return
+
+        # This is an additional property of some kind
+        try:
+            val = self.__extensible__.instantiate(name, val)
+        except Exception as e:
             raise pjo_validators.ValidationError(
-                "Attempted to set unknown property %s.%s" % (self.fullname(), name))
-        mro = self.pbase_mro()
-        if name in next(mro).get_property_list(self):
-            return pjo_classbuilder.ProtocolBase.__setattr__(self, name, val)
-        for c in mro:
-            if name in c.__prop_names__:
-                return c.__setattr__(self, name, val)
-        assert False, '%s.%s' % (self.fullname(), name)
+                "Attempted to set unknown property '{0}' in {1}: {2} "
+                .format(name, self.__class__.__name__, e))
+        self._extended_properties[name] = val
+
 
     def _set_prop_value(self, prop, value):
         """
@@ -1046,8 +1047,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__extensible__'] = pjo_pattern_properties.ExtensibleValidator(
             nm, cls_schema, self)
 
+        name_translated_flatten = name_translated.copy()
+        for p in parents:
+            name_translated_flatten.update(getattr(p, '__prop_translated__', {}))
+
         props['__prop_names__'] = name_translation
         props['__prop_translated__'] = name_translated
+        props['__prop_translated_fletten__'] = name_translated_flatten
 
         # automatically adds property names to foreign keys
         for prop_name, prop in properties.items():

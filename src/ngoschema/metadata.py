@@ -128,7 +128,8 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
             #    self._set_prop_value('canonicalName', self._cname)
             if self._cname != old_value:
                 self.canonicalName = self._cname
-                touch_instance_prop(self, 'canonicalName')
+                self.canonicalName.touch(recursive=True)
+                #touch_instance_prop(self, 'canonicalName')
                 #for propname in self:
                 #    prop = self._properties.get(propname)
                 #    if hasattr(prop, '_update_cname'):
