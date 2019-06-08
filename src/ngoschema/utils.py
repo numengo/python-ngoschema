@@ -512,6 +512,7 @@ def truncate_coll(coll, max_length=20):
     return coll[0: max_length]
 
 
+
 def coll_pprint(coll, depth=2, max_length=20, sep=''):
     apply_through_collection
     # remove private members
