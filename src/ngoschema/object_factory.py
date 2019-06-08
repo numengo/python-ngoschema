@@ -104,9 +104,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         process_opts[
             'object_class'] = None  # to make sure object is not created here
-        ret = utils.process_collection(
-            #data, many=many, replace_refs=True, **process_opts)
-            data, many=many, replace_refs=True, **process_opts)
+        ret = utils.process_collection(data, many=many, **process_opts)
         return ret
 
     def create(self,
@@ -140,7 +138,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 return objs if many else objs[0]
         except Exception as er:
             raise IOError("Impossible to create %s from %s.\n%s" 
-                % (foc, pprint.pprint(data, depth=2), er))
+                % (foc, utils.dict_pprint(data), er))
 
     def create_from_document(self,
                              doc,

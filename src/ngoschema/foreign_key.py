@@ -17,51 +17,10 @@ import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from . import utils
 from .decorators import classproperty
-from .mixins import HasCache
-
-# Registry of alive foreign keys
-_fk_key_refs = collections.defaultdict(dict)
-
-logger = logging.getLogger(__name__)
+from .mixins import HasCache, HasLogger
 
 
-#def _unregister_foreign_key_ref(ref):
-#    id_ref = id(ref)
-#    for fk_refs in _fk_key_refs.values():
-#         if id_ref in fk_refs:
-#             fk_refs.pop(id_ref)
-#
-#def _register_foreign_key(fkey):
-#    key, ref = fkey.key, fkey._ref
-#    weakref.finalize(ref(), _unregister_foreign_key_ref, ref)
-#    if not key in _fk_key_refs:
-#        _fk_key_refs[key] = collections.defaultdict(set)
-#    _fk_key_refs[key][id(ref)].add(weakref.ref(fkey))
-#
-#def touch_all_refs(instance, key):
-#    #s = _fk_key_refs_size()
-#    raise Exception('should not be there')
-#    from .classbuilder import touch_instance_prop
-#    if key in _fk_key_refs:
-#        ref = weakref.ref(instance)
-#        id_ref = id(ref)
-#        for _fk in _fk_key_refs[key].get(id_ref, []):
-#            fk = _fk()
-#            if fk:
-#                fk._validated = False
-#                bp = fk.backPopulates
-#                if bp:
-#                    touch_instance_prop(ref , bp)
-
-        #for ref in (fk() for fk in _fk_key_refs[key].valuerefs() 
-        #            if fk()._ref and fk()._ref() is instance):
-        #    ref._validated = False
-        #    bp = ref.backPopulates
-        #    if bp:
-        #        touch_instance_prop(ref, bp)
-
-
-class ForeignKey(pjo_literals.LiteralValue, HasCache):
+class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
     _keys = None
     _foreignClass = None
     _ref = None
@@ -84,7 +43,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
             try:
                 cls._foreignClass = get_builder().resolve_or_build(cls.foreignSchemaUri)
             except Exception as er:
-                logger.error(er)
+                cls.logger.error(er)
             if not issubclass(cls._foreignClass, Metadata):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
                                 % (cls._foreignClass, Metadata))
@@ -281,7 +240,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
                     self._set_backref()
                     return ref
                 except Exception as er:
-                    logger.error(er)
+                    self.logger.error(er)
         # due to lazy loading, certain instances are not loaded
         # last chance - find a parent in Metadata instances and explore children
         try:
@@ -299,9 +258,9 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache):
             self.ref = ref
             return ref
         except Exception as er:
-            logger.error(er)
+            self.logger.error(er)
 
-        logger.warning('impossible to resolve %s %s=%s', 
+        self.logger.warning('impossible to resolve %s %s=%s', 
                        self.foreignClass, self.key, self._value)
 
     def _set_ref(self, instance):

@@ -16,6 +16,7 @@ import inspect
 import logging
 import pathlib
 import re
+import pprint
 import subprocess
 import sys
 from builtins import object
@@ -352,90 +353,38 @@ def apply_through_collection(coll, func, recursive=True):
     """
     Generic method to go through a complex collection
     and apply a transformation function on elements
+
+    func needs 2 argument: the collection and the key (string or int)
+    func can modify the collection on the fly
     """
-    #if is_mapping(coll):
-    if isinstance(coll, dict):
-        for k, v in coll.items():
-            func(coll, k)
-            # if recursive and (is_sequence(v) or is_mapping(v)):
-            if recursive and isinstance(v, (list, dict)):
-                apply_through_collection(coll[k], func, True)
-    #elif is_sequence(coll):
-    elif isinstance(coll, list):
-        for i, v in enumerate(coll):
-            func(coll, i)
-            #if recursive and (is_sequence(v) or is_mapping(v)):
-            if recursive and isinstance(v, (list, dict)):
-                apply_through_collection(coll[i], func, True)
+    is_map = is_mapping(coll)
+    for i, k in enumerate(coll):
+        func(coll, k if is_map else i)
+        if recursive:
+            v = coll.get(k) if is_map else (
+                coll[i] if i < len(coll) else 
+                None)
+            if is_collection(v):
+                apply_through_collection(v, func, recursive)
 
 
-def only_keys(icontainer, keys, recursive=False):
-    """
-    Keep only specific keys in a container
-
-    :param icontainer: input container
-    :param keys: keys to keep
-    :type keys: list
-    :param recursive: process container recursively
-    """
-    # can't use apply_through_collection because we would delete while iterating
-    ocontainer = copy.deepcopy(icontainer)
-
-    def delete_fields_not_of(container, fields, recursive):
-        if is_mapping(container):
-            keys = set(container.keys())
-            to_del = fields.intersection(keys)
-            left = keys.difference(fields)
-            for k in to_del:
-                del container[k]
-            if recursive:
-                for k in left:
-                    delete_fields_not_of(container[k], fields, recursive)
-        elif is_sequence(container):
-            for i, v in enumerate(container):
-                delete_fields_not_of(container[i], fields, recursive)
-        return container
-
-    ocontainer = delete_fields_not_of(ocontainer, set(keys), recursive)
-    return ocontainer
-
-
-def but_keys(icontainer, keys, recursive=False):
-    """
-    Remove specific keys in a container
-
-    :param icontainer: input container
-    :param keys: keys to remove
-    :type keys: list
-    :param recursive: process container recursively
-    """
-    # can't use apply_through_collection because we would delete while iterating
-    ocontainer = copy.deepcopy(icontainer)
-
-    def delete_fields(container, fields, recursive):
-        if is_mapping(container):
-            keys = set(container.keys())
-            to_del = fields.intersection(keys)
-            left = keys.difference(fields)
-            for k in to_del:
-                del container[k]
-            if recursive:
-                for k in left:
-                    delete_fields(container[k], fields, recursive)
-        elif is_sequence(container):
-            for i, v in enumerate(container):
-                delete_fields(container[i], fields, recursive)
-        return container
-
-    ocontainer = delete_fields(ocontainer, set(keys), recursive)
-    return ocontainer
+def filter_keys(container, keys, keep=True, recursive=False):
+    if is_mapping(container):
+        for k in keys.intersection(container.keys()):
+            if not keep:
+                container.pop(k)
+            elif recursive:
+                filter_keys(container[k], keys, keep, recursive)
+    elif is_sequence(container):
+        for v in container:
+            filter_keys(v, keys, keep, recursive)
+    return container
 
 
 def process_collection(data,
                        only=(),
                        but=(),
                        many=False,
-                       replace_refs=False,
                        object_class=None,
                        object_from_schema=None,
                        **opts):
@@ -460,52 +409,13 @@ def process_collection(data,
                 d, only, but, object_class=object_class, **opts) for d in datas
         ]
 
-    if replace_refs:
-        from .document import resolve_ref
-
-        # first replace relative canonical names before expanding $ref s
-        cn = data.get('canonicalName')
-        if cn:
-            def _replace_relative_refs(coll, key, cname):
-                value = coll[key]
-                try:
-                    if utils.is_string(value) and value and value[0] == '#' and '/' not in value:
-                        if cname:
-                            coll[key] = value.replace('#', '%s.' % cname , 1)
-                        else:
-                            return value[1:]
-                except Exception:
-                    pass
-            
-            apply_through_collection(data, 
-                                     lambda c, k: _replace_relative_refs(c, k, cn), 
-                                     recursive=True)
-
-        def _replace_refs(coll, key):
-            if isinstance(coll[key], dict) and '$ref' in coll[key]:
-                ref = coll[key]['$ref']
-                try:
-                    #coll[key] = copy.deepcopy(resolve_ref(ref))
-                    coll[key] = resolve_ref(ref)
-                    # replace internal canonical name references
-                    cn = coll[key].get('canonicalName')
-                    if cn:
-                        apply_through_collection(coll[key], 
-                                     lambda c, k: _replace_relative_refs(c, k, cn), 
-                                     recursive=True)
-                except Exception as er:
-                    logger.warning(
-                        'unable to resolve reference %s', ref, exc_info=True)
-
-        apply_through_collection(data, _replace_refs, recursive=True)
-
-    if only:
+    if only or but:
         rec = opts.get("fields_recursive", False)
-        data = only_keys(data, only, rec)
-
-    if but:
-        rec = opts.get("fields_recursive", False)
-        data = but_keys(data, but, rec)
+        data = copy.deepcopy(data)
+        if only:
+            data = filter_keys(data, set(only), keep=True, recursive=rec)
+        if but:
+            data = filter_keys(data, set(but), keep=False, recursive=rec)
 
     if object_class is not None:
         return object_class(**data)
@@ -569,3 +479,54 @@ def casted_as(instance, cls):
     instance.__class__ = cls
     yield instance
     instance.__class__ = instance_cls
+
+
+def mapping_pprint(mapping, depth=2, max_length=20, sep=''):
+    from .classbuilder import ProtocolBase
+    if isinstance(mapping, ProtocolBase):
+        def process_mapping(m, level=0):
+            is_pb = isinstance(m, ProtocolBase)
+            def f(m, i, k):
+                return m[k] if is_pb else m[i]
+            return {k: process_mapping(f(m, i, k), level+1) 
+                       if is_collection(f(m, i, k))
+                       else f(m, i, k)
+                       for i, k in enumerate(m) if level<depth}
+        out = pprint.pformat(process_mapping(mapping)).split('\n')+['(...)']
+    else:
+        out = pprint.pformat(mapping, depth=depth).split('\n')
+        if len(out)>max_length:
+            out = out[0:max_length/2] + ['...'] + out[-max_length/2:]
+    return sep.join(out)
+
+def filter_protected(coll, key):
+    # remove protected and private attributes
+    if is_mapping(coll) and key[0]=='_':
+        coll.drop(key)
+    
+def truncate_coll(coll, max_length=20):
+    if not len(coll) > max_length:
+        return coll
+    if is_mapping(coll):
+        return {k: v for i, (k, v) in enumerate(coll) if i < max_length}
+    return coll[0: max_length]
+
+
+def coll_pprint(coll, depth=2, max_length=20, sep=''):
+    apply_through_collection
+    # remove private members
+    if is_mapping(coll):
+
+    trunc = len(coll)>20
+    if trunc:
+        if is_mapping(coll):
+            coll = {k: v for i, (k, v) in enumerate(coll.items()) if i < max_length}
+        else:
+            coll = coll[0:20]
+        coll[k] if is_mapping(coll) else coll[i] for i, k in enumerate(coll) if i < 20
+
+def any_pprint(val, **kwargs):
+    if is_mapping(val):
+        return mapping_pprint(val, **kwargs)
+    else:
+        return str(val)

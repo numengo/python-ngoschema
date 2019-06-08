@@ -213,7 +213,7 @@ class FunctionInspector(object):
         node_iter.visit(ast.parse(inspect.getsource(_module)))
 
     def __repr__(self):
-        return "<FunctionInsp %s>" % self.name.__repr__()
+        return "<FunctionInsp %s>" % repr(self.name)
 
 
 class ClassInspector(object):

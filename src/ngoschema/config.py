@@ -120,10 +120,10 @@ class ConfigLoader(object):
 
 DEFAULT_LOGGING = { 
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': { 
         'console': {
-            'format': '%(levelname)s  %(name)s: %(message)s'
+            'format': '%(levelname)s  %(name)s %(funcName)s: %(message)s'
         },
         'standard': { 
             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -136,7 +136,6 @@ DEFAULT_LOGGING = {
     'handlers': { 
         'console': {
             'class': 'logging.StreamHandler',
-            'level': 'INFO',
             'formatter': 'console',
             'stream': 'ext://sys.stdout',  # Default is stderr
         }
@@ -144,18 +143,19 @@ DEFAULT_LOGGING = {
     'loggers': { 
         '': {  # root logger
             'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True
+            'level': 'INFO'
         },
         'ngoschema': { 
-            'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True
         },
         'ngomf': { 
-            'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True
         },
+        'ngoschema.document.Document': {
+            'level': 'INFO',
+        },
+        'ngoschema.schema_metaclass': {
+            'level': 'INFO',
+        }
     } 
 }

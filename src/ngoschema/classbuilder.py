@@ -46,7 +46,7 @@ from .uri_identifier import resolve_uri
 from .validators import DefaultValidator
 from .foreign_key import ForeignKey
 from .wrapper_types import ArrayWrapper
-from .mixins import HasCache, HasLogger
+from .mixins import HasCache, HasLogger, HasShortRepr
 
 logger = pjo_classbuilder.logger
 
@@ -113,7 +113,7 @@ _reserved_fields_defaults = {
 }
 
 
-class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
+class ProtocolBase(HasCache, HasLogger, HasShortRepr, pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
     
     Protocol shared by all instances created by the class builder. It extends the 
@@ -144,9 +144,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
     """
 
     # additional private and protected props
-    _short_repr_ = True
     _lazy_loading = dict()
-    _ref = None
     _validator = None
     _key2attr = dict()
     _instances = weakref.WeakValueDictionary()
@@ -165,13 +163,10 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
                 cls.__schema__, resolver=get_resolver())
             cls._validator._setDefaults = True
         # specific treatment in case schemaUri redefines the class to create
-        if len(args) == 1 and utils.is_string(args[0]):
-            ref = args[0]
-            if '/' in ref:
-                props = resolve_uri(ref)
-            else:
-                props = resolve_cname(ref)
-            props['$ref'] = ref
+        if len(args)==1 and utils.is_string(args[0]):
+            props['$ref'] = args[0]
+        if '$ref' in props:
+            props.update(resolve_uri(props.pop('$ref')))
         schemaUri = props.get('schemaUri', None)
         if schemaUri is not None and schemaUri != cls.__schema__.get('$id'):
             builder = get_builder()
@@ -221,8 +216,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
         if len(args)==1 and utils.is_string(args[0]):
             props['$ref'] = args[0]
         if '$ref' in props:
-            self._ref = props.pop('$ref')
-            self._load_ref()
+            props.update(resolve_uri(props.pop('$ref')))
 
         # we set name now, but it will be overwritten when data is loaded
         # important for canonical names
@@ -244,15 +238,20 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
             # validate data to make sure no problem will appear at creation
             if self._validate_lazy:
                 dont_check = list(_reserved_fields_defaults.keys()) + ['$ref']
-                #self._validator.validate(utils.process_collection(props, replace_refs=True, but=dont_check, fields_recursive=True))
+                #self._validator.validate(utils.process_collection(props, but=dont_check, fields_recursive=True))
             # lazy loading treatment: add a flag to 1st level objects data only
             # in level 1, lazy_loading is removed calling __init__
             self._lazy_loading = props
             # we add it to _lazy_loading dictionary to make it queriable
             if isinstance(self, Metadata):
                 self._lazy_loading.setdefault('canonicalName', self.cname)
-
-        if not self._lazy_loading and not self._ref:
+            # necessary for proper behaviour of object, normally done in init
+            self._extended_properties = dict()
+            self._properties = dict(
+                zip(self.__prop_names__.values(),
+                    [None
+                     for x in six.moves.xrange(len(self.__prop_names__))]))
+        else:
             try:
                 pjo_classbuilder.ProtocolBase.__init__(self, **props)
             except Exception as er:
@@ -260,13 +259,6 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
                 raise er
             # we set key2attr after to avoid collusion at initialization between
             self._set_key2attr(props)
-        else:
-            # necessary for proper behaviour of object, normally done in init
-            self._extended_properties = dict()
-            self._properties = dict(
-                zip(self.__prop_names__.values(),
-                    [None
-                     for x in six.moves.xrange(len(self.__prop_names__))]))
 
     def __hash__(self):
         """hash function to store objects references"""
@@ -316,28 +308,14 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
             out[prop] = value
         return out
 
-    def _load_ref(self):
-        try:
-            from .metadata import Metadata
-            if '/' in self._ref:
-                data = resolve_uri(self._ref)
-            elif isinstance(self, Metadata):
-                data = self.resolve_cname(self._ref)
-            self._validator.validate(data)
-            self._set_key2attr(data)
-            self._lazy_loading = data
-            self._ref = None
-            return True
-        except Exception as er:
-            logger.warning(er, exc_info=True)
-            return False
-
     def _load_lazy(self):
         """
         lazy loading: initialize the object with data stored in _lazyloading attribute
         will only initialize 1st level ones (and do a proper validation)
         """
         if not isinstance(self._lazy_loading, dict):
+            return False
+        if not self._lazy_loading:
             return False
         data = self._lazy_loading
         try:
@@ -360,15 +338,6 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
             logger.warning('problem lazy loading %s' % self)
             logger.warning(er, exc_info=True)
             raise er
-            return False
-
-    def _load_missing(self):
-        """entry point to trigger methods which are supposed to load missing data (or lazy load)"""
-        if self._ref:
-            return self._load_ref()
-        if self._lazy_loading:
-            return self._load_lazy()
-        return False
 
     def validate(self):
         if not self._lazy_loading:
@@ -418,7 +387,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
 
         :param overwrite: overwrite values already set
         """
-        propnames = cls.__prop_names__flatten__
+        propnames = cls.__prop_names_flatten__
 
 
         defconf = objects_config_loader.get_values(cls.fullname(), propnames)
@@ -436,24 +405,8 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
         return (c for c in cls.__mro__ 
                 if pjo_util.safe_issubclass(c, base))
 
-    #_object_attr_list_flatten = None
-    #@classproperty
-    #def __object_attr_list_flatten__(cls):
-    #    """list of all available inherited attributes"""
-    #    if not cls._object_attr_list_flatten:
-    #        cls._object_attr_list_flatten = list(itertools.chain(*[
-    #            c.__object_attr_list__ for c in cls.pbase_mro()]))
-    #    return cls._object_attr_list_flatten
-#
-    #def get_property_list(self):
-    #    """list of all available direct properties"""
-    #    return itertools.chain(self.__prop_names__,
-    #                           self._extended_properties.keys())
-    #__property_list__ = property(get_property_list)
-
-
     @classproperty
-    def __prop_names__flatten__(cls):
+    def __prop_names_flatten__(cls):
         """list of all available inherited properties"""
         return itertools.chain(*[getattr(c, '__prop_names__', ()) 
             for  c in cls.pbase_mro()])
@@ -477,7 +430,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
                 return object.__getattr__(self, name)
 
         # load missing component
-        self._load_missing()
+        self._load_lazy()
 
         propname = self.__prop_translated_fletten__.get(name, name)
 
@@ -496,7 +449,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
     def __getitem__(self, key):
         """access property as in a dict"""
         try:
-            self._load_missing()
+            self._load_lazy()
             ret = self._properties.get(key)
             return ret if ret is not None else getattr(self, key)
         except AttributeError as er:
@@ -511,7 +464,7 @@ class ProtocolBase(pjo_classbuilder.ProtocolBase, HasCache, HasLogger):
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
 
-        self._load_missing()
+        self._load_lazy()
 
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
@@ -1133,7 +1086,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     info['RO_active'] = True
 
     def getprop(self):
-        self._load_missing()
+        self._load_lazy()
         self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, propname))
         if '_properties' not in self.__dict__:
             return
@@ -1164,9 +1117,9 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
     def setprop(self, val):
         from .metadata import Metadata
-        self._load_missing()
+        self._load_lazy()
         self.logger.debug(
-            pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, propname, val))
+            pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, propname, utils.any_pprint(val)))
         if info['RO_active'] and propname in self.__read_only__:
             # in case default has not been set yet
             if not (propname in self.__has_default__ and self._properties.get(propname) is None):
@@ -1346,7 +1299,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
 
     def delprop(self):
-        self._load_missing()
+        self._load_lazy()
         self.logger.debug(pjo_util.lazy_format("DEL {!r}.{!s}", self, propname))
         if propname in self.__required__:
             raise AttributeError("'%s' is required" % propname)

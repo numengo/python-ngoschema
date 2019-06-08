@@ -7,7 +7,10 @@ import weakref
 from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
+
+from .uri_identifier import resolve_uri
 from .mixins import HasCache
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +63,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HasCache):
 
         typed_elems = []
         for elem, typ in zip(self.data, type_checks):
+            # replace references
+            if utils.is_mapping(elem) and '$ref' in elem:
+                elem.update(resolve_uri(elem.pop('$ref')))
+            # check types
             if isinstance(typ, dict):
                 for param, paramval in six.iteritems(typ):
                     validator = registry(param)

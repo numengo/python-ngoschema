@@ -83,8 +83,20 @@ class HasLogger:
     @classmethod
     def init_class_logger(cls):
         cls.logger = logging.getLogger(utils.fullname(cls))
+        #cls.logger.level = cls.logger.parent.level
+        #cls.logger.handlers = cls.logger.parent.handlers
+        #cls.logger.propagate = True
 
     @classmethod
     def set_logLevel(cls, logLevel):
         level = logging.getLevelName(logLevel)
         cls.logger.setLevel(level)
+
+class HasShortRepr:
+    _short_repr_ = True
+
+    def __repr__(self):
+        if not self._short_repr_:
+            return super().__repr__(self)
+        repr = self.__class__.__name__
+        return "<%s id=%i>" % (repr, id(self))
