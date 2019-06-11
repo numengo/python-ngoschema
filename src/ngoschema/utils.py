@@ -349,23 +349,27 @@ def to_set(x):
         return x
 
 
-def apply_through_collection(coll, func, recursive=True):
+def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs):
     """
     Generic method to go through a complex collection
-    and apply a transformation function on elements
-
-    func needs 2 argument: the collection and the key (string or int)
+    and apply a transformation function 'func' on each element
     func can modify the collection on the fly
+
+    func needs 3 arguments:
+        * the collection
+        * the key (string for dict or int for sequences)
+        * the level of depth in collection
+        * it is also given the additional func_kwargs keyword arguments
     """
     is_map = is_mapping(coll)
-    for i, k in enumerate(coll):
-        func(coll, k if is_map else i)
+    for i, k in enumerate(list(coll.keys()) if is_map else coll):
+        func(coll, k if is_map else i, level, **func_kwargs)
         if recursive:
             v = coll.get(k) if is_map else (
                 coll[i] if i < len(coll) else 
                 None)
             if is_collection(v):
-                apply_through_collection(v, func, recursive)
+                apply_through_collection(v, func, recursive, level=level+1, **func_kwargs)
 
 
 def filter_keys(container, keys, keep=True, recursive=False):
@@ -499,35 +503,44 @@ def mapping_pprint(mapping, depth=2, max_length=20, sep=''):
             out = out[0:max_length/2] + ['...'] + out[-max_length/2:]
     return sep.join(out)
 
-def filter_protected(coll, key):
+
+def filter_protected(coll, key, level):
     # remove protected and private attributes
     if is_mapping(coll) and key[0]=='_':
-        coll.drop(key)
-    
+        coll.pop(key)
+
+
+def filter_depth(coll, key, level, max_depth=-1):
+    if is_mapping(coll[key]) and level == max_depth:
+        coll[key] = '...'
+
+
 def truncate_coll(coll, max_length=20):
     if not len(coll) > max_length:
         return coll
     if is_mapping(coll):
-        return {k: v for i, (k, v) in enumerate(coll) if i < max_length}
+        return {k: v for i, (k, v) in enumerate(coll.items()) if i < max_length}
     return coll[0: max_length]
 
 
-
-def coll_pprint(coll, depth=2, max_length=20, sep=''):
-    apply_through_collection
+def coll_pprint(coll, max_depth=2, max_length=20, sep=''):
+    coll = copy.deepcopy(coll)
     # remove private members
-    if is_mapping(coll):
+    apply_through_collection(coll, filter_protected)
 
-    trunc = len(coll)>20
+    trunc = len(coll) > max_length
     if trunc:
-        if is_mapping(coll):
-            coll = {k: v for i, (k, v) in enumerate(coll.items()) if i < max_length}
-        else:
-            coll = coll[0:20]
-        coll[k] if is_mapping(coll) else coll[i] for i, k in enumerate(coll) if i < 20
+        coll = truncate_coll(coll, max_length)
+
+    # filter in depth
+    apply_through_collection(coll, filter_depth, max_depth=max_depth)
+    lines = pprint.pformat(coll).split('\n')
+    if trunc:
+        lines.append('(...)')
+    return sep.join(lines)
 
 def any_pprint(val, **kwargs):
     if is_mapping(val):
-        return mapping_pprint(val, **kwargs)
+        return coll_pprint(val, **kwargs)
     else:
         return str(val)
