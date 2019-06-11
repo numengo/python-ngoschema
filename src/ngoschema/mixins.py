@@ -76,6 +76,17 @@ class HasCache:
         self.validate()
         self.set_clean()
 
+    # add a _validated property for compatiblity with Literals
+    def get_validated(self):
+        return not self._dirty
+
+    def set_validated(self, value):
+        if value:
+            self.set_clean()
+        else:
+            self.touch()
+    _validated = property(get_validated, set_validated)
+
 
 class HasLogger:
     logger = None

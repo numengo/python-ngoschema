@@ -105,7 +105,6 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
         HasCache.__init__(self)
         self._value = None
         self._ref = None
-        #self._validated = True
         self._dirty = False
         if value is None:
             return
@@ -116,7 +115,6 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
             self.ref = value.ref
             self._value = value._value
             self._dirty = value._dirty
-            #self._validated = value._validated
         elif isinstance(value, ArrayWrapper):
             self.ref = value._parent()
             #self._value = str(value._parent()._get_prop_value(self.key))
