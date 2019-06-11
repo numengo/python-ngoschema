@@ -66,9 +66,9 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
     _onDelete = None
     @classproperty
     def onDelete(cls):
-        if not self._onDelete:
+        if not cls._onDelete:
             _onDelete = cls.propinfo('foreignKey').get('onDelete')
-        return self._onDelete
+        return cls._onDelete
 
     _key = None
     @classproperty

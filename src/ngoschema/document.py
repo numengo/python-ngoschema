@@ -12,7 +12,6 @@ from __future__ import unicode_literals
 import codecs
 
 import arrow
-import magic
 import six
 from future.utils import with_metaclass
 from ngofile.list_files import list_files
@@ -135,6 +134,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             num /= 1024.0
 
     def get_mimetype(self):
+        import magic
         magic.Magic(mime=True).from_file(str(self.filepath))
 
     def get_uri(self):

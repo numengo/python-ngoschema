@@ -138,7 +138,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 return objs if many else objs[0]
         except Exception as er:
             raise IOError("Impossible to create %s from %s.\n%s" 
-                % (foc, utils.dict_pprint(data), er))
+                % (foc, utils.coll_pprint(data), er))
 
     def create_from_document(self,
                              doc,
