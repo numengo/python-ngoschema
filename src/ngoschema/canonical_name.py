@@ -107,17 +107,3 @@ def resolve_cname(cn, parent=None, cn_key=CN_KEY):
     for p in path:
         cur = cur[p]
     return cur
-
-
-def get_relative_cname(to_rel, base):
-    cn = to_rel.cname if hasattr(to_rel, "cname") else to_rel
-    cn_base = base.cname if hasattr(base, "cname") else base
-    if not cn_base or not cn:
-        return cn
-    if cn == cn_base:
-        return ""
-    if cn.startswith(cn_base):
-        i = len(cn_base) + 1 # TRICKY: '+ 1 is' because we have a '.'
-        return cn[i:]
-    else:
-        return cn

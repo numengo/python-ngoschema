@@ -28,14 +28,14 @@ def test_DocumentRegistry2():
     print('list_files', time.time() - s, len(ls))
     s = time.time()
     os = [
-        Document(filepath=f, _lazy_loading=False) for f in list_files(
+        Document(filepath=f, lazy_loading=False) for f in list_files(
             r'D:\CODES\python-ngomf\src\ngomf\models\draft-05\Ngo',
             recursive=True)
     ]
     print('list_files no lazy', time.time() - s, len(os))
     s = time.time()
     os = [
-        Document(filepath=f, _lazy_loading=True, _validate_lazy=False)
+        Document(filepath=f, lazy_loading=True, _validate_lazy=False)
         for f in list_files(
             r'D:\CODES\python-ngomf\src\ngomf\models\draft-05\Ngo',
             recursive=True)
@@ -43,7 +43,7 @@ def test_DocumentRegistry2():
     print('list_files lazy no validation', time.time() - s, len(os))
     s = time.time()
     os = [
-        Document(filepath=f, _lazy_loading=True) for f in list_files(
+        Document(filepath=f, lazy_loading=True) for f in list_files(
             r'D:\CODES\python-ngomf\src\ngomf\models\draft-05\Ngo',
             recursive=True)
     ]

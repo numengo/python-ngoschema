@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .jinja2 import templates_module_loader
 
-from .classbuilder import ProtocolBase
+from ngoschema.protocol_base import ProtocolBase
 from .classbuilder import get_builder
 from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
@@ -19,7 +19,6 @@ __all__ = [
     'DEFAULT_MS_URI',
     'get_resolver',
     'get_builder',
-    'ProtocolBase',
     'SchemaMetaclass',
     'ValidationError'
 ]

@@ -27,12 +27,10 @@ import inflection
 import six
 from ngofile.pathlist import PathList
 from past.builtins import basestring
-from ngoschema import utils
 
 from ._qualname import qualname
-from .decorators import take_arrays
 from .exceptions import InvalidValue
-
+from .mixins import HasCache, HasParent
 
 class GenericRegistry(object):
     def __init__(self):
@@ -361,6 +359,8 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
         * the level of depth in collection
         * it is also given the additional func_kwargs keyword arguments
     """
+    if not coll:
+        return
     is_map = is_mapping(coll)
     for i, k in enumerate(list(coll.keys()) if is_map else coll):
         func(coll, k if is_map else i, level, **func_kwargs)
@@ -485,62 +485,43 @@ def casted_as(instance, cls):
     instance.__class__ = instance_cls
 
 
-def mapping_pprint(mapping, depth=2, max_length=20, sep=''):
-    from .classbuilder import ProtocolBase
-    if isinstance(mapping, ProtocolBase):
-        def process_mapping(m, level=0):
-            is_pb = isinstance(m, ProtocolBase)
-            def f(m, i, k):
-                return m[k] if is_pb else m[i]
-            return {k: process_mapping(f(m, i, k), level+1) 
-                       if is_collection(f(m, i, k))
-                       else f(m, i, k)
-                       for i, k in enumerate(m) if level<depth}
-        out = pprint.pformat(process_mapping(mapping)).split('\n')+['(...)']
-    else:
-        out = pprint.pformat(mapping, depth=depth).split('\n')
-        if len(out)>max_length:
-            out = out[0:max_length/2] + ['...'] + out[-max_length/2:]
-    return sep.join(out)
-
-
-def filter_protected(coll, key, level):
-    # remove protected and private attributes
-    if is_mapping(coll) and key[0]=='_':
-        coll.pop(key)
-
-
-def filter_depth(coll, key, level, max_depth=-1):
-    if is_mapping(coll[key]) and level == max_depth:
-        coll[key] = '...'
-
-
-def truncate_coll(coll, max_length=20):
-    if not len(coll) > max_length:
-        return coll
-    if is_mapping(coll):
-        return {k: v for i, (k, v) in enumerate(coll.items()) if i < max_length}
-    return coll[0: max_length]
-
-
-def coll_pprint(coll, max_depth=2, max_length=20, sep=''):
-    coll = copy.deepcopy(coll)
+def coll_pprint(coll, max_length=20, sep=''):
+    is_map = is_mapping(coll)
     # remove private members
-    apply_through_collection(coll, filter_protected)
+    if is_map:
+        coll = {k: v for k, v in coll.items() if k[0] != '_'}
 
     trunc = len(coll) > max_length
-    if trunc:
-        coll = truncate_coll(coll, max_length)
+    if is_map:
+        coll = {k: v
+                for i, (k, v) in enumerate(coll.items())
+                if i < max_length}
+    else:
+        coll = coll[0: max_length]
 
-    # filter in depth
-    apply_through_collection(coll, filter_depth, max_depth=max_depth)
+    if is_mapping(coll):
+        coll = {k: str(v) if isinstance(v, HasCache) else ()
+                for k, v in coll.items()}
+    for i, k in enumerate(coll):
+        ik = k if is_map else i
+        v = coll[ik]
+        coll[ik] = str(v) if isinstance(v, HasParent) else (
+            '{...}' if is_mapping(v) and v else (
+                '[...]' if is_sequence(v) and v else str(v)
+            )
+        )
+
     lines = pprint.pformat(coll).split('\n')
     if trunc:
         lines.append('(...)')
     return sep.join(lines)
 
+
 def any_pprint(val, **kwargs):
-    if is_mapping(val):
+    # easiest way of testing for protocol basee
+    if isinstance(val, HasCache):
+        return str(val)
+    elif is_collection(val):
         return coll_pprint(val, **kwargs)
     else:
         return str(val)

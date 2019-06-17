@@ -1,52 +1,62 @@
-import collections
-import logging
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
+import logging
+import sys
 import six
-import weakref
 
 from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 
 from .uri_identifier import resolve_uri
-from .mixins import HasCache
+from .mixins import HasCache, HasParent, HandleRelativeCname
 from . import utils
 
 logger = logging.getLogger(__name__)
 
 
-class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HasCache):
+class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParent, HasCache):
     """ A wrapper for array-like structures.
 
     This implements all of the array like behavior that one would want,
     with a dirty-tracking mechanism to avoid constant validation costs.
     """
 
-    #def __delitem__(self, index):
-    #    pjo_wrapper_types.ArrayWrapper.__delitem__(self, index)
-#
-    #def insert(self, index, value):
-    #    pjo_wrapper_types.ArrayWrapper.insert(self, index, value)
- #
-    #def __setitem__(self, index, value):
-    #    pjo_wrapper_types.ArrayWrapper.__delitem__(self, index, value)
-#
-    #def __getitem__(self, idx):
-    #    pjo_wrapper_types.ArrayWrapper.__getitem__(self, idx)
-
     def __init__(self, ary):
         HasCache.__init__(self)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
 
-    #def validate(self):
-    #    return pjo_wrapper_types.ArrayWrapper.validate(self)
+    def __str__(self):
+        return "<%s=%s>" % (
+            self.__class__.__name__,
+            [str(e) for i, e in enumerate(self.typed_elems)
+             if i < 20] + (['...'] if len(self) >= 20 else [])
+        )
+
+    def __repr__(self):
+        return "<%s=%s>" % (
+            self.__class__.__name__,
+            [repr(e) for e in self.typed_elems]
+        )
+
+    def __eq__(self, other):
+        if not utils.is_sequence(other):
+            return False
+        if not HasCache.__eq__(self, other):
+            return False
+        if len(self) != len(other):
+            return False
+        for i, e in enumerate(self):
+            if e != other[i]:
+                return False
+        return True
 
     def validate_items(self):
-        if not self._dirty:
-            return
-        if not self._parent or not self._parent():
+        if not self._dirty and self._typed is not None:
+            return self._typed
+        if not self.parent_ref:
             return pjo_wrapper_types.ArrayWrapper.validate_items(self)
-        from .metadata import Metadata
         from python_jsonschema_objects import classbuilder
 
         if self.__itemtype__ is None:
@@ -75,96 +85,76 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HasCache):
                 typed_elems.append(elem)
 
             elif util.safe_issubclass(typ, classbuilder.LiteralValue):
+                if hasattr(typ, 'foreignClass') and str(elem).startswith('#'):
+                    elem = self._clean_cname(elem)
                 val = typ(elem)
-                val.validate_if_dirty()
+                val.do_validate()
                 typed_elems.append(val)
             elif util.safe_issubclass(typ, classbuilder.ProtocolBase):
                 if not isinstance(elem, typ):
                     try:
                         if isinstance(elem, (six.string_types, six.integer_types, float)):
                             val = typ(elem)
-                        elif issubclass(typ, Metadata):
-                            val = typ(parent=self._parent(), **util.coerce_for_expansion(elem))
                         else:
-                            val = typ(**util.coerce_for_expansion(elem))
+                            val = typ(**self.parent_ref._obj_conf,
+                                      **util.coerce_for_expansion(elem))
                     except TypeError as e:
                         raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
                                               .format(elem, typ, e))
                 else:
                     val = elem
-                val.validate_if_dirty()
+                if isinstance(val, HasParent):
+                    val.set_parent(self.parent_ref)
+                val.do_validate()
                 typed_elems.append(val)
 
             elif util.safe_issubclass(typ, ArrayWrapper):
                 val = typ(elem)
                 # CRn: set parent before validation
-                val.parent = self._parent()
-                val.validate_if_dirty()
+                val.set_parent(self.parent_ref)
+                val.do_validate()
                 typed_elems.append(val)
 
             elif isinstance(typ, classbuilder.TypeRef) and isinstance(elem, typ.ref_class):
                 val = elem
-                val.validate_if_dirty()
+                val.do_validate()
                 typed_elems.append(val)
 
             elif isinstance(typ, (classbuilder.TypeProxy, classbuilder.TypeRef)):
                 try:
                     if isinstance(elem, (six.string_types, six.integer_types, float)):
                         val = typ(elem)
-                    elif issubclass(typ.ref_class, Metadata):
-                        val = typ(parent=self._parent(), **util.coerce_for_expansion(elem))
                     else:
-                        val = typ(**util.coerce_for_expansion(elem))
+                        val = typ(**self.parent_ref._obj_conf,
+                                  **util.coerce_for_expansion(elem))
                 except TypeError as e:
-                    raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
-                                          .format(elem, typ, e))
+                    six.reraise(ValidationError,
+                                ValidationError("'%s' is not a valid value for '%s'" % (elem, typ)),
+                                sys.exc_info()[2])
                 else:
-                    val.validate_if_dirty()
+                    if isinstance(val, HasParent):
+                        val.set_parent(self.parent_ref)
+                    val.do_validate()
                     typed_elems.append(val)
 
         self._typed = typed_elems
+        self.set_items_parent()
         self.set_clean()
+        return self._typed
         #pjo_wrapper_types.ArrayWrapper.validate_items(self)
         #if self._parent:
         #    self.set_items_parent()
     
     def set_items_parent(self):
-        from .metadata import Metadata
-        from .classbuilder import ProtocolBase
-        if not self._parent or not self._typed:
+        if not self.parent_ref or not self._typed:
             return
         for item in self._typed:
-            if isinstance(item, ArrayWrapper) and item._parent is not self._parent:
-                item.parent = self._parent()
-            elif isinstance(item, Metadata) and \
-                (not item._parent or item._parent._ref is not self._parent):
-                if item._lazy_loading:
-                    item._set_prop_value('parent', self._parent())
-                else:
-                    item.parent = self._parent()                
-        #self._update_cname()
-    
-    #def _update_cname(self):
-    #    if self._typed:
-    #        for item in self._typed:
-    #            if hasattr(item, '_update_cname') and not getattr(item, '_lazy_loading', False):
-    #                item._update_cname()
+            if isinstance(item, HasParent) and item._parent is not self._parent:
+                item.set_parent(self.parent_ref)
 
-    _parent = None
-
-    def get_parent(self):
-        return self._parent() if self._parent else None
-    
     def set_parent(self, value):
-        self._parent = weakref.ref(value)
+        HasParent.set_parent(self, value)
         self.set_items_parent()
-        self.touch(recursive=True)
-        #from . import classbuilder
-        #for elem in self._typed:
-        #    if util.safe_issubclass(typ, ProtocolBase):
-        #        pass
-
-    parent = property(get_parent, set_parent)        
 
     @staticmethod
     def create(name, item_constraint=None, **addl_constraints):
@@ -181,7 +171,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HasCache):
         from python_jsonschema_objects.classbuilder import LiteralValue
         from python_jsonschema_objects.classbuilder import ProtocolBase as pjo_ProtocolBase
         from python_jsonschema_objects.classbuilder import TypeProxy, TypeRef
-        from .classbuilder import ProtocolBase
+        from ngoschema import ProtocolBase
         klassbuilder = addl_constraints.pop("classbuilder", None)
         props = {}
 

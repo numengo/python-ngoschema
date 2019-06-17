@@ -4,8 +4,7 @@ import pytest
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from ngoschema import ValidationError
-from ngoschema import ProtocolBase
+from ngoschema import ValidationError, ProtocolBase
 from ngoschema import SchemaMetaclass
 
 def hybrid_class():

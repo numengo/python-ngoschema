@@ -15,8 +15,7 @@ import re
 from python_jsonschema_objects.literals import LiteralValue
 
 from . import utils
-from .classbuilder import get_descendant
-from .classbuilder import ProtocolBase
+from .protocol_base import get_descendant, ProtocolBase
 from .canonical_name import CN_KEY
 
 _operators = [

@@ -10,14 +10,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import weakref
-import logging
-import collections
 
 import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from . import utils
 from .decorators import classproperty
-from .mixins import HasCache, HasLogger
+from .mixins import HasCache
+from ngoschema.logger import HasLogger
 
 
 class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
@@ -49,60 +48,40 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
                                 % (cls._foreignClass, Metadata))
         return cls._foreignClass
 
-    _isOne2Many = None
     @classproperty
     def isOne2Many(self):
-        if not self._isOne2Many:
-            self._isOne2Many = (self.relationship.get('cardinality') == 'one2many')
-        return self._isOne2Many
+        return self.relationship.get('cardinality') == 'one2many'
 
-    _backPopulates = None
     @classproperty
     def backPopulates(self):
-        if self._backPopulates is None:
-            self._backPopulates = self.relationship.get('backPopulates', False)
-        return self._backPopulates
+        return self.relationship.get('backPopulates', False)
 
-    _onDelete = None
     @classproperty
     def onDelete(cls):
-        if not cls._onDelete:
-            _onDelete = cls.propinfo('foreignKey').get('onDelete')
-        return cls._onDelete
+        return cls.propinfo('foreignKey').get('onDelete')
 
-    _key = None
     @classproperty
     def key(cls):
-        if not cls._key:
-            cls._key = cls.propinfo('foreignKey').get('key','canonicalName')
-        return cls._key
+        return cls.propinfo('foreignKey').get('key','canonicalName')
 
-    _name = None
     @classproperty
     def name(cls):
-        if not cls._name:
-            cls._name = cls.propinfo('foreignKey').get('name') \
-                or cls.propinfo('items').get('foreignKey', {}).get('name')
-        return cls._name
+         return cls.propinfo('foreignKey').get('name') \
+            or cls.propinfo('items').get('foreignKey', {}).get('name')
 
-    _ordering = None
     @classproperty
     def ordering(cls):
-        if not cls._ordering:
-            cls._ordering = cls.propinfo('foreignKey').get('ordering')
-        return cls._ordering
- 
-    _reverse = None
+        return cls.propinfo('foreignKey').get('ordering')
+
     @classproperty
     def reverse(cls):
-        if not cls._reverse:
-            cls._reverse = cls.propinfo('foreignKey').get('reverse', False)
-        return cls._reverse
+        return cls.propinfo('foreignKey').get('reverse', False)
 
     def __init__(self, value):
         from .metadata import Metadata
         from .wrapper_types import ArrayWrapper
         HasCache.__init__(self)
+        self._set_inputs(self.key)
         self._value = None
         self._ref = None
         self._dirty = False
@@ -112,7 +91,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
             self.ref = value
             self._value = str(value._get_prop_value(self.key))
         elif isinstance(value, ForeignKey):
-            self.ref = value.ref
+            self.ref = value._ref() if value._ref else None
             self._value = value._value
             self._dirty = value._dirty
         elif isinstance(value, ArrayWrapper):
@@ -195,8 +174,8 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
                         ref[self.name] = None
 
                 # we resolve all backreferences
-                backrefs = [i for i in foreignClass.instances 
-                            if _access_key_ref(i) is ref]
+                backrefs = [i() for i in foreignClass.instances
+                            if _access_key_ref(i()) is ref]
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
 
@@ -221,49 +200,31 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
             return self._ref()
         if self._value is None:
             return
+        key, val = self.key, self._value
+        ancestors = dict()
         for i in self.foreignClass.instances:
-            ival, val = i[self.key], self._value
+            ival = str(i.get(key))
             if not ival:
                 continue
             if ival == val:
                 self.ref = i
                 return i
-            if ival.startswith('%s.' % i.cname):
-                try:
-                    ref, path = i, i.resolve_cname(val)
-                    for p in path:
-                        ref = ref[p]
-                    self.ref = ref
-                    # now it s resolved, we can set backref
-                    self._set_backref()
-                    return ref
-                except Exception as er:
-                    self.logger.error(er)
-        # due to lazy loading, certain instances are not loaded
-        # last chance - find a parent in Metadata instances and explore children
-        try:
-            from .metadata import Metadata
-            first_ancestor = next(filter(lambda i: self._value.startswith('%s.' % i.cname), Metadata.instances))
-            #ancestors = [i for i in Metadata.instances if self._value.startswith('%s.' % i.cname)]
-            #ancestors = sorted(ancestors, key=lambda a: len(a.cname), reverse=True)
-            #best_parent = ancestors[0]
-            best_parent = first_ancestor
+            if val.startswith('%s.' % ival):
+                ancestors[ival] = i
+        else:
+            best_parent = max(ancestors, key=len)
+            cur = ancestors[best_parent]
             path = self._value
-            path2 = best_parent.resolve_cname(path)
-            ref = best_parent
+            path2 = cur.resolve_cname(path)
             for p in path2:
-                ref = ref[p] if isinstance(p, int) else getattr(ref, str(p))
-            self.ref = ref
-            return ref
-        except Exception as er:
-            self.logger.error(er)
-
-        self.logger.warning('impossible to resolve %s %s=%s', 
-                       self.foreignClass, self.key, self._value)
+                cur = cur[p]
+            self.ref = cur
+            return cur
 
     def _set_ref(self, instance):
-        self._set_inputs(ref=instance)
-        self._ref = weakref.ref(instance)
-        #_register_foreign_key(self)
+        if instance is not None:
+            self._set_context(instance)
+            self._ref = weakref.ref(instance)
+            self._set_backref()
 
     ref = property(_get_ref, _set_ref)

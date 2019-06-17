@@ -148,10 +148,10 @@
         },
         "canonicalName": {
           "dependencies": {
-            "additionalProperties": ["name", "parent"]
+            "additionalProperties": ["name", "parent.canonicalName"]
           },
           "type": "string",
-          "default": "{% if this.parent %}{{this.parent}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
+          "default": "{% if this.parent and this.parent.canonicalName %}{{this.parent.canonicalName}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
         },
         "primaryKeys": {
           "items": {

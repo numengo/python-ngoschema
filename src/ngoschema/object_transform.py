@@ -12,7 +12,7 @@ from future.utils import with_metaclass
 
 from . import jinja2
 from . import utils
-from .classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from .schema_metaclass import SchemaMetaclass
 
 # loader to register module with a transforms folder where to look for model transformations

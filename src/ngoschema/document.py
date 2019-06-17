@@ -21,7 +21,7 @@ from . import utils
 from .canonical_name import CN_ID
 from .canonical_name import register_document_with_cname
 from .canonical_name import resolve_cname
-from .classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from .decorators import SCH_PATH_DIR
 from .decorators import SCH_PATH_FILE
 from .decorators import assert_arg

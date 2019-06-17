@@ -8,7 +8,7 @@ import pathlib
 
 from future.utils import with_metaclass
 
-from ngoschema.classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from ngoschema.deserializers import JsonDeserializer
 from ngoschema.schema_metaclass import SchemaMetaclass
 

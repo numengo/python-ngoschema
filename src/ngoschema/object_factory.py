@@ -16,7 +16,7 @@ from python_jsonschema_objects.util import safe_issubclass
 
 from . import document
 from . import utils
-from .classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from .classbuilder import get_builder
 from .decorators import SCH_PATH_DIR
 from .decorators import SCH_PATH_FILE
@@ -134,7 +134,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
             if objs_data:
                 for data in (objs_data if many else [objs_data]):
                     objs.append(
-                        self._objectClass(_lazy_loading=self._lz, **data))
+                        self._objectClass(lazy_loading=self._lz, **data))
                 return objs if many else objs[0]
         except Exception as er:
             raise IOError("Impossible to create %s from %s.\n%s" 

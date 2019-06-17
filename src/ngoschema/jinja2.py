@@ -49,15 +49,15 @@ class TemplatedString(object):
     """
 
     def __init__(self, templated_str):
-        self.templated_str = templated_str
-        self.template = default_jinja2_env().from_string(templated_str)
-        self.has_dot = regex_has_dot.search(templated_str) is not None
+        self._templated_str = templated_str
+        self._template = default_jinja2_env().from_string(templated_str)
+        self._has_dot = regex_has_dot.search(templated_str) is not None
 
     def __call__(self, obj):
         # ctx = context.as_dict() if hasattr(context,'as_dict') else context
-        if not hasattr(obj, "as_dict") or not self.has_dot:
-            return self.template.render(obj)
-        return self.template.render({"this": obj})
+        if self._has_dot:
+            return self._template.render(this=obj, **obj)
+        return self._template.render(obj)
 
 
 @serializer_registry.register()
@@ -150,7 +150,7 @@ class Jinja2Serializer(Serializer):
         print(to_render)
         return self.jinja.from_string(to_render).render(ctx)
 
-def get_variables(source):
+def get_variables(source, remove_this=True):
     """return the list of variables in jinja2 source (no filters)"""
     env = default_jinja2_env()
     parser = jinja2.parser.Parser(env, source)
@@ -164,11 +164,13 @@ def get_variables(source):
         if processing:
             if t.type == 'variable_end' or t.value == '|':
                 processing=False
-                vars.append(''.join(var).replace('this.', '').replace('self.', ''))
+                vars.append(''.join(var))
                 var = []
                 continue
             var.append(t.value)
-    return vars
+    return vars if not remove_this \
+        else [v.replace('this.', '').replace('self.', '') for v in vars]
+
 # ADDITIONAL FILTERS FROM INFLECTION
 
 filters_registry = utils.GenericRegistry()

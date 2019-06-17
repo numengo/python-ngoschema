@@ -15,7 +15,7 @@ from future.utils import with_metaclass
 from python_jsonschema_objects.util import safe_issubclass
 
 from . import utils
-from .classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from .query import Query
 from .schema_metaclass import SchemaMetaclass
 from .object_factory import ObjectFactory
@@ -94,7 +94,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
                     transform_opts=transform_opts)
         return self._document_objects[doc.identifier]
 
-    def get(self, cls=None, **kwargs):
+    def first(self, cls=None, **kwargs):
         """
         Return the first object with the corresponding primary key
         """

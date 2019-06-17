@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import copy
-import logging
+import logging, logging.config
 import pathlib
 from builtins import object
 from builtins import str
@@ -20,7 +20,7 @@ from backports import configparser2
 from dpath.util import merge
 from ngofile.pathlist import PathList
 
-from .deserializers import Deserializer
+from .deserializers import Deserializer, YamlDeserializer
 from .str_utils import CaseInsensitiveDict
 
 
@@ -117,15 +117,14 @@ class ConfigLoader(object):
         return {k: section[k] for k in keys if k in section}
 
 
-
-DEFAULT_LOGGING = { 
+DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
-    'formatters': { 
+    'formatters': {
         'console': {
             'format': '%(levelname)s  %(name)s %(funcName)s: %(message)s'
         },
-        'standard': { 
+        'standard': {
             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
         },
         'verbose': {
@@ -133,29 +132,31 @@ DEFAULT_LOGGING = {
             'format': '%(levelname) -10s %(asctime)s %(name) -35s %(funcName) -30s: %(message)s'
         },
     },
-    'handlers': { 
+    'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
             'stream': 'ext://sys.stdout',  # Default is stderr
         }
     },
-    'loggers': { 
+    'loggers': {
         '': {  # root logger
             'handlers': ['console'],
             'level': 'INFO'
         },
-        'ngoschema': { 
-            'level': 'DEBUG',
-        },
-        'ngomf': { 
-            'level': 'DEBUG',
-        },
-        'ngoschema.document.Document': {
-            'level': 'INFO',
-        },
-        'ngoschema.schema_metaclass': {
-            'level': 'INFO',
-        }
-    } 
+    }
 }
+
+logging.config.dictConfig(DEFAULT_LOGGING)
+
+class LogConfigParser(YamlDeserializer):
+    logger = logging
+
+    @classmethod
+    def loads(cls, stream, **kwargs):
+        __doc__ = Deserializer.loads.__doc__
+        cfg = copy.deepcopy(DEFAULT_LOGGING)
+        cfg.update(YamlDeserializer.loads(stream))
+        logging.config.dictConfig(cfg)
+        return cfg
+

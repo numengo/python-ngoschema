@@ -18,7 +18,7 @@ import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from . import utils
 from .decorators import classproperty
-from .classbuilder import ProtocolBase
+from ngoschema import ProtocolBase
 from .classbuilder import get_builder
 from .schema_metaclass import SchemaMetaclass
 from .foreign_key import ForeignKey

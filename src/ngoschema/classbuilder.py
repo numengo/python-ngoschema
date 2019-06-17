@@ -14,13 +14,9 @@ import collections
 import copy
 import datetime
 import inspect
-import itertools
-import logging
 import pathlib
 import re
-import weakref
 import dpath.util
-from builtins import object
 
 import arrow
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
@@ -28,35 +24,20 @@ import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
-import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
-import six
 from future.utils import text_to_native_str as native_str
 
+from .protocol_base import ProtocolBase, make_property
 from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
-from .canonical_name import CN_KEY
-from .canonical_name import resolve_cname
-from .config import ConfigLoader
-from .decorators import classproperty
-from .resolver import DEFAULT_MS_URI
 from .resolver import get_resolver
-from .uri_identifier import norm_uri
-from .uri_identifier import resolve_uri
-from .validators import DefaultValidator
 from .foreign_key import ForeignKey
 from .wrapper_types import ArrayWrapper
-from .mixins import HasCache, HasLogger, HasShortRepr
+from .mixins import HasCache
 
 logger = pjo_classbuilder.logger
 
 _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
-
-# loader to register module with a transforms folder where to look for model transformations
-models_module_loader = utils.GenericModuleFileLoader('models')
-
-# loader of objects default configuration
-objects_config_loader = ConfigLoader()
 
 # default builder global variable
 _default_builder = None
@@ -75,532 +56,6 @@ def get_builder(resolver=None):
         if resolver:
             _default_builder.resolver = resolver
     return _default_builder
-
-
-def get_descendant(obj, key_list, load_lazy=False):
-    """
-    Get descendant in an object/dictionary by providing the path as a list of keys
-    :param obj: object to iterate
-    :param key_list: list of keys
-    :param load_lazy: in case of lazy loaded object, force loading
-    """
-    logger = logging.getLogger(__name__)
-    if load_lazy and getattr(obj, '_lazy_loading', {}):
-        obj._load_lazy()
-    elif getattr(obj, '_lazy_loading', {}):
-        try:
-            return resolve_cname(key_list, obj._lazy_loading)
-        except Exception as er:
-            #logger.warning(er)
-            return None
-    k0 = key_list[0]
-    try:
-        child = obj[k0]
-    except Exception as er:
-        child = None
-    #if hasattr(obj, k0):
-    #    child = getattr(obj, k0)
-    #else:
-    #    child = obj[k0] if k0 in obj else None
-    return get_descendant(child, key_list[1:], load_lazy) \
-            if child and len(key_list)>1 else child
-
-
-_reserved_fields_defaults = {
-    '_lazy_loading': False,
-    '_validate_lazy': True,
-    '_attr_by_name': False,
-}
-
-
-class ProtocolBase(HasCache, HasLogger, HasShortRepr, pjo_classbuilder.ProtocolBase):
-    __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
-    
-    Protocol shared by all instances created by the class builder. It extends the 
-    ProtocolBase object available in python-jsonschema-objects and add some features:
-    
-    * metamodel has a richer vocabulary, and class definition supports inheritance, and 
-    database persistence
-    
-    * hybrid classes: classes have a json schema defining all its members, but have some 
-    business implementation done in python and where default setters/getters can be 
-    overriden. 
-    
-    * string literal value with patterns: a string literal value can be defined as a 
-    formatted string which can depend on other properties.
-    
-    * complex literal types: path/date/datetime are automatically created and can be 
-    handled as expected python objects, and will then be properly serialized
-    
-    * allow lazy loading on member access
-
-    * methods are automatically decorated to add logging possibility, exception handling
-    and argument validation/conversion to the proper type (type can be given as a schema
-    through a decorator or simply by documenting the docstring with a schema)
-        
-    * all instances created are registered and can then be queried using Query
-    
-    * default values can be configured in the config files
-    """
-
-    # additional private and protected props
-    _lazy_loading = dict()
-    _validator = None
-    _key2attr = dict()
-    _instances = weakref.WeakValueDictionary()
-    __prop_names__ = dict()
-    __prop_translated__ = dict()
-    
-    def __new__(cls, *args, **props):
-        """
-        function creating the class with a special treatment to resolve subclassing
-        """
-        cls.init_class_logger()
-        # option to validate arguments at init even if lazy loading
-        if props.get('_lazy_loading', False) and props.get(
-                '_validate_lazy', True) and cls._validator is None:
-            cls._validator = DefaultValidator(
-                cls.__schema__, resolver=get_resolver())
-            cls._validator._setDefaults = True
-        # specific treatment in case schemaUri redefines the class to create
-        if len(args)==1 and utils.is_string(args[0]):
-            props['$ref'] = args[0]
-        if '$ref' in props:
-            props.update(resolve_uri(props.pop('$ref')))
-        schemaUri = props.get('schemaUri', None)
-        if schemaUri is not None and schemaUri != cls.__schema__.get('$id'):
-            builder = get_builder()
-            uri = pjo_util.resolve_ref_uri(builder.resolver.resolution_scope,
-                                           schemaUri)
-            if uri in builder.resolved:
-                cls2 = builder.resolved[uri]
-            else:
-                with builder.resolver.resolving(schemaUri) as resolved:
-                    cls2 = builder.construct(schemaUri, resolved,
-                                             (ProtocolBase, ))
-            return cls2(*args, **props)
-        new = super(ProtocolBase, cls).__new__
-        if new is object.__new__:
-            return new(cls)
-        return new(cls, **props)
-        # return new(cls, *args, **props) super ProtocolBase does not support args
-
-    def __init__(self, *args, **props):
-        """
-        main initialization method, dealing with lazy loading
-        """
-        HasCache.__init__(self)
-
-        # register instance
-        for cls in self.pbase_mro(ngo_base=True):
-            cls._instances[id(self)] = self
-
-        # remove options from props dictionary and set them as attributes
-        for f, d in _reserved_fields_defaults.items():
-            setattr(self, f, props.pop(f, d))
-        self._attr_by_name = self._attr_by_name or self.__attr_by_name__
-        # propagate non default options to children
-        for k, v in props.items():
-            if isinstance(v, dict):
-                for f, d in _reserved_fields_defaults.items():
-                    if getattr(self, f) != d:
-                        v[f] = getattr(self, f)
-            elif isinstance(v, list):
-                for i, v2 in enumerate(v):
-                    if utils.is_mapping(v2):
-                        for f, d in _reserved_fields_defaults.items():
-                            if getattr(self, f) != d:
-                                v2[f] = getattr(self, f)
-
-        # reference to property extern to document to be resolved later
-        if len(args)==1 and utils.is_string(args[0]):
-            props['$ref'] = args[0]
-        if '$ref' in props:
-            props.update(resolve_uri(props.pop('$ref')))
-
-        # we set name now, but it will be overwritten when data is loaded
-        # important for canonical names
-        from .metadata import Metadata
-        if isinstance(self, Metadata): 
-            if CN_KEY in props:
-                self.set_name(props[CN_KEY])
-            if 'parent' in props:
-                self.set_parent(props['parent'])
-            if 'canonicalName' in props:
-                self.set_canonicalName(props['canonicalName'])
-
-        # remove initial values of readonly members
-        for k in self.__read_only__.intersection(props.keys()):
-            props.pop(k)
-            self.logger.warning('property %s is read-only. Initial value provided not used.', k)
-
-        if self._lazy_loading:
-            # validate data to make sure no problem will appear at creation
-            if self._validate_lazy:
-                dont_check = list(_reserved_fields_defaults.keys()) + ['$ref']
-                #self._validator.validate(utils.process_collection(props, but=dont_check, fields_recursive=True))
-            # lazy loading treatment: add a flag to 1st level objects data only
-            # in level 1, lazy_loading is removed calling __init__
-            self._lazy_loading = props
-            # we add it to _lazy_loading dictionary to make it queriable
-            if isinstance(self, Metadata):
-                self._lazy_loading.setdefault('canonicalName', self.cname)
-            # necessary for proper behaviour of object, normally done in init
-            self._extended_properties = dict()
-            self._properties = dict(
-                zip(self.__prop_names__.values(),
-                    [None
-                     for x in six.moves.xrange(len(self.__prop_names__))]))
-        else:
-            try:
-                pjo_classbuilder.ProtocolBase.__init__(self, **props)
-            except Exception as er:
-                self.logger.error(er)
-                raise er
-            # we set key2attr after to avoid collusion at initialization between
-            self._set_key2attr(props)
-
-    def __hash__(self):
-        """hash function to store objects references"""
-        return id(self)
-
-    def for_json(self, no_defaults=True):
-        """
-        serialization method, removing all members flagged as NotSerialized
-        """
-        out = collections.OrderedDict()
-        for prop in self:
-            # remove items flagged as not_serilalized
-            if prop in self.__not_serialized__:
-                continue
-            propval = self[prop]
-            if no_defaults and not propval:
-                continue
-            # evaluate default value and drop it from json
-            if no_defaults and prop in self.__has_default__:
-                default_value = self.__propinfo__[prop]['default']
-                if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
-                    if len(propval) != len(default_value):
-                        pass
-                    elif propval == default_value:
-                        continue
-                elif isinstance(propval, pjo_literals.LiteralValue):
-                    if propval == default_value:
-                        continue
-                    if utils.is_pattern(default_value):
-                        default_value = jinja2.TemplatedString(default_value)(self)
-                        if propval == default_value:
-                            continue
-            if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
-                if not len(propval) and no_defaults:
-                    continue
-            if hasattr(propval, 'for_json'):
-                value = propval.for_json()
-                if utils.is_pattern(value):
-                    value = jinja2.TemplatedString(value)(self)
-            elif isinstance(propval, list):
-                value = [x.for_json() for x in propval]
-            elif propval is not None:
-                value = propval
-            if not value and not isinstance(value, bool):
-                continue
-            prop = self.__prop_translated__.get(prop, prop)
-            out[prop] = value
-        return out
-
-    def _load_lazy(self):
-        """
-        lazy loading: initialize the object with data stored in _lazyloading attribute
-        will only initialize 1st level ones (and do a proper validation)
-        """
-        if not isinstance(self._lazy_loading, dict):
-            return False
-        if not self._lazy_loading:
-            return False
-        data = self._lazy_loading
-        try:
-            self._lazy_loading = {}
-            # remove initial values of readonly members
-            ros = self.__read_only__.intersection(data.keys())
-            if ros:
-                for ro in ros:
-                    self.logger.warning('property %s is read-only. Initial value provided not used.', ro)
-                data_no_ro = {k: v for k, v in data.items() if k not in self.__read_only__}
-                pjo_classbuilder.ProtocolBase.__init__(self, **data_no_ro)
-            else:
-                pjo_classbuilder.ProtocolBase.__init__(self, **data)
-            # we set key2attr after to avoid collusion at initialization between
-            self._set_key2attr(data)
-            self.validate()
-            return True
-        except Exception as er:
-            self._lazy_loading = data
-            logger.warning('problem lazy loading %s' % self)
-            logger.warning(er, exc_info=True)
-            raise er
-
-    def validate(self):
-        if not self._lazy_loading:
-            pjo_classbuilder.ProtocolBase.validate(self)
-
-    def _set_key2attr(self, props):
-        """create the map associating canonical names to properties"""
-        from .metadata import Metadata
-        if isinstance(self, Metadata):
-            if CN_KEY in props:
-                self.set_name(props[CN_KEY])
-            #if 'parent' in props:
-            #    parent = props['parent']
-            #    if self._lazy_loading:
-            #        self._set_prop_value('parent', parent)
-            #    else:
-            #        self.set_parent(parent)
-            if 'canonicalName' in props:
-                if self._lazy_loading:
-                    self._set_prop_value('canonicalName', props['canonicalName'])
-                else:
-                    self.canonicalName = props['canonicalName']
-        self._key2attr = {}
-        if self._attr_by_name:
-            for k, v in props.items():
-                if utils.is_mapping(v) and CN_KEY in v:
-                    self._key2attr[str(v[CN_KEY])] = (k, None)
-                if utils.is_sequence(v):
-                    for i, v2 in enumerate(v):
-                        if utils.is_mapping(v2) and CN_KEY in v2:
-                            self._key2attr[str(v2[CN_KEY])] = (k, i)
-
-    @classmethod
-    def issubclass(cls, klass):
-        """subclass specific method"""
-        return pjo_util.safe_issubclass(cls, klass)
-
-    @classmethod
-    def fullname(cls):
-        return utils.fullname(cls)
-
-    @classmethod
-    def set_configfiles_defaults(cls, overwrite=False):
-        """
-        Look for default values in objects_config_loader to initialize properties
-        in the object.
-
-        :param overwrite: overwrite values already set
-        """
-        propnames = cls.__prop_names_flatten__
-
-
-        defconf = objects_config_loader.get_values(cls.fullname(), propnames)
-        for k, v in defconf.items():
-            if overwrite:
-                try:
-                    cls.logger.debug("CONFIG SET %s.%s = %s", cls.fullname(), k, v)
-                    cls.__propinfo__[k]['default'] = v
-                except Exception as er:
-                    cls.logger.error(er, exc_info=True)
-
-    @classmethod
-    def pbase_mro(cls, ngo_base=False):
-        base = ProtocolBase if ngo_base else pjo_classbuilder.ProtocolBase
-        return (c for c in cls.__mro__ 
-                if pjo_util.safe_issubclass(c, base))
-
-    @classproperty
-    def __prop_names_flatten__(cls):
-        """list of all available inherited properties"""
-        return itertools.chain(*[getattr(c, '__prop_names__', ()) 
-            for  c in cls.pbase_mro()])
-
-
-    def __getattr__(self, name):
-        """
-        Allow getting class attributes, protected attributes and protocolBase attributes
-        as optimally as possible. attributes can be looked up base on their name, or by
-        their canonical name, using a correspondence map done with _set_key2attr
-        """
-        # private and protected attributes at accessed directly
-        if name.startswith("_"):
-            return collections.MutableMapping.__getattribute__(self, name)
-
-        # check it s a standard attribute or method
-        for c in self.__class__.__mro__:
-            if pjo_util.safe_issubclass(c, pjo_classbuilder.ProtocolBase) and name in c.__object_attr_list__:
-                return object.__getattr__(self, name)
-            elif hasattr(c, name):
-                return object.__getattr__(self, name)
-
-        # load missing component
-        self._load_lazy()
-
-        propname = self.__prop_translated_fletten__.get(name, name)
-
-        # check it s not a schema defined property, we should not reach there
-        for c in self.pbase_mro():
-            if propname in c.__propinfo__:
-                raise KeyError(name)
-        # check it s an extended property
-        if name in self._extended_properties:
-            return self._extended_properties[name]
-
-        raise AttributeError("{0} is not a valid property of {1}".format(
-                             name, self.__class__.__name__))
-
-
-    def __getitem__(self, key):
-        """access property as in a dict"""
-        try:
-            self._load_lazy()
-            ret = self._properties.get(key)
-            return ret if ret is not None else getattr(self, key)
-        except AttributeError as er:
-            self.logger.error(er)
-            raise KeyError(key)
-        except Exception as er:
-            self.logger.error(er)
-            raise er
-
-    def __setattr__(self, name, val):
-        """allow setting of protected attributes"""
-        if name.startswith("_"):
-            return collections.MutableMapping.__setattr__(self, name, val)
-
-        self._load_lazy()
-
-        prop, index = self._key2attr.get(name, (None, None))
-        if prop:
-            if index is None:
-                return ProtocolBase.__setattr__(self, prop, val)
-            else:
-                attr = getattr(self, prop)
-                attr[index] = val
-                return
-        
-        propname = self.__prop_translated_fletten__.get(name, name)
-
-        for c in self.pbase_mro():
-            if name in c.__object_attr_list__:
-                return object.__setattr__(self, name, val)
-            elif name in c.__propinfo__:
-                # If its in __propinfo__, then it actually has a property defined.
-                # The property does special validation, so we actually need to
-                # run its setter. We get it from the class definition and call
-                # it directly. XXX Heinous.
-                prop = getattr(c, c.__prop_names__[propname])
-                prop.fset(self, val)
-                return
-
-        # This is an additional property of some kind
-        try:
-            val = self.__extensible__.instantiate(name, val)
-        except Exception as e:
-            raise pjo_validators.ValidationError(
-                "Attempted to set unknown property '{0}' in {1}: {2} "
-                .format(name, self.__class__.__name__, e))
-        self._extended_properties[name] = val
-
-
-    def _set_prop_value(self, prop, value):
-        """
-        Set a property shorcutting the setter. To be used in setters
-        """
-        # if the component is lazy loaded, dont force its loading now
-        # add the value to the data to be loaded later and return
-        if self._lazy_loading and isinstance(self._lazy_loading, dict):
-            self._lazy_loading[prop] = value
-            return
-        try:
-            propval = self._properties.get(prop)
-            propinfo = self.propinfo(prop)
-            if hasattr(propval, 'validate'):
-                propval.__init__(value)
-                propval.validate()
-                # should be enough... set it back anyway ?
-                self._properties[prop] = value
-            # a validator is available
-            elif issubclass(propinfo.get('_type'), pjo_literals.LiteralValue):
-                val = propinfo['_type'](value)
-                val.validate()
-                self._properties[prop] = val
-            else:
-                prop_ = getattr(self.__class__, self.__prop_names__[prop])
-                prop_.fset(self, value)
-        except Exception as er:
-            self.logger.error(er)
-            raise er
-
-    def _get_prop_value(self, prop, default=None):
-        """
-        Get a property shorcutting the setter. To be used in setters
-        """
-        try:
-            if self._lazy_loading and isinstance(self._lazy_loading, dict):
-                return self._lazy_loading.get(prop, default)
-            validator = self._properties.get(prop)
-            if validator is not None:
-                validator.validate_if_dirty()
-                return validator
-            return default
-        except Exception as er:
-            raise er
-
-
-    @classmethod
-    def one(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-        
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls.instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            raise ValueError('Entry %s does not exist' % attrs_value)
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def one_or_none(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-        
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls.instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            return None
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def first(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-        
-        Query can used all usual operators"""
-        from .query import Query
-        return next(
-            Query(cls.instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classmethod
-    def filter(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves a list of instances corresponding to query
-        
-        Query can used all usual operators"""
-        from .query import Query
-        return list(
-            Query(cls.instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classproperty
-    def instances(cls):
-        return cls.instances.valuerefs()
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
@@ -651,15 +106,21 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 if isinstance(self._value, self.__subclass__):
                     return getattr(self._value, name)
             elif hasattr(self.__class__, name):
-                return getattr(self, name)
+                return object.__getattribute__(self, name)
             else:
                 return pjo_literals.LiteralValue.__getattribute__(self, name)
 
+        def __eq_pseudo__(self, other):
+            if not pjo_literals.LiteralValue.__eq__(self, other):
+                return False
+            if not HasCache.__eq__(self, other):
+                return False
+            return True
 
-        def validate_pseudo(self, instance=None):
-            instance = instance or dict()
+        def validate_pseudo(self):
+            instance = self._context() if self._context else None
             #if getattr(self, "_pattern", False):
-            if 'pattern' in self.__dict__:
+            if '_pattern' in self.__dict__:
                 self._value = jinja2.TemplatedString(self._pattern)(instance)
             pjo_literals.LiteralValue.validate(self)
 
@@ -693,6 +154,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 '__propinfo__': propinfo,
                 '__subclass__': parents[0],
                 '__getattr__': __getattr_pseudo__,
+                '__eq__': __eq_pseudo__,
                 'validate': validate_pseudo,
             },
         )
@@ -780,8 +242,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if not base:
                 logger.info("resolving inherited class for %s", uri)
                 schemaUri, schema = self.resolver.resolve(uri)
-                base = self.resolved[uri] = self._build_object(schemaUri, schema, (ProtocolBase, ))
-            if not any([issubclass(p, base) for p in parents]):
+                base = self.resolved[uri] = self._build_object(schemaUri, schema, (ProtocolBase,))
+            elif not any([issubclass(p, base) for p in parents]):
                 parents = (base, ) + parents
         
         properties = collections.OrderedDict(cls_schema.get('properties', {}))
@@ -871,7 +333,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('type', None) == 'object':
                 uri = '{0}/{1}_{2}'.format(nm, prop, '<anonymous>')
                 self.resolved[uri] = self.construct(uri, detail,
-                                                    (ProtocolBase, ))
+                                                    (ProtocolBase,))
 
                 props[prop] = make_property(
                     prop,
@@ -892,7 +354,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 if uri in self.resolved:
                     typ = self.resolved[uri]
                 else:
-                    typ = self.construct(uri, detail, (ProtocolBase, ))
+                    typ = self.construct(uri, detail, (ProtocolBase,))
 
                 props[prop] = make_property(
                     prop, {'type': typ},
@@ -1006,7 +468,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props['__prop_names__'] = name_translation
         props['__prop_translated__'] = name_translated
-        props['__prop_translated_fletten__'] = name_translated_flatten
+        props['__prop_translated_flatten__'] = name_translated_flatten
 
         # automatically adds property names to foreign keys
         for prop_name, prop in properties.items():
@@ -1027,6 +489,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             *[getattr(p, '__read_only__', set()) for p in parents])
         not_serialized = set.union(
             *[getattr(p, '__not_serialized__', set()) for p in parents])
+
         required.update(cls_schema.get('required',[]))
         read_only.update(cls_schema.get('readOnly',[]))
         not_serialized.update(cls_schema.get('notSerialized',[]))
@@ -1051,10 +514,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__has_default__'] = defaults
         props['__add_logging__'] = class_attrs.get('__add_logging__', False)
         props['__attr_by_name__'] = class_attrs.get('__attr_by_name__', False)
-        props['__strict__'] = required or kw.get('strict')
-
-        # add parent properties and attributes
-        #props.update({k: v for k,v in parent_attrs.items() if k not in props})
+        props['__lazy_loading__'] = class_attrs.get('__lazy_loading__', False)
+        props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
+        props['__strict__'] = bool(required) or kw.get('strict', False)
 
         cls = type(clsname, tuple(parents), props)
         self.under_construction.remove(nm)
@@ -1072,242 +534,4 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             self.definitions[clsname] = cls
 
         return cls
-
-    def from_uri(self, schemaUri):
-        resolver = self.resolver
-        schemaUri, schema = resolver.resolve(schemaUri)
-        # default resolver uses _expand and already return a copy
-        #schema = copy.deepcopy(schema)
-        return self.construct(schemaUri, schema)
-
-
-def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
-    # flag to know if variable is readOnly check is active
-    info['RO_active'] = True
-
-    def getprop(self):
-        self._load_lazy()
-        self.logger.debug(pjo_util.lazy_format("GET {!r}.{!s}", self, propname))
-        if '_properties' not in self.__dict__:
-            return
-        prop = self._properties.get(propname)
-
-        if fget and (not prop or prop.is_dirty()):
-            try:
-                #self._properties[propname] = val
-                info['RO_active'] = False
-                setprop(self, fget(self))
-                prop = self._properties[propname]
-            except Exception as er:
-                info['RO_active'] = True
-                self.logger.error( "GET {!r}.{!s}.\n%s", self, propname, er)
-                raise AttributeError(
-                    "Error getting property %s.\n%s" % (propname, er))
-        try:
-            if prop is not None:
-                #self._add_outputs(**{propname: prop})
-                prop.validate_if_dirty()
-                return prop
-        except KeyError as er:
-            logger.error(er)
-            raise AttributeError("No attribute %s" % propname)
-        except Exception as er:
-            logger.error(er)
-            raise AttributeError(er)
-
-    def setprop(self, val):
-        from .metadata import Metadata
-        self._load_lazy()
-        self.logger.debug(
-            pjo_util.lazy_format("SET {!r}.{!s}={!s}", self, propname, utils.any_pprint(val)))
-        if info['RO_active'] and propname in self.__read_only__:
-            # in case default has not been set yet
-            if not (propname in self.__has_default__ and self._properties.get(propname) is None):
-                raise AttributeError("'%s' is read only" % propname)
-
-        infotype = info["type"]
-
-        if fset:
-            # call the setter, and get the value stored in _properties
-            if infotype:
-                validator = infotype
-                val = validator(val)
-                old = self._properties.get(propname)
-                if isinstance(old, pjo_literals.LiteralValue) and old != val:
-                    val.touch(recursive=True)
-                self._properties[propname] = val
-                fset(self, val)
-            else:
-                self._properties[propname] = val
-                fset(self, val)
-            if val and isinstance(val, Metadata):
-                if val._lazy_loading:
-                    val._set_prop_value('parent', self)
-                else:
-                    val.parent = self
-            if not hasattr(val, 'set_clean'):
-                self.logger.error('%r %r', self, val)
-                raise Exception('WHY!!!!!???')
-            val.set_clean()
-            return
-
-        if isinstance(infotype, (list, tuple)):
-            ok = False
-            errors = []
-            type_checks = []
-
-            for typ in infotype:
-                if not isinstance(typ, dict):
-                    type_checks.append(typ)
-                    continue
-                typ = next(t for n, t in pjo_validators.SCHEMA_TYPE_MAPPING +
-                           pjo_validators.USER_TYPE_MAPPING
-                           if typ["type"] == n)
-                if typ is None:
-                    typ = type(None)
-                if isinstance(typ, (list, tuple)):
-                    type_checks.extend(typ)
-                else:
-                    type_checks.append(typ)
-
-            for typ in type_checks:
-                if isinstance(val, typ):
-                    ok = True
-                    break
-                elif hasattr(typ, "isLiteralClass"):
-                    try:
-                        validator = typ(val)
-                    except Exception as e:
-                        errors.append("Failed to coerce to '{0}': {1}".format(
-                            typ, e))
-                    else:
-                        validator.force_validate()
-                        ok = True
-                        break
-                elif pjo_util.safe_issubclass(typ, ProtocolBase):
-                    # force conversion- thus the val rather than validator assignment
-                    try:
-                        if not utils.is_string(val):
-                            if pjo_util.safe_issubclass(infotype, Metadata):
-                                val = typ(parent=self, **pjo_util.coerce_for_expansion(val))
-                            else:
-                                val = typ(**pjo_util.coerce_for_expansion(val))
-                        else:
-                            val = typ(val)
-                    except Exception as e:
-                        errors.append(
-                            "Failed to coerce to '%s': %s" % (typ, e))
-                    else:
-                        val.force_validate()
-                        ok = True
-                        break
-                elif pjo_util.safe_issubclass(typ,
-                                              pjo_wrapper_types.ArrayWrapper):
-                    try:
-                        val = typ(val)
-                    except Exception as e:
-                        errors.append(
-                            "Failed to coerce to '%s': %s" % (typ, e))
-                    else:
-                        val.force_validate()
-                        ok = True
-                        break
-
-            if not ok:
-                errstr = "\n".join(errors)
-                raise pjo_validators.ValidationError(
-                    "Object must be one of %s: \n%s" % (infotype, errstr))
-
-        elif infotype == "array":
-            val = info["validator"](val)
-            # only validate if items are not foreignKey
-            if not hasattr(info["validator"].__itemtype__, '_foreignClass'):
-                val.parent = self
-                val.validate_if_dirty()
-
-        elif getattr(infotype, "isLiteralClass", False):
-            if not isinstance(val, infotype):
-                validator = infotype(val)
-                # handle case of patterns
-                if utils.is_pattern(val):
-                    vars = jinja2.get_variables(val)
-                    validator._set_inputs(**{v: self._properties[v] for v in vars if self._properties.get(v)})
-                    validator._pattern = val
-                # only validate if it s not a pattern or a foreign key
-                else:
-                    # it s not a pattern, remove
-                    #if getattr(validator, "_pattern", False):
-                    #    delattr(validator, "_pattern")
-                    #if not getattr(validator, '_foreignClass', False):
-                    if not hasattr(self, 'validate_if_dirty'):
-                        raise Exception('WHY????')
-                    validator.force_validate()
-                val = validator
-                if self._properties.get(propname) != val:
-                    self._properties[propname] = val
-                    val.touch(recursive=True)
-                    val.set_clean()
-                    #touch_instance_prop(self, propname)
-
-        elif pjo_util.safe_issubclass(infotype, ProtocolBase):
-            if not isinstance(val, infotype):
-                if not utils.is_string(val):
-                    if pjo_util.safe_issubclass(infotype, Metadata):
-                        val = infotype(parent=self, **pjo_util.coerce_for_expansion(val))
-                    else:
-                        val = infotype(**pjo_util.coerce_for_expansion(val))
-                else:
-                    val = infotype(val)
-            val.force_validate()
-            if isinstance(val, Metadata) and val._parent is None:
-                val.parent = self
-
-        elif isinstance(infotype, pjo_classbuilder.TypeProxy):
-            val = infotype(val)
-
-        elif isinstance(infotype, pjo_classbuilder.TypeRef):
-            if not isinstance(val, infotype.ref_class):
-                if not utils.is_string(val):
-                    if pjo_util.safe_issubclass(infotype.ref_class, Metadata):
-                        val = infotype(parent=self, **pjo_util.coerce_for_expansion(val))
-                    else:
-                        val = infotype(**pjo_util.coerce_for_expansion(val))
-                    val = infotype(**val)
-                else:
-                    val = infotype(val)
-
-            val.force_validate()
-
-        elif infotype is None:
-            # This is the null value
-            if val is not None:
-                raise pjo_validators.ValidationError(
-                    "None is only valid value for null")
-
-        else:
-            raise TypeError("Unknown object type: '%s'" % infotype)
-
-        # set dependency tree
-        if propname in  self.__dependencies__:
-            depends_of = self.__dependencies__[propname]
-            for dep in depends_of:
-                if dep not in self.__property_list__:
-                    raise AttributeError("'%s' is required for '%s'" % (dep, propname))
-            val._add_inputs(**{dep: self._properties[dep] for dep in depends_of})
-
-        self._properties[propname] = val
-
-
-    def delprop(self):
-        self._load_lazy()
-        self.logger.debug(pjo_util.lazy_format("DEL {!r}.{!s}", self, propname))
-        if propname in self.__required__:
-            raise AttributeError("'%s' is required" % propname)
-        else:
-            if fdel:
-                fdel(self)
-            del self._properties[propname]
-
-    return property(getprop, setprop, delprop, desc)
-
 

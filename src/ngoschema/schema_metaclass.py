@@ -88,7 +88,7 @@ class SchemaMetaclass(type):
             for nm, defn in iteritems(schema.get("definitions", {})):
                 uri = pjo_util.resolve_ref_uri(schemaUri,
                                                "#/definitions/" + nm)
-                from .classbuilder import ProtocolBase
+                from ngoschema import ProtocolBase
                 builder.construct(uri, defn, (ProtocolBase, ), attrs.get(nm, {}))
         else:
             schema["type"] = "object"
