@@ -55,7 +55,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def validate_items(self):
         if not self._dirty and self._typed is not None:
             return self._typed
-        if not self.parent_ref:
+        if not self._parent:
             return pjo_wrapper_types.ArrayWrapper.validate_items(self)
         from python_jsonschema_objects import classbuilder
 
@@ -96,7 +96,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                         if isinstance(elem, (six.string_types, six.integer_types, float)):
                             val = typ(elem)
                         else:
-                            val = typ(**self.parent_ref._obj_conf,
+                            val = typ(**self._parent._obj_conf,
                                       **util.coerce_for_expansion(elem))
                     except TypeError as e:
                         raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
@@ -104,14 +104,14 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 else:
                     val = elem
                 if isinstance(val, HasParent):
-                    val.set_parent(self.parent_ref)
+                    val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
             elif util.safe_issubclass(typ, ArrayWrapper):
                 val = typ(elem)
                 # CRn: set parent before validation
-                val.set_parent(self.parent_ref)
+                val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
@@ -125,7 +125,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     if isinstance(elem, (six.string_types, six.integer_types, float)):
                         val = typ(elem)
                     else:
-                        val = typ(**self.parent_ref._obj_conf,
+                        val = typ(**self._parent._obj_conf,
                                   **util.coerce_for_expansion(elem))
                 except TypeError as e:
                     six.reraise(ValidationError,
@@ -133,7 +133,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                                 sys.exc_info()[2])
                 else:
                     if isinstance(val, HasParent):
-                        val.set_parent(self.parent_ref)
+                        val._parent = self._parent
                     val.do_validate()
                     typed_elems.append(val)
 
@@ -146,14 +146,14 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         #    self.set_items_parent()
     
     def set_items_parent(self):
-        if not self.parent_ref or not self._typed:
+        if not self._parent or not self._typed:
             return
         for item in self._typed:
             if isinstance(item, HasParent) and item._parent is not self._parent:
-                item.set_parent(self.parent_ref)
+                item._parent = self._parent
 
-    def set_parent(self, value):
-        HasParent.set_parent(self, value)
+    def _set_parent(self, value):
+        HasParent._set_parent(self, value)
         self.set_items_parent()
 
     @staticmethod

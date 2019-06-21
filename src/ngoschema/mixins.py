@@ -14,19 +14,36 @@ from python_jsonschema_objects.classbuilder import LiteralValue
 
 class HasParent:
 
-    _parent = None
+    _parent_ref = None
+    _children_dict = None
 
-    def set_parent(self, value):
+    def _set_parent(self, value):
+        if value is None:
+            if self._parent_ref and self._parent_ref():
+                self._parent_ref._children_dict.pop(id(self))
+                self._parent_ref = None
+            return
         from .foreign_key import ForeignKey
         if isinstance(value, ForeignKey):
-            self._parent = value._ref
+            self._parent_ref = value._ref
         if isinstance(value, HasParent):
-            self._parent = weakref.ref(value)
+            self._parent_ref = weakref.ref(value)
+        self._parent_ref().register_child(self)
 
-    @property
-    def parent_ref(self):
-        return self._parent() if self._parent else None
+    def _get_parent(self):
+        return self._parent_ref() if self._parent_ref else None
 
+    _parent = property(_get_parent, _set_parent)
+
+    def register_child(self, child):
+        if self._children_dict is None:
+            self._children_dict = weakref.WeakValueDictionary()
+        self._children_dict[id(child)] = child
+
+    def _get_children(self):
+        return [wr() for wr in self._children_dict.valuerefs()]
+
+    _children = property(_get_children)
 
 class RootRelativeCname:
 
@@ -44,12 +61,12 @@ class HandleRelativeCname:
     @property
     def _root_parent(self):
         if not self._root:
-            par = self.parent_ref
+            par = self._parent
             while par:
                 if isinstance(par, RootRelativeCname):
                     self._root = weakref.ref(par)
                     return par
-                par = par.parent_ref
+                par = par._parent
             raise ValueError("impossible to resolve reference for relative canonical name in %s", self.__class__)
         return self._root() if self._root else None
 

@@ -122,7 +122,8 @@ DEFAULT_LOGGING = {
     'disable_existing_loggers': True,
     'formatters': {
         'console': {
-            'format': '%(levelname)s  %(name)s %(funcName)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s.%(msecs)03d %(name)s %(funcName)s: %(message)s',
+            'datefmt': '%I:%M:%S'
         },
         'standard': {
             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'

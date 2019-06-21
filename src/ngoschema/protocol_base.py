@@ -77,7 +77,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
         prop = self._properties.get(propname)
 
-        if fget and (not prop or prop.is_dirty()):
+        if fget and (prop is None or prop.is_dirty()):
             try:
                 #self._properties[propname] = val
                 info['RO_active'] = False
@@ -108,7 +108,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
             return
         if info['RO_active'] and propname in self.__read_only__:
             # in case default has not been set yet
-            if not (propname in self.__has_default__ and self._properties.get(propname) is None):
+            if not (propname in self.__has_default_flatten__ and self._properties.get(propname) is None):
                 raise AttributeError("'%s' is read only" % propname)
 
         infotype = info["type"]
@@ -172,7 +172,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                             "Failed to coerce to '%s': %s" % (typ, e))
                     else:
                         if isinstance(val, HasParent):
-                            val.set_parent(self)
+                            val._parent = self
                         val.do_validate()
                         ok = True
                         break
@@ -201,7 +201,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
             val = info["validator"](val)
             # only validate if items are not foreignKey
             if not hasattr(info["validator"].__itemtype__, 'foreignClass'):
-                val.set_parent(self)
+                val._parent = self
                 val.do_validate()
 
         elif getattr(infotype, "isLiteralClass", False):
@@ -235,7 +235,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 else:
                     val = infotype(val)
             if isinstance(val, HasParent):
-                val.set_parent(self)
+                val._parent = self
             val.do_validate()
 
         elif isinstance(infotype, pjo_classbuilder.TypeProxy):
@@ -249,7 +249,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 else:
                     val = infotype(val)
             if isinstance(val, HasParent):
-                val.set_parent(self)
+                val._parent = self
             val.do_validate()
 
         elif infotype is None:
@@ -371,7 +371,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         """
         main initialization method, dealing with lazy loading
         """
-        self.logger.debug(pjo_util.lazy_format("INIT {0}", self.short_repr()))
+        self.logger.info(pjo_util.lazy_format("INIT {0} with {1}", self.short_repr(), utils.any_pprint(props)))
 
         cls = self.__class__
 
@@ -394,11 +394,9 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
 
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
-        for c in self.pbase_mro():
-            for name in c.__has_default__:
-                if name not in props:
-                    default_value = c.__propinfo__[name]['default']
-                    setattr(self, name, default_value)
+        for k, v in self.__has_default__.items():
+            if k not in props:
+                setattr(self, k, v)
 
         # reference to property extern to document to be resolved later
         if len(args)==1 and utils.is_string(args[0]):
@@ -414,11 +412,11 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         # force lazy loading to meta
         self._lazy_loading = False
         if 'parent' in props:
-            self.parent = props['parent']
+            self._parent = props['parent']
         if 'name' in props:
             self.name = props['name']
-        if 'canonicalName' in props:
-            self.canonicalName = props['canonicalName']
+        #if 'canonicalName' in props:
+        #    self.canonicalName = props['canonicalName']
 
         self._lazy_loading = lazy_loading or cls._lazy_loading
         self._validate_lazy = validate_lazy or cls._validate_lazy
@@ -431,7 +429,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         }
 
         if self._lazy_loading:
-            self._lazy_data.update(props)
+            self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
         else:
             try:
                 for prop in props:
@@ -444,10 +442,6 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
                 self.logger.error(er, exc_info=True)
                 raise er
 
-    @property
-    def _id(self):
-        return id(self)
-
     def __hash__(self):
         """hash function to store objects references"""
         return id(self)
@@ -455,7 +449,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
     def short_repr(self):
         return "<%s id=%s>" % (
             self.fullname(),
-            self._id
+            id(self)
         )
 
     def __str__(self):
@@ -466,7 +460,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         props = props[:20] + (['...'] if len(props)>=20 else [])
         return "<%s id=%s %s>" % (
             self.fullname(),
-            self._id,
+            id(self),
             " ".join(props)
         )
 
@@ -476,7 +470,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
                                     six.iteritems(self._extended_properties))])
         return "<%s id=%s %s>" % (
             self.fullname(),
-            self._id,
+            id(self),
             " ".join(props)
         )
 
@@ -495,43 +489,28 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         serialization method, removing all members flagged as NotSerialized
         """
         out = collections.OrderedDict()
-        for prop in self:
-            # remove items flagged as not_serilalized
-            if prop in self.__not_serialized__:
-                continue
-            propval = self[prop]
-            if no_defaults and not propval:
-                continue
-            # evaluate default value and drop it from json
-            if no_defaults and prop in self.__has_default__:
-                default_value = self.__propinfo__[prop]['default']
-                if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
-                    if len(propval) != len(default_value):
-                        pass
-                    elif propval == default_value:
-                        continue
-                elif isinstance(propval, pjo_literals.LiteralValue):
-                    if propval == default_value:
-                        continue
-                    if utils.is_pattern(default_value):
-                        default_value = jinja2.TemplatedString(default_value)(self)
-                        if propval == default_value:
-                            continue
-            if isinstance(propval, (ProtocolBase, pjo_wrapper_types.ArrayWrapper)):
-                if not len(propval) and no_defaults:
+        for c in reversed(self.pbase_mro()):
+            for key, infotype in c.__propinfo__.items():
+                keyt = c.__prop_names__.get(key, key)
+                if keyt in getattr(c, '__not_serialized__', []):
                     continue
-            if hasattr(propval, 'for_json'):
-                value = propval.for_json()
-                if utils.is_pattern(value):
-                    value = jinja2.TemplatedString(value)(self)
-            elif isinstance(propval, list):
-                value = [x.for_json() for x in propval]
-            elif propval is not None:
-                value = propval
-            if not value and not isinstance(value, bool):
-                continue
-            prop = self.__prop_translated__.get(prop, prop)
-            out[prop] = value
+                prop = self._get_prop(keyt)
+                if no_defaults:
+                    if keyt in c.__has_default__ and prop is not None:
+                        default_value = c.__has_default__[keyt]
+                        if getattr(prop, '_pattern', '') == default_value:
+                            continue
+                        if prop == default_value:
+                            continue
+                    if prop is None and infotype.get('default') is None:
+                        continue
+                    value = self._get_prop_value(keyt)
+                else:
+                    value = self._get_prop_value(keyt)
+                out[key] = value
+        for key, prop in self._extended_properties.items():
+            value = self._get_prop_value(key)
+            out[key] = value
         return out
 
     def validate(self):
@@ -570,16 +549,53 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
 
     @classmethod
     def pbase_mro(cls, ngo_base=False):
-        base = ProtocolBase if ngo_base else pjo_classbuilder.ProtocolBase
-        return (c for c in cls.__mro__
-                if pjo_util.safe_issubclass(c, base))
+        return cls.__ngo_pbase_mro__ if ngo_base else cls.__pbase_mro__
 
-    @classproperty
-    def __prop_names_flatten__(cls):
-        """list of all available inherited properties"""
-        return itertools.chain(*[getattr(c, '__prop_names__', ())
-            for  c in cls.pbase_mro()])
+    @classmethod
+    def propinfo(cls, propname):
+        propid = cls.__prop_translated_flatten__.get(propname, propname)
+        for c in cls.__pbase_mro__:
+            if propid in c.__prop_names_flatten__:
+                if c is not cls:
+                    return c.propinfo(propid)
+                elif propid in c.__propinfo__:
+                    return c.__propinfo__[propid]
+        return {}
 
+    #@classproperty
+    #def __propinfo_flatten__(cls):
+    #    return { k: v for k, v in
+    #             itertools.chain(six.iteritems(c.__propinfo__) if c is cls
+    #                             else getattr(c, '__propinfo_flatten__', six.iteritems(c.__propinfo__))
+    #                             for c in cls.__pbase_mro__
+    #                             if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
+    #             }
+    #
+    #@classproperty
+    #def __prop_names_flatten__(cls):
+    #    return itertools.chain(six.iteritems(c.__prop_names__) if c is cls
+    #                           else getattr(c, '__prop_names_flatten__', six.iteritems(c.__prop_names__))
+    #                           for c in cls.__pbase_mro__
+    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
+    #
+    #@classproperty
+    #def __prop_translated_flatten__(cls):
+    #    return itertools.chain(six.iteritems(c.__prop_names__) if c is cls
+    #                           else getattr(c, '__prop_translated_flatten__', six.iteritems(c.__prop_translated__))
+    #                           for c in cls.__pbase_mro__
+    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
+    #
+    #@classproperty
+    #def __prop_translated_flatten_rev__(cls):
+    #    return ((v, k) for k, v in cls.__prop_translated_flatten__)
+
+
+    #@classproperty
+    #def __has_default_flatten__(cls):
+    #    return itertools.chain(six.iteritems(c.__propinfo__) if c is cls
+    #                           else getattr(c, '__propinfo_flatten__', six.iteritems(c.__propinfo__))
+    #                           for c in cls.__pbase_mro__
+    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
 
     def __getattr__(self, name):
         """
@@ -596,6 +612,8 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
             if name in c.__object_attr_list__:
                 return object.__getattribute__(self, name)
 
+        name = self.__prop_names_flatten__.get(name, name)
+
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
             attr = ProtocolBase.__getattr__(self, prop)
@@ -604,14 +622,11 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
             else:
                 return attr[index]
 
-        propname = self.__prop_translated_flatten__.get(name, name)
+        #propname = self.__prop_translated_flatten__.get(name, name)
 
         # check it s not a schema defined property, we should not reach there
-        for c in self.pbase_mro():
-            if propname in c.__propinfo__:
-                raise KeyError(name)
-            if hasattr(c, name):
-                return object.__getattribute__(self, name)
+        if name in self.__prop_names_flatten__.values():
+            raise KeyError(name)
         # check it s an extended property
         if name in self._extended_properties:
             return self._extended_properties[name]
@@ -634,28 +649,30 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
 
-        propname = self.__prop_translated_flatten__.get(name, name)
-
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
                 return object.__setattr__(self, name, val)
-            elif name in c.__propinfo__:
-                # If its in __propinfo__, then it actually has a property defined.
-                # The property does special validation, so we actually need to
-                # run its setter. We get it from the class definition and call
-                # it directly. XXX Heinous.
-                prop = getattr(c, c.__prop_names__[propname])
-                prop.fset(self, val)
-                return
+
+        name = self.__prop_names_flatten__.get(name, name)
 
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
             if index is None:
-                return ProtocolBase.__setattr__(self, prop, val)
+                name = prop
             else:
                 attr = getattr(self, prop)
                 attr[index] = val
                 return
+
+        if name in self.__prop_names_flatten__.values():
+            # If its in __propinfo__, then it actually has a property defined.
+            # The property does special validation, so we actually need to
+            # run its setter. We get it from the class definition and call
+            # it directly. XXX Heinous.
+            prop = getattr(self.__class__, name)
+            prop.fset(self, val)
+            return
+
 
         # This is an additional property of some kind
         try:
@@ -669,15 +686,15 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
     def _get_prop(self, name):
         if self._lazy_loading and name in self._lazy_data:
             setattr(self, name, self._lazy_data.pop(name))
-        if name in self.__prop_names_flatten__:
+        if name in self.__prop_names_flatten__.values():
             return self._properties.get(name)
         return self._extended_properties.get(name)
 
-    def _get_prop_value(self, name):
+    def _get_prop_value(self, name, default=None):
         if self._lazy_loading and name in self._lazy_data:
             return self._lazy_data[name]
         prop = self._get_prop(name)
-        return prop.for_json() if prop else None
+        return prop.for_json() if prop else default
 
     def _set_prop_value(self, name, value):
         """
@@ -688,55 +705,17 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         else:
             prop = self._get_prop(name)
             if prop:
-                prop.__init__()
-            propinfo = self.propinfo(name)
-        prop = self._get_prop(name)
-        return prop.for_json() if prop else None
-
-    def _set_prop_value(self, prop, value):
-        """
-        Set a property shorcutting the setter. To be used in setters
-        """
-        # if the component is lazy loaded, dont force its loading now
-        # add the value to the data to be loaded later and return
-        if self._lazy_loading and isinstance(self._lazy_loading, dict):
-            self._lazy_loading[prop] = value
-            return
-        try:
-            propval = self._properties.get(prop)
-            propinfo = self.propinfo(prop)
-            if hasattr(propval, 'validate'):
-                propval.__init__(value)
-                propval.validate()
-                # should be enough... set it back anyway ?
-                self._properties[prop] = value
-            # a validator is available
-            elif propinfo.get('_type') and issubclass(propinfo['_type'], pjo_literals.LiteralValue):
-                val = propinfo['_type'](value)
-                val.validate()
-                self._properties[prop] = val
-            else:
-                prop_ = getattr(self.__class__, self.__prop_translated_flatten__.get(prop, prop))
-                prop_.fset(self, value)
-        except Exception as er:
-            self.logger.error(er)
-            raise er
-
-    def _get_prop_value(self, prop, default=None):
-        """
-        Get a property shorcutting the setter. To be used in setters
-        """
-        try:
-            validator = self._properties.get(prop)
-            if self._lazy_loading and prop in self._lazy_data:
-                return self._lazy_data.get(prop, default)
-            if validator is not None:
-                validator.do_validate(force=True)
-                return validator
-            return default
-        except Exception as er:
-            raise er
-
+                prop.__init__(value)
+                prop.do_validate()
+            elif name in self.__prop_names_flatten__:
+                pinfo = self.propinfo(name)
+                typ = pinfo.get('_type') if pinfo else None
+                if typ and issubclass(typ, pjo_literals.LiteralValue):
+                    prop = typ(value)
+                    prop.do_validate()
+                    self._properties[name] = prop
+                else:
+                    raise AttributeError("no type specified for property '%s'"% name)
 
     @classmethod
     def one(cls, *attrs, load_lazy=False, **attrs_value):

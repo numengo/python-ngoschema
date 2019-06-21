@@ -47,7 +47,7 @@ _operators = [
 def _comparable(obj):
     if isinstance(obj, ProtocolBase):
         #obj = obj[CN_KEY]
-        obj = obj.cname
+        obj = str(obj.canonicalName)
     if isinstance(obj, LiteralValue):
         return obj.for_json()
     return obj

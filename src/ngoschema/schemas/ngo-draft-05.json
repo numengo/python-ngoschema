@@ -119,16 +119,6 @@
     },
     "Metadata": {
       "properties": {
-        "children": {
-          "uniqueItems": true,
-          "items": {
-            "foreignKey": {
-              "foreignSchemaUri": "#/definitions/Metadata"
-            },
-            "type": "string"
-          },
-          "type": "array"
-        },
         "description": {
           "type": "string"
         },
@@ -147,11 +137,8 @@
           "type": "string"
         },
         "canonicalName": {
-          "dependencies": {
-            "additionalProperties": ["name", "parent.canonicalName"]
-          },
           "type": "string",
-          "default": "{% if this.parent and this.parent.canonicalName %}{{this.parent.canonicalName}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
+          "default": "{% if this._parent and this._parent.canonicalName %}{{this._parent.canonicalName}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
         },
         "primaryKeys": {
           "items": {
@@ -163,26 +150,11 @@
           "format": "uri-reference",
           "type": "string"
         },
-        "parent": {
-          "foreignKey": {
-            "key": "canonicalName",
-            "foreignSchemaUri": "#/definitions/Metadata",
-            "relationship": {
-              "backPopulates": "children",
-              "cardinality": "one2many"
-            }
-          },
-          "type": "string"
-        },
         "lazy_loading": {
           "type": "boolean"
         }
       },
       "additionalProperties": true,
-      "notSerialized": [
-        "parent",
-        "children"
-      ],
       "type": "object"
     }
   },

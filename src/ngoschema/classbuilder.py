@@ -214,40 +214,35 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         clsname = native_str(nm.split("/")[-1])
 
         props = dict()
-        defaults = set()
+        defaults = dict()
         dependencies = dict()
 
         class_attrs = kw.get('class_attrs', {})
 
-        # we set class attributes as properties now, and they will be
-        # overwritten if they are default values
-        props.update(class_attrs)
-
         # complete object attribute list with class attributes to use prop  attribute setter
         __object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
-        __object_attr_list__.update(class_attrs.keys())
-        props['__object_attr_list__'] = __object_attr_list__
 
         #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
         props['__schema__'] = cls_schema
         props['__schema__']['$id'] = nm
 
-        properties = collections.OrderedDict()
-
         # parent classes
-        for ext in cls_schema.get('extends', []):
-            uri = pjo_util.resolve_ref_uri(current_scope, ext)
-            base = self.resolved.get(uri)
-            if not base:
-                logger.info("resolving inherited class for %s", uri)
-                schemaUri, schema = self.resolver.resolve(uri)
-                base = self.resolved[uri] = self._build_object(schemaUri, schema, (ProtocolBase,))
-            elif not any([issubclass(p, base) for p in parents]):
-                parents = (base, ) + parents
-        
+        extends = [self.resolve_or_build(pjo_util.resolve_ref_uri(current_scope, ext))
+                   for ext in cls_schema.get('extends', [])]
+        extends = tuple(e for e in extends
+                        if not any(issubclass(_, e) for _ in extends if e is not _)
+                        and not any(issubclass(p, e) for p in parents))
+        parents = extends + tuple(p for p in parents if not any(issubclass(e, p) for e in extends))
+
+        # add parent attributes to class attribute list
+        for p in reversed(parents):
+            __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
+            __object_attr_list__.update([a for a in p.__dict__.keys() if not a.startswith('__')])
+            defaults.update(getattr(p, '__has_default__', {}))
+
+
         properties = collections.OrderedDict(cls_schema.get('properties', {}))
-        par_properties = {}
 
         def find_getter_setter_defv(propname, class_attrs):
             """
@@ -271,14 +266,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     prop_sch = list(dpath.util.search(cls_schema, 'properties/'+propname, yielded=True))
                     par_prop_sch = par_prop_sch[0] if par_prop_sch else {}
                     prop_sch = prop_sch[0] if prop_sch else {}
-                    if all(k in prop_sch and par_prop_sch[k] == prop_sch[k] 
-                        for k in par_prop_sch):
-                        if propname not in properties:
-                            par_properties[propname] = (a, class_attrs['__propinfo__'].get(propname, {}).get('_type'))
-                    #getter = a.fget
-                    #setter = a.fset
                 else:
-                    defv = a
+                    defv = class_attrs.pop(pn)
             if gpn in class_attrs:
                 a = class_attrs[gpn]
                 if inspect.isfunction(a) or inspect.ismethod(a):
@@ -325,7 +314,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 detail['default'] = []
 
             if detail.get('default') is not None:
-                defaults.add(prop)
+                defaults[prop] = detail.get('default')
 
             if detail.get('dependencies') is not None:
                 dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
@@ -462,13 +451,23 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__extensible__'] = pjo_pattern_properties.ExtensibleValidator(
             nm, cls_schema, self)
 
-        name_translated_flatten = name_translated.copy()
+        # add class attrs after removing defaults
+        __object_attr_list__.update([a for a in class_attrs.keys() if not a.startswith('__')])
+        props['__object_attr_list__'] = __object_attr_list__
+
+        # we set class attributes as properties now, and they will be
+        # overwritten if they are default values
+        props.update([(k, v) for k, v in class_attrs.items() if k not in props])
+
+        name_translation_flatten = name_translation.copy()
         for p in parents:
-            name_translated_flatten.update(getattr(p, '__prop_translated__', {}))
+            name_translation_flatten.update(getattr(p, '__prop_names_flatten__',
+                                             getattr(p, '__prop_names__', {})))
 
         props['__prop_names__'] = name_translation
-        props['__prop_translated__'] = name_translated
-        props['__prop_translated_flatten__'] = name_translated_flatten
+        props['__prop_names_flatten__'] = name_translation_flatten
+        props['__prop_translated_flatten__'] = {v: k for k, v in name_translation_flatten.items() if v!= k}
+        props['__has_default__'] = defaults
 
         # automatically adds property names to foreign keys
         for prop_name, prop in properties.items():
@@ -490,9 +489,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         not_serialized = set.union(
             *[getattr(p, '__not_serialized__', set()) for p in parents])
 
-        required.update(cls_schema.get('required',[]))
-        read_only.update(cls_schema.get('readOnly',[]))
-        not_serialized.update(cls_schema.get('notSerialized',[]))
+        required.update(cls_schema.get('required', []))
+        read_only.update(cls_schema.get('readOnly', []))
+        not_serialized.update(cls_schema.get('notSerialized', []))
 
         invalid_requires = [
             req for req in required if req not in properties
@@ -510,15 +509,16 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # default value on children force its resolution at each init
         # seems the best place to treat this special case
-        #props['__has_default__'] = defaults.difference(['children'])
-        props['__has_default__'] = defaults
         props['__add_logging__'] = class_attrs.get('__add_logging__', False)
         props['__attr_by_name__'] = class_attrs.get('__attr_by_name__', False)
         props['__lazy_loading__'] = class_attrs.get('__lazy_loading__', False)
         props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
-        props['__strict__'] = bool(required) or kw.get('strict', False)
+        props['__strict__'] = bool(required) or kw.get('strict', False) or class_attrs.get('__strict__', False)
 
         cls = type(clsname, tuple(parents), props)
+        cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
+        cls.__ngo_pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, ProtocolBase))
+
         self.under_construction.remove(nm)
 
         # set default from config file

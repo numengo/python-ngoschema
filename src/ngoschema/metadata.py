@@ -31,16 +31,12 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def __init__(self, lazy_loading=None, **props):
         ProtocolBase.__init__(self, lazy_loading=True, **props)
         if lazy_loading and set(['name', 'parent', 'canonicalName']).intersection(props.keys()):
-            par_ref = self.parent_ref
+            par = self._parent
             if 'canonicalName' in props:
                 self._lazy_data.setdefault('canonicalName', props['canonicalName'])
-            elif par_ref:
-                cn = '%s.%s' % (par_ref.canonicalName, self._get_prop_value('name', '<anonynous>'))
+            elif par:
+                cn = '%s.%s' % (par.canonicalName, self._get_prop_value('name', '<anonynous>'))
                 self._lazy_data.setdefault('canonicalName', cn)
-
-    @property
-    def _id(self):
-        return self._cname or id(self)
 
     def get_primaryKeys(self):
         if not self._pks:
@@ -64,7 +60,6 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
         ret = self._get_prop_value('canonicalName')
         self._cname = str(ret)
         return ret
-
 
     def resolve_cname(self, ref_cname):
         # use generators because of 'null' which might lead to different paths
@@ -99,7 +94,7 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 i += 1
             path = ['..'] * (len(cur_cn)-i)
             for _ in range(len(cur_cn)-i):
-                cur = cur.parent_ref
+                cur = cur._parent
             #cur_cn = str(cur.cname).split('.')[:-1]
         # replace all nulls by <anonymous> which is used in ProtocolBase
         cn = [e.replace('null', '<anonymous>') for e in cn]
@@ -114,4 +109,4 @@ class Metadata(with_metaclass(SchemaMetaclass, ProtocolBase)):
             # canonical name which is going to be read again
             for d2, c2, e2, p2 in _resolve_cname(cn, d, e[:-1], p):
                 return p2
-        raise Exception('Unresolvable canonical name %s in %s' % (ref_cname, self.cname))
+        raise Exception('Unresolvable canonical name %s in %s' % (ref_cname, self.canonicalName))

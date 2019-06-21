@@ -95,7 +95,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
             self._value = value._value
             self._dirty = value._dirty
         elif isinstance(value, ArrayWrapper):
-            self.ref = value._parent()
+            self.ref = value._parent
             #self._value = str(value._parent()._get_prop_value(self.key))
         else:
             self._value = str(value)

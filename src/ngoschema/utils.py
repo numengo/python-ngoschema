@@ -485,6 +485,8 @@ def casted_as(instance, cls):
     instance.__class__ = instance_cls
 
 
+STR_LMAX = 512
+
 def coll_pprint(coll, max_length=20, sep=''):
     is_map = is_mapping(coll)
     # remove private members
@@ -499,17 +501,21 @@ def coll_pprint(coll, max_length=20, sep=''):
     else:
         coll = coll[0: max_length]
 
+    def truncate(value):
+        if isinstance(value, HasParent):
+            return str(value)[:STR_LMAX]
+        if is_mapping(value) and value:
+            return '{...}'
+        if is_sequence(value) and value:
+            return '[...]'
+        return str(value)[:STR_LMAX]
+
     if is_mapping(coll):
-        coll = {k: str(v) if isinstance(v, HasCache) else ()
-                for k, v in coll.items()}
+        coll = {k: truncate(v) for k, v in coll.items()}
     for i, k in enumerate(coll):
         ik = k if is_map else i
         v = coll[ik]
-        coll[ik] = str(v) if isinstance(v, HasParent) else (
-            '{...}' if is_mapping(v) and v else (
-                '[...]' if is_sequence(v) and v else str(v)
-            )
-        )
+        coll[ik] = truncate(v)
 
     lines = pprint.pformat(coll).split('\n')
     if trunc:
@@ -520,8 +526,8 @@ def coll_pprint(coll, max_length=20, sep=''):
 def any_pprint(val, **kwargs):
     # easiest way of testing for protocol basee
     if isinstance(val, HasCache):
-        return str(val)
+        return str(val)[:STR_LMAX]
     elif is_collection(val):
         return coll_pprint(val, **kwargs)
     else:
-        return str(val)
+        return str(val)[:STR_LMAX]

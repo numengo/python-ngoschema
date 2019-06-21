@@ -1,0 +1,512 @@
+<map version="freeplane 1.6.0">
+<!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
+<node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
+<font SIZE="18"/>
+<hook NAME="MapStyle">
+    <properties edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff" fit_to_viewport="false"/>
+
+<map_styles>
+<stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
+<font SIZE="24"/>
+<stylenode LOCALIZED_TEXT="styles.predefined" POSITION="right" STYLE="bubble">
+<stylenode LOCALIZED_TEXT="default" ICON_SIZE="12.0 pt" COLOR="#000000" STYLE="fork">
+<font NAME="SansSerif" SIZE="10" BOLD="false" ITALIC="false"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="defaultstyle.details"/>
+<stylenode LOCALIZED_TEXT="defaultstyle.attributes">
+<font SIZE="9"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="defaultstyle.note" COLOR="#000000" BACKGROUND_COLOR="#ffffff" TEXT_ALIGN="LEFT"/>
+<stylenode LOCALIZED_TEXT="defaultstyle.floating">
+<edge STYLE="hide_edge"/>
+<cloud COLOR="#f0f0f0" SHAPE="ROUND_RECT"/>
+</stylenode>
+</stylenode>
+<stylenode LOCALIZED_TEXT="styles.user-defined" POSITION="right" STYLE="bubble">
+<stylenode LOCALIZED_TEXT="styles.topic" COLOR="#18898b" STYLE="fork">
+<font NAME="Liberation Sans" SIZE="10" BOLD="true"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="styles.subtopic" COLOR="#cc3300" STYLE="fork">
+<font NAME="Liberation Sans" SIZE="10" BOLD="true"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="styles.subsubtopic" COLOR="#669900">
+<font NAME="Liberation Sans" SIZE="10" BOLD="true"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="styles.important">
+<icon BUILTIN="yes"/>
+</stylenode>
+</stylenode>
+<stylenode LOCALIZED_TEXT="styles.AutomaticLayout" POSITION="right" STYLE="bubble">
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level.root" COLOR="#000000" STYLE="oval" SHAPE_HORIZONTAL_MARGIN="10.0 pt" SHAPE_VERTICAL_MARGIN="10.0 pt">
+<font SIZE="18"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,1" COLOR="#0033ff">
+<font SIZE="16"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,2" COLOR="#00b439">
+<font SIZE="14"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,3" COLOR="#990000">
+<font SIZE="12"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,4" COLOR="#111111">
+<font SIZE="10"/>
+</stylenode>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,5"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,6"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,7"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,8"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,9"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,10"/>
+<stylenode LOCALIZED_TEXT="AutomaticLayout.level,11"/>
+</stylenode>
+</stylenode>
+</map_styles>
+</hook>
+<hook NAME="AutomaticEdgeColor" COUNTER="5" RULE="ON_BRANCH_CREATION"/>
+<node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
+<edge COLOR="#00ffff"/>
+<node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
+<node TEXT="describe all objects with a json-schema" ID="ID_537294669" CREATED="1548839960862" MODIFIED="1548839984521"/>
+<node TEXT="classes built using a metaclass based on json-schema" ID="ID_1576261043" CREATED="1548839988033" MODIFIED="1548840037102">
+<node TEXT="objects all share a common protocol" ID="ID_428275381" CREATED="1548840057324" MODIFIED="1548840065083"/>
+<node TEXT="validators on getter/setters" ID="ID_1322675290" CREATED="1548840039026" MODIFIED="1548840056856"/>
+</node>
+<node TEXT="mini-ORM to manage the objects and their relationships" ID="ID_1296537918" CREATED="1548840071673" MODIFIED="1548840090379"/>
+</node>
+<node TEXT="usage" ID="ID_622339813" CREATED="1548840093388" MODIFIED="1560848514941">
+<node TEXT="code generation" ID="ID_949439343" CREATED="1548840097559" MODIFIED="1548840100810">
+<node TEXT="API" ID="ID_1213853189" CREATED="1548840125934" MODIFIED="1548840127888"/>
+<node TEXT="SqlAlchemy models =&gt; physical storage" ID="ID_637222493" CREATED="1548840138518" MODIFIED="1548840164045"/>
+</node>
+<node TEXT="serialization/marshalling" ID="ID_856908774" CREATED="1548840103416" MODIFIED="1548840116451"/>
+<node TEXT="allow to handle objects stored n files" ID="ID_330400133" CREATED="1548840170008" MODIFIED="1548853571553"/>
+</node>
+</node>
+<node TEXT="missing packages" POSITION="right" ID="ID_1413842254" CREATED="1560152115567" MODIFIED="1560152121988">
+<edge COLOR="#ff0000"/>
+<node TEXT="pip install ruamel.yaml" ID="ID_815794768" CREATED="1560152122324" MODIFIED="1560152125241"/>
+<node TEXT="pip install magic" ID="ID_1325349825" CREATED="1560152125728" MODIFIED="1560152131479">
+<node ID="ID_1788694053" CREATED="1560152227509" MODIFIED="1560152227509"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span style="color: rgb(102, 102, 102); font-family: andale mono, lucida console, monospace; font-size: 14.401440620422363px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(102, 102, 102)" face="andale mono, lucida console, monospace" size="14.401440620422363px">brew install libmagic</font></span>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="ideas" POSITION="right" ID="ID_137833754" CREATED="1560417953278" MODIFIED="1560417956029">
+<edge COLOR="#0000ff"/>
+<node TEXT="overload __eq__ and __ne__ for literals, HasCache" ID="ID_1367972448" CREATED="1560417983715" MODIFIED="1560419047430"/>
+</node>
+<node TEXT="SQL" POSITION="left" ID="ID_575445495" CREATED="1560848308116" MODIFIED="1560848310743">
+<edge COLOR="#00ff00"/>
+<node TEXT="https://use-the-index-luke.com/fr/table-des-matieres" ID="ID_1357782720" CREATED="1560848312712" MODIFIED="1560848312712" LINK="https://use-the-index-luke.com/fr/table-des-matieres"/>
+</node>
+<node TEXT="projects" POSITION="right" ID="ID_1259015571" CREATED="1548839942180" MODIFIED="1560848530967">
+<edge COLOR="#7c7c00"/>
+<node TEXT="ngoapi" FOLDED="true" ID="ID_485580582" CREATED="1548151395809" MODIFIED="1548151403571">
+<node TEXT="decrire l API avec un json-schema" ID="ID_1496206483" CREATED="1548151404045" MODIFIED="1548151433229">
+<node TEXT="arguments" ID="ID_359268500" CREATED="1548151433680" MODIFIED="1548151446253"/>
+<node TEXT="response" ID="ID_1385121682" CREATED="1548151447074" MODIFIED="1548151453852"/>
+</node>
+<node TEXT="solutions" ID="ID_984448118" CREATED="1548153777917" MODIFIED="1548153784129">
+<node TEXT="creer l API dynamiquement" ID="ID_886668551" CREATED="1548153784457" MODIFIED="1548153809128">
+<node TEXT="mal debuggable" ID="ID_629747875" CREATED="1548153809447" MODIFIED="1548158079031"/>
+<node TEXT="lourd" ID="ID_85518865" CREATED="1548158079483" MODIFIED="1548158095761"/>
+</node>
+<node TEXT="creer des templates de code" ID="ID_1171512522" CREATED="1548158098922" MODIFIED="1548158106087">
+<node TEXT="tornado" ID="ID_1639608528" CREATED="1548158109885" MODIFIED="1548158112419"/>
+<node TEXT="flask" ID="ID_1464077337" CREATED="1548158112625" MODIFIED="1548158114303"/>
+</node>
+<node TEXT="modele de endpoint" ID="ID_1099097451" CREATED="1548158141321" MODIFIED="1548158149193">
+<node TEXT="description" ID="ID_1169401988" CREATED="1548158161751" MODIFIED="1548158170187"/>
+<node TEXT="permission" ID="ID_118027164" CREATED="1548158170569" MODIFIED="1548158176067"/>
+<node TEXT="target" ID="ID_493221397" CREATED="1548158177248" MODIFIED="1548158192115"/>
+<node TEXT="methods" ID="ID_212563789" CREATED="1548158193289" MODIFIED="1548158198189">
+<node ID="ID_1282220863" CREATED="1548158393996" MODIFIED="1548160210407"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt">[<span style="color: #6a8759"><font color="#6a8759">'GET'</font></span><span style="color: #cc7832"><font color="#cc7832">, </font></span><span style="color: #6a8759"><font color="#6a8759">'LIST'</font></span><span style="color: #cc7832"><font color="#cc7832">, </font></span><span style="color: #6a8759"><font color="#6a8759">'PATCH'</font></span><span style="color: #cc7832"><font color="#cc7832">, </font></span><span style="color: #6a8759"><font color="#6a8759">'PUT', 'POST<content ename="content"/></font></span><span style="color: #cc7832"><font color="#cc7832">, </font></span><span style="color: #6a8759"><font color="#6a8759">'DELETE'</font></span>]</pre>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node TEXT="parameters" ID="ID_331635235" CREATED="1548158628916" MODIFIED="1548158632356">
+<node TEXT="parameter" ID="ID_399033274" CREATED="1548158664608" MODIFIED="1548158668828">
+<node TEXT="methods" ID="ID_1471353467" CREATED="1548158669548" MODIFIED="1548158700638"/>
+<node TEXT="required" ID="ID_1855223735" CREATED="1548158705104" MODIFIED="1548158712600"/>
+<node TEXT="default" ID="ID_1426778197" CREATED="1548158707769" MODIFIED="1548158715012"/>
+<node TEXT="type" ID="ID_1311015147" CREATED="1548158716044" MODIFIED="1548158719526"/>
+<node TEXT="data_type" ID="ID_1823424113" CREATED="1548158754336" MODIFIED="1548158787821">
+<node TEXT="KEY" ID="ID_984771962" CREATED="1548158788135" MODIFIED="1548158789864"/>
+<node TEXT="Argument" ID="ID_330317576" CREATED="1548158795252" MODIFIED="1548158799413"/>
+<node TEXT="Filter" ID="ID_1935264644" CREATED="1548158800369" MODIFIED="1548158803651">
+<node TEXT="SearchFilter" ID="ID_1069571967" CREATED="1548158808982" MODIFIED="1548158812207">
+<node TEXT="db_fields" ID="ID_509114245" CREATED="1548158920802" MODIFIED="1548158925584"/>
+</node>
+<node TEXT="DataFilter" ID="ID_1344907112" CREATED="1548158812457" MODIFIED="1548158817462"/>
+<node TEXT="AnchorFilter" ID="ID_1243513938" CREATED="1548158829105" MODIFIED="1548158833203">
+<node TEXT="filter on objects related to a resource" ID="ID_1321952351" CREATED="1548158973456" MODIFIED="1548158986516"/>
+</node>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="response" ID="ID_818495038" CREATED="1548158199732" MODIFIED="1548158208173"/>
+<node TEXT="response_list" ID="ID_942844709" CREATED="1548158208456" MODIFIED="1548158216082">
+<node TEXT="&apos;=response" ID="ID_1632326950" CREATED="1548159211134" MODIFIED="1548159221647"/>
+</node>
+<node TEXT="uri" ID="ID_1191444997" CREATED="1548158264867" MODIFIED="1548158266362"/>
+</node>
+<node TEXT="component" ID="ID_1274169793" CREATED="1548158650866" MODIFIED="1548158655195">
+<node TEXT="list_variables" ID="ID_1847275179" CREATED="1548159236913" MODIFIED="1548163947262"/>
+<node TEXT="list_parameters" ID="ID_1785227025" CREATED="1548163947821" MODIFIED="1548163955955"/>
+</node>
+<node TEXT="endpoint" ID="ID_345943683" CREATED="1548161023391" MODIFIED="1548161036201">
+<node TEXT="uri" ID="ID_1878522052" CREATED="1548161057692" MODIFIED="1548161059500"/>
+<node TEXT="arguments" ID="ID_773590655" CREATED="1548161037348" MODIFIED="1548161075282"/>
+<node TEXT="response" ID="ID_220082147" CREATED="1548161038956" MODIFIED="1548161079800"/>
+</node>
+<node TEXT="resource = object" ID="ID_366638700" CREATED="1548161084261" MODIFIED="1548161098165">
+<node TEXT="methods" ID="ID_793428517" CREATED="1548161499015" MODIFIED="1548161502195">
+<node TEXT="list" ID="ID_404252026" CREATED="1548161104235" MODIFIED="1548161108334"/>
+<node TEXT="get" ID="ID_1319323526" CREATED="1548161113181" MODIFIED="1548161115490"/>
+<node TEXT="post" ID="ID_185380959" CREATED="1548161117362" MODIFIED="1548161127396">
+<node TEXT="create" ID="ID_205611725" CREATED="1548161949437" MODIFIED="1548161953004"/>
+</node>
+<node TEXT="put" ID="ID_1943472448" CREATED="1548161108861" MODIFIED="1548161112572">
+<node TEXT="patch or create" ID="ID_643022508" CREATED="1548161955629" MODIFIED="1548161969750"/>
+</node>
+<node TEXT="patch" ID="ID_404946845" CREATED="1548161115696" MODIFIED="1548161942739">
+<icon BUILTIN="yes"/>
+<node TEXT="when you want to update a resource with PUT request, you have to send the full payload as the request whereas with PATCH, you only send the parameters which you want to update" ID="ID_231504188" CREATED="1548161847991" MODIFIED="1548161849506"/>
+</node>
+<node TEXT="delete" ID="ID_138966085" CREATED="1548161131207" MODIFIED="1548161133043"/>
+<node TEXT="uri" ID="ID_1491709695" CREATED="1548161624212" MODIFIED="1548161627456"/>
+<node ID="ID_407237717" CREATED="1548162138259" MODIFIED="1548162138259"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span style="color: rgb(36, 39, 41); font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 15px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(36, 39, 41)" face="Arial, Helvetica Neue, Helvetica, sans-serif" size="15px">If your endpoint returns a collection, you could implement searching/filtering/sorting using query strings</font></span>
+  </body>
+</html>
+</richcontent>
+<node TEXT="search / filter / sorting" ID="ID_753150413" CREATED="1548162192388" MODIFIED="1548162201609"/>
+</node>
+<node TEXT="+ object methods" ID="ID_373408730" CREATED="1548162309137" MODIFIED="1548162317147">
+<node TEXT="arguments" ID="ID_747469885" CREATED="1548162320544" MODIFIED="1548162332681"/>
+<node TEXT="response" ID="ID_458586528" CREATED="1548162372969" MODIFIED="1548162376237">
+<node TEXT="outputs" ID="ID_1921205295" CREATED="1548162410811" MODIFIED="1548162413967"/>
+</node>
+</node>
+</node>
+<node TEXT="keys" ID="ID_830607340" CREATED="1548161692623" MODIFIED="1548162500622">
+<node TEXT="get_keys()" ID="ID_1947112424" CREATED="1548162960738" MODIFIED="1548162964974">
+<node TEXT="class method" ID="ID_769848110" CREATED="1548162965929" MODIFIED="1548162968773"/>
+</node>
+</node>
+<node TEXT="search / filter / sorting" ID="ID_164450923" CREATED="1548162450211" MODIFIED="1548162463878"/>
+<node TEXT="ordering" ID="ID_453764504" CREATED="1548162900978" MODIFIED="1548162907041"/>
+<node TEXT="access_filter_list" ID="ID_1566409954" CREATED="1548162914724" MODIFIED="1548162920442"/>
+<node TEXT="limit" ID="ID_787698406" CREATED="1548162927384" MODIFIED="1548162929906"/>
+</node>
+</node>
+</node>
+<node TEXT="GUI" ID="ID_976710226" CREATED="1548765259996" MODIFIED="1549442043412">
+<node TEXT="Kivy" FOLDED="true" ID="ID_1216850082" CREATED="1548765263645" MODIFIED="1548765308250" LINK="http://kivy.org/">
+<node TEXT="native" ID="ID_845008247" CREATED="1548765366864" MODIFIED="1548765368976">
+<node TEXT="android" ID="ID_1182173320" CREATED="1548765265777" MODIFIED="1548765267882"/>
+<node TEXT="iphone" ID="ID_187213438" CREATED="1548765268625" MODIFIED="1548765271799"/>
+<node TEXT="pc" ID="ID_1030001279" CREATED="1548765273451" MODIFIED="1548765287003"/>
+<node TEXT="mac" ID="ID_1135480552" CREATED="1548765287333" MODIFIED="1548765288464"/>
+</node>
+<node TEXT="events" ID="ID_906764953" CREATED="1548765383298" MODIFIED="1548765386795"/>
+<node TEXT="layouts" ID="ID_427575360" CREATED="1548765400669" MODIFIED="1548765404549">
+<node TEXT="widgets" ID="ID_1781965273" CREATED="1548765387110" MODIFIED="1548765395069">
+<node TEXT="canvas" ID="ID_1416930089" CREATED="1548766564660" MODIFIED="1548766713083"/>
+<node TEXT="Label" ID="ID_1161021566" CREATED="1548767409739" MODIFIED="1548768129712">
+<node TEXT="properties" ID="ID_240472110" CREATED="1548769385173" MODIFIED="1548769391031">
+<node TEXT="font_size" ID="ID_1219175720" CREATED="1548767426338" MODIFIED="1548767431523"/>
+<node TEXT="center_x" ID="ID_1919292248" CREATED="1548767431773" MODIFIED="1548767434372"/>
+<node TEXT="top" ID="ID_1013070192" CREATED="1548767434712" MODIFIED="1548767435976"/>
+<node TEXT="text" ID="ID_856500098" CREATED="1548767436243" MODIFIED="1548767437755"/>
+</node>
+</node>
+<node TEXT="Rectangle" ID="ID_776105463" CREATED="1548767413227" MODIFIED="1548768136246">
+<node TEXT="properties" ID="ID_841992683" CREATED="1548769385173" MODIFIED="1548769391031">
+<node TEXT="pos" ID="ID_547118402" CREATED="1548767417794" MODIFIED="1548767418575"/>
+<node TEXT="size" ID="ID_1218044324" CREATED="1548767418865" MODIFIED="1548767423981"/>
+</node>
+</node>
+<node TEXT="Button" FOLDED="true" ID="ID_590413414" CREATED="1548768121095" MODIFIED="1548768123615">
+<node TEXT="properties" ID="ID_59554881" CREATED="1548769370071" MODIFIED="1548769371865">
+<node TEXT="text" ID="ID_379737307" CREATED="1548768138947" MODIFIED="1548768140268"/>
+<node TEXT="text_size" ID="ID_981435536" CREATED="1548768140474" MODIFIED="1548768145235"/>
+<node TEXT="font_size" ID="ID_1985200495" CREATED="1548768145557" MODIFIED="1548768148253"/>
+<node TEXT="markup" ID="ID_512289138" CREATED="1548768148627" MODIFIED="1548768151504"/>
+</node>
+</node>
+<node TEXT="size" ID="ID_809305551" CREATED="1548767512525" MODIFIED="1548767522295">
+<node TEXT="tuple" ID="ID_1759347424" CREATED="1548767523299" MODIFIED="1548767526128"/>
+</node>
+<node TEXT="center" ID="ID_1269611634" CREATED="1548767631133" MODIFIED="1548767633075"/>
+</node>
+<node TEXT="properties" ID="ID_1933281367" CREATED="1548769353096" MODIFIED="1548769358427">
+<node TEXT="orientation" ID="ID_1432887752" CREATED="1548769359050" MODIFIED="1548769363585"/>
+<node TEXT="padding" ID="ID_4247800" CREATED="1548769364205" MODIFIED="1548769365595"/>
+</node>
+</node>
+<node TEXT="works well with Twisted" ID="ID_514949480" CREATED="1548769606130" MODIFIED="1548769614540"/>
+</node>
+<node TEXT="ForeignKey" ID="ID_315795303" CREATED="1548839686357" MODIFIED="1548839694759">
+<node TEXT="key" ID="ID_829239539" CREATED="1548839695024" MODIFIED="1548839699598"/>
+<node TEXT="targetSchemaUri" ID="ID_1649412261" CREATED="1548839701834" MODIFIED="1548839709178"/>
+<node TEXT="" ID="ID_212160090" CREATED="1548839709469" MODIFIED="1548839709469"/>
+</node>
+</node>
+<node TEXT="service web android" ID="ID_1974230155" CREATED="1548765222621" MODIFIED="1549442052758">
+<node TEXT="python-from-android" ID="ID_792610073" CREATED="1548765251159" MODIFIED="1548765256015"/>
+</node>
+<node TEXT="permissions" ID="ID_731506319" CREATED="1548766193848" MODIFIED="1549442055773">
+<node TEXT="python lib &apos;permission&apos;" ID="ID_1864362035" CREATED="1548766198058" MODIFIED="1548766211370" LINK="https://pypi.org/project/permission/">
+<node TEXT="Rule" ID="ID_754536997" CREATED="1548766217935" MODIFIED="1548766219680">
+<node TEXT="check" ID="ID_1809988375" CREATED="1548766236818" MODIFIED="1548766238611"/>
+<node TEXT="deny" ID="ID_627415690" CREATED="1548766239062" MODIFIED="1548766239985"/>
+<node TEXT="base" ID="ID_308451962" CREATED="1548766422839" MODIFIED="1548766424059"/>
+</node>
+<node TEXT="Permission" ID="ID_738206242" CREATED="1548766425501" MODIFIED="1548766428392">
+<node TEXT="rule" ID="ID_328763584" CREATED="1548766433913" MODIFIED="1548766436216"/>
+</node>
+</node>
+</node>
+<node TEXT="candidates" ID="ID_534577912" CREATED="1534497976803" MODIFIED="1560848536402">
+<icon BUILTIN="bookmark"/>
+<node TEXT="pull" ID="ID_1738986411" CREATED="1534497993554" MODIFIED="1534865608426" LINK="https://github.com/toastdriven/restless"/>
+<node TEXT="falcon" ID="ID_828329392" CREATED="1534498027324" MODIFIED="1534843015690" LINK="https://github.com/falconry/falcon"/>
+<node TEXT="tornado" ID="ID_1551243824" CREATED="1534583561460" MODIFIED="1560848536401"/>
+<node TEXT="Dash" FOLDED="true" ID="ID_3478372" CREATED="1534581582167" MODIFIED="1534581604605" LINK="https://plot.ly/products/dash/">
+<icon BUILTIN="messagebox_warning"/>
+<icon BUILTIN="idea"/>
+<node TEXT="for building analytical web applications" ID="ID_819735763" CREATED="1534581625323" MODIFIED="1534581626456"/>
+<node TEXT="Dash applications are web servers that run Flask and communicate with JSON packets over HTTP requests. Their frontend renders components with React.js." ID="ID_1853463935" CREATED="1534581661032" MODIFIED="1534581661538"/>
+</node>
+<node TEXT="quokka CMS/CMF" ID="ID_1344327373" CREATED="1534583407251" MODIFIED="1534583431070" LINK="https://github.com/rochacbruno/quokka"/>
+</node>
+<node TEXT="NgoSchema" ID="ID_147024947" CREATED="1549455268624" MODIFIED="1549874576645" LINK="https://github.com/numengo/python-ngoschema/tree/devel">
+<node TEXT="opensource" ID="ID_850743903" CREATED="1549456135700" MODIFIED="1549456139993"/>
+<node TEXT="description" ID="ID_514322876" CREATED="1549455304765" MODIFIED="1549455322941">
+<node TEXT="automatic class-based binding to JSON schemas for use in python" ID="ID_153838926" CREATED="1549455328691" MODIFIED="1549455427998">
+<node TEXT="extends python-jsonschema-objects" ID="ID_551829138" CREATED="1549455545061" MODIFIED="1549455557189"/>
+<node TEXT="enriched metamodel" ID="ID_1151863223" CREATED="1549455560417" MODIFIED="1549456095157">
+<node ID="ID_1193911184" CREATED="1549456096318" MODIFIED="1549456096318"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      to describe complex classes
+    </p>
+  </body>
+</html>
+</richcontent>
+<node TEXT="inheritance" ID="ID_260838437" CREATED="1549455582811" MODIFIED="1549982437768"/>
+</node>
+<node TEXT="to describe database persistance" ID="ID_733742575" CREATED="1549456100038" MODIFIED="1549456119155"/>
+</node>
+<node TEXT="create classes sharing a same protocol" ID="ID_628626851" CREATED="1549455595989" MODIFIED="1549455614067">
+<node TEXT="automatic setter/getter with proper validators" ID="ID_382206093" CREATED="1549455615298" MODIFIED="1549455640183"/>
+</node>
+<node TEXT="allow to create hybrid classes" ID="ID_1529958465" CREATED="1549455671414" MODIFIED="1549455679646">
+<node TEXT="described by a json schema" ID="ID_89064089" CREATED="1549455680466" MODIFIED="1549455884378"/>
+<node TEXT="+ implementation in python" ID="ID_1991471766" CREATED="1549455884941" MODIFIED="1549455894178">
+<node TEXT="override of setters/getters" ID="ID_369885876" CREATED="1549455897191" MODIFIED="1549455904552"/>
+<node TEXT="business methods" ID="ID_1676661307" CREATED="1549455906927" MODIFIED="1549455925200"/>
+</node>
+</node>
+<node TEXT="complex types" ID="ID_1249724346" CREATED="1549982445114" MODIFIED="1549982452490">
+<node TEXT="path" ID="ID_858801067" CREATED="1549982452707" MODIFIED="1549982454762"/>
+<node TEXT="date" ID="ID_653735894" CREATED="1549982454982" MODIFIED="1549982468930"/>
+<node TEXT="datetime" ID="ID_431791643" CREATED="1549982469169" MODIFIED="1549982470932"/>
+</node>
+<node TEXT="automatically decorated" ID="ID_1619131472" CREATED="1549973873135" MODIFIED="1549973881838">
+<node TEXT="logging" ID="ID_1021646871" CREATED="1549973882108" MODIFIED="1549973884470"/>
+<node TEXT="exception handling" ID="ID_206166011" CREATED="1549973884637" MODIFIED="1549973889666"/>
+</node>
+<node TEXT="templated literal strings" ID="ID_1023397498" CREATED="1549973908887" MODIFIED="1549973918372"/>
+</node>
+<node TEXT="marshalling / serialization" ID="ID_440053977" CREATED="1549456011642" MODIFIED="1549456032777">
+<node TEXT="json" ID="ID_1519209909" CREATED="1549456033493" MODIFIED="1549456041344"/>
+<node TEXT="yaml" ID="ID_502019481" CREATED="1549456041586" MODIFIED="1549456043669"/>
+<node TEXT="user serializers / deserializers" ID="ID_1194961852" CREATED="1549456043919" MODIFIED="1549456065438"/>
+</node>
+<node TEXT="ORM to manage the created instances" ID="ID_394476520" CREATED="1549455323869" MODIFIED="1549455948664">
+<node TEXT="to perform queries" ID="ID_815628099" CREATED="1549455970090" MODIFIED="1549455979297"/>
+</node>
+</node>
+<node TEXT="examples" ID="ID_768723510" CREATED="1549982510267" MODIFIED="1549985032731">
+<node TEXT="schema simplifie" ID="ID_1011379087" CREATED="1549982518851" MODIFIED="1549982528096">
+<node TEXT="MyClass" ID="ID_27495990" CREATED="1549985006715" MODIFIED="1549985012555"/>
+</node>
+<node TEXT="1" OBJECT="java.lang.Long|1" ID="ID_1357944034" CREATED="1549985033748" MODIFIED="1549985064597">
+<node TEXT="MyClass" ID="ID_247978582" CREATED="1549982528939" MODIFIED="1549982533364">
+<node TEXT="myInt" ID="ID_588161049" CREATED="1549982534177" MODIFIED="1549982539564"/>
+</node>
+<node TEXT="foo.myInt=1" ID="ID_1247487824" CREATED="1549985076019" MODIFIED="1549985098806">
+<node TEXT="assert foo.myInt==1" ID="ID_1849076965" CREATED="1549985099641" MODIFIED="1549985110710"/>
+</node>
+<node TEXT="with Error" ID="ID_51521247" CREATED="1549985217762" MODIFIED="1549985222975">
+<node TEXT="foo.myInt = &apos;hello&apos;" ID="ID_724297970" CREATED="1549985115119" MODIFIED="1549985215352">
+<node TEXT="assert foo.myString==&apos;hello&apos;" ID="ID_1929342578" CREATED="1549985132284" MODIFIED="1549985144254"/>
+</node>
+</node>
+</node>
+<node TEXT="2" OBJECT="java.lang.Long|2" ID="ID_1400977011" CREATED="1549985047090" MODIFIED="1549985068031">
+<node TEXT="MyClass" ID="ID_631757237" CREATED="1549984979050" MODIFIED="1549984983871">
+<node TEXT="myInt" ID="ID_463007425" CREATED="1549984984637" MODIFIED="1549984987788">
+<node TEXT="min 0" ID="ID_1114862107" CREATED="1549984988546" MODIFIED="1549984994086"/>
+<node TEXT="max 9" ID="ID_380143664" CREATED="1549984994598" MODIFIED="1549985002563"/>
+</node>
+</node>
+</node>
+<node TEXT="3" OBJECT="java.lang.Long|3" ID="ID_1586684462" CREATED="1549985055887" MODIFIED="1549985069658">
+<node TEXT="MyClass" ID="ID_1878071756" CREATED="1549985870876" MODIFIED="1549985881375">
+<node TEXT="myString" ID="ID_1217867277" CREATED="1549985882883" MODIFIED="1549985886680"/>
+<node TEXT="myStringUpperCase" ID="ID_1258071272" CREATED="1549985887285" MODIFIED="1549985922265"/>
+</node>
+</node>
+<node TEXT="4" OBJECT="java.lang.Long|4" ID="ID_1138526876" CREATED="1549985059145" MODIFIED="1549985071154">
+<node TEXT="MyClass" ID="ID_410305345" CREATED="1549986398115" MODIFIED="1549986402569">
+<node TEXT="myPath" ID="ID_1379482998" CREATED="1549986403259" MODIFIED="1549986405596"/>
+<node TEXT="myDate" ID="ID_1810636428" CREATED="1549986405846" MODIFIED="1549986408001"/>
+<node TEXT="myDatetime" ID="ID_889371115" CREATED="1549986408245" MODIFIED="1549986413127"/>
+</node>
+</node>
+<node TEXT="5" OBJECT="java.lang.Long|5" ID="ID_814428370" CREATED="1549986393494" MODIFIED="1549986650759">
+<node TEXT="MyClass" ID="ID_1047051177" CREATED="1549986651590" MODIFIED="1549986655310">
+<node TEXT="myMember" ID="ID_1199999596" CREATED="1549986655602" MODIFIED="1549986671027"/>
+<node TEXT="get_myMember" ID="ID_802420146" CREATED="1549986671923" MODIFIED="1549986679974"/>
+</node>
+</node>
+</node>
+<node TEXT="objects" FOLDED="true" ID="ID_1096874576" CREATED="1549456309942" MODIFIED="1549529332857">
+<node TEXT="classbuilder" ID="ID_950349882" CREATED="1549456315392" MODIFIED="1549456318507">
+<node TEXT="ProtocolBase" ID="ID_1264833866" CREATED="1549456326724" MODIFIED="1549456330566"/>
+<node TEXT="ClassBuilder" ID="ID_572253054" CREATED="1549456322477" MODIFIED="1549456326397"/>
+</node>
+<node TEXT="object_factory" ID="ID_879842803" CREATED="1549456916156" MODIFIED="1549456926844">
+<node TEXT="pour les transforms??" ID="ID_1537763291" CREATED="1549456944476" MODIFIED="1549456955906"/>
+<node TEXT="to create objects from documents, to handle their transforms" ID="ID_10660272" CREATED="1549529213812" MODIFIED="1549529258439"/>
+</node>
+<node TEXT="object_loader" ID="ID_1668052409" CREATED="1549456927109" MODIFIED="1549456931648">
+<node TEXT="???" ID="ID_861888153" CREATED="1549456936167" MODIFIED="1549456938509"/>
+</node>
+<node TEXT="ForeignKey" ID="ID_716660605" CREATED="1549456332883" MODIFIED="1549456336588"/>
+<node TEXT="Metadata" ID="ID_1784898536" CREATED="1549456336937" MODIFIED="1549456343463">
+<node TEXT="source" ID="ID_837598648" CREATED="1549457457975" MODIFIED="1549457462077" LINK="http://marciazeng.slis.kent.edu/metadatabasics/types.htm"/>
+<node TEXT="descriptive" ID="ID_786132670" CREATED="1549457304853" MODIFIED="1549457307772">
+<node TEXT="describes a resource for purposes such as discovery and identification. It can include elements such as title, abstract, author, and keywords" ID="ID_1718729296" CREATED="1549457308453" MODIFIED="1549457322920"/>
+</node>
+<node TEXT="structural" ID="ID_111583380" CREATED="1549457330360" MODIFIED="1549457332850">
+<node TEXT="indicates how compound objects are put together, for example, how pages are ordered to form chapters." ID="ID_216596281" CREATED="1549457344973" MODIFIED="1549457346688"/>
+</node>
+<node TEXT="administrative" ID="ID_1114981707" CREATED="1549457348716" MODIFIED="1549457352129">
+<node TEXT="provides information to help manage a resource, such as when and how it was created, file type and other technical information, and who can access it" ID="ID_1239559334" CREATED="1549457366079" MODIFIED="1549457366747"/>
+<node TEXT="Preservation metadata" ID="ID_950067251" CREATED="1549457414705" MODIFIED="1549457421364">
+<node TEXT="contains information needed to archive and preserve a resource." ID="ID_385302039" CREATED="1549457422093" MODIFIED="1549457423209"/>
+</node>
+<node TEXT="Rights management metadata" ID="ID_492412645" CREATED="1549457436780" MODIFIED="1549457443900">
+<node TEXT="deals with intellectual property rights" ID="ID_1035639386" CREATED="1549457444788" MODIFIED="1549457445662"/>
+</node>
+</node>
+</node>
+<node TEXT="Permission" ID="ID_1605191273" CREATED="1549457622644" MODIFIED="1549457625178">
+<node TEXT="permissions" ID="ID_1556462348" CREATED="1548765212464" MODIFIED="1549442060045" LINK="https://pythonhosted.org/python-stdnet/examples/permissions.html">
+<node TEXT="https://developers.evrythng.com/docs/using-the-dashboard-roles-permissions-schemas" ID="ID_536291990" CREATED="1549457904932" MODIFIED="1549457904932" LINK="https://developers.evrythng.com/docs/using-the-dashboard-roles-permissions-schemas"/>
+<node TEXT="Roles" ID="ID_369366490" CREATED="1548765616195" MODIFIED="1548765628534">
+<node TEXT="name" ID="ID_704710811" CREATED="1548765689469" MODIFIED="1548765691097"/>
+<node TEXT="owner" ID="ID_1211767742" CREATED="1548765691649" MODIFIED="1548765693651"/>
+<node TEXT="permissions" ID="ID_1052949623" CREATED="1548765708083" MODIFIED="1548765713073">
+<node TEXT="set(Permission)" ID="ID_645375642" CREATED="1548765715253" MODIFIED="1548765723537"/>
+</node>
+<node TEXT="add_permission(resource, operation)" ID="ID_1040884747" CREATED="1548765753652" MODIFIED="1548765769554">
+<node TEXT="Add a new Permission for resource to perform an operation. The resource can be either an object or a model." ID="ID_578226562" CREATED="1548765778513" MODIFIED="1548765780132"/>
+</node>
+<node TEXT="assign_to(subject)" ID="ID_93883721" CREATED="1548765725624" MODIFIED="1548765750033">
+<node TEXT="Assign this Role to subject" ID="ID_669191484" CREATED="1548765789371" MODIFIED="1548765790474"/>
+</node>
+</node>
+<node TEXT="Permissions" ID="ID_1610949986" CREATED="1548765628930" MODIFIED="1548765633438"/>
+<node TEXT="Operations" ID="ID_1063833289" CREATED="1548765638813" MODIFIED="1548765641512">
+<node TEXT="read" ID="ID_204140937" CREATED="1548765661399" MODIFIED="1548765663109"/>
+<node TEXT="write" ID="ID_1549033835" CREATED="1548765663545" MODIFIED="1548765666286"/>
+<node TEXT="delete" ID="ID_1995237516" CREATED="1548765666864" MODIFIED="1548765668000"/>
+</node>
+<node TEXT="Subjects" ID="ID_1188798190" CREATED="1548765641673" MODIFIED="1548765643370">
+<node TEXT="Group" ID="ID_910023323" CREATED="1548765802708" MODIFIED="1548765807677">
+<node TEXT="name" ID="ID_1523324334" CREATED="1548765847017" MODIFIED="1548765847934">
+<node TEXT="Group name. If the group is for a signle user, it can be the user username" ID="ID_369128151" CREATED="1548765891688" MODIFIED="1548765892682"/>
+<node TEXT="&apos;=None" ID="ID_9248417" CREATED="1548765893136" MODIFIED="1548765908430"/>
+</node>
+<node TEXT="user" ID="ID_1474762823" CREATED="1548765848432" MODIFIED="1548765849317">
+<node TEXT="A group is always owned by a User. For example the admin group for a website is owned by the website user" ID="ID_159124553" CREATED="1548765922606" MODIFIED="1548765923755"/>
+</node>
+<node TEXT="users" ID="ID_1082766017" CREATED="1548765853850" MODIFIED="1548765855961">
+<node TEXT="The stdnet.odm.ManyToManyField for linking User and Group." ID="ID_377492980" CREATED="1548765938654" MODIFIED="1548765939460"/>
+</node>
+</node>
+<node TEXT="User" ID="ID_1600060421" CREATED="1548765808038" MODIFIED="1548765811084">
+<node TEXT="username" ID="ID_1222010259" CREATED="1548765837684" MODIFIED="1548765841729"/>
+</node>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="schemas" FOLDED="true" ID="ID_1539681653" CREATED="1549456345238" MODIFIED="1549456348551">
+<node TEXT="Metadata" ID="ID_40508694" CREATED="1549456348794" MODIFIED="1549456356593"/>
+<node TEXT="RelationShip" ID="ID_1719274656" CREATED="1549456359889" MODIFIED="1549456890675"/>
+<node TEXT="ForeignKey" ID="ID_588369151" CREATED="1549456891438" MODIFIED="1549456899350"/>
+</node>
+</node>
+<node TEXT="NgoPck" ID="ID_1042226213" CREATED="1549455276583" MODIFIED="1549455280585">
+<node TEXT="private" ID="ID_1104009563" CREATED="1549456131946" MODIFIED="1549456146929"/>
+<node TEXT="description" ID="ID_226624935" CREATED="1549456147466" MODIFIED="1549456151276">
+<node TEXT="packaging and distribution of numengo solution" ID="ID_145485290" CREATED="1549456152741" MODIFIED="1549529127203"/>
+</node>
+</node>
+<node TEXT="NgoCi" ID="ID_786231447" CREATED="1549455280905" MODIFIED="1549455287874">
+<node TEXT="private" ID="ID_712475594" CREATED="1549456195793" MODIFIED="1549456197523"/>
+<node TEXT="description" ID="ID_1541111614" CREATED="1549456197866" MODIFIED="1549456263896">
+<node TEXT="tools for managing projects and their dependencies" ID="ID_1829989431" CREATED="1549456264267" MODIFIED="1549529152418">
+<node TEXT="build" ID="ID_665540433" CREATED="1549456282258" MODIFIED="1549456284381"/>
+</node>
+<node TEXT="project boilerplate" ID="ID_792244675" CREATED="1549529157074" MODIFIED="1549529172718"/>
+</node>
+</node>
+<node TEXT="NgoMf" ID="ID_1834232753" CREATED="1549455288187" MODIFIED="1549455294033">
+<node TEXT="private" ID="ID_1556601457" CREATED="1549456131946" MODIFIED="1549456146929"/>
+<node TEXT="description" ID="ID_1801601746" CREATED="1549456147466" MODIFIED="1549456151276">
+<node TEXT="tools for code generation of numengo objects" ID="ID_489367804" CREATED="1549456152741" MODIFIED="1549456257979"/>
+<node TEXT="tools for" ID="ID_416862288" CREATED="1549529183720" MODIFIED="1549529209845"/>
+</node>
+</node>
+</node>
+</node>
+</map>
