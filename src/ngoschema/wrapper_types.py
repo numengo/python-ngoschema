@@ -52,6 +52,26 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 return False
         return True
 
+
+    def for_json(self, no_defaults=True):
+        from python_jsonschema_objects import classbuilder
+        from .protocol_base import ProtocolBase
+
+        out = []
+        for item in self.typed_elems:
+            if isinstance(item, (ProtocolBase, ArrayWrapper)):
+                out.append(item.for_json(no_defaults=no_defaults))
+            elif isinstance(item, (
+                    classbuilder.ProtocolBase,
+                    classbuilder.LiteralValue,
+                    ArrayWrapper)):
+                out.append(item.for_json())
+            else:
+                out.append(item)
+
+        return out
+
+
     def validate_items(self):
         if not self._dirty and self._typed is not None:
             return self._typed

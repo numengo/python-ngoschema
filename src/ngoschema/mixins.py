@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import weakref
 from python_jsonschema_objects.classbuilder import LiteralValue
+from .decorators import classproperty
 
 
 class HasParent:
@@ -35,6 +36,16 @@ class HasParent:
 
     _parent = property(_get_parent, _set_parent)
 
+    def _get_parents(self):
+        cur = self._parent
+        ret = []
+        while cur:
+            ret.append(cur)
+            cur = cur._parent
+        return ret
+
+    _parents = property(_get_parents)
+
     def register_child(self, child):
         if self._children_dict is None:
             self._children_dict = weakref.WeakValueDictionary()
@@ -45,6 +56,7 @@ class HasParent:
 
     _children = property(_get_children)
 
+
 class RootRelativeCname:
 
     def resolve_relative_cname(self, value):
@@ -54,6 +66,7 @@ class RootRelativeCname:
     def get_relative_cname(self, child):
         base = '%s.' % self.canonicalName
         return str(child.canonicalName).replace(base, '#')
+
 
 class HandleRelativeCname:
 
@@ -119,14 +132,15 @@ class HasCache:
         from .protocol_base import ProtocolBase
         from .foreign_key import ForeignKey
         cur = self._context()
-        for k in key.split('.'):
-            if isinstance(cur, ForeignKey):
-                cur = cur.ref
-            if not isinstance(cur, ProtocolBase):
-                return
-            cur = cur.get(k)
-            #cur = cur.get(k, None)
-        return cur
+        return cur.get(key)
+        #for k in key.split('.'):
+        #    if isinstance(cur, ForeignKey):
+        #        cur = cur.ref
+        #    if not isinstance(cur, ProtocolBase):
+        #        return
+        #    cur = cur.get(k)
+        #    #cur = cur.get(k, None)
+        #return cur
 
     @property
     def _input_props(self):
@@ -156,15 +170,11 @@ class HasCache:
 
     def is_dirty(self):
         return self._dirty or (self._cache != self._input_values())
-        #return self._dirty or any((p.is_dirty() for p in self._input_props.values()))
 
     def set_clean(self, recursive=False):
         self._dirty = False
         self._cache = self._input_values()
-        #if recursive:
-        #    for o in self._outputs:
-        #        o.set_clean()
-    
+
     def touch(self, recursive=False):
         self._dirty = True
         if recursive:
@@ -192,3 +202,64 @@ class HasCache:
         else:
             self.touch()
     _validated = property(get_validated, set_validated)
+
+
+class HasInstanceQuery:
+
+    @classmethod
+    def one(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+
+        Query can used all usual operators"""
+        from .query import Query
+        ret = list(
+            Query(cls.__instances__)._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+        if len(ret) == 0:
+            raise ValueError('Entry %s does not exist' % attrs_value)
+        elif len(ret) > 1:
+            import logging
+            cls.logger.error(ret)
+            raise ValueError('Multiple objects returned')
+        return ret[0]
+
+    @classmethod
+    def one_or_none(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+
+        Query can used all usual operators"""
+        from .query import Query
+        ret = list(
+            Query(cls.__instances__)._filter_or_exclude(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+        if len(ret) == 0:
+            return None
+        elif len(ret) > 1:
+            import logging
+            cls.logger.error(ret)
+            raise ValueError('Multiple objects returned')
+        return ret[0]
+
+    @classmethod
+    def first(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves exactly one instance corresponding to query
+
+        Query can used all usual operators"""
+        from .query import Query
+        return next(
+            Query(cls.__instances__).filter(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+
+    @classmethod
+    def filter(cls, *attrs, load_lazy=False, **attrs_value):
+        """retrieves a list of instances corresponding to query
+
+        Query can used all usual operators"""
+        from .query import Query
+        return list(
+            Query(cls.__instances__).filter(
+                *attrs, load_lazy=load_lazy, **attrs_value))
+
+    @classproperty
+    def _instances(cls):
+        return (v() for v in cls.__instances__.valuerefs() if v())

@@ -138,7 +138,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
                     instance._dirty = False
                     return
                 # if not, make a query and initialize
-                for i in foreignClass.instances:
+                for i in foreignClass._instances:
                     if _access_key_ref(i) is ref:
                         backref = i
                         if not instance.ref is backref:
@@ -174,7 +174,7 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
                         ref[self.name] = None
 
                 # we resolve all backreferences
-                backrefs = [i() for i in foreignClass.instances
+                backrefs = [i() for i in foreignClass._instances
                             if _access_key_ref(i()) is ref]
                 if self.ordering:
                     backrefs = sorted(backrefs, self.ordering, self.reverse)
@@ -201,25 +201,39 @@ class ForeignKey(pjo_literals.LiteralValue, HasCache, HasLogger):
         if self._value is None:
             return
         key, val = self.key, self._value
-        ancestors = dict()
-        for i in self.foreignClass.instances:
+        for i in self.foreignClass._instances:
             ival = str(i.get(key))
             if not ival:
                 continue
             if ival == val:
                 self.ref = i
                 return i
-            if val.startswith('%s.' % ival):
-                ancestors[ival] = i
         else:
-            best_parent = max(ancestors, key=len)
-            cur = ancestors[best_parent]
-            path = self._value
-            path2 = cur.resolve_cname(path)
-            for p in path2:
-                cur = cur[p]
-            self.ref = cur
-            return cur
+            # not instanciated yet (lazy loading?)
+            # look for a common ancestor
+            ancs = self._value.split('.')
+            from .protocol_base import ProtocolBase
+            for i in ProtocolBase._instances:
+                ival = str(i.get(key))
+                iancs = ival.split('.')
+                comm = []
+                for a, ia in zip(ancs, iancs):
+                    if a!=ia: break
+                    comm.append(a)
+                if comm:
+                    ancestor = '.'.join(comm)
+                    cur = i
+                    while cur:
+                        if cur.get(key) == ancestor:
+                            break
+                        cur = cur._parent
+                    assert cur, ancestor
+                    path2 = cur.resolve_cname(self._value)
+                    for p in path2:
+                        cur = cur[p]
+                    self.ref = cur
+                    return cur
+        raise ValueError("Impossible to resolve reference '%s'" % self._value)
 
     def _set_ref(self, instance):
         if instance is not None:

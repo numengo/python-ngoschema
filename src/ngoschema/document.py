@@ -145,7 +145,6 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     _id = None
 
-    @property
     def get_id(self):
         if self._id is None and self.content:
             self._id = self.content['id']

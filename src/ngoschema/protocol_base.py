@@ -14,6 +14,7 @@ import itertools
 import weakref
 import six
 import collections
+import copy
 
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
@@ -24,8 +25,7 @@ from python_jsonschema_objects import \
 
 from . import utils, jinja2
 from .canonical_name import resolve_cname, CN_KEY
-from .decorators import classproperty
-from .mixins import HasCache, HasParent, HandleRelativeCname
+from .mixins import HasCache, HasParent, HandleRelativeCname, HasInstanceQuery
 from .logger import HasLogger
 from .uri_identifier import resolve_uri
 from .validators import DefaultValidator
@@ -287,7 +287,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     return property(getprop, setprop, delprop, desc)
 
 
-class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_classbuilder.ProtocolBase):
+class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInstanceQuery, pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
     
     Protocol shared by all instances created by the class builder. It extends the 
@@ -319,9 +319,9 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
 
     # additional private and protected props
     _validator = None
-    _instances = weakref.WeakValueDictionary()
     __prop_names__ = dict()
     __prop_translated__ = dict()
+    __instances__ = weakref.WeakValueDictionary()
 
     def __new__(cls,
                 *args,
@@ -381,7 +381,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
 
         # register instance
         for c in self.pbase_mro(ngo_base=True):
-            c._instances[id(self)] = self
+            c.__instances__[id(self)] = self
 
         self._lazy_data = dict()
         self._extended_properties = dict()
@@ -396,7 +396,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         # but only for the ones that have defaults set.
         for k, v in self.__has_default__.items():
             if k not in props:
-                setattr(self, k, v)
+                setattr(self, k, copy.copy(v))
 
         # reference to property extern to document to be resolved later
         if len(args)==1 and utils.is_string(args[0]):
@@ -489,28 +489,34 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         serialization method, removing all members flagged as NotSerialized
         """
         out = collections.OrderedDict()
-        for c in reversed(self.pbase_mro()):
-            for key, infotype in c.__propinfo__.items():
-                keyt = c.__prop_names__.get(key, key)
-                if keyt in getattr(c, '__not_serialized__', []):
+        for pn_id, pn in self.__prop_names_flatten__.items():
+            if pn_id in getattr(self, '__not_serialized__', []):
+                continue
+            prop = self._get_prop(pn)
+            if no_defaults:
+                if prop is None:
                     continue
-                prop = self._get_prop(keyt)
-                if no_defaults:
-                    if keyt in c.__has_default__ and prop is not None:
-                        default_value = c.__has_default__[keyt]
-                        if getattr(prop, '_pattern', '') == default_value:
-                            continue
-                        if prop == default_value:
-                            continue
-                    if prop is None and infotype.get('default') is None:
+                defv = self.__has_default__.get(pn)
+                if isinstance(prop, pjo_literals.LiteralValue):
+                    if getattr(prop, '_pattern', '') == defv:
                         continue
-                    value = self._get_prop_value(keyt)
+                    if prop == defv:
+                        continue
+                    out[pn_id] = self._get_prop_value(pn)
                 else:
-                    value = self._get_prop_value(keyt)
-                out[key] = value
-        for key, prop in self._extended_properties.items():
-            value = self._get_prop_value(key)
-            out[key] = value
+                    if isinstance(prop, pjo_classbuilder.ProtocolBase):
+                        if len(prop) == len(prop.__has_default__):
+                            if all(prop._get_prop_value(p) == d for p, d in prop.__has_default__):
+                                continue
+                    if isinstance(prop, pjo_wrapper_types.ArrayWrapper):
+                        if len(prop) == len(defv):
+                            if not defv or prop == defv:
+                                continue
+                    out[pn_id] = prop.for_json(no_defaults=no_defaults)
+            else:
+                out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
+        for pn, prop in self._extended_properties.items():
+            out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
         return out
 
     def validate(self):
@@ -555,47 +561,11 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
     def propinfo(cls, propname):
         propid = cls.__prop_translated_flatten__.get(propname, propname)
         for c in cls.__pbase_mro__:
-            if propid in c.__prop_names_flatten__:
-                if c is not cls:
-                    return c.propinfo(propid)
-                elif propid in c.__propinfo__:
-                    return c.__propinfo__[propid]
+            if propname in c.__prop_names__:
+                return c.__propinfo__[propid]
+            elif c is not cls and propid in getattr(c, '__prop_names_flatten__', {}):
+                return c.propinfo(propid)
         return {}
-
-    #@classproperty
-    #def __propinfo_flatten__(cls):
-    #    return { k: v for k, v in
-    #             itertools.chain(six.iteritems(c.__propinfo__) if c is cls
-    #                             else getattr(c, '__propinfo_flatten__', six.iteritems(c.__propinfo__))
-    #                             for c in cls.__pbase_mro__
-    #                             if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
-    #             }
-    #
-    #@classproperty
-    #def __prop_names_flatten__(cls):
-    #    return itertools.chain(six.iteritems(c.__prop_names__) if c is cls
-    #                           else getattr(c, '__prop_names_flatten__', six.iteritems(c.__prop_names__))
-    #                           for c in cls.__pbase_mro__
-    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
-    #
-    #@classproperty
-    #def __prop_translated_flatten__(cls):
-    #    return itertools.chain(six.iteritems(c.__prop_names__) if c is cls
-    #                           else getattr(c, '__prop_translated_flatten__', six.iteritems(c.__prop_translated__))
-    #                           for c in cls.__pbase_mro__
-    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
-    #
-    #@classproperty
-    #def __prop_translated_flatten_rev__(cls):
-    #    return ((v, k) for k, v in cls.__prop_translated_flatten__)
-
-
-    #@classproperty
-    #def __has_default_flatten__(cls):
-    #    return itertools.chain(six.iteritems(c.__propinfo__) if c is cls
-    #                           else getattr(c, '__propinfo_flatten__', six.iteritems(c.__propinfo__))
-    #                           for c in cls.__pbase_mro__
-    #                           if c is not ProtocolBase and c is not pjo_classbuilder.ProtocolBase)
 
     def __getattr__(self, name):
         """
@@ -606,6 +576,13 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         # private and protected attributes at accessed directly
         if name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
+
+        if '.' in name:
+            names = name.split('.')
+            cur = ProtocolBase.__getattr__(self, names[0])
+            for _ in names:
+                cur = ProtocolBase.__getattr__(cur, _)
+            return cur
 
         # check it s a standard attribute or method
         for c in self.pbase_mro():
@@ -648,6 +625,13 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
         """allow setting of protected attributes"""
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
+
+        if '.' in name:
+            names = name.split('.')
+            cur = ProtocolBase.__getattr__(self, names[0])
+            for _ in names[:-1]:
+                cur = ProtocolBase.__getattr__(cur, _)
+            return ProtocolBase.__setattr__(cur, names[-1], val)
 
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
@@ -692,7 +676,8 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
 
     def _get_prop_value(self, name, default=None):
         if self._lazy_loading and name in self._lazy_data:
-            return self._lazy_data[name]
+            val = self._lazy_data[name]
+            return val.for_json(no_defaults=no_defaults) if hasattr(val, 'for_json') else val
         prop = self._get_prop(name)
         return prop.for_json() if prop else default
 
@@ -716,61 +701,3 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, pjo_clas
                     self._properties[name] = prop
                 else:
                     raise AttributeError("no type specified for property '%s'"% name)
-
-    @classmethod
-    def one(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls._instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            raise ValueError('Entry %s does not exist' % attrs_value)
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def one_or_none(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls._instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            return None
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def first(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        return next(
-            Query(cls._instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classmethod
-    def filter(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves a list of instances corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        return list(
-            Query(cls._instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classproperty
-    def instances(cls):
-        return (v() for v in cls._instances.valuerefs() if v())

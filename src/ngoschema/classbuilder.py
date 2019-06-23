@@ -10,12 +10,14 @@ created on 22/05/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import collections
 import copy
 import datetime
 import inspect
 import pathlib
 import re
+import weakref
 import dpath.util
 
 import arrow
@@ -35,7 +37,7 @@ from .foreign_key import ForeignKey
 from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
 
-logger = pjo_classbuilder.logger
+logger = logging.getLogger(__name__)
 
 _NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
@@ -222,7 +224,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # complete object attribute list with class attributes to use prop  attribute setter
         __object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
 
-        #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
         props['__schema__'] = cls_schema
         props['__schema__']['$id'] = nm
@@ -241,68 +242,67 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             __object_attr_list__.update([a for a in p.__dict__.keys() if not a.startswith('__')])
             defaults.update(getattr(p, '__has_default__', {}))
 
-
         properties = collections.OrderedDict(cls_schema.get('properties', {}))
 
-        def find_getter_setter_defv(propname, class_attrs):
-            """
-            Helper to retrieve getters/setters/default value in class attribute
-            dictionary for a given property name
-            """
-            getter = None
-            setter = None
-            defv = None
-            pn = propname
-            gpn = 'get_%s' % pn
-            spn = 'set_%s' % pn
-            if pn in class_attrs:
-                a = class_attrs[pn]
-                if inspect.isfunction(a) or inspect.ismethod(a):
-                    logger.warning(
-                        pjo_util.lazy_format("{} will be overwritten",
-                                             propname))
-                elif inspect.isdatadescriptor(a):
-                    par_prop_sch = list(dpath.util.search(class_attrs, '__schema__/properties/'+propname, yielded=True))
-                    prop_sch = list(dpath.util.search(cls_schema, 'properties/'+propname, yielded=True))
-                    par_prop_sch = par_prop_sch[0] if par_prop_sch else {}
-                    prop_sch = prop_sch[0] if prop_sch else {}
-                else:
-                    defv = class_attrs.pop(pn)
-            if gpn in class_attrs:
-                a = class_attrs[gpn]
-                if inspect.isfunction(a) or inspect.ismethod(a):
-                    getter = a
-            if spn in class_attrs:
-                a = class_attrs[spn]
-                if inspect.isfunction(a) or inspect.ismethod(a):
-                    setter = a
-            return getter, setter, defv
-
-        name_translation = {}
-        name_translated = {}
-
+        # name translation
+        name_translation = collections.OrderedDict()
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
-            #properties[prop]["raw_name"] = prop
-            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
-            if translated != prop:
-                name_translated[translated] = prop
-            ##name_translation[prop] = prop.replace("@", "").replace("$", "")
-            name_translation[prop] = translated
-            prop = name_translation[prop]
 
-            # look for getter/setter/defaultvalue first in class definition
-            ogetter, osetter, odefv = find_getter_setter_defv(prop, class_attrs)
-            getter, setter, defv = ogetter, osetter, odefv
-            # look for missing getter/setter/defaultvalue in parent classes
-            for p in reversed(parents):
-                par_attrs = p.__dict__
-                pgetter, psetter, pdefv = find_getter_setter_defv(
-                    prop, par_attrs)
-                getter = getter or pgetter
-                setter = setter or psetter
-                defv = defv or pdefv
+            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
+            name_translation[prop] = translated
+
+        # flattening
+        name_translation_flatten = collections.OrderedDict()
+        for p in reversed(parents):
+            name_translation_flatten.update(getattr(p, '__prop_names_flatten__',
+                                             getattr(p, '__prop_names__', {})))
+        name_translation_flatten.update(name_translation)
+        name_translated = {v: k for k, v in name_translation_flatten.items() if v != k}
+
+        # looking for default values, getters and setters overriding inherited properties
+        from_parents = set(name_translation_flatten.values()).difference(name_translation.values())
+        for pn in from_parents:
+            defv = class_attrs.get(pn)
+            getter = class_attrs.get('get_' + pn)
+            setter = class_attrs.get('set_' + pn)
+            if defv or getter or setter:
+                logger.warning("redefining property '%s' to use new default value, getter or setter from class code." % pn)
+                for p in parents:
+                    pi = p.propinfo(pn) if issubclass(p, ProtocolBase) else None
+                    if pi:
+                        getter = getattr(p, 'get_' + pn, None)
+                        setter = getattr(p, 'set_' + pn, None)
+                        defv = getattr(p, '__has_default__', {}).get(pn)
+                        # add a copy of default value, setter, getter of parents into class if not already existing
+                        for k, v in zip([pn, 'get_' + pn,  'set_' + pn],
+                                        [defv, getter, setter]):
+                            if v and k not in class_attrs:
+                                class_attrs[k] = v
+                        properties[name_translation_flatten[pn]] = pi.copy()
+                        break
+                else:
+                    raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
+
+
+        # look for getter/setter/defaultvalue first in class definition
+        for prop, detail in properties.items():
+            prop = name_translation_flatten[prop]
+
+            defv = class_attrs.get(prop)
+            if defv is not None and (
+                inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
+                raise AttributeError(
+                    "Impossible to get an initial value from attribute '%s' as defined in class code." % prop)
+            getter = class_attrs.get('get_' + prop)
+            if getter and not (inspect.isfunction(getter) or inspect.ismethod(getter)):
+                raise AttributeError(
+                    "Impossible to use getter of attribute '%s' as defined in class code." % prop)
+            setter = class_attrs.get('set_' + prop)
+            if setter and not (inspect.isfunction(setter) or inspect.ismethod(setter)):
+                raise AttributeError(
+                    "Impossible to use setter of attribute '%s' as defined in class code." % prop)
 
             if defv is not None:
                 detail['default'] = defv
@@ -439,6 +439,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 props[prop] = make_property(
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
                 properties[name_translated.get(prop, prop)]['_type'] = typ
+
+
         """
         If this object itself has a 'oneOf' designation, then
         make the validation 'type' the list of potential objects.
@@ -459,14 +461,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # overwritten if they are default values
         props.update([(k, v) for k, v in class_attrs.items() if k not in props])
 
-        name_translation_flatten = name_translation.copy()
-        for p in parents:
-            name_translation_flatten.update(getattr(p, '__prop_names_flatten__',
-                                             getattr(p, '__prop_names__', {})))
-
         props['__prop_names__'] = name_translation
         props['__prop_names_flatten__'] = name_translation_flatten
-        props['__prop_translated_flatten__'] = {v: k for k, v in name_translation_flatten.items() if v!= k}
+        props['__prop_translated_flatten__'] = name_translated
         props['__has_default__'] = defaults
 
         # automatically adds property names to foreign keys
@@ -514,10 +511,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__lazy_loading__'] = class_attrs.get('__lazy_loading__', False)
         props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
         props['__strict__'] = bool(required) or kw.get('strict', False) or class_attrs.get('__strict__', False)
+        props['__instances__'] = weakref.WeakValueDictionary()
 
         cls = type(clsname, tuple(parents), props)
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
-        cls.__ngo_pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, ProtocolBase))
+        cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))
 
         self.under_construction.remove(nm)
 
