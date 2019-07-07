@@ -31,7 +31,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to do simple model to model transformation
     """
 
-    schemaUri = "http://numengo.org/draft-05/schema/object-transform"
+    __schema__ = "http://numengo.org/draft-05/schema/object-transform"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)

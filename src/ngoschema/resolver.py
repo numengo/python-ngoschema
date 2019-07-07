@@ -92,7 +92,7 @@ class ExpandingResolver(RefResolver):
             dpath.util.merge(schema_exp, sch, flags=dpath.util.MERGE_REPLACE)
 
         schema_copy = copy.deepcopy(schema)
-        def replace_relative_uris(coll, key):
+        def replace_relative_uris(coll, key, level):
             val = coll[key]
             if is_string(val) and val.startswith('#/'):
                 coll[key] = self._urljoin_cache(schema_scope, val)

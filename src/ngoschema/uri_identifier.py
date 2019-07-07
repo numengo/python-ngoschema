@@ -20,6 +20,7 @@ from six.moves.urllib.parse import unquote
 
 from . import utils
 
+_document_id_store = URIDict()
 _doc_id_store = URIDict()
 
 URI_ID = '$id'
@@ -30,9 +31,17 @@ def norm_uri(uri):
     return _doc_id_store.normalize(uri)
 
 
-def register_document_with_uri_id(doc, uri_id):
-    _doc_id_store[norm_uri(uri_id)] = doc
+def register_document_with_uri_id(document, uri_id):
+    uri_id = norm_uri(uri_id)
+    _document_id_store[uri_id] = document
+    _doc_id_store[uri_id] = document._content
 
+def register_doc_with_uri_id(doc, uri_id):
+    _doc_id_store[uri_id] = doc
+
+def resolve_document_with_uri_id(uri_id):
+    uri_id = norm_uri(uri_id)
+    return _document_id_store.get(uri_id)
 
 @functools.lru_cache(30)
 def resolve_doc(uri_id, remote=False):
@@ -67,6 +76,7 @@ def resolve_uri(uri_id, doc=None, remote=False):
     if doc is None:
         doc = resolve_doc(uri, remote)
     return resolve_fragment(doc, frag)
+
 
 def relative_url(target, base):
     base=urlparse(base)

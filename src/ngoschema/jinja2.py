@@ -20,6 +20,8 @@ import jinja2.parser
 import six
 
 from . import utils
+from .decorators import SCH_PATH_DIR_EXISTS
+from .decorators import assert_arg
 from .serializers import Serializer
 from .serializers import serializer_registry
 from .query import Query
@@ -53,11 +55,11 @@ class TemplatedString(object):
         self._template = default_jinja2_env().from_string(templated_str)
         self._has_dot = regex_has_dot.search(templated_str) is not None
 
-    def __call__(self, obj):
+    def __call__(self, **obj):
         # ctx = context.as_dict() if hasattr(context,'as_dict') else context
         if self._has_dot:
-            return self._template.render(this=obj, **obj)
-        return self._template.render(obj)
+            return self._template.render(**obj)
+        return self._template.render(**obj)
 
 
 @serializer_registry.register()
@@ -77,7 +79,6 @@ class Jinja2Serializer(Serializer):
              objs,
              path,
              overwrite=False,
-             protocol='w',
              encoding="utf-8",
              logger=None,
              **opts):
@@ -87,68 +88,90 @@ class Jinja2Serializer(Serializer):
         logger.debug("data:\n%r ", objs)
 
         if path.exists() and not overwrite:
-            raise IOError("file %s already exists" % str(path))
-        with io.open(str(path), protocol, encoding=encoding) as outfile:
+            raise IOError("file '%s' already exists" % str(path))
+        with io.open(str(path), 'w', encoding=encoding) as outfile:
             stream = self.dumps(objs, encoding=encoding, **opts)
             stream = six.text_type(stream)
             outfile.write(stream)
 
     def dumps(self, objs, **opts):
-        data = objs.as_dict() if hasattr(objs, "as_dict") else objs
+        data = objs.for_json() if hasattr(objs, "for_json") else objs
         data = utils.process_collection(data, **opts)
         return self.jinja.get_template(self.template).render(data)
 
+    @assert_arg(2, SCH_PATH_DIR_EXISTS)
     def dump_macro(self,
-                   macro_name, 
-                   path,
-                   objarg_list=[],
-                   obj_for=None,
-                   user_code=None,
-                   overwrite=False,
-                   protocol='w',
+                   macro_name,
+                   output_dir,
+                   templated_path,
+                   overwrite=True,
                    encoding="utf-8",
-                   logger=None,
-                   **opts):
-        __doc__ = Jinja2Serializer.dump_macro.__doc__
-        logger = logger or self.logger
-        logger.info("DUMP template '%s' file %s", self.template, path)
-        logger.debug("data:\n%r ", objarg_list)
+                   protected_regions=None,
+                   macro_args=[],
+                   **context):
+        """
+        Serializes a jinja2 macro into a file by given by a possibly templated filepath.
+        Missing directories are created.
+        If output already exists with exact same content, file is not overwritten.
+
+        :param macro_name: macro name in the template file
+        :param output_dir: existing output directory
+        :param templated_path: templated relative path of output
+        :param protected_regions: an optional dictionary of protected regions (key: region canonical name, value: string)
+        :param macro_args: macro list of arguments
+        :param context: context used by jinja to render template
+        """
+
+        relpath = TemplatedString(templated_path)(**context)
+        path = output_dir.joinpath(relpath)
 
         if path.exists() and not overwrite:
-            raise IOError("file %s already exists" % str(path))
-        with io.open(str(path), protocol, encoding=encoding) as outfile:
-            stream = self.dumps_macro(macro_name, objarg_list=objarg_list, obj_for=obj_for, **opts)
-            stream = six.text_type(stream)
+            raise IOError("file '%s' already exists" % str(path))
+
+        stream = self.dumps_macro(
+                macro_name,
+                protected_regions=protected_regions,
+                macro_args=macro_args,
+                **context)
+        stream = six.text_type(stream)
+
+        if path.exists():
+            with io.open(str(path), 'r', encoding) as f:
+                if str(stream) == f.read():
+                    self.logger.info("File '%s' already exists with same content. Not overwriting.", path)
+                    return
+
+        with io.open(str(path), 'w', encoding=encoding) as outfile:
+            self.logger.info("DUMP macro %s of template '%s' file %s", macro_name, self.template, path)
+            self.logger.debug("data:\n%r ", utils.any_pprint(context))
             outfile.write(stream)
 
     def dumps_macro(self, 
-                    macro_name, 
-                    objarg_list=[],
-                    obj_for=None,
-                    user_code=None,
-                    **opts):
+                    macro_name,
+                    protected_regions=None,
+                    macro_args=[],
+                    **context):
         """
         Serializes a jinja2 macro
 
         :param macro_name: macro name in the template file
-        :param objarg_list: list of objects to pass as arguments to the macro
+        :param protected_regions: an optional dictionary of protected regions (key: region canonical name, value: string)
+        :param macro_args: macro list of arguments
+        :param context: context used by jinja to render template
         """
-        args = ['arg%i'%i for i in range(len(objarg_list))]
-        ctx = { "arg%i"%i: o for i, o in enumerate(objarg_list)}
-        if obj_for is not None:
-            ctx['this'] = obj_for
+        args = ['arg%i'%i for i in range(len(macro_args))]
+        ctx = { "arg%i"%i: o for i, o in enumerate(macro_args)}
+        if 'this' in context:
             args.append('this=this')
-            #if utils.is_mapping(obj_for):
-            #    for k, v in obj_for.items():
-            #        if v is not None:
-            #            args.append("%s=this.%s"%(k, k))
-        ctx['user_code'] = user_code or {}
+        ctx['protected_regions'] = protected_regions or {}
         ctx['Query'] = Query
-        args.append('user_code=user_code')
+        args.append('protected_regions=protected_regions')
         to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
             self.template, macro_name, macro_name, ', '.join(args))
-        print(to_render)
-        return self.jinja.from_string(to_render).render(ctx)
+        self.logger.error(to_render)
+        context.update(ctx)
+        return self.jinja.from_string(to_render).render(context)
+
 
 def get_variables(source, remove_this=True):
     """return the list of variables in jinja2 source (no filters)"""

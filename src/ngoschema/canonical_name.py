@@ -12,12 +12,17 @@ from __future__ import unicode_literals
 from python_jsonschema_objects.util import lazy_format
 
 from . import utils
+from .uri_identifier import resolve_uri
 
+_document_cn_store = dict()
 _doc_cn_store = dict()
 
 CN_KEY = 'name'
 CN_ID = 'canonicalName'
 
+def register_document_with_cname(document, cname):
+    _document_cn_store[cname] = document
+    _doc_cn_store[cname] = document.content
 
 def register_document_with_cname(doc, cname):
     _doc_cn_store[cname] = doc
@@ -39,8 +44,7 @@ def resolve_cname_path(cn, parent=None, cn_key=CN_KEY):
     is used.
     :param cn_key: key to use to build canonical name (default is CN_KEY='name')
     """
-    cn_path = cn if utils.is_sequence(cn) else cn.strip('#').strip('.').split(
-        '.')
+    cn_path = cn if utils.is_sequence(cn) else cn.strip('#').strip('.').split('.')
     cur_cn = []
 
     #  parent document is provided, just convert cn to list path
@@ -59,7 +63,10 @@ def resolve_cname_path(cn, parent=None, cn_key=CN_KEY):
                 raise Exception('no parent found for cn %s' % cn)
         parent_doc = _doc_cn_store[parent]
         cur_cn = parent.split('.')[:-1]
-        #cur_cn = parent.split('.')
+
+    if set(parent_doc) == set(['$ref']):
+        parent_doc = resolve_uri(parent_doc['$ref'])
+
 
     if cn_path[:-1] == cur_cn and parent_doc.get(cn_key) == cn_path[-1]:
         return parent_doc, [] # cur path is empty as we are at the root
@@ -71,7 +78,8 @@ def resolve_cname_path(cn, parent=None, cn_key=CN_KEY):
         if not cn:
             yield cur, cn, cur_path
         if isinstance(cur, dict):
-            remaining = cn[len(cur_cn):]
+            if set(cur) == set(['$ref']):
+                cur = resolve_uri(cur['$ref'])
             cn2 = cur_cn + [cur.get(cn_key, 'null')]
             if cn2 == cn[0:len(cn2)]:
                 if cn2 == cn:
@@ -107,3 +115,4 @@ def resolve_cname(cn, parent=None, cn_key=CN_KEY):
     for p in path:
         cur = cur[p]
     return cur
+

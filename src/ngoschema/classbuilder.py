@@ -33,7 +33,7 @@ from . import jinja2
 from . import pjo_validators as ngo_pjo_validators
 from . import utils
 from .resolver import get_resolver
-from .foreign_key import ForeignKey
+from .foreign_key import ForeignKey, CnameForeignKey
 from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
 
@@ -89,6 +89,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         scope = scope or resolver.resolution_scope
         uri = resolver._urljoin_cache(scope, uri)
         if uri not in self.resolved:
+            if uri in self.under_construction:
+                return pjo_classbuilder.TypeRef(uri, self.resolved)
             uri, schema = resolver.resolve(uri)
             self.resolved[uri] = self._construct(uri, schema)
         return self.resolved[uri]
@@ -123,7 +125,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             instance = self._context() if self._context else None
             #if getattr(self, "_pattern", False):
             if '_pattern' in self.__dict__:
-                self._value = jinja2.TemplatedString(self._pattern)(instance)
+                self._value = jinja2.TemplatedString(self._pattern)(this=instance)
             pjo_literals.LiteralValue.validate(self)
 
         #cls_schema = copy.deepcopy(clsdata)
@@ -135,14 +137,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         if 'foreignKey' in cls_schema:
             # we merge the schema in propinfo to access it directly
-            fk_uri = cls_schema['foreignKey']['foreignSchemaUri']
-            scope = self.resolver.resolution_scope
-            fk_uri_dfg = self.resolver._urljoin_cache(scope, fk_uri)
-            cls_schema['foreignKey']['foreignSchemaUri'] = fk_uri_dfg
-            propinfo.update(cls_schema)
+            uri, sch = self.resolver.resolve(cls_schema['foreignKey']['$schema'])
+            clsFK = CnameForeignKey if cls_schema['foreignKey'].get('key', 'canonicalName') == 'canonicalName' \
+                else ForeignKey
+            cls_schema['foreignKey']['$schema'] = uri
+            propinfo.update(sch) # merge the schema in propinfo to access it directly
+            propinfo.update(cls_schema) # update with possibly overriding class
             return type(
                 native_str(nm),
-                (ForeignKey, ),
+                (clsFK, ),
                 {
                     '__propinfo__': propinfo,
                 },
@@ -225,8 +228,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         __object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
 
         cls_schema = clsdata
-        props['__schema__'] = cls_schema
-        props['__schema__']['$id'] = nm
+        props['__schema__'] = nm
 
         # parent classes
         extends = [self.resolve_or_build(pjo_util.resolve_ref_uri(current_scope, ext))
@@ -467,14 +469,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__has_default__'] = defaults
 
         # automatically adds property names to foreign keys
-        for prop_name, prop in properties.items():
-            fkey = prop.get('foreignKey')
-            if fkey and 'name' not in fkey:
-                prop['foreignKey']['name'] = prop_name
-            # case array of foreignkeys
-            fkey =  prop.get('items', {}).get('foreignKey')                
-            if fkey and 'name' not in fkey:
-                prop['items']['foreignKey']['name'] = prop_name
+        #for prop_name, prop in properties.items():
+        #    fkey = prop.get('foreignKey')
+        #    if fkey and 'name' not in fkey:
+        #        prop['foreignKey']['name'] = prop_name
+        #    # case array of foreignkeys
+        #    fkey =  prop.get('items', {}).get('foreignKey')
+        #    if fkey and 'name' not in fkey:
+        #        prop['items']['foreignKey']['name'] = prop_name
 
         props['__propinfo__'] = properties
 
@@ -510,6 +512,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__attr_by_name__'] = class_attrs.get('__attr_by_name__', False)
         props['__lazy_loading__'] = class_attrs.get('__lazy_loading__', False)
         props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
+        props['__propagate__'] = class_attrs.get('__propagate__', False)
         props['__strict__'] = bool(required) or kw.get('strict', False) or class_attrs.get('__strict__', False)
         props['__instances__'] = weakref.WeakValueDictionary()
 

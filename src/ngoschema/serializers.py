@@ -14,6 +14,7 @@ import logging
 from abc import ABCMeta
 from abc import abstractmethod
 from builtins import str
+import io
 
 import six
 from future.utils import with_metaclass
@@ -28,9 +29,11 @@ try:
 except ImportError:
     from io import StringIO
 
+logger = logging.getLogger(__name__)
+
 
 class Serializer(with_metaclass(ABCMeta)):
-    logger = logging.getLogger(__name__)
+    logger = logger
     default_ext = '.txt'
 
     @classmethod
@@ -60,14 +63,20 @@ class Serializer(with_metaclass(ABCMeta)):
         :param opts: additional options
         """
         logger = logger or cls.logger
-        logger.info("DUMP file %s", path)
-        logger.debug("data:\n%r ", obj)
 
         if path.exists() and not overwrite:
-            raise IOError("file %s already exists" % str(path))
-        with io.open(str(path), protocol, encoding=encoding) as outfile:
-            stream = cls.dumps(obj, encoding=encoding, **opts)
-            stream = six.text_type(stream)
+            raise IOError("File '%s' already exists. Not overwriting", path)
+
+        stream = cls.dumps(obj, encoding=encoding, **opts)
+        stream = six.text_type(stream)
+        if path.exists():
+            with io.open(str(path), mode='r', encoding=encoding) as f:
+                if str(stream) == f.read():
+                    logger.info("File '%s' already exists with same content. Not overwriting.", path)
+                    return
+        with io.open(str(path), mode=protocol, encoding=encoding) as outfile:
+            logger.info("DUMPS file %s", path)
+            logger.debug("data:\n%r ", obj)
             outfile.write(stream)
 
     @abstractmethod
@@ -96,7 +105,7 @@ class JsonSerializer(Serializer):
     """
 
     default_ext = '.json'
-    logger = logging.getLogger(__name__ + ".JsonDeserializer")
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def dumps(cls, obj, only=(), but=(), many=False, **opts):
@@ -127,7 +136,7 @@ class JsonSerializer(Serializer):
 @serializer_registry.register()
 class YamlSerializer(Serializer):
     default_ext = '.yaml'
-    logger = logging.getLogger(__name__ + ".YamlDeserializer")
+    logger = logging.getLogger(__name__)
     _yaml = yaml
 
     @classmethod

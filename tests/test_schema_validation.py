@@ -82,7 +82,7 @@ def test_validate_subschemas():
     errors = sorted(v_orig.iter_errors(instance), key=lambda e: e.path)
     for error in errors:
         assert error.validator == "additionalProperties"
-        assert error.instance.get("schemaUri")
+        assert error.instance.get("__schema__")
 
     # NgoDraft4Validator handles derived types and should not raise errors
     v_modif.validate(instance)

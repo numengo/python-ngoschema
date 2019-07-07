@@ -1,6 +1,6 @@
 {
   "$id": "http://numengo.org/draft-04/Ngo/Fl/NgoPnodePhase",
-  "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/model/definitions/ComponentDefinition",
+  "$schema": "http://numengo.org/draft-XX/defs-schema#/definitions/model/definitions/ComponentDefinition",
   "name": "NgoPnodePhase",
   "canonicalName": "Ngo.Fl.NgoPnodePhase",
   "description": "subphase of thermodynamic state",
@@ -13,7 +13,7 @@
       "name": "Parameters",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/EnumerationVariable",
+          "$schema": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/EnumerationVariable",
           "name": "phase",
           "description": "phase at port",
           "variability": "Parameter",
@@ -48,7 +48,7 @@
       "name": "Variables",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
+          "$schema": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
           "name": "overallPnode",
           "receivesValueFrom": "#overallPort.pnode",
           "causality": "Input",
@@ -75,7 +75,7 @@
       "portType": "Ngo.Fl.SinglePIn",
       "variables": [
         {
-          "schemaUri": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
+          "$schema": "http://numengo.org/draft-XX/defs-schema#/definitions/variable/definitions/ObjectVariable",
           "name": "pnode",
           "sendsValueTo": [
             "#Variables.overallPnode"

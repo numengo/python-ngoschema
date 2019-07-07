@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff" fit_to_viewport="false"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="5" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="8" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -97,7 +97,6 @@
     <span style="color: rgb(102, 102, 102); font-family: andale mono, lucida console, monospace; font-size: 14.401440620422363px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(102, 102, 102)" face="andale mono, lucida console, monospace" size="14.401440620422363px">brew install libmagic</font></span>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -280,10 +279,10 @@
 <node TEXT="" ID="ID_212160090" CREATED="1548839709469" MODIFIED="1548839709469"/>
 </node>
 </node>
-<node TEXT="service web android" ID="ID_1974230155" CREATED="1548765222621" MODIFIED="1549442052758">
+<node TEXT="service web android" FOLDED="true" ID="ID_1974230155" CREATED="1548765222621" MODIFIED="1549442052758">
 <node TEXT="python-from-android" ID="ID_792610073" CREATED="1548765251159" MODIFIED="1548765256015"/>
 </node>
-<node TEXT="permissions" ID="ID_731506319" CREATED="1548766193848" MODIFIED="1549442055773">
+<node TEXT="permissions" FOLDED="true" ID="ID_731506319" CREATED="1548766193848" MODIFIED="1549442055773">
 <node TEXT="python lib &apos;permission&apos;" ID="ID_1864362035" CREATED="1548766198058" MODIFIED="1548766211370" LINK="https://pypi.org/project/permission/">
 <node TEXT="Rule" ID="ID_754536997" CREATED="1548766217935" MODIFIED="1548766219680">
 <node TEXT="check" ID="ID_1809988375" CREATED="1548766236818" MODIFIED="1548766238611"/>
@@ -295,7 +294,7 @@
 </node>
 </node>
 </node>
-<node TEXT="candidates" ID="ID_534577912" CREATED="1534497976803" MODIFIED="1560848536402">
+<node TEXT="candidates" FOLDED="true" ID="ID_534577912" CREATED="1534497976803" MODIFIED="1560848536402">
 <icon BUILTIN="bookmark"/>
 <node TEXT="pull" ID="ID_1738986411" CREATED="1534497993554" MODIFIED="1534865608426" LINK="https://github.com/toastdriven/restless"/>
 <node TEXT="falcon" ID="ID_828329392" CREATED="1534498027324" MODIFIED="1534843015690" LINK="https://github.com/falconry/falcon"/>
@@ -308,7 +307,7 @@
 </node>
 <node TEXT="quokka CMS/CMF" ID="ID_1344327373" CREATED="1534583407251" MODIFIED="1534583431070" LINK="https://github.com/rochacbruno/quokka"/>
 </node>
-<node TEXT="NgoSchema" ID="ID_147024947" CREATED="1549455268624" MODIFIED="1549874576645" LINK="https://github.com/numengo/python-ngoschema/tree/devel">
+<node TEXT="NgoSchema" FOLDED="true" ID="ID_147024947" CREATED="1549455268624" MODIFIED="1549874576645" LINK="https://github.com/numengo/python-ngoschema/tree/devel">
 <node TEXT="opensource" ID="ID_850743903" CREATED="1549456135700" MODIFIED="1549456139993"/>
 <node TEXT="description" ID="ID_514322876" CREATED="1549455304765" MODIFIED="1549455322941">
 <node TEXT="automatic class-based binding to JSON schemas for use in python" ID="ID_153838926" CREATED="1549455328691" MODIFIED="1549455427998">
@@ -506,6 +505,1174 @@
 <node TEXT="tools for code generation of numengo objects" ID="ID_489367804" CREATED="1549456152741" MODIFIED="1549456257979"/>
 <node TEXT="tools for" ID="ID_416862288" CREATED="1549529183720" MODIFIED="1549529209845"/>
 </node>
+</node>
+</node>
+<node TEXT="Ideas for NUMENGO" FOLDED="true" POSITION="right" ID="ID_1951444762" CREATED="1539956303171" MODIFIED="1540280422287">
+<edge COLOR="#7c0000"/>
+<node TEXT="API" ID="ID_1848375593" CREATED="1540280423111" MODIFIED="1540280427059">
+<node TEXT="Response" ID="ID_1318448038" CREATED="1540280427608" MODIFIED="1540280505370"/>
+<node TEXT="Input / Arguments" ID="ID_1576903240" CREATED="1540280432537" MODIFIED="1540280564950">
+<node TEXT="GET" ID="ID_1608432015" CREATED="1540280446543" MODIFIED="1540280448322"/>
+<node TEXT="POST" ID="ID_761400137" CREATED="1540280448678" MODIFIED="1540280450092"/>
+<node TEXT="Header" ID="ID_361420708" CREATED="1540280535772" MODIFIED="1540280539067"/>
+<node TEXT="Query" ID="ID_581129378" CREATED="1540280531002" MODIFIED="1540280535315"/>
+</node>
+<node TEXT="CrudResource" ID="ID_591045213" CREATED="1540296962274" MODIFIED="1540296971235">
+<node TEXT="Resource" ID="ID_946996963" CREATED="1540306583729" MODIFIED="1540306587650">
+<node TEXT="defined by a single class inheriting from CRUDResource" ID="ID_1961721132" CREATED="1540306604727" MODIFIED="1540306605679"/>
+<node FOLDED="true" ID="ID_83435447" CREATED="1540306618312" MODIFIED="1540306618312"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        A Meta section, containing at least four fields: description, permission, dbmodel and response_model. More customization options are available, see below.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_79163412" CREATED="1540307352703" MODIFIED="1540307352703"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        description (required): A string used to describe the entity managed by the resource. This will be used in contexts like &quot;Creates or updates a &lt;description&gt;&quot; for the PUT endpoint.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_30018248" CREATED="1540307352703" MODIFIED="1540307352703"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        dbmodel (required): A SQLAlchemy model. This model fields should have the same names as the fields of the resource and a mapping will be generated between these two kind of fields.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1077122106" CREATED="1540307352703" MODIFIED="1540307352703"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        response_model (required): A flask model that will be used for marshaling for GET and LIST operations. It will not be used for other methods.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_845377555" CREATED="1540307352703" MODIFIED="1540307352703"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        response_model<em>_</em>list (optional, default: &lt;same as response_model&gt;): An optional override for response_model that will be used only for LIST.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1730006292" CREATED="1540307352704" MODIFIED="1540307352704"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        methods (optional, default: GET, LIST, DELETE, PUT): The list of methods to be generated. Up to five methods may be chosen (the four defaults one, + POST).
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1136107403" CREATED="1540307352704" MODIFIED="1540307352704"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        param_path (optional, default: &lt;generated from Key fields&gt;): The path to append to the dir resource in order to get the entity resource. This should be a string starting with '/', suitable for python .format() function, and with parameters corresponding to the name of the keys.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+<node TEXT="class MyResource(CRUDResource):&#xa;    class Meta:&#xa;        (...)&#xa;        param_path = &apos;/{entity_type}/access/{entity_id}&apos;&#xa;&#xa;    entity_id = Key(type=int)&#xa;    entity_type = Key(type=str)&#xa;&#xa;MyResource.register(api, &apos;/entities&apos;)&#xa;# Identical to:&#xa;# api.add_resource(MyResource.APIList, &apos;/entities&apos;)&#xa;# api.add_resource(MyResource.API, &apos;/entities/&lt;string:entity_type&gt;/access/&lt;int:entity_id&gt;&apos;)&#xa;#&#xa;# Without param_path, this would have led to (note the ordering):&#xa;# api.add_resource(MyResource.APIList, &apos;/entities&apos;)&#xa;# api.add_resource(MyResource.API, &apos;/entities/&lt;int:entity_id&gt;/&lt;string:entity_type&gt;&apos;)" ID="ID_878593248" CREATED="1540307378368" MODIFIED="1540307379752"/>
+</node>
+<node ID="ID_1985789243" CREATED="1540307392898" MODIFIED="1540307392898"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span style="color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(23, 43, 77)" face="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif" size="14px">dir_path (optional, default: &lt;generated from Key fields&gt;): The path to append to the base resource to get the dir resource. This should be a string starting with '/', suitable for python .format() function, and with parameters corresponding to the name of the keys that are defined with dir_key=True.</font></span>
+  </body>
+</html>
+</richcontent>
+<node TEXT="class MyResource(CRUDResource):&#xa;     class Meta:&#xa;         dir_path = &quot;/{dir_id}/objects&quot;&#xa;         param_path = &quot;/object/{object_id}&quot;&#xa;&#xa;     dir_id = Key(type=int, dir_key=True)&#xa;     object_id = Key(type=int)&#xa;&#xa;MyResource.register(api, &apos;/resource&apos;)&#xa;# Identical to:&#xa;# api.add_resource(MyResource.APIList, &apos;/resource/&lt;integer:dir_id&gt;/objects&apos;)&#xa;# api.add_resource(MyResource.API, &apos;/resource/&lt;integer:dir_id&gt;/objects/object/&lt;integer:object_id&gt;&apos;)" ID="ID_128056805" CREATED="1540307404596" MODIFIED="1540307406464"/>
+</node>
+<node TEXT="validators : A dictionnary to add multi-field validators. These will be applied whenever all the parameters are accepted by the method. Unlike single-field validators, these will be applied even if parameters are not provided, so you should filter this case in your validator itself. Global validators are always applied after all single field validators are applied." ID="ID_493234528" CREATED="1540307415850" MODIFIED="1540307416899"/>
+</node>
+<node ID="ID_803585892" CREATED="1540306618313" MODIFIED="1540306618313"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        A list of fields (as class members), that should contain at least one Key and any amount of Data and Filters.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+<node TEXT="Common attributes" FOLDED="true" ID="ID_1237430886" CREATED="1540306751956" MODIFIED="1540306753045">
+<node ID="ID_1181622990" CREATED="1540306769983" MODIFIED="1540306769983"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        name (implicit, required): This isn't a parameter of the constructor, this is the name of the field that is being assigned like `name = Data(...)`. It is the name that will be used for all parameters coming from user.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node FOLDED="true" ID="ID_1539497897" CREATED="1540306769983" MODIFIED="1540306769983"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        type (optional, default=str): A function used to parse arguments. Supported values are any type defined in api.lib.inputs. Examples include:
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_699498775" CREATED="1540306769985" MODIFIED="1540306769985"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.str_norm (default, alias: str): Accepts any string, that will be stripped from trailing and leading whitespace. An empty string will be treated as None.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1607952506" CREATED="1540306769985" MODIFIED="1540306769985"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.str_raw: Accepts any string. No processing.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_512622953" CREATED="1540306769986" MODIFIED="1540306769986"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.str_path: Same as str_norm, but will allow '/' if used in a path.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1420264398" CREATED="1540306769986" MODIFIED="1540306769986"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.str_json: Accepts a json string and unpacks it.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_993215796" CREATED="1540306769986" MODIFIED="1540306769986"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.integer (alias: int): Accepts any integer. Empty string will be treated as None.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1635616712" CREATED="1540306769986" MODIFIED="1540306769986"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.floating (alias: float): Accepts any floating number. Empty string will be treated as None.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1867990297" CREATED="1540306769987" MODIFIED="1540306769987"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.boolean (alias: bool): Accepts 1, 0, true, false. Empty string will be treated as False.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1374658091" CREATED="1540306769987" MODIFIED="1540306769987"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.option: Accepts 1, 0, true, false. False will be treated as None (Special uses only - use only if you are sure of what you are doing).
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1408587010" CREATED="1540306769987" MODIFIED="1540306769987"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.datetime: Accepts any date recognized by dateutil.parser.parse
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1506454991" CREATED="1540306769987" MODIFIED="1540306769987"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        inputs.month: Accepts a single month, written in &quot;YYYY-MM&quot; format.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node ID="ID_869652337" CREATED="1540306769988" MODIFIED="1540306769988"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        help (optional, default=&quot;&quot;): Add a comment for the field. This comment will be put on every method identically. If you need a different comment for different methods, well, tough luck. Send me an email.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_488166737" CREATED="1540306769989" MODIFIED="1540306769989"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        dbfield (optional, default=&lt;same as name&gt;): This maps the parameter to the field &lt;dbfield&gt; in the sqlalchemy model. This can be a path using relationships (for example: `contract_id = Key(dbfield='invoice.contract_id')`), but doing so would prevent the object from being created directly (so no POST, and PUT can only perform updates). It is the user responsibility to make sure he hasn't activated POST and that PUT is update-only. A very limited number of fields use dbfields instead of dbfield. See their section for the specific behaviour of dbfields.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1001254704" CREATED="1540306769990" MODIFIED="1540306769990"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        choices (optional, default=None): This restricts accepted options to a specific list. Swagger will show it as dropdown box, and if validate is not present, a custom validation function will be generated that checks the input is present in choices.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_416448842" CREATED="1540306769991" MODIFIED="1540306769991"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        validate (optional, default=&lt;identity&gt;): This must be a function. If provided, the user parameter (as parsed by the type function above) will be given as a parameter to this function. The function must return the validated value that will be used internally, or raise a ValueError or ValidationError if the validation failed.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node TEXT="Example of validation function" FOLDED="true" ID="ID_1419007515" CREATED="1540306781963" MODIFIED="1540306783429">
+<node TEXT="def validate_date(date):&#xa;    &quot;&quot;&quot;&#xa;    Custom date validation function (parses a date string like &quot;2017-12-31&quot;&#xa;    into a python date object.&#xa; &#xa;    Note that strptime returns a ValueError, which will be appropriately handled.&#xa;    &quot;&quot;&quot;&#xa;    return datetime.strptime(date, &quot;%Y-%m-%d&quot;).date()&#xa; &#xa;class Ressource(CRUDResource):&#xa;    date = Key(..., validate=validate_date)" ID="ID_1417906951" CREATED="1540306792842" MODIFIED="1540306794452"/>
+</node>
+<node TEXT="Key" ID="ID_1977899516" CREATED="1540306809932" MODIFIED="1540306811539">
+<node ID="ID_1534463254" CREATED="1540306827578" MODIFIED="1540306827578"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      The most used field, this defines a field that is associated with a (part of) the primary key. In most cases, keys are part of the resource URI.
+    </p>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1251759376" CREATED="1540306827579" MODIFIED="1540306838722"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      additional parameters:
+    </p>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_684499581" CREATED="1540306827580" MODIFIED="1540306827580"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        default (optional, default=None): Provide a default for the key, that will be only used for the GET method. This also has significant impact on the behavior of this class, as the key will no longer being part of the resource identifier.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1061853525" CREATED="1540306854906" MODIFIED="1540306854906"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span style="color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(23, 43, 77)" face="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif" size="14px">When a default is provided:</font></span>
+  </body>
+</html>
+</richcontent>
+<node TEXT="Method Present Mode&#xa;PUT required query&#xa;POST no (unless dir_key) query if applicable&#xa;PATCH required query&#xa;LIST optional query&#xa;GET optional query&#xa;DELETE required query" ID="ID_97799960" CREATED="1540306913561" MODIFIED="1540306931192"/>
+</node>
+<node ID="ID_1625554040" CREATED="1540306865560" MODIFIED="1540306865560"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span style="color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration: none; display: inline !important; float: none"><font color="rgb(23, 43, 77)" face="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif" size="14px">When no default is provided:</font></span>
+  </body>
+</html>
+</richcontent>
+<node TEXT="Method    Present    Mode&#xa;DELETE required path&#xa;GET required path&#xa;LIST optional query&#xa;PATCH required path&#xa;POST no (unless dir_key) path if applicable&#xa;PUT required path" ID="ID_647855705" CREATED="1540306941616" MODIFIED="1540306953151"/>
+</node>
+</node>
+<node ID="ID_1197129799" CREATED="1540307043030" MODIFIED="1540307043030"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        hidden (optional, default=False): Makes the key an hidden field, in order to give a partial view of a table. For example, commodity = Key(hidden=True, default=&quot;gas&quot;) will make all requests act only on the gas portion of the table. This field will then apply to every method, including POST.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1860229200" CREATED="1540307043031" MODIFIED="1540307054904"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        \class Room(CRUDResource): &#160;&#160;&#160;&#160;class Meta: &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;methods = [&quot;GET&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;LIST&quot;, &quot;POST&quot;] &#160; &#160;&#160;&#160;&#160;house_id = Key(type=int, dir_key=True) &#160;&#160;&#160;&#160;room_id = Key(type=int, dir_key=False) Room.register(api, '/rooms') # generates the following endpoints: # /rooms/{int:house_id} -&gt; contains LIST/POST # /rooms/{int:house_id}/{int:room_id} -&gt; contains PUT/GET/DELETE\
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node TEXT="Data" FOLDED="true" ID="ID_678971224" CREATED="1540307076785" MODIFIED="1540307079416">
+<node ID="ID_1838783067" CREATED="1540307094150" MODIFIED="1540307094150"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      The simplest field, this creates an argument that is only used for POST, PATCH and PUT. It maps to a single field and perform updates on this field.
+    </p>
+  </body>
+</html>
+</richcontent>
+</node>
+<node FOLDED="true" ID="ID_336018554" CREATED="1540307094150" MODIFIED="1540307094150"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      This class accepts the following additional parameters:
+    </p>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_1308117107" CREATED="1540307094152" MODIFIED="1540307094152"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        default (optional, default=None): Provides a default for the object. Affects whether the argument is required.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1185303052" CREATED="1540307094152" MODIFIED="1540307094152"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        required (optional, default=&lt;depends of default&gt;: Precises whether the argument is required for both PUT and POST. Default is to be required only if no default has been provided. Note that the field is always optional for PATCH.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node TEXT="Method    Present    Mode&#xa;GET no -&#xa;PUT may be required data&#xa;DELETE no -&#xa;LIST no -&#xa;POST may be required data&#xa;PATCH always optional data" ID="ID_1326407435" CREATED="1540307112927" MODIFIED="1540307120786"/>
+</node>
+<node TEXT="NestedListData" FOLDED="true" ID="ID_1683923607" CREATED="1540307137894" MODIFIED="1540307140407">
+<node ID="ID_568211026" CREATED="1540307158043" MODIFIED="1540307158043"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      A specialization of Data that maps to a collection relationship on sqlalchemy. It is used only on POST and PUT, similar to Data. It will accept as input a json corresponding to a list of argument dictionaries, each dictionary containing the arguments necessary to create a single child. Child created in this way inherits necessarily of the keys of the parent, so they must not be repeated in the json.
+    </p>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_895340567" CREATED="1540307158043" MODIFIED="1540307158043"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      It accepts the following additionnal parameters:
+    </p>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_60375019" CREATED="1540307158044" MODIFIED="1540307158044"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        child_resource (required): The resource defining the child. This resource has the following requirements:
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node ID="ID_440547133" CREATED="1540307158045" MODIFIED="1540307158045"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 30px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      All keys of the parent must be repeated in the child, with dir_key=True. Additional child-specific keys must be added afterwards. Note that this means that the resource identifier of the child include the resource identifier of the parent, and that in most cases, the primary key of the child must include the primary key of the parent. See Joins in dbfield for a workaround.
+    </p>
+  </body>
+</html>
+</richcontent>
+</node>
+<node TEXT="class PageRessource(CRUDResource):&#xa;    class Meta:&#xa;        methods = [&apos;PUT&apos;, &apos;GET&apos;, &apos;DELETE&apos;]&#xa;    book_id = Key(dir_key=True)&#xa;    page_id = Key()&#xa;    data = Data()&#xa; &#xa;class BookResource(CRUDResource):&#xa;    class Meta:&#xa;        methods = [&apos;LIST&apos;, &apos;GET&apos;, &apos;PUT&apos;, &apos;DELETE&apos;]&#xa; &#xa;    book_id = Key()&#xa;    pages = NestedListData(PageResource)&#xa;BookResource.register(api, &apos;/books&apos;)&#xa;PageResource.register(api, &apos;/books&apos;)&#xa;# Endpoints generated:&#xa;# /books --&gt; contains LIST of BookResource&#xa;# /books/&lt;book_id&gt; --&gt; contains GET, PUT and DELETE of BookResource&#xa;# /books/&lt;book_id&gt;/&lt;page_id&gt; --&gt; contains GET, PUT and DELETE of PageResource" ID="ID_1850853594" CREATED="1540307191058" MODIFIED="1540307192742"/>
+<node ID="ID_1591627631" CREATED="1540307203807" MODIFIED="1540307203807"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        default (optional, default='[]'): The default when the user doesn't provide a parameter. Should be the json encoding of a list.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1845637209" CREATED="1540307203807" MODIFIED="1540307203807"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        required (optional, default=True): Whether the argument is required.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_699379770" CREATED="1540307203808" MODIFIED="1540307203808"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        child_method (optional, choices=['PUT', 'POST', 'PUST'], default='POST'): How to consider keys of the child:
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_1157735423" CREATED="1540307203810" MODIFIED="1540307203810"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        PUT: The keys of each child (that are not also part of the parent) must be provided.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_747430785" CREATED="1540307203810" MODIFIED="1540307203810"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        POST: The keys of each child must not be provided.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_151077517" CREATED="1540307203811" MODIFIED="1540307203811"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc">
+      <li>
+        PUT-POST: (default, DEPRECATED) The keys of each child can be provided, but it isn't necessary. This mode makes some assumptions about what was intended by the user, and it may lead to strange behaviours. In most cases, it is better to force an explicity key mode.<br/>
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+<node TEXT="class PageRessource(CRUDResource):&#xa;    book_id = Key(dir_key=True)&#xa;    page_id = Key()&#xa;    data = Data()&#xa; &#xa;class AuthorResource(CRUDResource):&#xa;    book_id = Key()&#xa;    author_name = Key(dir_key=True)&#xa;    data = Data()&#xa; &#xa;class BookResource(CRUDResource):&#xa;    book_id = Key()&#xa;    authors = NestedListData(AuthorResource, child_method=&quot;PUT&quot;)&#xa;    pages = NestedListData(PageResource, child_method=&quot;POST&quot;)&#xa; &#xa;# Acceptable payload for BookResource:&#xa;# authors = [{&quot;author_name&quot;: &quot;John&quot;, &quot;data&quot;: &lt;&gt;}] -- Keys must be provided for authors&#xa;# pages = [{&quot;data&quot;: &lt;&gt;}, {&quot;data&quot;: &lt;&gt;}] -- Keys must not be provided for pages" ID="ID_904935987" CREATED="1540307228151" MODIFIED="1540307228977"/>
+</node>
+<node TEXT="Filters" FOLDED="true" ID="ID_1929569830" CREATED="1540307277195" MODIFIED="1540307279065">
+<node ID="ID_717705910" CREATED="1540307286166" MODIFIED="1540307286166"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      A collection of filters that only applies to LIST.&#160;
+    </p>
+  </body>
+</html>
+</richcontent>
+</node>
+<node FOLDED="true" ID="ID_1458254497" CREATED="1540307286166" MODIFIED="1540307286166"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <h4 id="Userguide-Single-FieldFilters" style="margin-top: 20px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(51, 51, 153); font-size: 14px; font-weight: 600; line-height: 1.42857142857143; letter-spacing: normal; text-transform: none; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-style: normal; text-align: start; text-indent: 0px; white-space: normal; word-spacing: 0px; text-decoration: none">
+      Single-Field Filters
+    </h4>
+  </body>
+</html>
+</richcontent>
+<node FOLDED="true" ID="ID_1676546275" CREATED="1540307286167" MODIFIED="1540307286167"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      These apply to a single column, defined by the argument dbfield:
+    </p>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_912365965" CREATED="1540307286167" MODIFIED="1540307286167"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        MappedFilter: Matches elements with equality. In most cases, it makes sense to use DataFilter instead, but this can be used when mapped to a hybrid sqla property.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1425750307" CREATED="1540307286167" MODIFIED="1540307286167"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        LowerBoundFilter: Matches elements greater that the passed parameter (included)
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_246353288" CREATED="1540307286168" MODIFIED="1540307286168"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        UpperBoundFilter: Matches elements lower that the passed parameter (included)
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_1171597879" CREATED="1540307286168" MODIFIED="1540307286168"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        InListFilter: Matches elements with a 'in' (column must be a postgres array)
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+</node>
+<node FOLDED="true" ID="ID_1560194485" CREATED="1540307286168" MODIFIED="1540307286168"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <h4 id="Userguide-Multi-FieldFilters" style="margin-top: 20px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(51, 51, 153); font-size: 14px; font-weight: 600; line-height: 1.42857142857143; letter-spacing: normal; text-transform: none; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-style: normal; text-align: start; text-indent: 0px; white-space: normal; word-spacing: 0px; text-decoration: none">
+      Multi-Field Filters
+    </h4>
+  </body>
+</html>
+</richcontent>
+<node FOLDED="true" ID="ID_885182471" CREATED="1540307286168" MODIFIED="1540307286168"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      These apply on multiple columns, that are defined by the argument dbfields:
+    </p>
+  </body>
+</html>
+</richcontent>
+<node ID="ID_1838721468" CREATED="1540307286169" MODIFIED="1540307286169"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        SearchFilter: Performs a ILIKE on the set of columns, and combines the results per-column with a OR.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+</node>
+</node>
+</node>
+<node ID="ID_1861828837" CREATED="1540306618322" MODIFIED="1540306618322"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <ul style="margin-top: 10px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; list-style-type: disc; color: rgb(23, 43, 77); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; font-size: 14px; font-style: normal; font-weight: normal; letter-spacing: normal; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; word-spacing: 0px; text-decoration: none">
+      <li>
+        Overrides of specific functions for greater customization. See below for more details.
+      </li>
+    </ul>
+  </body>
+</html>
+</richcontent>
+</node>
+<node TEXT="basic example" FOLDED="true" ID="ID_496203765" CREATED="1540306652205" MODIFIED="1540306660754">
+<node TEXT="from lib.data.models import BeautifulEntityModel&#xa;from api.models import beautiful_response_model&#xa; &#xa;class MyRessource(CRUDResource):&#xa;    class Meta:&#xa;        # Will generate comments like &quot;Creates or updates a beautiful entity&quot; (PUT)&#xa;        description = &quot;beautiful entity&quot;&#xa;        # Must be the SQLAlchemy model&#xa;        dbmodel = BeautifulEntityModel&#xa;        # Must be the model used for replies for flask marshalling&#xa;        response_model = beautiful_response_model&#xa;        # Permission used for all endpoints. :read or :write is appended to it depending on endpoint.&#xa;        permission = &quot;beautiful&quot;&#xa; &#xa;    entity_id = Key(type=int, help=&quot;Numeric Identifier for the entity&quot;)&#xa;    name = Data(type=string, help=&quot;Name of the entity&quot;)" ID="ID_1320723854" CREATED="1540306647401" MODIFIED="1540306649626"/>
+</node>
+<node TEXT="reigstering the resource" ID="ID_1860597475" CREATED="1540306666586" MODIFIED="1540306669991">
+<node TEXT="MyResource.register(api, &apos;/endpoint&apos;)" ID="ID_859132736" CREATED="1540306709348" MODIFIED="1540306715401"/>
+<node TEXT="If you have multiple keys, these keys will be added to the path in the order they are defined in the class." ID="ID_316604989" CREATED="1540306716995" MODIFIED="1540306717783"/>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="DB" ID="ID_519946384" CREATED="1540280456470" MODIFIED="1540280457852">
+<node TEXT="Table" ID="ID_102945764" CREATED="1540280458239" MODIFIED="1540280516902"/>
+<node TEXT="Column" ID="ID_777843784" CREATED="1540280467258" MODIFIED="1540280520642">
+<node TEXT="name" ID="ID_834587665" CREATED="1540280581656" MODIFIED="1540280586684"/>
+<node TEXT="type" ID="ID_717917238" CREATED="1540280589087" MODIFIED="1540280591792"/>
+<node TEXT="*args" ID="ID_1828342697" CREATED="1540285394480" MODIFIED="1540285403267">
+<node TEXT="Constraint" ID="ID_1675039205" CREATED="1540285404241" MODIFIED="1540285408025"/>
+<node TEXT="ForeignKey" ID="ID_1680638268" CREATED="1540285409155" MODIFIED="1540285414722"/>
+<node TEXT="ForeignKeyConstraint" ID="ID_1163668413" CREATED="1540285434899" MODIFIED="1540285448614"/>
+</node>
+<node TEXT="default" ID="ID_638244568" CREATED="1540284992162" MODIFIED="1540284994545"/>
+<node TEXT="nullable" ID="ID_1534063652" CREATED="1540280593272" MODIFIED="1540280596143"/>
+<node TEXT="primary key" ID="ID_211985839" CREATED="1540283037667" MODIFIED="1540284603737">
+<node TEXT="primary_key" ID="ID_86542598" CREATED="1540284605216" MODIFIED="1540284611783">
+<node TEXT="boolean" ID="ID_471542259" CREATED="1540283050405" MODIFIED="1540283052590"/>
+</node>
+<node TEXT="autoincrement" ID="ID_155124133" CREATED="1540284616924" MODIFIED="1540284620657">
+<node TEXT="auto" ID="ID_34601941" CREATED="1540284729265" MODIFIED="1540284731486">
+<node TEXT="indicates that a single-column primary key that is of an INTEGER type with no stated client-side or python-side defaults should receive auto increment semantics automatically; all other varieties of primary key columns will not" ID="ID_728390985" CREATED="1540284906399" MODIFIED="1540284908263"/>
+</node>
+<node TEXT="ignore_fk" ID="ID_939260352" CREATED="1540284732061" MODIFIED="1540284742321"/>
+<node TEXT="True" ID="ID_615793939" CREATED="1540284783794" MODIFIED="1540284787378">
+<node TEXT="to indicate autoincrement semantics on a column that has a client-side or server-side default configured" ID="ID_1702354357" CREATED="1540284854119" MODIFIED="1540284855766"/>
+</node>
+<node TEXT="False" ID="ID_687846153" CREATED="1540284787614" MODIFIED="1540284790547">
+<node TEXT="on a single-column primary key that has a datatype of INTEGER in order to disable auto increment semantics for that column." ID="ID_997816211" CREATED="1540284809491" MODIFIED="1540284811388"/>
+</node>
+</node>
+</node>
+<node TEXT="server_default" ID="ID_1991949637" CREATED="1540285348963" MODIFIED="1540285352649"/>
+<node TEXT="key" ID="ID_533365929" CREATED="1540285050843" MODIFIED="1540285052112"/>
+<node TEXT="quote" ID="ID_936917583" CREATED="1540285322212" MODIFIED="1548948805941">
+<node TEXT="Force quoting of this column&#x2019;s name on or off, corresponding to True or False. When left at its default of None, the column identifier will be quoted according to whether the name is case sensitive (identifiers with at least one upper case character are treated as case sensitive), or if it&#x2019;s a reserved word. This flag is only needed to force quoting of a reserved word which is not known by the SQLAlchemy dialect" ID="ID_1121500571" CREATED="1540285324044" MODIFIED="1548948805940"/>
+</node>
+<node TEXT="index" FOLDED="true" ID="ID_1340115983" CREATED="1540285029154" MODIFIED="1540285036034">
+<node TEXT="boolean" ID="ID_179828553" CREATED="1540285036989" MODIFIED="1540285039483"/>
+<node TEXT="indicates that the column is indexed" ID="ID_575113630" CREATED="1540285080700" MODIFIED="1540285081474"/>
+</node>
+<node TEXT="info" FOLDED="true" ID="ID_1889125812" CREATED="1540285092133" MODIFIED="1540285093300">
+<node TEXT="optional data dictionary" ID="ID_1557822940" CREATED="1540285093966" MODIFIED="1540285118194"/>
+</node>
+<node TEXT="unique" FOLDED="true" ID="ID_344864322" CREATED="1540285175821" MODIFIED="1540285179278">
+<node TEXT="boolean" ID="ID_1841251904" CREATED="1540285180295" MODIFIED="1540285194552"/>
+<node TEXT="indicates that this column contains a unique constraint" ID="ID_519303951" CREATED="1540285243028" MODIFIED="1540285244568"/>
+</node>
+<node TEXT="comment" FOLDED="true" ID="ID_337399784" CREATED="1540285253656" MODIFIED="1540285255191">
+<node TEXT="Optional string that will render an SQL comment on table creation" ID="ID_488146634" CREATED="1540285266262" MODIFIED="1540285267930"/>
+</node>
+</node>
+</node>
+<node TEXT="CI" ID="ID_880471294" CREATED="1540393863814" MODIFIED="1540393864874">
+<node TEXT="synchroniser Gitlab / Github" ID="ID_256344659" CREATED="1540393866398" MODIFIED="1540393882889" LINK="https://putaindecode.io/fr/articles/git/synchroniser-sans-effort-ses-depots-git-entre-github-gitlab-bitbucket/"/>
+</node>
+<node TEXT="Schema" ID="ID_1625979491" CREATED="1540452953601" MODIFIED="1540452978719">
+<node TEXT="&apos;=Resource" ID="ID_1871148095" CREATED="1540452956492" MODIFIED="1540452999332"/>
+<node TEXT="fields[0..n]" ID="ID_700901054" CREATED="1540453039280" MODIFIED="1540453060728">
+<node TEXT="nom" ID="ID_202660934" CREATED="1540453002941" MODIFIED="1540453005192"/>
+<node TEXT="type" ID="ID_1734814183" CREATED="1540453005564" MODIFIED="1540453006923"/>
+<node TEXT="format" ID="ID_1058867719" CREATED="1540453019649" MODIFIED="1540453021377"/>
+<node TEXT="key?" ID="ID_1617463182" CREATED="1540453487050" MODIFIED="1540453491736">
+<node TEXT="primary_key: bool" ID="ID_1220914183" CREATED="1548332864110" MODIFIED="1548332910641"/>
+<node TEXT="is_2_many" ID="ID_756511317" CREATED="1548334603965" MODIFIED="1548334619094">
+<node TEXT="boolean" ID="ID_550819770" CREATED="1548334627732" MODIFIED="1548334631122"/>
+</node>
+<node TEXT="foreignRefUri" ID="ID_694237678" CREATED="1548333107244" MODIFIED="1548333134081">
+<node TEXT="&apos;=foreign_key" ID="ID_1706941969" CREATED="1548332883285" MODIFIED="1548333159839"/>
+<node TEXT="resolve =&gt; class" ID="ID_1875888447" CREATED="1548333068165" MODIFIED="1548333076604">
+<node TEXT="ref-uri" ID="ID_648842977" CREATED="1548332922356" MODIFIED="1548332930438"/>
+<node TEXT="add property to class" ID="ID_1998913772" CREATED="1548334569399" MODIFIED="1548334575327"/>
+<node TEXT="cname" ID="ID_83439635" CREATED="1548332924222" MODIFIED="1548332934360"/>
+</node>
+</node>
+</node>
+<node TEXT="ordering?" ID="ID_814880172" CREATED="1540453492351" MODIFIED="1548339264703"/>
+<node TEXT="static" ID="ID_1594395361" CREATED="1540456997060" MODIFIED="1540456998802">
+<node TEXT="false" ID="ID_1856326740" CREATED="1540457004824" MODIFIED="1540457007667"/>
+</node>
+<node TEXT="class" ID="ID_1842716588" CREATED="1540457346491" MODIFIED="1540457348371">
+<node TEXT="false" ID="ID_853820575" CREATED="1540457352359" MODIFIED="1540457362323"/>
+<node TEXT="Meta" ID="ID_410887536" CREATED="1540457363424" MODIFIED="1540457365830"/>
+</node>
+<node TEXT="relationship" ID="ID_783103385" CREATED="1548331039029" MODIFIED="1548331044098">
+<node TEXT="foreign_key" ID="ID_917630719" CREATED="1548331065611" MODIFIED="1548331070450">
+<node TEXT="value" ID="ID_335288137" CREATED="1548331107629" MODIFIED="1548331967031"/>
+</node>
+<node TEXT="one2one" ID="ID_1362244730" CREATED="1548332029017" MODIFIED="1548332047116">
+<node TEXT="uri" ID="ID_1818899726" CREATED="1548332047986" MODIFIED="1548332055805">
+<node TEXT="we retrieve the schema" ID="ID_1212660757" CREATED="1548332100929" MODIFIED="1548332112277"/>
+</node>
+<node TEXT="&apos;=class" ID="ID_1127926436" CREATED="1548332117401" MODIFIED="1548334826367"/>
+</node>
+<node TEXT="one2many" ID="ID_990910249" CREATED="1548332056684" MODIFIED="1548332059896">
+<node TEXT="uri" ID="ID_1125586419" CREATED="1548332060255" MODIFIED="1548332062929">
+<node TEXT="we retrieve the schema" ID="ID_1496521806" CREATED="1548332100929" MODIFIED="1548332112277"/>
+<node TEXT="&apos;=class" ID="ID_1113929775" CREATED="1548332117401" MODIFIED="1548334826367"/>
+</node>
+<node TEXT="details" ID="ID_801502998" CREATED="1548332071416" MODIFIED="1548332074601">
+<node TEXT="type" ID="ID_706594385" CREATED="1548332074913" MODIFIED="1548332078767">
+<node TEXT="array" ID="ID_1709753418" CREATED="1548332078958" MODIFIED="1548332080799"/>
+</node>
+<node TEXT="items" ID="ID_877520035" CREATED="1548332083714" MODIFIED="1548332085471">
+<node TEXT="" ID="ID_197117844" CREATED="1548332085763" MODIFIED="1548332085763"/>
+</node>
+</node>
+</node>
+<node TEXT="type" ID="ID_1582935917" CREATED="1548331114717" MODIFIED="1548331118558">
+<node TEXT="&apos;= targetSchemaUri" ID="ID_129632993" CREATED="1548331118887" MODIFIED="1548331957372"/>
+</node>
+<node TEXT=".resolve()" ID="ID_1853344356" CREATED="1548331976285" MODIFIED="1548332012967"/>
+<node TEXT=".validate()" ID="ID_198878723" CREATED="1548332019025" MODIFIED="1548332023512"/>
+</node>
+</node>
+<node TEXT="methods[0..n]" ID="ID_997349481" CREATED="1540453101940" MODIFIED="1540453175523">
+<node TEXT="arguments" ID="ID_927220074" CREATED="1540453120447" MODIFIED="1540453123459">
+<node TEXT="input / output" ID="ID_368995156" CREATED="1540453155877" MODIFIED="1540453159899"/>
+</node>
+<node TEXT="return" ID="ID_688294708" CREATED="1540453123636" MODIFIED="1540453153029"/>
+<node TEXT="visibility" ID="ID_1912638682" CREATED="1540456846771" MODIFIED="1540456849992">
+<node TEXT="public/private/protected" ID="ID_1271706435" CREATED="1540453090700" MODIFIED="1540453101517"/>
+</node>
+<node TEXT="static" ID="ID_246257354" CREATED="1540453180130" MODIFIED="1540456880661">
+<node TEXT="false" ID="ID_578635930" CREATED="1540457011885" MODIFIED="1540457014605"/>
+</node>
+<node TEXT="class" ID="ID_927163351" CREATED="1540457175503" MODIFIED="1540457177030">
+<node TEXT="false" ID="ID_208930297" CREATED="1540457177487" MODIFIED="1540457179185"/>
+<node TEXT="A class method receives the class as implicit first argument, just like an instance method receives the instance" ID="ID_812926762" CREATED="1540457335361" MODIFIED="1540457336285"/>
+</node>
+</node>
+<node TEXT="relationships[0..n]" ID="ID_1697401061" CREATED="1540457473161" MODIFIED="1540457485111">
+<node TEXT="links via foreign keys" ID="ID_794016322" CREATED="1540457485969" MODIFIED="1540457497316">
+<node TEXT="$reference" ID="ID_140892862" CREATED="1540457501904" MODIFIED="1540457510079"/>
+</node>
+</node>
+<node TEXT="api endpoints" ID="ID_1544191524" CREATED="1541422392342" MODIFIED="1541422401341">
+<node TEXT="Meta" ID="ID_651820852" CREATED="1540453197618" MODIFIED="1540453200787">
+<node TEXT="description" ID="ID_938602684" CREATED="1540453201475" MODIFIED="1540453203733"/>
+<node TEXT="permission" ID="ID_1943493833" CREATED="1540453260267" MODIFIED="1540453276277"/>
+<node TEXT="db_model" ID="ID_1805809790" CREATED="1540453267507" MODIFIED="1540453287877"/>
+<node TEXT="response_model" ID="ID_767327528" CREATED="1540453288682" MODIFIED="1540453293067"/>
+<node TEXT="response_model_list" ID="ID_65303361" CREATED="1540453295962" MODIFIED="1540453302853"/>
+<node TEXT="methods" ID="ID_1491402788" CREATED="1540453305397" MODIFIED="1540453309322">
+<node TEXT="GET" ID="ID_1728513442" CREATED="1540453328675" MODIFIED="1540453330506"/>
+<node TEXT="LIST" ID="ID_1625225901" CREATED="1540453330827" MODIFIED="1540453332157"/>
+<node TEXT="PATCH" ID="ID_583248208" CREATED="1540453332669" MODIFIED="1540453336407"/>
+<node TEXT="PUT" ID="ID_1794265906" CREATED="1540453337105" MODIFIED="1540453338548"/>
+<node TEXT="DELETE" ID="ID_1124397510" CREATED="1540453339146" MODIFIED="1540453340656"/>
+</node>
+<node TEXT="validators" ID="ID_1861153299" CREATED="1540453309581" MODIFIED="1540453312133"/>
+</node>
+<node TEXT="api calls test" ID="ID_784068641" CREATED="1541410180067" MODIFIED="1541410287038">
+<node TEXT="params" ID="ID_1066033400" CREATED="1541410189876" MODIFIED="1541410194194"/>
+<node TEXT="data" ID="ID_1424860756" CREATED="1541410194418" MODIFIED="1541410254778"/>
+<node TEXT="files" ID="ID_1767343805" CREATED="1541410309120" MODIFIED="1541410317044"/>
+<node TEXT="api_key" ID="ID_1456527962" CREATED="1541411841018" MODIFIED="1561108280379">
+<arrowlink SHAPE="CUBIC_CURVE" COLOR="#000000" WIDTH="2" TRANSPARENCY="200" FONT_SIZE="9" FONT_FAMILY="SansSerif" DESTINATION="ID_1249048406" STARTINCLINATION="40;0;" ENDINCLINATION="40;0;" STARTARROW="NONE" ENDARROW="DEFAULT"/>
+</node>
+<node TEXT="user" ID="ID_1087519349" CREATED="1541421985081" MODIFIED="1561108280379">
+<arrowlink SHAPE="CUBIC_CURVE" COLOR="#000000" WIDTH="2" TRANSPARENCY="200" FONT_SIZE="9" FONT_FAMILY="SansSerif" DESTINATION="ID_1249048406" STARTINCLINATION="40;0;" ENDINCLINATION="40;0;" STARTARROW="NONE" ENDARROW="DEFAULT"/>
+</node>
+<node TEXT="headers" ID="ID_1249048406" CREATED="1541421958925" MODIFIED="1541421963435"/>
+<node TEXT="expected" ID="ID_596976525" CREATED="1541410271183" MODIFIED="1541410273788">
+<node TEXT="json" ID="ID_837800548" CREATED="1541410274441" MODIFIED="1541410275781"/>
+<node TEXT="code" ID="ID_959484282" CREATED="1541410276219" MODIFIED="1541410277746"/>
+</node>
+</node>
+</node>
+<node TEXT="Serialisation" FOLDED="true" ID="ID_1518469208" CREATED="1540453649178" MODIFIED="1540453670404">
+<node TEXT="logical" ID="ID_691631159" CREATED="1540453672890" MODIFIED="1540453686326"/>
+<node TEXT="to_physical" ID="ID_1941109015" CREATED="1540453689079" MODIFIED="1540453704745"/>
+<node TEXT="to_json" ID="ID_231877066" CREATED="1540453705086" MODIFIED="1540453711029"/>
+<node TEXT="to_url ??" ID="ID_1082611466" CREATED="1540453712308" MODIFIED="1540453730102"/>
+<node TEXT="to_human??" ID="ID_1136045665" CREATED="1540453730527" MODIFIED="1540453738614"/>
+<node TEXT="to_plural?" ID="ID_151493033" CREATED="1540453739160" MODIFIED="1540456118853"/>
+<node TEXT="to_lang_fr" ID="ID_1135972548" CREATED="1540453766919" MODIFIED="1540456085975">
+<node TEXT="plural" ID="ID_1551413620" CREATED="1540456101847" MODIFIED="1540456108805"/>
+</node>
+</node>
+<node TEXT="Data" ID="ID_836620225" CREATED="1540456413318" MODIFIED="1540456415192">
+<node TEXT="Logical" ID="ID_42411811" CREATED="1540456415539" MODIFIED="1540456417499"/>
+<node TEXT="Physical" ID="ID_1793888199" CREATED="1540456417679" MODIFIED="1540456421499"/>
+<node TEXT="Class" ID="ID_1188060435" CREATED="1540456421923" MODIFIED="1540456423668"/>
+<node TEXT="Api" ID="ID_608318160" CREATED="1540456423962" MODIFIED="1540456425936">
+<node TEXT="route" ID="ID_1596493789" CREATED="1540456592143" MODIFIED="1540456593563"/>
+<node TEXT="methods" ID="ID_619971632" CREATED="1540453305397" MODIFIED="1540453309322">
+<node TEXT="GET" ID="ID_484088187" CREATED="1540453328675" MODIFIED="1540453330506">
+<node TEXT="permission" ID="ID_282014421" CREATED="1540456637354" MODIFIED="1540456641291"/>
+</node>
+<node TEXT="LIST" ID="ID_1678856070" CREATED="1540453330827" MODIFIED="1540453332157"/>
+<node TEXT="PATCH" ID="ID_1700317010" CREATED="1540453332669" MODIFIED="1540453336407"/>
+<node TEXT="PUT" ID="ID_1161980506" CREATED="1540453337105" MODIFIED="1540453338548"/>
+<node TEXT="DELETE" ID="ID_955796169" CREATED="1540453339146" MODIFIED="1540453340656"/>
+</node>
+<node TEXT="validation" ID="ID_306489253" CREATED="1541520875862" MODIFIED="1541520880299">
+<node TEXT="flask-expects" ID="ID_962729254" CREATED="1541520886925" MODIFIED="1541520896012" LINK="https://pypi.org/project/flask-expects-json/"/>
+</node>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="DATA MODELS" POSITION="right" ID="ID_1591279921" CREATED="1554974607633" MODIFIED="1554974612241">
+<edge COLOR="#ff00ff"/>
+<node TEXT="Series" ID="ID_1029483465" CREATED="1554974614488" MODIFIED="1554974623419">
+<node TEXT="meta" ID="ID_861511117" CREATED="1554974744661" MODIFIED="1554974746583"/>
+<node TEXT="values" ID="ID_1589623724" CREATED="1554974737522" MODIFIED="1554974740335"/>
+<node TEXT="index" ID="ID_484166815" CREATED="1554974741874" MODIFIED="1554974743863"/>
+</node>
+<node TEXT="TimeSeries" ID="ID_1405064928" CREATED="1554974623731" MODIFIED="1554974627785">
+<node TEXT="meta" ID="ID_413595947" CREATED="1554974754162" MODIFIED="1554974756246"/>
+<node TEXT="values" ID="ID_1678272479" CREATED="1554974756674" MODIFIED="1554974759296"/>
+<node TEXT="datetimeindex" ID="ID_770961757" CREATED="1554974768180" MODIFIED="1554974773905"/>
+</node>
+<node TEXT="DataFrame" ID="ID_990958277" CREATED="1554974628834" MODIFIED="1554974632075">
+<node TEXT="keys" ID="ID_1444083990" CREATED="1554974662503" MODIFIED="1554974667003">
+<node TEXT="[[keys_level1], [keys_level2], ...]" ID="ID_458586015" CREATED="1554974672718" MODIFIED="1554974705876"/>
+<node TEXT="must be in meta" ID="ID_1414825508" CREATED="1554974707646" MODIFIED="1554974722168"/>
+</node>
+<node TEXT="[Meta]" ID="ID_422729783" CREATED="1554974633275" MODIFIED="1554974658783"/>
+<node TEXT="[TimeSeries]" ID="ID_1420464565" CREATED="1554974641109" MODIFIED="1554974648821"/>
+</node>
+</node>
+<node TEXT="Generator" POSITION="right" ID="ID_1388181555" CREATED="1561404622909" MODIFIED="1561404764179">
+<edge COLOR="#7c0000"/>
+<attribute NAME="directory" VALUE=""/>
+<node TEXT="PackageGenerator" ID="ID_1300532592" CREATED="1561404627637" MODIFIED="1561404672363"/>
+<node TEXT="ComponentGenerator" ID="ID_292001849" CREATED="1561404673046" MODIFIED="1561404678354"/>
+</node>
+<node TEXT="generation" POSITION="right" ID="ID_915794275" CREATED="1561405583691" MODIFIED="1561405591297">
+<edge COLOR="#00007c"/>
+<node TEXT="serialize_package" ID="ID_65580352" CREATED="1561405592009" MODIFIED="1561405599623"/>
+<node TEXT="serialize_component" ID="ID_1909687590" CREATED="1561405600035" MODIFIED="1561405608534"/>
+<node TEXT="generate_package_info(package, directory)" ID="ID_1296080591" CREATED="1561405615181" MODIFIED="1561405694606"/>
+<node TEXT="generate_component_info(component, directory)" ID="ID_951842371" CREATED="1561405647760" MODIFIED="1561405704741"/>
+</node>
+<node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
+<edge COLOR="#007c00"/>
+<node TEXT="class attributes" ID="ID_1289278252" CREATED="1561806493745" MODIFIED="1561806502171">
+<node TEXT="at object definition" ID="ID_1993754869" CREATED="1561806503291" MODIFIED="1561806534734"/>
+<node TEXT="__ATTR__" ID="ID_1912369174" CREATED="1561806536478" MODIFIED="1561806549916">
+<node TEXT="in python" ID="ID_734961414" CREATED="1561806551379" MODIFIED="1561806555910"/>
+</node>
+</node>
+<node TEXT="instances attributes" ID="ID_1436460263" CREATED="1561806509112" MODIFIED="1561806517825">
+<node TEXT="in properties" ID="ID_312070482" CREATED="1561806519384" MODIFIED="1561806521696"/>
+</node>
+<node TEXT="$" ID="ID_1972541974" CREATED="1561806568757" MODIFIED="1561806572716">
+<node TEXT="comment or uri" ID="ID_510430760" CREATED="1561806574031" MODIFIED="1561806582289"/>
 </node>
 </node>
 </node>

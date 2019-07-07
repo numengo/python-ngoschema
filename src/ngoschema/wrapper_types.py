@@ -116,9 +116,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                         if isinstance(elem, (six.string_types, six.integer_types, float)):
                             val = typ(elem)
                         else:
-                            val = typ(**self._parent._obj_conf,
+                            val = typ(**self._parent._child_conf,
                                       **util.coerce_for_expansion(elem))
-                    except TypeError as e:
+                    except Exception as e:
+                        self._parent.logger.error(e)
                         raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
                                               .format(elem, typ, e))
                 else:
@@ -145,7 +146,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     if isinstance(elem, (six.string_types, six.integer_types, float)):
                         val = typ(elem)
                     else:
-                        val = typ(**self._parent._obj_conf,
+                        val = typ(**self._parent._child_conf,
                                   **util.coerce_for_expansion(elem))
                 except TypeError as e:
                     six.reraise(ValidationError,

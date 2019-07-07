@@ -25,12 +25,15 @@ from python_jsonschema_objects import \
 
 from . import utils, jinja2
 from .canonical_name import resolve_cname, CN_KEY
+from . import mixins
 from .mixins import HasCache, HasParent, HandleRelativeCname, HasInstanceQuery
 from .logger import HasLogger
 from .uri_identifier import resolve_uri
 from .validators import DefaultValidator
 from .config import ConfigLoader
-
+from .decorators import SCH_PATH_DIR_EXISTS, SCH_STR
+from .decorators import assert_arg
+from .serializers import JsonSerializer
 
 # loader to register module with a transforms folder where to look for model transformations
 models_module_loader = utils.GenericModuleFileLoader('models')
@@ -72,8 +75,11 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
         # load missing component
         if propname in self._lazy_data:
-            self.logger.debug("lazy loading of '%s'" % propname)
-            setattr(self, propname, self._lazy_data.pop(propname))
+            try:
+                self.logger.debug("lazy loading of '%s'", propname)
+                setattr(self, propname, self._lazy_data.pop(propname))
+            except Exception as er:
+                raise AttributeError("Lazy loading of property '%s' failed.\n%s" % (propname, er))
 
         prop = self._properties.get(propname)
 
@@ -90,8 +96,9 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                     "Error getting property %s.\n%s" % (propname, er))
         try:
             if prop is not None:
-                #self._add_outputs(**{propname: prop})
-                prop.do_validate()
+                # only forces validation if pattern
+                force = hasattr(prop, '_pattern') or isinstance(prop, ProtocolBase) or info["type"] == 'array'
+                prop.do_validate(force)
                 return prop
         except KeyError as er:
             self.logger.error(er)
@@ -163,7 +170,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                     # force conversion- thus the val rather than validator assignment
                     try:
                         if not utils.is_string(val):
-                            val = typ(**self._obj_conf,
+                            val = typ(**self._child_conf,
                                       **pjo_util.coerce_for_expansion(val))
                         else:
                             val = typ(val)
@@ -230,7 +237,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
             if not isinstance(val, infotype):
                 if not utils.is_string(val):
-                    val = infotype(**self._obj_conf,
+                    val = infotype(**self._child_conf,
                                    **pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
@@ -244,7 +251,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
         elif isinstance(infotype, pjo_classbuilder.TypeRef):
             if not isinstance(val, infotype.ref_class):
                 if not utils.is_string(val):
-                    val = infotype(**self._obj_conf,
+                    val = infotype(**self._child_conf,
                                    **pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
@@ -287,7 +294,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     return property(getprop, setprop, delprop, desc)
 
 
-class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInstanceQuery, pjo_classbuilder.ProtocolBase):
+class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, HasLogger, pjo_classbuilder.ProtocolBase):
     __doc__ = pjo_classbuilder.ProtocolBase.__doc__ + """
     
     Protocol shared by all instances created by the class builder. It extends the 
@@ -325,9 +332,6 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
 
     def __new__(cls,
                 *args,
-                lazy_loading=None,
-                validate_lazy=None,
-                attr_by_name=None,
                 **props):
         """
         function creating the class with a special treatment to resolve subclassing
@@ -335,23 +339,17 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         from .resolver import get_resolver
         from .classbuilder import get_builder
 
-        # specific treatment in case schemaUri redefines the class to create
-        if len(args)==1 and utils.is_string(args[0]):
-            props['$ref'] = args[0]
         if '$ref' in props:
             props.update(resolve_uri(props.pop('$ref')))
 
-        schemaUri = props.get('schemaUri', None)
-        if schemaUri is not None and schemaUri != cls.__schema__.get('$id'):
-            cls = get_builder().resolve_or_build(schemaUri)
+        if '$schema' in props:
+            if props['$schema'] != cls.__schema__:
+                cls = get_builder().resolve_or_build(props['$schema'])
 
         cls.init_class_logger()
-        cls._lazy_loading = lazy_loading or cls.__lazy_loading__
-        cls._validate_lazy = validate_lazy or cls.__validate_lazy__
-        cls._attr_by_name = attr_by_name or cls.__attr_by_name__
 
         # option to validate arguments at init even if lazy loading
-        if cls._lazy_loading and cls._validate_lazy and cls._validator is None:
+        if cls.__lazy_loading__ and cls.__validate_lazy__ and cls._validator is None:
             cls._validator = DefaultValidator(
                 cls.__schema__, resolver=get_resolver())
             cls._validator._setDefaults = True
@@ -360,13 +358,9 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         if new is object.__new__:
             return new(cls)
         return new(cls, **props)
-        # return new(cls, *args, **props) super ProtocolBase does not support args
 
     def __init__(self,
                  *args,
-                 lazy_loading=None,
-                 validate_lazy=None,
-                 attr_by_name=None,
                  **props):
         """
         main initialization method, dealing with lazy loading
@@ -374,10 +368,20 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         self.logger.info(pjo_util.lazy_format("INIT {0} with {1}", self.short_repr(), utils.any_pprint(props)))
 
         cls = self.__class__
-
+        
         self._key2attr = dict()
+        self._lazy_loading = props.pop('lazy_loading', None) or cls.__lazy_loading__
+        self._validate_lazy = props.pop('validate_lazy', None) or cls.__validate_lazy__
+        self._attr_by_name = props.pop('attr_by_name', None) or cls.__attr_by_name__
+        self._propagate = props.pop('propagate', None) or cls.__propagate__
+        self._child_conf = {
+            'lazy_loading':  self._lazy_loading,
+            'validate_lazy': self._validate_lazy,
+            'attr_by_name':  self._attr_by_name,
+            'propagate': self._propagate
+        } if self._propagate else {}
 
-        HasCache.__init__(self)
+        mixins.HasCache.__init__(self)
 
         # register instance
         for c in self.pbase_mro(ngo_base=True):
@@ -385,12 +389,9 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
 
         self._lazy_data = dict()
         self._extended_properties = dict()
-        self._properties = dict()
-        for c in self.pbase_mro(ngo_base=True):
-            self._properties.update(dict(
-                zip(c.__prop_names__.values(),
-                    [None
-                     for x in six.moves.xrange(len(c.__prop_names__))])))
+        self._properties = dict(zip(
+                    self.__prop_names_flatten__.values(),
+                    [None for x in six.moves.xrange(len(self.__prop_names_flatten__))]))
 
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
@@ -398,7 +399,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             if k not in props:
                 setattr(self, k, copy.copy(v))
 
-        # reference to property extern to document to be resolved later
+        # non keyword argument = reference to property extern to document to be resolved later
         if len(args)==1 and utils.is_string(args[0]):
             props['$ref'] = args[0]
         if '$ref' in props:
@@ -409,24 +410,11 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             props.pop(k)
             self.logger.warning('property %s is read-only. Initial value provided not used.', k)
 
-        # force lazy loading to meta
-        self._lazy_loading = False
-        if 'parent' in props:
-            self._parent = props['parent']
         if 'name' in props:
-            self.name = props['name']
-        #if 'canonicalName' in props:
-        #    self.canonicalName = props['canonicalName']
-
-        self._lazy_loading = lazy_loading or cls._lazy_loading
-        self._validate_lazy = validate_lazy or cls._validate_lazy
-        self._attr_by_name = attr_by_name or cls._attr_by_name
-        # _obj_conf will be used to initialize children objects and propagate settings
-        self._obj_conf = {
-            'lazy_loading': self._lazy_loading,
-            'validate_lazy': self._validate_lazy,
-            'attr_by_name': self._attr_by_name
-        }
+            if isinstance(self, mixins.HasCanonicalName):
+                mixins.HasCanonicalName.set_name(self, props['name'])
+            elif isinstance(self, mixins.HasName):
+                mixins.HasName.set_name(self, props['name'])
 
         if self._lazy_loading:
             self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
@@ -475,7 +463,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         )
 
     def __eq__(self, other):
-        if not HasCache.__eq__(self, other):
+        if not mixins.HasCache.__eq__(self, other):
             return False
         if not isinstance(other, ProtocolBase):
             return False
@@ -485,7 +473,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         return True
 
     def for_json(self, no_defaults=True):
-        """
+        """key@
         serialization method, removing all members flagged as NotSerialized
         """
         out = collections.OrderedDict()
@@ -500,9 +488,11 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
                 if isinstance(prop, pjo_literals.LiteralValue):
                     if getattr(prop, '_pattern', '') == defv:
                         continue
-                    if prop == defv:
+                    val = self._get_prop_value(pn)
+                    if val == defv:
                         continue
-                    out[pn_id] = self._get_prop_value(pn)
+                    if val is not None:
+                        out[pn_id] = val
                 else:
                     if isinstance(prop, pjo_classbuilder.ProtocolBase):
                         if len(prop) == len(prop.__has_default__):
@@ -512,12 +502,28 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
                         if len(prop) == len(defv):
                             if not defv or prop == defv:
                                 continue
-                    out[pn_id] = prop.for_json(no_defaults=no_defaults)
+                    val = prop.for_json(no_defaults=no_defaults)
+                    if val:
+                        out[pn_id] = val
             else:
                 out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
         for pn, prop in self._extended_properties.items():
             out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
         return out
+
+    @property
+    def _id(self):
+        return id(self)
+
+    @assert_arg(1, SCH_PATH_DIR_EXISTS)
+    @assert_arg(2, SCH_STR)
+    def serialize_json(self, output_dir, filename, no_defaults=True, overwrite=False):
+        output_fp = output_dir.joinpath(filename)
+        if output_fp.exists() and not overwrite:
+            self.logger.warning("File '%s' already exists. Not overwriting.", output_fp)
+        else:
+            self.logger.info("SERIALIZING '%s'", output_fp)
+            JsonSerializer.dump(self.for_json(no_defaults=no_defaults), output_fp, overwrite=overwrite)
 
     def validate(self):
         if self._lazy_loading:
@@ -578,7 +584,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             return collections.MutableMapping.__getattribute__(self, name)
 
         if '.' in name:
-            names = name.split('.')
+            names = name.strip('#').split('.')
             cur = ProtocolBase.__getattr__(self, names[0])
             for _ in names:
                 cur = ProtocolBase.__getattr__(cur, _)
@@ -589,8 +595,6 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             if name in c.__object_attr_list__:
                 return object.__getattribute__(self, name)
 
-        name = self.__prop_names_flatten__.get(name, name)
-
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
             attr = ProtocolBase.__getattr__(self, prop)
@@ -599,11 +603,12 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             else:
                 return attr[index]
 
-        #propname = self.__prop_translated_flatten__.get(name, name)
-
         # check it s not a schema defined property, we should not reach there
         if name in self.__prop_names_flatten__.values():
             raise KeyError(name)
+        # check it s not a translated property
+        if name in self.__prop_names_flatten__:
+            return getattr(self, self.__prop_names_flatten__[name])
         # check it s an extended property
         if name in self._extended_properties:
             return self._extended_properties[name]
@@ -625,13 +630,6 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
         """allow setting of protected attributes"""
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
-
-        if '.' in name:
-            names = name.split('.')
-            cur = ProtocolBase.__getattr__(self, names[0])
-            for _ in names[:-1]:
-                cur = ProtocolBase.__getattr__(cur, _)
-            return ProtocolBase.__setattr__(cur, names[-1], val)
 
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
@@ -674,7 +672,7 @@ class ProtocolBase(HandleRelativeCname, HasParent, HasCache, HasLogger, HasInsta
             return self._properties.get(name)
         return self._extended_properties.get(name)
 
-    def _get_prop_value(self, name, default=None):
+    def _get_prop_value(self, name, default=None, no_defaults=True):
         if self._lazy_loading and name in self._lazy_data:
             val = self._lazy_data[name]
             return val.for_json(no_defaults=no_defaults) if hasattr(val, 'for_json') else val

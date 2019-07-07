@@ -10,18 +10,17 @@ To add a schema to a class, user needs to have the class use the ``SchemaMetaCla
     from ngoschema import SchemaMetaclass, ProtocolBase
 
     class MyCardClass(with_metaclass(SchemaMetaclass, ProtocolBase)):
-        schemaUri = "http://json-schema.org/card"
+        __schema__ = "http://json-schema.org/card"
 
     def __init__(self, *args, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
 
 
 The schema can be indicated using different fields:
-* ``schemaUri`` indicates a URI that the resolver will look for in the
+* ``__schema__`` indicates a URI that the resolver will look for in the
 schema store. The library comes with a derived resolver which automatically looks
 for some schemas to load. see ``ngoschema.resolver``
-* ``schemaPath`` indicates a path to a file containing the schema
-* ``schema`` can directly embed the schema as python dictionary
+* ``__schema_path__`` indicates a path to a file containing the schema
 
 The class should always inherit from ``with_metaclass(SchemaMetaclass, Parent1, Parent2)``
 

@@ -39,7 +39,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    schemaUri = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
+    __schema__ = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
     __add_logging__ = False
     __assert_args__ = False
     __attr_by_name__ = False
@@ -108,9 +108,9 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._content = doc
         self._is_deserialized = True
         if CN_ID in doc:
-            register_document_with_cname(doc, doc[CN_ID])
+            register_document_with_cname(self, doc[CN_ID])
         if URI_ID in doc:
-            register_document_with_uri_id(doc, doc[URI_ID])
+            register_document_with_uri_id(self, doc[URI_ID])
         return doc
 
     @property
@@ -142,6 +142,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def get_content(self):
         return self._content or self._contentRaw
+    content = property(get_content)
 
     _id = None
 

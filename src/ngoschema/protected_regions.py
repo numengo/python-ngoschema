@@ -25,7 +25,7 @@ pr_regex = re.compile(
 
 def get_protected_regions(sourcecode):
     """
-    Return a dictionnary of the protected areas of a text
+    Return a dictionary of the protected areas of a text
 
     { region_id : region_source_code}
 
@@ -42,7 +42,7 @@ def get_protected_regions(sourcecode):
 @assert_arg(0, SCH_PATH)
 def get_protected_regions_from_file(fp):
     """
-    Return a dictionnary of the protected areas of a text
+    Return a dictionary of the protected areas of a text
 
     { region_id : region_source_code}
 

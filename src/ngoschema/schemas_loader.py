@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import imp
 import json
 import logging
+import collections
 import pathlib
 import pkgutil
 from builtins import str
@@ -65,8 +66,8 @@ def load_schema(schema, schemas_store=None):
         schemas_store[uri] = schema
     _all_schemas_store[uri] = schema
     # also register in uri_identifier document store
-    from .uri_identifier import register_document_with_uri_id
-    register_document_with_uri_id(schema, uri)
+    from .uri_identifier import register_doc_with_uri_id
+    register_doc_with_uri_id(schema, uri)
     return uri, schema
 
 
@@ -82,8 +83,8 @@ def load_schema_file(schema_path, schemas_store=None):
     :rtype: dict
     """
     with open(str(schema_path), "rb") as f:
-        #schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
-        schema = json.loads(f.read().decode("utf-8"))
+        schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
+        #schema = json.loads(f.read().decode("utf-8"))
         schema.setdefault('$id', pathlib.Path(schema_path).stem)
         return load_schema(schema, schemas_store)
 

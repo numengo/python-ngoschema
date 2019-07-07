@@ -33,7 +33,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    schemaUri = "http://numengo.org/draft-05/schema/object-factories#/definitions/ObjectFactory"
+    __schema__ = "http://numengo.org/draft-05/schema/object-factories#/definitions/ObjectFactory"
     deserializers = [JsonDeserializer, YamlDeserializer]
 
     def __init__(self, **kwargs):
@@ -84,8 +84,8 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         process_opts = process_opts or {}
         transform_opts = transform_opts or {}
-        if 'schemaUri' in data and hasattr(from_object_class, '__schema__'):
-            data_schema_uri = data['schemaUri']
+        if '__schema__' in data and hasattr(from_object_class, '__schema__'):
+            data_schema_uri = data['__schema__']
             if data_schema_uri != from_object_class.__schema__.get('$id'):
                 builder = get_builder()
                 if data_schema_uri in builder.resolved:

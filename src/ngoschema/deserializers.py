@@ -89,7 +89,7 @@ deserializer_registry = utils.GenericRegistry()
 @deserializer_registry.register()
 class JsonDeserializer(Deserializer):
     default_ext = '.json'
-    logger = logging.getLogger(__name__ + ".JsonDeserializer")
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def loads(self, string, only=(), but=(), many=False, **opts):
@@ -102,7 +102,7 @@ class JsonDeserializer(Deserializer):
 @deserializer_registry.register()
 class YamlDeserializer(Deserializer):
     default_ext = '.yaml'
-    logger = logging.getLogger(__name__ + ".YamlDeserializer")
+    logger = logging.getLogger(__name__)
     _yaml = YAML(typ="safe")
 
     @classmethod

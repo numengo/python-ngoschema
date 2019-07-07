@@ -51,9 +51,6 @@
             "type": "string"
           }
         },
-        "content": {
-          "type": "object"
-        },
         "dateCreated": {
           "type": "datetime"
         },

@@ -19,6 +19,7 @@ import re
 import pprint
 import subprocess
 import sys
+import json
 from builtins import object
 from builtins import str
 from contextlib import contextmanager
@@ -363,7 +364,7 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
         return
     is_map = is_mapping(coll)
     for i, k in enumerate(list(coll.keys()) if is_map else coll):
-        func(coll, k if is_map else i, level, **func_kwargs)
+        func(coll, k if is_map else i, level=level, **func_kwargs)
         if recursive:
             v = coll.get(k) if is_map else (
                 coll[i] if i < len(coll) else 
@@ -491,7 +492,7 @@ def coll_pprint(coll, max_length=20, sep=''):
     is_map = is_mapping(coll)
     # remove private members
     if is_map:
-        coll = {k: v for k, v in coll.items() if k[0] != '_'}
+        coll = collections.OrderedDict([(k, v) for k, v in coll.items() if k[0] != '_'])
 
     trunc = len(coll) > max_length
     if is_map:
@@ -511,13 +512,13 @@ def coll_pprint(coll, max_length=20, sep=''):
         return str(value)[:STR_LMAX]
 
     if is_mapping(coll):
-        coll = {k: truncate(v) for k, v in coll.items()}
+        coll = collections.OrderedDict([(k, truncate(v)) for k, v in coll.items()])
     for i, k in enumerate(coll):
         ik = k if is_map else i
         v = coll[ik]
         coll[ik] = truncate(v)
 
-    lines = pprint.pformat(coll).split('\n')
+    lines = json.dumps(coll).split('\n')
     if trunc:
         lines.append('(...)')
     return sep.join(lines)

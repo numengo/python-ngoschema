@@ -7,6 +7,17 @@
     "boolean"
   ],
   "definitions": {
+    "schemaArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
     "nonNegativeIntegerDefault0": {
       "allOf": [
         {
@@ -16,25 +27,6 @@
           "default": 0
         }
       ]
-    },
-    "nonNegativeInteger": {
-      "minimum": 0,
-      "type": "integer"
-    },
-    "schemaArray": {
-      "minItems": 1,
-      "items": {
-        "$ref": "#"
-      },
-      "type": "array"
-    },
-    "stringArray": {
-      "uniqueItems": true,
-      "items": {
-        "type": "string"
-      },
-      "default": [],
-      "type": "array"
     },
     "simpleTypes": {
       "enum": [
@@ -47,6 +39,14 @@
         "string"
       ]
     },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
     "complexTypes": {
       "enum": [
         "path",
@@ -55,22 +55,96 @@
         "datetime"
       ]
     },
-    "ForeignKey": {
-      "$comment": "for DB auto construction",
+    "ProtocolBase": {
+      "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "key": {
-          "default": "canonicalName",
+        "$id": {
           "type": "string"
         },
-        "schemaUri": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        }
+      }
+    },
+    "KeyedObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/ProtocolBase"
+      ],
+      "properties": {
+        "primaryKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NamedObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/KeyedObject"
+      ],
+      "properties": {
+        "name": {
+          "default": "<anonymous>",
+          "type": "string"
+        },
+        "canonicalName": {
+          "type": "string"
+        }
+      }
+    },
+    "Relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
           "format": "uri-reference",
           "type": "string"
         },
-        "value": {
-          "type": [
-            "string",
-            "integer"
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cardinality": {
+          "enum": [
+            "one2one",
+            "one2many"
           ]
+        },
+        "ordering": {
+          "type": "string"
+        },
+        "reverse": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "ForeignKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "$comment": "to define a relationship to another instance",
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/Relationship"
+      ],
+      "properties": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "backPopulates": {
+          "$ref": "#/definitions/Relationship"
         },
         "onDelete": {
           "enum": [
@@ -81,127 +155,84 @@
             "SET",
             "DO_NOTHING"
           ]
-        },
-        "relationship": {
-          "$ref": "#/definitions/Relationship"
-        }
-      },
-      "type": "object"
-    },
-    "Relationship": {
-      "properties": {
-        "foreignKeys": {
-          "items": {
-            "$ref": "#/definitions/ForeignKey"
-          },
-          "type": "array"
-        },
-        "cardinality": {
-          "enum": [
-            "one2one",
-            "one2many"
-          ]
-        },
-        "name": {
-          "type": "string"
-        },
-        "ordering": {
-          "type": "string"
-        },
-        "reverse": {
-          "default": false,
-          "type": "boolean"
-        },
-        "backPopulates": {
-          "type": "string"
         }
       }
     },
     "Metadata": {
+      "type": "object",
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/NamedObject"
+      ],
       "properties": {
-        "description": {
-          "type": "string"
-        },
         "title": {
           "default": "{{this.name|titleize}}",
           "type": "string"
         },
-        "schemaPath": {
-          "type": "path"
-        },
-        "$id": {
+        "description": {
           "type": "string"
-        },
-        "name": {
-          "default": "<anonymous>",
-          "type": "string"
-        },
-        "canonicalName": {
-          "type": "string",
-          "default": "{% if this._parent and this._parent.canonicalName %}{{this._parent.canonicalName}}.{{this.name}}{%else%}{{this.name}}{%endif%}"
-        },
-        "primaryKeys": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "schemaUri": {
-          "format": "uri-reference",
-          "type": "string"
-        },
-        "lazy_loading": {
-          "type": "boolean"
         }
       },
-      "additionalProperties": true,
-      "type": "object"
+      "additionalProperties": true
     }
   },
   "properties": {
-    "additionalItems": {
-      "$ref": "#"
-    },
-    "contentMediaType": {
-      "type": "string"
-    },
-    "not": {
-      "$ref": "#"
-    },
-    "multipleOf": {
-      "exclusiveMinimum": 0,
-      "type": "number"
-    },
-    "maxProperties": {
-      "$ref": "#/definitions/nonNegativeInteger"
-    },
-    "maxItems": {
-      "$ref": "#/definitions/nonNegativeInteger"
-    },
-    "exclusiveMinimum": {
-      "type": "number"
-    },
-    "allOf": {
-      "$ref": "#/definitions/schemaArray"
-    },
-    "contentEncoding": {
-      "type": "string"
+    "$id": {
+      "type": "string",
+      "format": "uri-reference"
     },
     "$schema": {
-      "format": "uri",
-      "type": "string"
+      "type": "string",
+      "format": "uri"
+    },
+    "$ref": {
+      "type": "string",
+      "format": "uri-reference"
     },
     "$comment": {
       "type": "string"
     },
-    "contains": {
-      "$ref": "#"
+    "title": {
+      "type": "string"
     },
     "description": {
       "type": "string"
     },
+    "default": true,
+    "readOnly": {
+      "$ref": "#/definitions/stringArray"
+    },
+    "examples": {
+      "type": "array",
+      "items": true
+    },
+    "multipleOf": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
     "maximum": {
       "type": "number"
+    },
+    "exclusiveMaximum": {
+      "type": "number"
+    },
+    "minimum": {
+      "type": "number"
+    },
+    "exclusiveMinimum": {
+      "type": "number"
+    },
+    "maxLength": {
+      "$ref": "#/definitions/nonNegativeInteger"
+    },
+    "minLength": {
+      "$ref": "#/definitions/nonNegativeIntegerDefault0"
+    },
+    "pattern": {
+      "type": "string",
+      "format": "regex"
+    },
+    "additionalItems": {
+      "$ref": "#"
     },
     "items": {
       "anyOf": [
@@ -214,22 +245,57 @@
       ],
       "default": true
     },
-    "pattern": {
-      "format": "regex",
-      "type": "string"
-    },
-    "default": true,
-    "examples": {
-      "items": true,
-      "type": "array"
+    "maxItems": {
+      "$ref": "#/definitions/nonNegativeInteger"
     },
     "minItems": {
       "$ref": "#/definitions/nonNegativeIntegerDefault0"
     },
-    "format": {
-      "type": "string"
+    "uniqueItems": {
+      "type": "boolean",
+      "default": false
+    },
+    "contains": {
+      "$ref": "#"
+    },
+    "maxProperties": {
+      "$ref": "#/definitions/nonNegativeInteger"
+    },
+    "minProperties": {
+      "$ref": "#/definitions/nonNegativeIntegerDefault0"
+    },
+    "required": {
+      "$ref": "#/definitions/stringArray"
+    },
+    "additionalProperties": {
+      "$ref": "#"
+    },
+    "definitions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      },
+      "default": {}
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      },
+      "default": {}
+    },
+    "patternProperties": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#"
+      },
+      "propertyNames": {
+        "format": "regex"
+      },
+      "default": {}
     },
     "dependencies": {
+      "type": "object",
       "additionalProperties": {
         "anyOf": [
           {
@@ -239,38 +305,15 @@
             "$ref": "#/definitions/stringArray"
           }
         ]
-      },
-      "type": "object"
+      }
     },
-    "if": {
+    "propertyNames": {
       "$ref": "#"
     },
-    "exclusiveMaximum": {
-      "type": "number"
-    },
-    "oneOf": {
-      "$ref": "#/definitions/schemaArray"
-    },
-    "readOnly": {
-      "$ref": "#/definitions/stringArray"
-    },
-    "definitions": {
-      "additionalProperties": {
-        "$ref": "#"
-      },
-      "default": {},
-      "type": "object"
-    },
-    "properties": {
-      "additionalProperties": {
-        "$ref": "#"
-      },
-      "default": {},
-      "type": "object"
-    },
-    "$ref": {
-      "format": "uri-reference",
-      "type": "string"
+    "const": true,
+    "enum": {
+      "type": "array",
+      "items": true
     },
     "type": {
       "anyOf": [
@@ -278,120 +321,77 @@
           "$ref": "#/definitions/simpleTypes"
         },
         {
-          "uniqueItems": true,
-          "minItems": 1,
+          "type": "array",
           "items": {
             "$ref": "#/definitions/simpleTypes"
           },
-          "type": "array"
+          "minItems": 1,
+          "uniqueItems": true
         },
         {
           "$ref": "#/definitions/complexTypes"
         }
       ]
     },
-    "minimum": {
-      "type": "number"
-    },
-    "anyOf": {
-      "$ref": "#/definitions/schemaArray"
-    },
-    "enum": {
-      "uniqueItems": true,
-      "minItems": 1,
-      "items": true,
-      "type": "array"
-    },
-    "title": {
+    "format": {
       "type": "string"
     },
-    "uniqueItems": {
-      "default": false,
-      "type": "boolean"
+    "contentMediaType": {
+      "type": "string"
     },
-    "maxLength": {
-      "$ref": "#/definitions/nonNegativeInteger"
+    "contentEncoding": {
+      "type": "string"
     },
-    "additionalProperties": {
+    "if": {
+      "$ref": "#"
+    },
+    "then": {
       "$ref": "#"
     },
     "else": {
       "$ref": "#"
     },
-    "minProperties": {
-      "$ref": "#/definitions/nonNegativeIntegerDefault0"
+    "allOf": {
+      "$ref": "#/definitions/schemaArray"
     },
-    "patternProperties": {
-      "propertyNames": {
-        "format": "regex"
-      },
-      "additionalProperties": {
-        "$ref": "#"
-      },
-      "default": {},
-      "type": "object"
+    "anyOf": {
+      "$ref": "#/definitions/schemaArray"
     },
-    "$id": {
-      "format": "uri-reference",
-      "type": "string"
+    "oneOf": {
+      "$ref": "#/definitions/schemaArray"
     },
-    "minLength": {
-      "$ref": "#/definitions/nonNegativeIntegerDefault0"
-    },
-    "propertyNames": {
+    "not": {
       "$ref": "#"
-    },
-    "const": true,
-    "required": {
-      "$ref": "#/definitions/stringArray"
-    },
-    "then": {
-      "$ref": "#"
-    },
-    "foreignSchemaUri": {
-      "$comment": "to indicate an URI should point to a fragment respecting a given schema",
-      "format": "uri-reference",
-      "type": "string"
-    },
-    "isPrimaryKey": {
-      "$comment": "to flag a primary key of an object",
-      "type": "boolean"
-    },
-    "foreignKey": {
-      "$ref": "#/definitions/ForeignKey"
     },
     "notSerialized": {
       "$ref": "#/definitions/stringArray"
     },
-    "isPathDir": {
-      "$comment": "for complexType path",
-      "type": "boolean"
-    },
-    "schemaUri": {
-      "$comment": "for object subclassing",
-      "format": "uri-reference",
-      "type": "string"
-    },
-    "isPathFile": {
-      "$comment": "for complexType path",
-      "type": "boolean"
-    },
     "extends": {
-      "$comment": "for inheritance...",
+      "type": "array",
       "items": {
-        "format": "uri-reference",
-        "type": "string"
+        "type": "string",
+        "format": "uri-reference"
       },
-      "type": "array"
-    },
-    "isPathExisting": {
-      "$comment": "for complexType path",
-      "type": "boolean"
+      "$comment": "for inheritance..."
     },
     "isAbstract": {
-      "$comment": "for code generation",
-      "default": false,
-      "type": "boolean"
+      "type": "boolean",
+      "$comment": "for code generation"
+    },
+    "isPathDir": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "isPathFile": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "isPathExisting": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "foreignKey": {
+      "$ref": "#/definitions/ForeignKey"
     }
   },
   "default": true

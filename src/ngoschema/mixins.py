@@ -12,6 +12,12 @@ import weakref
 from python_jsonschema_objects.classbuilder import LiteralValue
 from .decorators import classproperty
 
+class HasName:
+
+    _name = None
+    def set_name(self, value):
+        self._name = str(value) if value else None
+
 
 class HasParent:
 
@@ -21,15 +27,14 @@ class HasParent:
     def _set_parent(self, value):
         if value is None:
             if self._parent_ref and self._parent_ref():
-                self._parent_ref._children_dict.pop(id(self))
+                self._parent_ref()._unregister_child(self)
                 self._parent_ref = None
-            return
         from .foreign_key import ForeignKey
         if isinstance(value, ForeignKey):
             self._parent_ref = value._ref
         if isinstance(value, HasParent):
             self._parent_ref = weakref.ref(value)
-        self._parent_ref().register_child(self)
+        self._parent_ref()._register_child(self)
 
     def _get_parent(self):
         return self._parent_ref() if self._parent_ref else None
@@ -46,26 +51,130 @@ class HasParent:
 
     _parents = property(_get_parents)
 
-    def register_child(self, child):
+    def _register_child(self, child):
+        # not using set because we need to remove an instance without deleting it
+        # WeakSet.remove does not allow
         if self._children_dict is None:
             self._children_dict = weakref.WeakValueDictionary()
         self._children_dict[id(child)] = child
 
+    def _unregister_child(self, child):
+        self._children_dict.pop(id(child))
+
     def _get_children(self):
-        return [wr() for wr in self._children_dict.valuerefs()]
+        return [wr() for wr in self._children_dict.valuerefs()] if self._children_dict else []
+
+    def _touch_children(self):
+        for c in self._children:
+            c._touch_children()
 
     _children = property(_get_children)
+
+
+class HasCanonicalName(HasName, HasParent):
+    _cn_instances = weakref.WeakValueDictionary()
+
+    def set_name(self, value):
+        n = str(value) if value else None
+        if self._name != n:
+            self._unregister_cnamed()
+            HasName.set_name(self, n)
+            self._register_cnamed()
+
+    def _set_parent(self, value):
+        if self._parent is not value:
+            self._unregister_cnamed()
+            HasParent._set_parent(self, value)
+            self._register_cnamed()
+
+    _canonicalName = None
+    def set_canonicalName(self, value):
+        cn = str(value) if value else None
+        if self._cname != cn:
+            self._unregister_cnamed()
+            self._canonicalName = cn
+            self._register_cnamed()
+
+    _cnam = None
+    @property
+    def _cname(self):
+        if self._cnam is None:
+            par = self._parent
+            par_cn = None
+            while par and not self._canonicalName:
+                if isinstance(par, HasCanonicalName):
+                    par_cn = par._cname
+                    break
+                par = par._parent
+            self._cnam = self._canonicalName or \
+                 '%s.%s' % (par_cn, self._name or '') if par_cn else self._name
+        return self._cnam
+
+    def _touch_children(self):
+        self._cnam = None # reset canonical name cache
+        HasParent._touch_children(self)
+
+    def _register_child(self, child):
+        HasParent._register_child(self, child)
+        child._touch_children()
+
+    def _unregister_child(self, child):
+        HasParent._unregister_child(self, child)
+        child._touch_children()
+
+    def _register_cnamed(self):
+        self._cn_instances[self._cname] = self
+
+    def _unregister_cnamed(self):
+        self._cn_instances.pop(self._cname, None)
+        self._touch_children()
+
+    @classmethod
+    def resolve_cname(cls, cname):
+        from .wrapper_types import ArrayWrapper
+        cn = str(cname)
+        ret = cls._cn_instances.get(cn)
+        if ret:
+            return ret()
+        best_ancestor = None
+        pstack = []
+        while best_ancestor is None and '.' in cn:
+            cn, _ = cn.rsplit('.', 1)
+            pstack.append(_)
+            best_ancestor = cls._cn_instances.get(cn)
+        if best_ancestor is None:
+            raise Exception('Unresolvable canonical name %s' % (cname))
+        cur = best_ancestor
+        while pstack:
+            n = pstack.pop(-1)
+            try:
+                ch = next(c for c in cur._children if getattr(c, '_name', None) == n)
+                if not pstack:
+                    return ch
+            except Exception as er:
+                pstack.append(n)
+                ch = None
+            cur = ch or cur
+            if ch is None:
+                from . import canonical_name
+                pstack.append(cur._name)
+                pstack.reverse()
+                _, path = canonical_name.resolve_cname_path(pstack, cur._lazy_data)
+                for p in path:
+                    cur = cur[p]
+                return cur
+        raise Exception('Unresolvable canonical name %s in %s' % (cname, best_ancestor._cname))
 
 
 class RootRelativeCname:
 
     def resolve_relative_cname(self, value):
         val =  str(value)
-        return '%s.%s' % (self.canonicalName, val[1:]) if val[0]=='#' else val
+        return '%s.%s' % (self._cname, val[1:]) if val[0]=='#' else val
 
     def get_relative_cname(self, child):
-        base = '%s.' % self.canonicalName
-        return str(child.canonicalName).replace(base, '#')
+        base = '%s.' % self._cname
+        return child._cname.replace(base, '#')
 
 
 class HandleRelativeCname:
@@ -80,8 +189,13 @@ class HandleRelativeCname:
                     self._root = weakref.ref(par)
                     return par
                 par = par._parent
-            raise ValueError("impossible to resolve reference for relative canonical name in %s", self.__class__)
-        return self._root() if self._root else None
+            self._root = weakref.ref(self)
+        return self._root() if self._root else self
+
+    @property
+    def relativeCanonicalName(self):
+        pcn = self._root_parent._cname
+        return self._cname.replace('%s.' % pcn, '#')
 
     def _clean_cname(self, value):
         val = str(value)
@@ -213,7 +327,7 @@ class HasInstanceQuery:
         Query can used all usual operators"""
         from .query import Query
         ret = list(
-            Query(cls.__instances__)._filter_or_exclude(
+            Query(cls._instances)._filter_or_exclude(
                 *attrs, load_lazy=load_lazy, **attrs_value))
         if len(ret) == 0:
             raise ValueError('Entry %s does not exist' % attrs_value)
@@ -230,7 +344,7 @@ class HasInstanceQuery:
         Query can used all usual operators"""
         from .query import Query
         ret = list(
-            Query(cls.__instances__)._filter_or_exclude(
+            Query(cls._instances)._filter_or_exclude(
                 *attrs, load_lazy=load_lazy, **attrs_value))
         if len(ret) == 0:
             return None
@@ -247,7 +361,7 @@ class HasInstanceQuery:
         Query can used all usual operators"""
         from .query import Query
         return next(
-            Query(cls.__instances__).filter(
+            Query(cls._instances).filter(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
     @classmethod
@@ -257,7 +371,7 @@ class HasInstanceQuery:
         Query can used all usual operators"""
         from .query import Query
         return list(
-            Query(cls.__instances__).filter(
+            Query(cls._instances).filter(
                 *attrs, load_lazy=load_lazy, **attrs_value))
 
     @classproperty
