@@ -583,13 +583,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         if name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
 
-        if '.' in name:
-            names = name.strip('#').split('.')
-            cur = ProtocolBase.__getattr__(self, names[0])
-            for _ in names:
-                cur = ProtocolBase.__getattr__(cur, _)
-            return cur
-
         # check it s a standard attribute or method
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
@@ -620,6 +613,13 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
     def __getitem__(self, key):
         """access property as in a dict"""
         try:
+            # to be able to call
+            if '.' in key:
+                keys = key.strip('#').split('.')
+                cur = ProtocolBase.__getattr__(self, keys[0])
+                for _ in keys:
+                    cur = ProtocolBase.__getattr__(cur, _)
+                return cur
             return getattr(self, key)
         except AttributeError as er:
             raise KeyError(key)

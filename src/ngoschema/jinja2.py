@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import io
 import logging
 import re
+import os
 from builtins import object
 from builtins import str
 
@@ -73,6 +74,11 @@ class Jinja2Serializer(Serializer):
         `default_jinja2_env` 
         """
         self.jinja = environment or default_jinja2_env()
+        self.jinja.globals['Query'] = Query
+        self.jinja.globals['enumerate'] = enumerate
+        self.jinja.globals['len'] = len
+        self.jinja.globals['str'] = str
+        self.jinja.globals['list'] = list
         self.template = template
 
     def dump(self,
@@ -108,7 +114,8 @@ class Jinja2Serializer(Serializer):
                    encoding="utf-8",
                    protected_regions=None,
                    macro_args=[],
-                   **context):
+                   context=None,
+                   **kwargs):
         """
         Serializes a jinja2 macro into a file by given by a possibly templated filepath.
         Missing directories are created.
@@ -124,6 +131,7 @@ class Jinja2Serializer(Serializer):
 
         relpath = TemplatedString(templated_path)(**context)
         path = output_dir.joinpath(relpath)
+        context = context or kwargs
 
         if path.exists() and not overwrite:
             raise IOError("file '%s' already exists" % str(path))
@@ -132,14 +140,17 @@ class Jinja2Serializer(Serializer):
                 macro_name,
                 protected_regions=protected_regions,
                 macro_args=macro_args,
-                **context)
+                context=context)
         stream = six.text_type(stream)
 
         if path.exists():
-            with io.open(str(path), 'r', encoding) as f:
+            with io.open(str(path), 'r', encoding=encoding) as f:
                 if str(stream) == f.read():
                     self.logger.info("File '%s' already exists with same content. Not overwriting.", path)
                     return
+
+        if not path.parent.exists():
+            os.makedirs(str(path.parent))
 
         with io.open(str(path), 'w', encoding=encoding) as outfile:
             self.logger.info("DUMP macro %s of template '%s' file %s", macro_name, self.template, path)
@@ -150,7 +161,8 @@ class Jinja2Serializer(Serializer):
                     macro_name,
                     protected_regions=None,
                     macro_args=[],
-                    **context):
+                    context=None,
+                    **kwargs):
         """
         Serializes a jinja2 macro
 
@@ -159,18 +171,27 @@ class Jinja2Serializer(Serializer):
         :param macro_args: macro list of arguments
         :param context: context used by jinja to render template
         """
-        args = ['arg%i'%i for i in range(len(macro_args))]
-        ctx = { "arg%i"%i: o for i, o in enumerate(macro_args)}
-        if 'this' in context:
-            args.append('this=this')
-        ctx['protected_regions'] = protected_regions or {}
-        ctx['Query'] = Query
-        args.append('protected_regions=protected_regions')
+        context = context or kwargs
+        #args = ['arg%i'%i for i in range(len(macro_args))]
+        #args = ['arg%i'%i for i in range(len(macro_args))]
+        #ctx = { "arg%i"%i: o for i, o in enumerate(macro_args)}
+        if 'protected_regions' not in macro_args:
+            macro_args.append('protected_regions')
+
+        self.jinja.globals['protected_regions'] = protected_regions or {}
+
+        #context['protected_regions'] = protected_regions or {}
+        args = [k for k in macro_args if k in context]
+        #args += ['%s=%s' % (k, k) for k in context.keys() if k not in macro_args]
+        #context['Query'] = Query
         to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
             self.template, macro_name, macro_name, ', '.join(args))
-        self.logger.error(to_render)
-        context.update(ctx)
-        return self.jinja.from_string(to_render).render(context)
+        try:
+            template = self.jinja.from_string(to_render)
+            return template.render(**context)
+        except Exception as er:
+            self.logger.info(er)
+            raise er
 
 
 def get_variables(source, remove_this=True):

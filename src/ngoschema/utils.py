@@ -20,6 +20,7 @@ import pprint
 import subprocess
 import sys
 import json
+import tokenize
 from builtins import object
 from builtins import str
 from contextlib import contextmanager
@@ -32,6 +33,7 @@ from past.builtins import basestring
 from ._qualname import qualname
 from .exceptions import InvalidValue
 from .mixins import HasCache, HasParent
+from collections import OrderedDict as odict
 
 class GenericRegistry(object):
     def __init__(self):
@@ -532,3 +534,122 @@ def any_pprint(val, **kwargs):
         return coll_pprint(val, **kwargs)
     else:
         return str(val)[:STR_LMAX]
+
+
+def decistmt(s):
+    """Substitute Decimals for floats in a string of statements.
+
+    >>> from decimal import Decimal
+    >>> s = 'print +21.3e-5*-.1234/81.7'
+    >>> decistmt(s)
+    "print +Decimal ('21.3e-5')*-Decimal ('.1234')/Decimal ('81.7')"
+
+    >>> exec(s)
+    -3.21716034272e-007
+    >>> exec(decistmt(s))
+    -3.217160342717258261933904529E-7
+    """
+    # from: https://docs.python.org/2/library/tokenize.html
+    result = []
+    g = tokenize.generate_tokens(io.StringIO(s).readline)   # tokenize the string
+    for toknum, tokval, _, _, _  in g:
+        if toknum == tokenize.NUMBER and '.' in tokval:  # replace NUMBER tokens
+            result.extend([
+                (tokenize.NAME, 'Decimal'),
+                (tokenize.OP, '('),
+                (tokenize.STRING, repr(tokval)),
+                (tokenize.OP, ')')
+            ])
+        else:
+            result.append((toknum, tokval))
+    return tokenize.untokenize(result)
+
+class Bracket:
+    _context = None
+    _pos = (None, None)
+    _br = None
+
+    def __repr__(self):
+        if self._context:
+            return '<Bracket %s %s >' % (self._pos, self._context[self._pos[0]: self._pos[1]+1])
+        else:
+            return '<Bracket (, ) >'
+
+    def __init__(self, context, pos, bracket='('):
+        self._context = context
+        self._br, self._cbr = self.get_brackets(bracket)
+        assert len(pos)==2 and pos[0] < pos[1] and context[pos[0]] == self._br and context[pos[1]] == self._cbr
+        self._pos = pos
+
+    @staticmethod
+    def get_brackets(bracket):
+        brs = ['()', '[]', '{}', '<>']
+        for br in brs:
+            if bracket in br:
+                return br
+        raise InvalidValue('unknown bracket type %s (only %s)' % (bracket, ''.join(brs)))
+
+    def is_in(self, other):
+        return self._pos[0] < other._pos[0] and other._pos[1] > self._pos[1]
+
+    def content(self):
+        return self._context[self._pos[0]+1 : self._pos[1]]
+
+    def find_closing_bracket(context, bracket='('):
+        br, cbr = Bracket.get_brackets(bracket)
+        o_brs = []
+        for i, s in enumerate(context):
+            if s == br:
+                o_brs.append(i)
+            if s == cbr:
+                obr_, cbr_ = o_brs.pop(), i
+                if not o_brs:
+                    return (obr_, cbr_), context[obr_+1:cbr_]
+
+    @staticmethod
+    def find_brackets(context, bracket='('):
+        br, cbr = Bracket.get_brackets(bracket)
+        res = []
+        o_brs = []
+        for i, s in enumerate(context):
+            if s == br:
+                o_brs.append(i)
+            if s == cbr:
+                pos = (o_brs.pop(), i)
+                res.append(
+                    Bracket(context=context,
+                            pos=pos,
+                            bracket=bracket))
+        return res
+
+    @staticmethod
+    def find_nested_brackets(context, bracket='('):
+        all = Bracket.find_closed_brackets(context, bracket)
+
+        def order_brackets(pos_brs):
+            reg = odict({pos_brs.pop(): odict()})
+            def do_order(pos, registry):
+                for k in set(registry):
+                    if pos.is_in(k):
+                        do_order(pos, registry[k])
+                        break
+                else:
+                    registry[pos] = odict()
+            for pos in reversed(pos_brs):
+                do_order(pos, reg)
+            def do_reverse(registry):
+                res = odict(reversed(list(registry.items())))
+                for r in res.values():
+                    do_reverse(r)
+                return res
+            return do_reverse(reg)
+
+        return order_brackets(all)
+
+    @staticmethod
+    def find_function_content(context, f_name, pos=0):
+        f_name = f_name.rstrip('(').strip()
+        f_call = '%s(' % f_name
+        p = context.find(f_call, context)
+        brs = Bracket.find_brackets(context)
+

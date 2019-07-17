@@ -81,6 +81,8 @@ def _apply_ops_test(ops, negate, a, b):
             return a[int(op[1:])]
         if op == 'in':
             return a in b
+        if op == 'contains':
+            return b in a
         if op == 'intersects':
             if not utils.is_sequence(a):
                 raise TypeError("%s requires a sequence (%s not a sequence)" % (op, a))
@@ -377,6 +379,9 @@ class Query(object):
 
     def count(self):
         return len(self)
+
+    def isEmpty(self):
+        return len(self) == 0
 
     def order_by(self, order_by, reverse=False):
         return Query(self._iterable, self._distinct, order_by, reverse=reverse)

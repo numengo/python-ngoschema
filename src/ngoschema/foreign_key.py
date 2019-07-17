@@ -144,6 +144,15 @@ class CnameForeignKey(ForeignKey):
     def __init__(self, value):
         ForeignKey.__init__(self, value)
 
+    def validate(self):
+        if self._value:
+            pjo_literals.LiteralValue.validate(self)
+        # literal value is validated, now let s see if it corresponds to reference
+        if self._ref and self._ref():
+            ref = self._ref()
+            self._value = ref._cname
+        assert self._value or self._ref is None
+
     def resolve(self):
         if self._ref:
             return self._ref()
