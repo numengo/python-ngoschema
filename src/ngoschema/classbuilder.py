@@ -27,6 +27,7 @@ import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
 from future.utils import text_to_native_str as native_str
+from ngoschema import openapi2jsonschema
 
 from .protocol_base import ProtocolBase, make_property
 from . import jinja2
@@ -99,7 +100,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         def __init_pseudo__(self, *args, **kwargs):
             HasCache.__init__(self)
-            pjo_literals.LiteralValue.__init__(self, *args, **kwargs)
+            pjo_literals.LiteralValue.__init__(self, *args)
 
         def __getattr_pseudo__(self, name):
             """
@@ -165,6 +166,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+        clsdata = openapi2jsonschema.convert(clsdata)
         typ = clsdata.get('type')
 
         if typ not in (
@@ -191,7 +193,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 uri, clsdata, pathlib.Path)
         elif typ == 'datetime':
             self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, arrow.Arrow)
+                uri, clsdata, datetime.datetime)
         elif typ == 'date':
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, datetime.date)

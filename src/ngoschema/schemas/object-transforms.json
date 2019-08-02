@@ -19,13 +19,13 @@
     }, 
     "fieldsEquivalence": {
       "additionalProperties": {
-        "type": "string"
+        "type": ["object", "string"]
       }, 
       "type": "object"
     }, 
     "complexTransformTo": {
       "additionalProperties": {
-        "type": "string"
+        "type": ["object", "string"]
       }, 
       "type": "object"
     }

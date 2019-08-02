@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="8" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="28" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -111,7 +111,7 @@
 </node>
 <node TEXT="projects" POSITION="right" ID="ID_1259015571" CREATED="1548839942180" MODIFIED="1560848530967">
 <edge COLOR="#7c7c00"/>
-<node TEXT="ngoapi" FOLDED="true" ID="ID_485580582" CREATED="1548151395809" MODIFIED="1548151403571">
+<node TEXT="ngoapi" ID="ID_485580582" CREATED="1548151395809" MODIFIED="1548151403571">
 <node TEXT="decrire l API avec un json-schema" ID="ID_1496206483" CREATED="1548151404045" MODIFIED="1548151433229">
 <node TEXT="arguments" ID="ID_359268500" CREATED="1548151433680" MODIFIED="1548151446253"/>
 <node TEXT="response" ID="ID_1385121682" CREATED="1548151447074" MODIFIED="1548151453852"/>
@@ -1659,6 +1659,274 @@
 <node TEXT="serialize_component" ID="ID_1909687590" CREATED="1561405600035" MODIFIED="1561405608534"/>
 <node TEXT="generate_package_info(package, directory)" ID="ID_1296080591" CREATED="1561405615181" MODIFIED="1561405694606"/>
 <node TEXT="generate_component_info(component, directory)" ID="ID_951842371" CREATED="1561405647760" MODIFIED="1561405704741"/>
+</node>
+<node TEXT="my way of life" POSITION="right" ID="ID_572201847" CREATED="1563955561178" MODIFIED="1563955574083">
+<edge COLOR="#7c007c"/>
+<node TEXT="follow me" ID="ID_888965922" CREATED="1563955575966" MODIFIED="1563955579241">
+<node TEXT="tags des categories d interet" ID="ID_775025134" CREATED="1563955580105" MODIFIED="1563955591203"/>
+<node TEXT="channels" ID="ID_178192339" CREATED="1563955592294" MODIFIED="1563955596797">
+<node TEXT="blog" ID="ID_652295486" CREATED="1563955597475" MODIFIED="1563955599724"/>
+<node TEXT="email" ID="ID_633405225" CREATED="1563955599934" MODIFIED="1563955601366"/>
+<node TEXT="rss" ID="ID_1528842176" CREATED="1563955601663" MODIFIED="1563955602728"/>
+<node TEXT="notifications android" ID="ID_1338686950" CREATED="1563955603447" MODIFIED="1563955615268"/>
+<node TEXT="facebook" ID="ID_829993575" CREATED="1563955625947" MODIFIED="1563955627895"/>
+<node TEXT="instagram" ID="ID_640238906" CREATED="1563955628227" MODIFIED="1563955635760"/>
+<node TEXT="twitter" ID="ID_1151889224" CREATED="1563955639970" MODIFIED="1563955642314"/>
+</node>
+<node TEXT="infos" ID="ID_1160787347" CREATED="1563955650457" MODIFIED="1563955654157">
+<node TEXT="signe" ID="ID_954247432" CREATED="1563955654968" MODIFIED="1563955656877">
+<node TEXT="date de naissance" ID="ID_1055802896" CREATED="1563955657625" MODIFIED="1563955662677"/>
+<node TEXT="heure de naissance" ID="ID_1725948552" CREATED="1563955662845" MODIFIED="1563955665771"/>
+</node>
+<node TEXT="longitute/latitude de naissance" ID="ID_1851070665" CREATED="1563955667987" MODIFIED="1563955679517"/>
+</node>
+<node TEXT="sexe" ID="ID_487065280" CREATED="1563955739820" MODIFIED="1563955743373">
+<node TEXT="M" ID="ID_47423165" CREATED="1563955744144" MODIFIED="1563955745246"/>
+<node TEXT="F" ID="ID_501773792" CREATED="1563955745768" MODIFIED="1563955746503"/>
+<node TEXT="other" ID="ID_59981610" CREATED="1563955748547" MODIFIED="1563955753655"/>
+</node>
+<node TEXT="orientation" ID="ID_1511152562" CREATED="1563955755829" MODIFIED="1563955759445"/>
+<node TEXT="industry" ID="ID_1619372443" CREATED="1563955785640" MODIFIED="1563955789442"/>
+</node>
+</node>
+<node TEXT="my big bang" POSITION="right" ID="ID_424989270" CREATED="1563956163493" MODIFIED="1563956172492">
+<edge COLOR="#007c7c"/>
+<node TEXT="video tagging" ID="ID_1095654468" CREATED="1563956173286" MODIFIED="1563956185195">
+<node TEXT="characters" ID="ID_1725395145" CREATED="1563956271495" MODIFIED="1563956274676"/>
+<node TEXT="objects" ID="ID_1019623663" CREATED="1563956275074" MODIFIED="1563956280817"/>
+<node TEXT="animals" ID="ID_942718957" CREATED="1563956286877" MODIFIED="1563956289185"/>
+<node TEXT="places" ID="ID_1395640222" CREATED="1563959969851" MODIFIED="1563959975243"/>
+<node TEXT="events" ID="ID_1778236918" CREATED="1563959975452" MODIFIED="1563959978655"/>
+<node TEXT="music" ID="ID_476904693" CREATED="1563959994101" MODIFIED="1563959997874"/>
+</node>
+<node TEXT="video formatting" ID="ID_262336442" CREATED="1563956185698" MODIFIED="1563956191677">
+<node TEXT="regarder le format kinemaster" ID="ID_427790519" CREATED="1563956195927" MODIFIED="1563956208095"/>
+</node>
+<node TEXT="scenario editing" ID="ID_1063222652" CREATED="1563956248920" MODIFIED="1563956257666"/>
+</node>
+<node TEXT="django serializer" POSITION="right" ID="ID_1554832255" CREATED="1563956330501" MODIFIED="1563956339386">
+<edge COLOR="#7c7c00"/>
+</node>
+<node TEXT="sqlalchemy" POSITION="right" ID="ID_785535791" CREATED="1563956349183" MODIFIED="1563956537168">
+<edge COLOR="#ff0000"/>
+<node TEXT="??" ID="ID_1200320418" CREATED="1563958694399" MODIFIED="1563958696548"/>
+</node>
+<node TEXT="kivi ?" POSITION="right" ID="ID_1695412190" CREATED="1564166662601" MODIFIED="1564166666600">
+<edge COLOR="#ff00ff"/>
+</node>
+<node TEXT="OpenAPI / JsonSchema" POSITION="right" ID="ID_37039276" CREATED="1563971904624" MODIFIED="1563971912952">
+<edge COLOR="#0000ff"/>
+<node TEXT="openapi-and-json-schema-divergence-part-1" ID="ID_529443736" CREATED="1563971928701" MODIFIED="1563971952902" LINK="https://apisyouwonthate.com/blog/openapi-and-json-schema-divergence-part-1">
+<node ID="ID_840590910" CREATED="1563972590320" MODIFIED="1563972590320"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    OpenAPI
+  </body>
+</html>
+</richcontent>
+<node TEXT="API documentations tools" ID="ID_44235864" CREATED="1563972600430" MODIFIED="1563972665899" LINK="https://blog.apisyouwonthate.com/turning-contracts-into-beautiful-documentation-deac7013af18"/>
+<node TEXT="fancy SDK generators" ID="ID_88877551" CREATED="1563972666684" MODIFIED="1563972673513"/>
+<node ID="ID_534012641" CREATED="1563972741687" MODIFIED="1563972741687"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    API-specific functionality
+  </body>
+</html>
+</richcontent>
+</node>
+<node TEXT="focus on keeping this static, for strictly typed languages, where properties should be 1 type and 1 type only" ID="ID_137075916" CREATED="1563972715646" MODIFIED="1563972719555"/>
+</node>
+<node TEXT="Json Schema" ID="ID_1117671143" CREATED="1563972694770" MODIFIED="1563972713381">
+<node ID="ID_583101939" CREATED="1563972831527" MODIFIED="1563972831527"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    very flexible data modeling with the same sort of validation vocabulary as OpenAPI, but for more flexible data sets
+  </body>
+</html>
+</richcontent>
+</node>
+<node ID="ID_431957177" CREATED="1563972856543" MODIFIED="1563972856543" LINK="https://blog.apisyouwonthate.com/getting-started-with-json-hyper-schema-184775b91f"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    by using more advanced vocabularies like <a href="https://blog.apisyouwonthate.com/getting-started-with-json-hyper-schema-184775b91f">JSON Hyper-Schema</a> it can model a fully RESTful API and its hypermedia controls (HATEOAS)
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="solving-openapi-and-json-schema-divergence" ID="ID_944208025" CREATED="1563971939107" MODIFIED="1563971960379" LINK="https://apisyouwonthate.com/blog/solving-openapi-and-json-schema-divergence"/>
+<node TEXT="Comprendre-la-specification-OpenAPI-Swagger-et-apprendre-a-utiliser-Swagger-Editor" ID="ID_719135629" CREATED="1563975286619" MODIFIED="1563975298565" LINK="https://www.developpez.com/actu/178434/Comprendre-la-specification-OpenAPI-Swagger-et-apprendre-a-utiliser-Swagger-Editor-par-Hinault-Romaric/"/>
+<node TEXT="https://openapi-map.apihandyman.io/?version=3.0" ID="ID_1123363982" CREATED="1563978435029" MODIFIED="1563978435029" LINK="https://openapi-map.apihandyman.io/?version=3.0"/>
+</node>
+<node TEXT="conversion openapi-jsonschema" POSITION="right" ID="ID_1191746743" CREATED="1564125683324" MODIFIED="1564126355928">
+<edge COLOR="#00ff00"/>
+<node ID="ID_9288971" CREATED="1564126356751" MODIFIED="1564126356751" LINK="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#fixed-fields-20)"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    converts OpenAPI 3.0 Schema Object to JSON Schema Draft 4<br/>* deletes `nullable` and adds `&quot;null&quot;` to `type` array if `nullable` is `true`<br/>* supports deep structures with nested `allOf`s etc.<br/>* removes [OpenAPI specific<br/>properties](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#fixed-fields-20)<br/>such as `discriminator`, `deprecated` etc. unless specified otherwise<br/>* optionally supports `patternProperties` with `x-patternProperties` in the<br/>Schema Object
+  </body>
+</html>
+</richcontent>
+</node>
+<node TEXT="" ID="ID_794296227" CREATED="1564126360927" MODIFIED="1564126360927"/>
+</node>
+<node TEXT="MWOL" POSITION="right" ID="ID_686516418" CREATED="1564171277072" MODIFIED="1564296759550">
+<edge COLOR="#00ffff"/>
+<node TEXT="python manage.py createsuperuser" ID="ID_1032093772" CREATED="1564171280461" MODIFIED="1564171282413"/>
+<node TEXT="animaux totems" FOLDED="true" ID="ID_973651245" CREATED="1564262680670" MODIFIED="1564296759549" LINK="https://www.espritsciencemetaphysiques.com/voici-un-guide-complet-sur-les-animaux-totems.html">
+<node TEXT="tigre du bengale" ID="ID_1566748715" CREATED="1564262684427" MODIFIED="1564262688017"/>
+<node TEXT="ours" ID="ID_579388913" CREATED="1564262812163" MODIFIED="1564262814160"/>
+<node TEXT="Le totem du Loup" ID="ID_724257480" CREATED="1564262776723" MODIFIED="1564262776723"/>
+<node TEXT="Le totem du Corbeau ou de la Corneille" ID="ID_148608924" CREATED="1564262776723" MODIFIED="1564262776723"/>
+<node TEXT="Le totem de la Chouette ou Hibou" ID="ID_74937604" CREATED="1564262776726" MODIFIED="1564262776726"/>
+<node TEXT="Le Faucon / L aigle" ID="ID_233422735" CREATED="1564262776726" MODIFIED="1564262855135"/>
+<node TEXT="Le Serpent" ID="ID_862598239" CREATED="1564262776727" MODIFIED="1564262776727"/>
+<node TEXT="Le Renard" ID="ID_1548483977" CREATED="1564262776727" MODIFIED="1564262776727"/>
+<node TEXT="Le cheval" ID="ID_847403183" CREATED="1564262887684" MODIFIED="1564262891961"/>
+<node TEXT="La baleine" ID="ID_555643424" CREATED="1564262892290" MODIFIED="1564262897462"/>
+<node TEXT="Le Fourmilier" ID="ID_1796379017" CREATED="1564262897849" MODIFIED="1564262905990"/>
+<node TEXT="L oppossum" ID="ID_1314881162" CREATED="1564262906211" MODIFIED="1564262910801"/>
+<node TEXT="cerf / biche" ID="ID_651535801" CREATED="1564262863665" MODIFIED="1564262868947"/>
+<node TEXT="papillon" ID="ID_293036712" CREATED="1564262922955" MODIFIED="1564262926646"/>
+<node TEXT="libellule" ID="ID_1796753493" CREATED="1564262926889" MODIFIED="1564262978384"/>
+<node TEXT="Le Lion" ID="ID_1262921363" CREATED="1564262962381" MODIFIED="1564262965285"/>
+<node TEXT="Araignee" ID="ID_1506153936" CREATED="1564262965593" MODIFIED="1564262970681"/>
+<node TEXT="chat" ID="ID_1385909462" CREATED="1564262970922" MODIFIED="1564262974829"/>
+<node TEXT="coyotte" ID="ID_1880080032" CREATED="1564263006057" MODIFIED="1564263007752"/>
+<node TEXT="crapaud" ID="ID_435757012" CREATED="1564263008016" MODIFIED="1564263012660"/>
+<node TEXT="singe" ID="ID_1141880223" CREATED="1564263013970" MODIFIED="1564263015206"/>
+<node TEXT="tortue" ID="ID_1661178251" CREATED="1564263030832" MODIFIED="1564263033575"/>
+<node TEXT="colibri" ID="ID_118625042" CREATED="1564263033829" MODIFIED="1564263046999"/>
+<node TEXT="belier/mouton" ID="ID_549519852" CREATED="1564263066099" MODIFIED="1564263070366"/>
+<node TEXT="panda" ID="ID_1841675550" CREATED="1564263083059" MODIFIED="1564263085041"/>
+<node TEXT="koala" ID="ID_332510215" CREATED="1564263085322" MODIFIED="1564263086682"/>
+<node TEXT="loutre" ID="ID_443466205" CREATED="1564263090900" MODIFIED="1564263093076"/>
+</node>
+</node>
+<node TEXT="create a plugin" POSITION="right" ID="ID_920999928" CREATED="1564381929367" MODIFIED="1564381934752">
+<edge COLOR="#7c0000"/>
+<node TEXT="add directory to /scripts/classpath" ID="ID_1019846347" CREATED="1564381936611" MODIFIED="1564381967852"/>
+<node TEXT="install jython" ID="ID_1977335032" CREATED="1564381975051" MODIFIED="1564381979073">
+<node TEXT="https://www.freeplane.org/wiki/index.php/Scripting:_Other_languages" ID="ID_169581073" CREATED="1564381969718" MODIFIED="1564381969718" LINK="https://www.freeplane.org/wiki/index.php/Scripting:_Other_languages"/>
+</node>
+</node>
+<node TEXT="serveur local" POSITION="right" ID="ID_1585107801" CREATED="1564385155613" MODIFIED="1564385164670">
+<edge COLOR="#00007c"/>
+<node TEXT="tourne en demon" ID="ID_1371646889" CREATED="1564385170612" MODIFIED="1564385174571"/>
+<node TEXT="watch des directory" ID="ID_46220685" CREATED="1564385174879" MODIFIED="1564385178875">
+<node TEXT="cree un projet par directory avec du contenu media" ID="ID_643330318" CREATED="1564385181327" MODIFIED="1564385203698">
+<node TEXT="photo" ID="ID_30073454" CREATED="1564385218477" MODIFIED="1564385223466"/>
+<node TEXT="video" ID="ID_831018000" CREATED="1564385223813" MODIFIED="1564385225210"/>
+<node TEXT="pdf" ID="ID_578982414" CREATED="1564385225511" MODIFIED="1564385239316"/>
+<node TEXT="ebook" ID="ID_401758672" CREATED="1564385264721" MODIFIED="1564385266961"/>
+<node TEXT="mm" ID="ID_1837985066" CREATED="1564385244539" MODIFIED="1564385246347"/>
+</node>
+</node>
+<node TEXT="cut" ID="ID_1538955414" CREATED="1564388169359" MODIFIED="1564388171396"/>
+<node TEXT="crop" ID="ID_1527468895" CREATED="1564388224935" MODIFIED="1564388230706"/>
+<node TEXT="resize" ID="ID_558832326" CREATED="1564388231049" MODIFIED="1564388234313"/>
+</node>
+<node TEXT="serveur distant" POSITION="right" ID="ID_2626297" CREATED="1564385165280" MODIFIED="1564385169011">
+<edge COLOR="#007c00"/>
+<node TEXT="backup" ID="ID_1152942437" CREATED="1564385280748" MODIFIED="1564385301666"/>
+<node TEXT="resample" ID="ID_389582592" CREATED="1564385400004" MODIFIED="1564385442065"/>
+<node TEXT="categories" ID="ID_73055643" CREATED="1564385451481" MODIFIED="1564385465378"/>
+<node TEXT="tags" ID="ID_1528127038" CREATED="1564388158924" MODIFIED="1564388161314"/>
+</node>
+<node TEXT="faire un versioned_literal" POSITION="right" ID="ID_539418123" CREATED="1564385319651" MODIFIED="1564385335485">
+<edge COLOR="#7c007c"/>
+</node>
+<node TEXT="faire un xml serialzer" POSITION="right" ID="ID_1831693086" CREATED="1564421464131" MODIFIED="1564421473111">
+<edge COLOR="#007c7c"/>
+<node TEXT="attributes" ID="ID_30381627" CREATED="1564421473965" MODIFIED="1564421476266">
+<node TEXT="all properties literals" ID="ID_736639958" CREATED="1564421476627" MODIFIED="1564421484680">
+<node TEXT="for sequence &quot;,&quot;.join" ID="ID_1615310650" CREATED="1564421496669" MODIFIED="1564421542050"/>
+</node>
+</node>
+<node TEXT="elements" ID="ID_561582676" CREATED="1564421485765" MODIFIED="1564421488568">
+<node TEXT="all objects" ID="ID_1573802970" CREATED="1564421488831" MODIFIED="1564421492362"/>
+</node>
+</node>
+<node TEXT="wrapper vers sql" POSITION="right" ID="ID_1592814547" CREATED="1564433090306" MODIFIED="1564433121080">
+<edge COLOR="#7c7c00"/>
+<node TEXT="load_all" ID="ID_75599229" CREATED="1564433122351" MODIFIED="1564433126707"/>
+<node TEXT="load_query" ID="ID_1707583262" CREATED="1564433127402" MODIFIED="1564433139976"/>
+</node>
+<node TEXT="faire un systeme de views" POSITION="right" ID="ID_738821474" CREATED="1564477001126" MODIFIED="1564477008612">
+<edge COLOR="#ff0000"/>
+<node TEXT="un modele" ID="ID_1610864096" CREATED="1564477009595" MODIFIED="1564477012767">
+<node TEXT="une vue html" ID="ID_661897945" CREATED="1564477013480" MODIFIED="1564477046721"/>
+<node TEXT="une vue html liste" ID="ID_98504444" CREATED="1564477018901" MODIFIED="1564477062003"/>
+<node TEXT="une vue mindmap" ID="ID_721529825" CREATED="1564477073860" MODIFIED="1564477078039"/>
+</node>
+</node>
+<node TEXT="packages" POSITION="right" ID="ID_192486155" CREATED="1564487663116" MODIFIED="1564487667280">
+<edge COLOR="#0000ff"/>
+<node TEXT="https://github.com/asifpy/django-crudbuilder" ID="ID_610311349" CREATED="1564487668370" MODIFIED="1564487668370" LINK="https://github.com/asifpy/django-crudbuilder"/>
+<node TEXT="DRF" ID="ID_1284868518" CREATED="1564487719189" MODIFIED="1564487725448" LINK="https://www.django-rest-framework.org/tutorial/quickstart/"/>
+<node TEXT="" ID="ID_44914922" CREATED="1564489164138" MODIFIED="1564489164138">
+<node TEXT="{&quot;(96,\&quot;2019-07-30 12:05:30.44304+00\&quot;,\&quot;{\&quot;\&quot;value\&quot;\&quot;: 0.641374282058931}\&quot;)&quot;,&quot;(94,\&quot;2019-07-30 11:47:11.391083+00\&quot;,\&quot;{\&quot;\&quot;value\&quot;\&quot;: 0.641374282058931}\&quot;)&quot;,&quot;(59,\&quot;2019-07-29 16:03:18.650746+00\&quot;,\&quot;{\&quot;\&quot;value\&quot;\&quot;: 0.318618274500223}\&quot;)&quot;,&quot;(,\&quot;2019-07-18 08:37:17.190726+00\&quot;,)&quot;}" ID="ID_1321823899" CREATED="1564489166780" MODIFIED="1564489166780"/>
+</node>
+<node TEXT="https://pypi.org/project/awscli/" ID="ID_1270731063" CREATED="1564511186455" MODIFIED="1564511186455" LINK="https://pypi.org/project/awscli/"/>
+</node>
+<node TEXT="ZAPPA!!!!" POSITION="right" ID="ID_1441834435" CREATED="1564510839581" MODIFIED="1564510847292">
+<edge COLOR="#00ff00"/>
+<node TEXT="combo zappa/docker/aws" ID="ID_430444258" CREATED="1564510852413" MODIFIED="1564510864595"/>
+<node TEXT="https://andytwoods.com/python-zappa-django-cookiecutter-via-pycharm.html" ID="ID_851396297" CREATED="1564511329236" MODIFIED="1564511329236" LINK="https://andytwoods.com/python-zappa-django-cookiecutter-via-pycharm.html"/>
+</node>
+<node TEXT="cookiecutter" POSITION="right" ID="ID_1444085435" CREATED="1564510848298" MODIFIED="1564510878822">
+<edge COLOR="#ff00ff"/>
+<node TEXT="django-app" ID="ID_1882474314" CREATED="1564510943465" MODIFIED="1564510947558">
+<node TEXT="django" ID="ID_575474031" CREATED="1564510879581" MODIFIED="1564510884899"/>
+<node TEXT="django-cms" ID="ID_230428889" CREATED="1564510885647" MODIFIED="1564510889131">
+<node TEXT="django-categories" ID="ID_1832235017" CREATED="1564510916940" MODIFIED="1564510922589"/>
+</node>
+<node TEXT="django-rest" ID="ID_1226517534" CREATED="1564510889546" MODIFIED="1564510898981"/>
+<node TEXT="zappa" ID="ID_1448579719" CREATED="1564510899971" MODIFIED="1564510905608">
+<node TEXT="awscli" ID="ID_207485353" CREATED="1564511194290" MODIFIED="1564511197200"/>
+<node TEXT="boto" ID="ID_1390985964" CREATED="1564511197700" MODIFIED="1564511198714"/>
+</node>
+</node>
+<node TEXT="django-plugin" ID="ID_1024608933" CREATED="1564510953604" MODIFIED="1564510957352">
+<node TEXT="&lt;plugin&gt;_settings.json" ID="ID_1819933616" CREATED="1564510981815" MODIFIED="1564511001541"/>
+</node>
+</node>
+<node TEXT="faire une methode from_mm" POSITION="right" ID="ID_979087916" CREATED="1564516810723" MODIFIED="1564516822000">
+<edge COLOR="#00ffff"/>
+<node TEXT="qui construit un object ProtocolBased sur une mindmap" ID="ID_1661462138" CREATED="1564516824100" MODIFIED="1564516844543"/>
+</node>
+<node TEXT="bots" POSITION="right" ID="ID_1186227802" CREATED="1564726720958" MODIFIED="1564726723495">
+<edge COLOR="#7c0000"/>
+<node TEXT="astro" ID="ID_1591019866" CREATED="1564726723684" MODIFIED="1564726727299">
+<node TEXT="kin (maya)" ID="ID_517130859" CREATED="1564726763897" MODIFIED="1564726773397"/>
+<node TEXT="matchs amoureux" ID="ID_335335613" CREATED="1564726783269" MODIFIED="1564726787027"/>
+</node>
+<node TEXT="genetique" ID="ID_659752593" CREATED="1564726727882" MODIFIED="1564726735335">
+<node TEXT="indices" ID="ID_387671748" CREATED="1564726736222" MODIFIED="1564726742346"/>
+</node>
+<node TEXT="robot de cul" ID="ID_902004703" CREATED="1564726806003" MODIFIED="1564726819427"/>
+<node TEXT="robot coach" ID="ID_1129412649" CREATED="1564726819816" MODIFIED="1564726825170"/>
 </node>
 <node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
 <edge COLOR="#007c00"/>

@@ -56,7 +56,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """
         transfo_ = transfo if hasattr(
             transfo, 'as_dict') else ObjectTransform(**transfo)
-        if transfo_._from is None or transfo._to is None:
+        if transfo_._from is None or transfo_._to is None:
             raise ValueError(
                 'transformation needs to have fully qualified from/to ' +
                 'object classes')

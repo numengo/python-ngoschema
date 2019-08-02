@@ -1,5 +1,5 @@
 {
-	"$schema": "http://numengo.org/draft-04/schema",
+	"$schema": "http://numengo.org/draft-05/schema",
 	"$id": "http://numengo.org/ngoschema/html5",
 	"type": "object",
 	"additionalProperties": false,

@@ -111,20 +111,20 @@ def check_path_type(param, value, _):
 
 @type_registry.register(name="date")
 def check_date_type(param, value, _):
-    if isinstance(value, datetime.date):
-        return
+    if not isinstance(value, datetime.date):
+        raise ValidationError("{0} is not a date".format(value))
 
 
 @type_registry.register(name="time")
 def check_time_type(param, value, _):
-    if isinstance(value, datetime.time):
-        return
+    if not isinstance(value, datetime.time):
+        raise ValidationError("{0} is not a time".format(value))
 
 
 @type_registry.register(name="datetime")
 def check_datetime_type(param, value, _):
-    if isinstance(value, arrow.Arrow):
-        return
+    if not isinstance(value, datetime.datetime):
+        raise ValidationError("{0} is not a datetime".format(value))
 
 
 # converters
@@ -244,7 +244,7 @@ def convert_time_type(param, value, _):
 @converter_registry.register(name="datetime")
 def convert_datetime_type(param, value, _):
     if isinstance(value, arrow.Arrow):
-        return value
+        return value.datetime
     if isinstance(value, datetime.datetime):
         return arrow.get(value)
     if isinstance(value, string_types):
@@ -252,14 +252,14 @@ def convert_datetime_type(param, value, _):
             a = arrow.utcnow()
             return a
     try:
-        return arrow.get(value)
+        return arrow.get(value).datetime
     except Exception:
         pass
     try:
         a_d = arrow.get(value, alt_date_fts)
         a_t = arrow.get(value, alt_time_fts)
         dt = datetime.datetime.combine(a_d.date(), a_t.time())
-        return arrow.get(dt)
+        return arrow.get(dt).datetime
     except Exception:
         pass
     raise ValidationError("{0} is not a datetime".format(value))

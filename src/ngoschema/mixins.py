@@ -18,7 +18,6 @@ class HasName:
     def set_name(self, value):
         self._name = str(value) if value else None
 
-
 class HasParent:
 
     _parent_ref = None
@@ -246,7 +245,7 @@ class HasCache:
         from .protocol_base import ProtocolBase
         from .foreign_key import ForeignKey
         cur = self._context()
-        return cur.get(key)
+        return cur.get(key, None)
         #for k in key.split('.'):
         #    if isinstance(cur, ForeignKey):
         #        cur = cur.ref

@@ -12,6 +12,8 @@ import io
 import logging
 import re
 import os
+import subprocess
+import tempfile
 from builtins import object
 from builtins import str
 
@@ -143,14 +145,22 @@ class Jinja2Serializer(Serializer):
                 context=context)
         stream = six.text_type(stream)
 
-        if path.exists():
-            with io.open(str(path), 'r', encoding=encoding) as f:
-                if str(stream) == f.read():
-                    self.logger.info("File '%s' already exists with same content. Not overwriting.", path)
-                    return
-
         if not path.parent.exists():
             os.makedirs(str(path.parent))
+
+        if path.suffix in ['.h', '.c', '.cpp']:
+            tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=path.suffix, dir=path.parent, delete=True)
+            tf.write(stream.encode('utf-8'))
+            stream = subprocess.check_output(
+                'clang-format %s' % tf.name, cwd=str(output_dir), shell=True)
+            tf.close()
+            stream = stream.decode('utf-8')
+
+        if path.exists():
+            with io.open(str(path), 'r', encoding=encoding) as f:
+                if stream == f.read():
+                    self.logger.info("File '%s' already exists with same content. Not overwriting.", path)
+                    return
 
         with io.open(str(path), 'w', encoding=encoding) as outfile:
             self.logger.info("DUMP macro %s of template '%s' file %s", macro_name, self.template, path)

@@ -12,6 +12,8 @@ from __future__ import unicode_literals
 
 import itertools
 import weakref
+
+import inflection
 import six
 import collections
 import copy
@@ -511,6 +513,18 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
             out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
         return out
 
+    def for_xml(self, no_defaults=True):
+        from lxml import etree
+        def get_tag(obj):
+            return inflection.underscore(obj.__class__.__name__)
+        tag = get_tag(self)
+        attribs = {k: v for k, v in self._properties.items() if isinstance(v, pjo_literals.LiteralValue)}
+        attribs.update({k: ', '.join(list(v)) for k, v in self._properties.items() if isinstance(v, pjo_wrapper_types.ArrayWrapper) and issubclass(v.__itemtype__, pjo_literals.LiteralValue)})
+        elt = etree.Element(tag, attrib=attribs)
+        sub_elts = {get_tag(v): v for k, v in self._properties.items() if isinstance(v, ProtocolBase)}
+        sub_elts.update({k: ', '.join(list(v)) for k, v in self._properties.items() if isinstance(v, pjo_wrapper_types.ArrayWrapper) and issubclass(v.__itemtype__, pjo_literals.ProtocolBase)})
+
+
     @property
     def _id(self):
         return id(self)
@@ -598,6 +612,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
 
         # check it s not a schema defined property, we should not reach there
         if name in self.__prop_names_flatten__.values():
+            if name in self._properties:
+                return self._properties.get(name)
             raise KeyError(name)
         # check it s not a translated property
         if name in self.__prop_names_flatten__:
