@@ -26,7 +26,7 @@ from python_jsonschema_objects import \
     literals as pjo_literals, \
     validators as pjo_validators
 
-from . import utils, jinja2
+from . import utils
 from .canonical_name import resolve_cname, CN_KEY
 from . import mixins
 from .mixins import HasCache, HasParent, HandleRelativeCname, HasInstanceQuery
@@ -222,6 +222,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 validator = infotype(val)
                 # handle case of patterns
                 if utils.is_pattern(val):
+                    from .jinja2 import get_variables
                     vars = jinja2.get_variables(val)
                     depends_of.update(vars)
                     validator._pattern = val

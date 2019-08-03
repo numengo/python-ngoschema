@@ -1,6 +1,6 @@
 {
   "$schema": "http://numengo.org/draft-05/schema", 
-  "$id": "http://numengo.org/draft-05/schema/object-transform",
+  "$id": "http://numengo.org/draft-05/ngoschema/object-transform",
   "title": "Object Transform", 
   "additionalProperties": false, 
   "type": "object", 
@@ -19,13 +19,13 @@
     }, 
     "fieldsEquivalence": {
       "additionalProperties": {
-        "type": ["object", "string"]
-      }, 
+        "type": "string"
+      },
       "type": "object"
     }, 
     "complexTransformTo": {
       "additionalProperties": {
-        "type": ["object", "string"]
+        "type": "string"
       }, 
       "type": "object"
     }

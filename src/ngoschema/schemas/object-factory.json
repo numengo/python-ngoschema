@@ -1,6 +1,6 @@
 {
   "$schema": "http://numengo.org/draft-05/schema",
-  "$id": "http://numengo.org/draft-05/schema/object-factories",
+  "$id": "http://numengo.org/draft-05/ngoschema/object-factory",
   "definitions": {
     "ObjectFactory": {
       "type": "object",

@@ -33,7 +33,7 @@ class ObjectFactory(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Class to load and translate models from files
     """
 
-    __schema__ = "http://numengo.org/draft-05/schema/object-factories#/definitions/ObjectFactory"
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-factory#/definitions/ObjectFactory"
     deserializers = [JsonDeserializer, YamlDeserializer]
 
     def __init__(self, **kwargs):

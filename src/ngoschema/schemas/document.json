@@ -1,6 +1,6 @@
 {
   "$schema": "http://numengo.org/draft-05/schema",
-  "$id": "http://numengo.org/draft-05/schema/document",
+  "$id": "http://numengo.org/draft-05/ngoschema/document",
   "type": "object",
   "additionalProperties": false,
   "definitions": {

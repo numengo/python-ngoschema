@@ -40,7 +40,7 @@ class ObjectLoader(with_metaclass(SchemaMetaclass, ObjectFactory)):
     once and if a document is loaded multiple times, the same instance is returned.
     """
 
-    __schema__ = "http://numengo.org/draft-05/schema/object-factories#/definitions/ObjectLoader"
+    __schema__ = "http://numengo.org/draft-05/schema/object-factory#/definitions/ObjectLoader"
     #primaryKey = "name"
 
     def __init__(self, **kwargs):

@@ -39,7 +39,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    __schema__ = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
+    __schema__ = r'http://numengo.org/draft-05/ngoschema/document#/definitions/Document'
     __add_logging__ = False
     __assert_args__ = False
     __attr_by_name__ = False

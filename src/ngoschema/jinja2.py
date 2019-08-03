@@ -31,6 +31,9 @@ from .query import Query
 
 templates_module_loader = utils.GenericModuleFileLoader('templates')
 
+def load_module_templates(module_name):
+    templates_module_loader.register(module_name)
+
 # default jinja2 environment instance
 _default_jinja_env = None
 
