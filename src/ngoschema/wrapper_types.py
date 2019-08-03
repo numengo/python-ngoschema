@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import logging
 import sys
 import six
+import json
 
 from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
@@ -37,7 +38,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def __repr__(self):
         return "<%s=%s>" % (
             self.__class__.__name__,
-            [repr(e) for e in self.typed_elems]
+            [json.dumps(e.for_json()) for e in self.typed_elems]
         )
 
     def __eq__(self, other):

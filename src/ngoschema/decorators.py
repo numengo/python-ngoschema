@@ -8,6 +8,7 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import inspect
 import sys
 from pprint import pformat
@@ -109,6 +110,7 @@ SCH_DATE = pmap({"type": "date"})
 SCH_TIME = pmap({"type": "time"})
 SCH_DATETIME = pmap({"type": "datetime"})
 
+logger = logging.getLogger(__name__)
 
 def assert_arg(arg, schema):
     """
@@ -124,16 +126,19 @@ def assert_arg(arg, schema):
 
     def to_decorate(wrapped):
         # find argument in signature
-        sig = inspect.getargspec(wrapped)
-        if type(arg) is int:
-            arg_i = arg
-            arg_s = sig.args[arg]
-        elif arg in sig.args:
-            arg_i = sig.args.index(arg)
-            arg_s = arg
-        else:
-            arg_i = None
-            arg_s = arg
+        arg_i = None
+        arg_s = arg
+        try:
+            sig = inspect.getargspec(wrapped)
+            if type(arg) is int:
+                arg_i = arg
+                arg_s = sig.args[arg]
+            elif arg in sig.args:
+                arg_i = sig.args.index(arg)
+                arg_s = arg
+        except Exception as er:
+            logger.warning(er)
+            # if no inspection possible (if creating type metaprogramming)
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
@@ -164,12 +169,15 @@ def assert_arg(arg, schema):
 
         decorated = wrapper(wrapped)
 
-        doc = (
-            (wrapped.__doc__ or "").strip() + "\nArgument '%s' is " % arg +
-            "automatically type converted and validated against this schema %s."
-            % pformat(schema))
+        try:
+            doc = (
+                (wrapped.__doc__ or "").strip() + "\nArgument '%s' is " % arg +
+                "automatically type converted and validated against this schema %s."
+                % pformat(schema))
 
-        wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
+            wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
+        except Exception as er:
+            logger.warning(er)
 
         return decorated
 

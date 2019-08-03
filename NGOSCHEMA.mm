@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -1923,10 +1923,12 @@
 <node TEXT="matchs amoureux" ID="ID_335335613" CREATED="1564726783269" MODIFIED="1564726787027"/>
 </node>
 <node TEXT="genetique" ID="ID_659752593" CREATED="1564726727882" MODIFIED="1564726735335">
-<node TEXT="indices" ID="ID_387671748" CREATED="1564726736222" MODIFIED="1564726742346"/>
+<node TEXT="macros" ID="ID_387671748" CREATED="1564726736222" MODIFIED="1564764592302"/>
 </node>
 <node TEXT="robot de cul" ID="ID_902004703" CREATED="1564726806003" MODIFIED="1564726819427"/>
 <node TEXT="robot coach" ID="ID_1129412649" CREATED="1564726819816" MODIFIED="1564726825170"/>
+<node TEXT="robot lover" ID="ID_1162345526" CREATED="1564764574277" MODIFIED="1564764581567"/>
+<node TEXT="robot dealer" ID="ID_1756266274" CREATED="1564764596584" MODIFIED="1564764601149"/>
 </node>
 <node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
 <edge COLOR="#007c00"/>

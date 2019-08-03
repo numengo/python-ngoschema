@@ -17,6 +17,7 @@ import inflection
 import six
 import collections
 import copy
+import json
 
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
@@ -455,7 +456,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         )
 
     def __repr__(self):
-        props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), repr(v))
+        props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), json.dumps(v.for_json()))
                         for k, v in itertools.chain(six.iteritems(self._properties),
                                     six.iteritems(self._extended_properties))])
         return "<%s id=%s %s>" % (

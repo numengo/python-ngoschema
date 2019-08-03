@@ -41,7 +41,7 @@ def convert(schema, options=None):
     )
 
     if options['cloneSchema']:
-        schema = json.loads(json.dumps(schema))
+        schema = json.loads(json.dumps(schema, skipkeys=True))
 
     schema = convertSchema(schema, options)
     schema['$schema'] = 'http://json-schema.org/draft-07/schema#'
@@ -85,8 +85,8 @@ def convertSchema(schema, options):
         if len(schema['properties']) == 0:
             del schema['properties']
 
-    validateType(schema.get('type'))
     schema = convertTypes(schema, options)
+    validateType(schema.get('type'))
     schema['additionalProperties'] = bool(schema.get('patternProperties', False) or schema.get('additionalProperties', False))
 
     if (isinstance(schema.get('x-patternProperties'), dict)
@@ -124,7 +124,8 @@ def convertProperties(properties, options):
 
 
 def validateType(ttype):
-    validTypes = ['integer', 'number', 'string', 'boolean', 'object', 'array']
+    from ngoschema.pjo_validators import validators
+    validTypes = list(validators.type_registry.registry)
 
     if ttype is not None and ttype not in validTypes:
         raise InvalidTypeError('Type "%s" is not a valid type' % ttype)
@@ -139,6 +140,9 @@ def convertTypes(schema, options):
     if (schema.get('type') == 'string' and schema.get('format') == 'date'
             and toDateTime):
         schema['format'] = 'date-time'
+
+    if schema['type'] == 'file':
+        schema['type'] = 'path'
 
     if not schema.get('format'):
         try:
