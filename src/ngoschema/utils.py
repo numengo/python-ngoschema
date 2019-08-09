@@ -60,7 +60,7 @@ class GenericModuleFileLoader(object):
         m = importlib.import_module(module)
         subfolder_name = subfolder_name or self.subfolderName
         subfolder = pathlib.Path(
-            m.__file__).with_name(subfolder_name).resolve()
+            m.__file__).parent.joinpath(subfolder_name).resolve()
         if subfolder.exists():
             if module not in self.registry:
                 self.registry[module] = []
@@ -140,6 +140,16 @@ def mro(*bases):
           # Remove candidate.
           if seq[0] == candidate:
               del seq[0]
+
+import functools
+from jsonschema._types import is_bool
+from jsonschema._types import is_integer
+from jsonschema._types import is_null
+from jsonschema._types import is_number
+is_bool = functools.partial(is_bool, None)
+is_integer = functools.partial(is_integer, None)
+is_null = functools.partial(is_null, None)
+is_number = functools.partial(is_number, None)
 
 def is_basestring(value):
     """

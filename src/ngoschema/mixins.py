@@ -74,6 +74,7 @@ class HasCanonicalName(HasName, HasParent):
     _cn_instances = weakref.WeakValueDictionary()
 
     def set_name(self, value):
+        value = value.replace('-', '_')
         n = str(value) if value else None
         if self._name != n:
             self._unregister_cnamed()
@@ -88,6 +89,7 @@ class HasCanonicalName(HasName, HasParent):
 
     _canonicalName = None
     def set_canonicalName(self, value):
+        value = value.replace('-', '_')
         cn = str(value) if value else None
         if self._cname != cn:
             self._unregister_cnamed()
@@ -245,6 +247,7 @@ class HasCache:
         from .protocol_base import ProtocolBase
         from .foreign_key import ForeignKey
         cur = self._context()
+        return getattr(cur, key, None)
         return cur.get(key, None)
         #for k in key.split('.'):
         #    if isinstance(cur, ForeignKey):

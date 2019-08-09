@@ -8,7 +8,7 @@ from .resolver import DEFAULT_MS_URI, CURRENT_DRAFT
 from .resolver import get_resolver
 from .classbuilder import get_builder
 from .schema_metaclass import SchemaMetaclass
-from .protocol_base import ProtocolBase
+from .protocol_base import ProtocolBase, load_module_models
 from .jinja2 import load_module_templates
 from .schemas_loader import load_module_schemas
 from . import pjo_validators as validators
@@ -18,8 +18,8 @@ load_module_schemas('ngoschema')
 load_module_templates('ngoschema')
 
 # need schemas loaded first
-from .object_transform import load_module_transforms
 from .metadata import Metadata
+from .document import Document
 
 __all__ = [
     'DEFAULT_MS_URI',
@@ -29,9 +29,10 @@ __all__ = [
     'SchemaMetaclass',
     'ProtocolBase',
     'Metadata',
+    'Document',
     'validators',
     'ValidationError',
     'load_module_schemas',
     'load_module_templates',
-    'load_module_transforms'
+    'load_module_models',
 ]

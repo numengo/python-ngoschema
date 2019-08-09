@@ -10,8 +10,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
-from ngoschema.object_factory import ObjectFactory
-from ngoschema.object_loader import ObjectLoader
+from ngoschemapremium.object_loader import ObjectLoader
 
 doc1 = {
     "filepath": r"D:\CODES\projects.ngoprj",

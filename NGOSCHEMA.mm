@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="28" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="30" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -1929,6 +1929,60 @@
 <node TEXT="robot coach" ID="ID_1129412649" CREATED="1564726819816" MODIFIED="1564726825170"/>
 <node TEXT="robot lover" ID="ID_1162345526" CREATED="1564764574277" MODIFIED="1564764581567"/>
 <node TEXT="robot dealer" ID="ID_1756266274" CREATED="1564764596584" MODIFIED="1564764601149"/>
+<node TEXT="robot speeddating" ID="ID_1839733561" CREATED="1564875077331" MODIFIED="1564875083489">
+<node TEXT="profil" ID="ID_910808897" CREATED="1564875090703" MODIFIED="1564875094425"/>
+<node TEXT="astro match localis&#xe9;" ID="ID_651277816" CREATED="1564875279344" MODIFIED="1564875286832"/>
+</node>
+</node>
+<node TEXT="equivalence" POSITION="right" ID="ID_102038829" CREATED="1564764693231" MODIFIED="1564764700827">
+<edge COLOR="#00007c"/>
+<node TEXT="package" ID="ID_29017800" CREATED="1564764739846" MODIFIED="1564764774830">
+<node TEXT="resources" ID="ID_1685027403" CREATED="1564764735722" MODIFIED="1564764737914"/>
+</node>
+<node TEXT="class" ID="ID_1438787812" CREATED="1564764775979" MODIFIED="1564764778122">
+<node TEXT="definitions" ID="ID_1993700699" CREATED="1564764778340" MODIFIED="1564764781431"/>
+<node TEXT="class attributes" ID="ID_1216287507" CREATED="1565097857863" MODIFIED="1565097868732">
+<node TEXT="" ID="ID_1649015786" CREATED="1565097859934" MODIFIED="1565097859934"/>
+</node>
+<node TEXT="instance attributes" ID="ID_1000767340" CREATED="1565097868989" MODIFIED="1565097872185">
+<node TEXT="table columns" ID="ID_864950325" CREATED="1565097872708" MODIFIED="1565097877651"/>
+<node TEXT="json keys" ID="ID_1886989598" CREATED="1565097878675" MODIFIED="1565097884952"/>
+</node>
+</node>
+<node TEXT="function/method" ID="ID_774087017" CREATED="1564764718970" MODIFIED="1564764728784">
+<node TEXT="method" ID="ID_995786321" CREATED="1564764731425" MODIFIED="1564764734520"/>
+<node TEXT="arguments" ID="ID_1425936395" CREATED="1564764801638" MODIFIED="1564764804446">
+<node TEXT="args" ID="ID_273624999" CREATED="1564764701743" MODIFIED="1564764705460">
+<node TEXT="path / regex" ID="ID_766544053" CREATED="1564764705758" MODIFIED="1564764855198"/>
+</node>
+<node TEXT="kwargs" ID="ID_564386393" CREATED="1564764708433" MODIFIED="1564764711760">
+<node TEXT="query" ID="ID_1798036584" CREATED="1564764711966" MODIFIED="1564764860375"/>
+<node TEXT="data" ID="ID_1153793142" CREATED="1564764883573" MODIFIED="1564764884970"/>
+</node>
+</node>
+</node>
+<node TEXT="return" ID="ID_1470105374" CREATED="1564765308508" MODIFIED="1564765310891">
+<node TEXT="response[0]" ID="ID_1598737289" CREATED="1564765216890" MODIFIED="1564765298727"/>
+</node>
+<node TEXT="exceptions" ID="ID_269864520" CREATED="1564765316313" MODIFIED="1564765318154">
+<node TEXT="response[1:]" ID="ID_1689686151" CREATED="1564765318894" MODIFIED="1564765326724"/>
+</node>
+</node>
+<node TEXT="declaration" POSITION="right" ID="ID_11538047" CREATED="1565186919808" MODIFIED="1565186925548">
+<edge COLOR="#007c00"/>
+<node TEXT="Bonsoir" ID="ID_1866627969" CREATED="1565186926335" MODIFIED="1565192112562"/>
+<node TEXT="Comme expliqu&#xe9; a Mme HELIN de vive voix, je continue de chercher la bague qui a disparu lors de la visite de Mme DIABY." ID="ID_950278232" CREATED="1565192112827" MODIFIED="1565194141592"/>
+<node TEXT="Si je ne l ai pas retrouv&#xe9; d ici lundi, chez moi ou ma boite aux lettres, je n aurais alors plus aucun doute que Mme DIABY l a prise lors de sa visite pour prendre des photos de l appartement pour la relocation." ID="ID_1402850136" CREATED="1565192224789" MODIFIED="1565192323724"/>
+<node TEXT="J ai decouvert la disparition immediatement apres son passage, je lui ai ecrit le lendemain apres avoir vraiment bien cherch&#xe9; dans l appartement." ID="ID_1715507817" CREATED="1565192325498" MODIFIED="1565192385783"/>
+<node TEXT="Apres un mois de poursuite des recherches, je lui ai fait part de ma quasi-certitude de sa culpabilit&#xe9;. Neanmoins, je veux recuperer cette bague, et je lui ai donn&#xe9; la possibilit&#xe9; de r&#xe9;gler ca sans y meler la police ou son employeur." ID="ID_565601449" CREATED="1565192390911" MODIFIED="1565192577582"/>
+<node TEXT="Pourtant bien avertie, elle ne sera donc pas etonn&#xe9;e de la suite que vont prendre les choses." ID="ID_1568742875" CREATED="1565192577844" MODIFIED="1565192646823"/>
+<node TEXT="Si lundi je n ai toujours pas retrouv&#xe9; ma bague en pliant toutes mes affaires (et promis je vais bien chercher, surtout dans la boite aux lettres), j aurais cette certitude absolue, et vous, Mme HELIN, pourrez l avoir aussi, que Mme DIABY est une voleuse." ID="ID_108783586" CREATED="1565192647374" MODIFIED="1565194166329"/>
+<node TEXT="J irai donc porter plainte pour commencer les procedures, et j imagine que dans les circonstances du vol, impliquant des gerants des 2 societes, votre soci&#xe9;t&#xe9; dans l ensemble sera concern&#xe9;e." ID="ID_1681673819" CREATED="1565192746354" MODIFIED="1565192964379"/>
+<node TEXT="Si Mme DIABY est effectivement une voleuse, il est alors gravissime qu elle puisse avoir acces a des cl&#xe9;s d appartement dans le cadre de ses fonctions, surtout de la mani&#xe9;re dont sont conserv&#xe9;es vos cl&#xe9;s (heureusement que je me suis pas ferm&#xe9; dehors en pensant que vous en aviez un double comme c &#xe9;tait convenu a  l etat des lieux)." ID="ID_1597562748" CREATED="1565192982338" MODIFIED="1565194192508"/>
+<node TEXT="A mon retour de voyage, si j apprends qu elle exerce toujours dans votre etablissement, je m occuperai si bien de votre r&#xe9;putation que vous n aurez pas qu a vous reconvertir en relais-colis, ce qui est a peu pres le seul service que vous rendiez correctement vu de ma fen&#xea;tre. A propos des frais d agence, vous pourrez constatez sur le bail que vous avez voi" ID="ID_363279409" CREATED="1565192966553" MODIFIED="1565194258147"/>
+<node TEXT="Pour ce qui est de Mme DIABY, elle pourra se tourner vers une autre carriere car si j apprends qu elle poursuit dans l immobilier, j appellerai ces futurs employeurs pour les avertir de la situation." ID="ID_1085878554" CREATED="1565193190248" MODIFIED="1565193264970"/>
+<node TEXT="Notez bien Je suis consultant informaticien et influenceur a mes heures perdues, et qu on ne parle pas d une simple review sur google." ID="ID_653809978" CREATED="1565193238846" MODIFIED="1565193769108"/>
+<node TEXT="Si je retrouve ma bague et que mme DIABY n y est pour rien, je vous promets qu elle recevra un bouquet de fleurs a la hauteur de la gravit&#xe9; des accusations que je fonde. Si je la retrouve dans la boite aux lettres, j en resterai la en esperant que la seule le&#xe7;on servira." ID="ID_1632777619" CREATED="1565193807983" MODIFIED="1565194066488"/>
 </node>
 <node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
 <edge COLOR="#007c00"/>

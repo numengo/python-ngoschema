@@ -39,7 +39,10 @@ from .decorators import assert_arg
 from .serializers import JsonSerializer
 
 # loader to register module with a transforms folder where to look for model transformations
-models_module_loader = utils.GenericModuleFileLoader('models')
+models_module_loader = utils.GenericModuleFileLoader('models/schemas')
+
+def load_module_models(module_name):
+    return models_module_loader.register(module_name)
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
@@ -223,7 +226,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 # handle case of patterns
                 if utils.is_pattern(val):
                     from .jinja2 import get_variables
-                    vars = jinja2.get_variables(val)
+                    vars = get_variables(val)
                     depends_of.update(vars)
                     validator._pattern = val
                     validator.touch()
@@ -459,7 +462,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
     def __repr__(self):
         props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), json.dumps(v.for_json()))
                         for k, v in itertools.chain(six.iteritems(self._properties),
-                                    six.iteritems(self._extended_properties))])
+                                    six.iteritems(self._extended_properties)) if v])
         return "<%s id=%s %s>" % (
             self.fullname(),
             id(self),
@@ -472,7 +475,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         if not isinstance(other, ProtocolBase):
             return False
         for k in set(self.keys()).intersection(other.keys()):
-            if self[k] != other[k]:
+            if self.get(k) != other.get(k):
                 return False
         return True
 
@@ -526,6 +529,10 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         sub_elts = {get_tag(v): v for k, v in self._properties.items() if isinstance(v, ProtocolBase)}
         sub_elts.update({k: ', '.join(list(v)) for k, v in self._properties.items() if isinstance(v, pjo_wrapper_types.ArrayWrapper) and issubclass(v.__itemtype__, pjo_literals.ProtocolBase)})
 
+    @classmethod
+    def jsonschema(cls):
+        from .resolver import get_resolver
+        return get_resolver().resolve(cls.__schema__)[1]
 
     @property
     def _id(self):
@@ -628,8 +635,30 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
                              name, self.__class__.__name__))
 
 
+    def get(self, key, default=None):
+        try:
+            return self.__getitem__(key)
+        except KeyError as er:
+            if default is None:
+                return None
+            info = self.propinfo(key)
+            if utils.is_mapping(default):
+                return info['type'](**default)
+            else:
+                return info['type'](default).to_json()
+
     def __getitem__(self, key):
-        """access property as in a dict"""
+        """access property as in a dict and returns json if not composed of objects """
+        def json_if_not_of_objects(obj):
+            cur = obj
+            if isinstance(obj, pjo_wrapper_types.ArrayWrapper):
+                while issubclass(cur.get('__itemtype__', None), pjo_wrapper_types.ArrayWrapper):
+                    cur = cur.__itemtype__
+            if isinstance(cur, pjo_literals.LiteralValue):
+                return cur.for_json()
+            elif isinstance(cur, ProtocolBase):
+                return cur
+
         try:
             # to be able to call
             if '.' in key:
@@ -637,8 +666,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
                 cur = ProtocolBase.__getattr__(self, keys[0])
                 for _ in keys:
                     cur = ProtocolBase.__getattr__(cur, _)
-                return cur
-            return getattr(self, key)
+                return json_if_not_of_objects(cur)
+            ret = getattr(self, key)
+            if ret is None:
+                raise KeyError(key)
+            return json_if_not_of_objects(ret)
         except AttributeError as er:
             raise KeyError(key)
         except Exception as er:

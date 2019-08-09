@@ -37,6 +37,21 @@ def load_module_templates(module_name):
 # default jinja2 environment instance
 _default_jinja_env = None
 
+_jinja2_globals = {}
+_jinja2_globals['Query'] = Query
+_jinja2_globals['enumerate'] = enumerate
+_jinja2_globals['len'] = len
+_jinja2_globals['str'] = str
+_jinja2_globals['list'] = list
+
+def resolve_ref_schema(ref):
+    from .resolver import get_resolver
+    return get_resolver().resolve(ref)[1]
+
+_jinja2_globals['resolve_ref_schema'] = resolve_ref_schema
+
+def extend_jinja2_globals(**globals):
+    _jinja2_globals.update(**globals)
 
 def default_jinja2_env():
     """
@@ -44,7 +59,8 @@ def default_jinja2_env():
     """
     global _default_jinja_env
     if _default_jinja_env is None:
-        _default_jinja_env = ModulePrefixedJinja2Environment()
+        _default_jinja_env = ModulePrefixedJinja2Environment(extensions=['jinja2.ext.loopcontrols'])
+        _default_jinja_env.globals.update(_jinja2_globals)
     return _default_jinja_env
 
 
@@ -79,11 +95,7 @@ class Jinja2Serializer(Serializer):
         `default_jinja2_env` 
         """
         self.jinja = environment or default_jinja2_env()
-        self.jinja.globals['Query'] = Query
-        self.jinja.globals['enumerate'] = enumerate
-        self.jinja.globals['len'] = len
-        self.jinja.globals['str'] = str
-        self.jinja.globals['list'] = list
+        self.jinja.globals.update(_jinja2_globals)
         self.template = template
 
     def dump(self,
@@ -301,20 +313,21 @@ def underscore(word):
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):
     logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")
+    _extra_opts = {
+        "trim_blocks": True,
+        "lstrip_blocks": True,
+        "keep_trailing_newline": True,
+    }
 
-    def __init__(self):
+    def __init__(self, **opts):
         loader = jinja2.PrefixLoader({
             mname: jinja2.PackageLoader(mname, path.name)
             for mname, paths in templates_module_loader.registry.items()
             for path in paths
         })
 
-        opts = {
-            "trim_blocks": True,
-            "lstrip_blocks": True,
-            "keep_trailing_newline": True,
-        }
-        jinja2.Environment.__init__(self, loader=loader, **opts)
+        jinja2.Environment.__init__(self, loader=loader, **opts, **self._extra_opts)
+        self.globals.update(_jinja2_globals)
 
         # add filters
         for k, v in filters_registry.registry.items():

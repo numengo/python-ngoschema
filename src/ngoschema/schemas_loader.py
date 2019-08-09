@@ -108,7 +108,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
 
     if schemas_store is None:
         schemas_store = URIDict()
-    for ms in list_files(libpath, "schemas/*.json", recursive=True):
+    for ms in list_files(libpath, "schemas/**.json", recursive=True):
         try:
             load_schema_file(ms, schemas_store)
         except Exception as er:

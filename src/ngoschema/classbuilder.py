@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 
 import logging
 import collections
+import inflection
 import copy
 import datetime
 import inspect
@@ -20,14 +21,12 @@ import re
 import weakref
 import dpath.util
 
-import arrow
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
 from future.utils import text_to_native_str as native_str
-from ngoschema import openapi2jsonschema
 
 from .protocol_base import ProtocolBase, make_property
 from . import jinja2
@@ -166,7 +165,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
-        clsdata = openapi2jsonschema.convert(clsdata)
         typ = clsdata.get('type')
 
         if typ not in (
@@ -218,7 +216,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         current_scope = self.resolver.resolution_scope
 
         # necessary to build type
-        clsname = native_str(nm.split("/")[-1])
+        clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
 
         props = dict()
         defaults = dict()
