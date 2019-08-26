@@ -1,9 +1,9 @@
-<map version="freeplane 1.6.0">
+<map version="freeplane 1.7.0">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="30" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="35" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -109,7 +109,7 @@
 <edge COLOR="#00ff00"/>
 <node TEXT="https://use-the-index-luke.com/fr/table-des-matieres" ID="ID_1357782720" CREATED="1560848312712" MODIFIED="1560848312712" LINK="https://use-the-index-luke.com/fr/table-des-matieres"/>
 </node>
-<node TEXT="projects" POSITION="right" ID="ID_1259015571" CREATED="1548839942180" MODIFIED="1560848530967">
+<node TEXT="projects" FOLDED="true" POSITION="right" ID="ID_1259015571" CREATED="1548839942180" MODIFIED="1560848530967">
 <edge COLOR="#7c7c00"/>
 <node TEXT="ngoapi" ID="ID_485580582" CREATED="1548151395809" MODIFIED="1548151403571">
 <node TEXT="decrire l API avec un json-schema" ID="ID_1496206483" CREATED="1548151404045" MODIFIED="1548151433229">
@@ -507,9 +507,9 @@
 </node>
 </node>
 </node>
-<node TEXT="Ideas for NUMENGO" FOLDED="true" POSITION="right" ID="ID_1951444762" CREATED="1539956303171" MODIFIED="1540280422287">
+<node TEXT="Ideas for NUMENGO" POSITION="right" ID="ID_1951444762" CREATED="1539956303171" MODIFIED="1540280422287">
 <edge COLOR="#7c0000"/>
-<node TEXT="API" ID="ID_1848375593" CREATED="1540280423111" MODIFIED="1540280427059">
+<node TEXT="API" FOLDED="true" ID="ID_1848375593" CREATED="1540280423111" MODIFIED="1540280427059">
 <node TEXT="Response" ID="ID_1318448038" CREATED="1540280427608" MODIFIED="1540280505370"/>
 <node TEXT="Input / Arguments" ID="ID_1576903240" CREATED="1540280432537" MODIFIED="1540280564950">
 <node TEXT="GET" ID="ID_1608432015" CREATED="1540280446543" MODIFIED="1540280448322"/>
@@ -1427,7 +1427,7 @@
 </node>
 </node>
 </node>
-<node TEXT="DB" ID="ID_519946384" CREATED="1540280456470" MODIFIED="1540280457852">
+<node TEXT="DB" FOLDED="true" ID="ID_519946384" CREATED="1540280456470" MODIFIED="1540280457852">
 <node TEXT="Table" ID="ID_102945764" CREATED="1540280458239" MODIFIED="1540280516902"/>
 <node TEXT="Column" ID="ID_777843784" CREATED="1540280467258" MODIFIED="1540280520642">
 <node TEXT="name" ID="ID_834587665" CREATED="1540280581656" MODIFIED="1540280586684"/>
@@ -1477,10 +1477,10 @@
 </node>
 </node>
 </node>
-<node TEXT="CI" ID="ID_880471294" CREATED="1540393863814" MODIFIED="1540393864874">
+<node TEXT="CI" FOLDED="true" ID="ID_880471294" CREATED="1540393863814" MODIFIED="1540393864874">
 <node TEXT="synchroniser Gitlab / Github" ID="ID_256344659" CREATED="1540393866398" MODIFIED="1540393882889" LINK="https://putaindecode.io/fr/articles/git/synchroniser-sans-effort-ses-depots-git-entre-github-gitlab-bitbucket/"/>
 </node>
-<node TEXT="Schema" ID="ID_1625979491" CREATED="1540452953601" MODIFIED="1540452978719">
+<node TEXT="Schema" FOLDED="true" ID="ID_1625979491" CREATED="1540452953601" MODIFIED="1540452978719">
 <node TEXT="&apos;=Resource" ID="ID_1871148095" CREATED="1540452956492" MODIFIED="1540452999332"/>
 <node TEXT="fields[0..n]" ID="ID_700901054" CREATED="1540453039280" MODIFIED="1540453060728">
 <node TEXT="nom" ID="ID_202660934" CREATED="1540453002941" MODIFIED="1540453005192"/>
@@ -1660,7 +1660,7 @@
 <node TEXT="generate_package_info(package, directory)" ID="ID_1296080591" CREATED="1561405615181" MODIFIED="1561405694606"/>
 <node TEXT="generate_component_info(component, directory)" ID="ID_951842371" CREATED="1561405647760" MODIFIED="1561405704741"/>
 </node>
-<node TEXT="my way of life" POSITION="right" ID="ID_572201847" CREATED="1563955561178" MODIFIED="1563955574083">
+<node TEXT="my way of life" FOLDED="true" POSITION="right" ID="ID_572201847" CREATED="1563955561178" MODIFIED="1563955574083">
 <edge COLOR="#7c007c"/>
 <node TEXT="follow me" ID="ID_888965922" CREATED="1563955575966" MODIFIED="1563955579241">
 <node TEXT="tags des categories d interet" ID="ID_775025134" CREATED="1563955580105" MODIFIED="1563955591203"/>
@@ -1689,7 +1689,7 @@
 <node TEXT="industry" ID="ID_1619372443" CREATED="1563955785640" MODIFIED="1563955789442"/>
 </node>
 </node>
-<node TEXT="my big bang" POSITION="right" ID="ID_424989270" CREATED="1563956163493" MODIFIED="1563956172492">
+<node TEXT="my big bang" FOLDED="true" POSITION="right" ID="ID_424989270" CREATED="1563956163493" MODIFIED="1563956172492">
 <edge COLOR="#007c7c"/>
 <node TEXT="video tagging" ID="ID_1095654468" CREATED="1563956173286" MODIFIED="1563956185195">
 <node TEXT="characters" ID="ID_1725395145" CREATED="1563956271495" MODIFIED="1563956274676"/>
@@ -1895,7 +1895,7 @@
 <node TEXT="combo zappa/docker/aws" ID="ID_430444258" CREATED="1564510852413" MODIFIED="1564510864595"/>
 <node TEXT="https://andytwoods.com/python-zappa-django-cookiecutter-via-pycharm.html" ID="ID_851396297" CREATED="1564511329236" MODIFIED="1564511329236" LINK="https://andytwoods.com/python-zappa-django-cookiecutter-via-pycharm.html"/>
 </node>
-<node TEXT="cookiecutter" POSITION="right" ID="ID_1444085435" CREATED="1564510848298" MODIFIED="1564510878822">
+<node TEXT="cookiecutter" FOLDED="true" POSITION="right" ID="ID_1444085435" CREATED="1564510848298" MODIFIED="1564510878822">
 <edge COLOR="#ff00ff"/>
 <node TEXT="django-app" ID="ID_1882474314" CREATED="1564510943465" MODIFIED="1564510947558">
 <node TEXT="django" ID="ID_575474031" CREATED="1564510879581" MODIFIED="1564510884899"/>
@@ -1915,8 +1915,22 @@
 <node TEXT="faire une methode from_mm" POSITION="right" ID="ID_979087916" CREATED="1564516810723" MODIFIED="1564516822000">
 <edge COLOR="#00ffff"/>
 <node TEXT="qui construit un object ProtocolBased sur une mindmap" ID="ID_1661462138" CREATED="1564516824100" MODIFIED="1564516844543"/>
+<node TEXT="class" ID="ID_1004057364" CREATED="1566642966627" MODIFIED="1566642975493"/>
+<node TEXT="enum" ID="ID_954608509" CREATED="1566642982506" MODIFIED="1566642984468"/>
+<node TEXT="function" ID="ID_716978733" CREATED="1566642984824" MODIFIED="1566642987167">
+<node TEXT="description" ID="ID_615243926" CREATED="1566643242485" MODIFIED="1566643246488"/>
+<node TEXT="arguments" ID="ID_3008360" CREATED="1566642988349" MODIFIED="1566642993024">
+<node TEXT="name" ID="ID_1571149869" CREATED="1566643029386" MODIFIED="1566643033480">
+<node TEXT="type" ID="ID_729664315" CREATED="1566643063093" MODIFIED="1566643066761"/>
+<node TEXT="const?" ID="ID_1680949191" CREATED="1566643067113" MODIFIED="1566643071548"/>
+<node TEXT="description" ID="ID_1317792454" CREATED="1566643113608" MODIFIED="1566643227881"/>
 </node>
-<node TEXT="bots" POSITION="right" ID="ID_1186227802" CREATED="1564726720958" MODIFIED="1564726723495">
+</node>
+<node TEXT="return" ID="ID_1575743143" CREATED="1566642993368" MODIFIED="1566642996564"/>
+<node TEXT="exceptions" ID="ID_1263126367" CREATED="1566643049317" MODIFIED="1566643056599"/>
+</node>
+</node>
+<node TEXT="bots" FOLDED="true" POSITION="right" ID="ID_1186227802" CREATED="1564726720958" MODIFIED="1564726723495">
 <edge COLOR="#7c0000"/>
 <node TEXT="astro" ID="ID_1591019866" CREATED="1564726723684" MODIFIED="1564726727299">
 <node TEXT="kin (maya)" ID="ID_517130859" CREATED="1564726763897" MODIFIED="1564726773397"/>
@@ -1934,7 +1948,7 @@
 <node TEXT="astro match localis&#xe9;" ID="ID_651277816" CREATED="1564875279344" MODIFIED="1564875286832"/>
 </node>
 </node>
-<node TEXT="equivalence" POSITION="right" ID="ID_102038829" CREATED="1564764693231" MODIFIED="1564764700827">
+<node TEXT="equivalence class / openapi" POSITION="right" ID="ID_102038829" CREATED="1564764693231" MODIFIED="1566637731976">
 <edge COLOR="#00007c"/>
 <node TEXT="package" ID="ID_29017800" CREATED="1564764739846" MODIFIED="1564764774830">
 <node TEXT="resources" ID="ID_1685027403" CREATED="1564764735722" MODIFIED="1564764737914"/>
@@ -1967,9 +1981,17 @@
 <node TEXT="exceptions" ID="ID_269864520" CREATED="1564765316313" MODIFIED="1564765318154">
 <node TEXT="response[1:]" ID="ID_1689686151" CREATED="1564765318894" MODIFIED="1564765326724"/>
 </node>
+<node TEXT="enums" ID="ID_1969528906" CREATED="1566536603547" MODIFIED="1566536607599">
+<node TEXT="name" ID="ID_1527777925" CREATED="1566536608833" MODIFIED="1566536622536">
+<node TEXT="value" ID="ID_124466766" CREATED="1566536622887" MODIFIED="1566536626225"/>
 </node>
-<node TEXT="declaration" POSITION="right" ID="ID_11538047" CREATED="1565186919808" MODIFIED="1565186925548">
-<edge COLOR="#007c00"/>
+<node TEXT="description" ID="ID_1874733503" CREATED="1566536648851" MODIFIED="1566536652968"/>
+</node>
+</node>
+<node TEXT="Paris Immobilier - bague" POSITION="right" ID="ID_721651791" CREATED="1566536728495" MODIFIED="1566536750590">
+<edge COLOR="#7c007c"/>
+<node TEXT="emails" ID="ID_359067108" CREATED="1566536754202" MODIFIED="1566536757234">
+<node TEXT="email 1" FOLDED="true" ID="ID_11538047" CREATED="1565186919808" MODIFIED="1566536762737">
 <node TEXT="Bonsoir" ID="ID_1866627969" CREATED="1565186926335" MODIFIED="1565192112562"/>
 <node TEXT="Comme expliqu&#xe9; a Mme HELIN de vive voix, je continue de chercher la bague qui a disparu lors de la visite de Mme DIABY." ID="ID_950278232" CREATED="1565192112827" MODIFIED="1565194141592"/>
 <node TEXT="Si je ne l ai pas retrouv&#xe9; d ici lundi, chez moi ou ma boite aux lettres, je n aurais alors plus aucun doute que Mme DIABY l a prise lors de sa visite pour prendre des photos de l appartement pour la relocation." ID="ID_1402850136" CREATED="1565192224789" MODIFIED="1565192323724"/>
@@ -1983,6 +2005,28 @@
 <node TEXT="Pour ce qui est de Mme DIABY, elle pourra se tourner vers une autre carriere car si j apprends qu elle poursuit dans l immobilier, j appellerai ces futurs employeurs pour les avertir de la situation." ID="ID_1085878554" CREATED="1565193190248" MODIFIED="1565193264970"/>
 <node TEXT="Notez bien Je suis consultant informaticien et influenceur a mes heures perdues, et qu on ne parle pas d une simple review sur google." ID="ID_653809978" CREATED="1565193238846" MODIFIED="1565193769108"/>
 <node TEXT="Si je retrouve ma bague et que mme DIABY n y est pour rien, je vous promets qu elle recevra un bouquet de fleurs a la hauteur de la gravit&#xe9; des accusations que je fonde. Si je la retrouve dans la boite aux lettres, j en resterai la en esperant que la seule le&#xe7;on servira." ID="ID_1632777619" CREATED="1565193807983" MODIFIED="1565194066488"/>
+</node>
+</node>
+</node>
+<node TEXT="mindmap" POSITION="right" ID="ID_118952607" CREATED="1566536832237" MODIFIED="1566536836732">
+<edge COLOR="#7c7c00"/>
+<node TEXT="google keep" ID="ID_499243330" CREATED="1566536836862" MODIFIED="1566536842100">
+<node TEXT="import" ID="ID_48186450" CREATED="1566536874343" MODIFIED="1566536878458">
+<node TEXT="keepnote as mindmap" ID="ID_45554339" CREATED="1566536890164" MODIFIED="1566565290297"/>
+</node>
+<node TEXT="export" ID="ID_1937652261" CREATED="1566536879241" MODIFIED="1566536881375">
+<node TEXT="branch as keepnote" ID="ID_1839228103" CREATED="1566565274927" MODIFIED="1566565284329"/>
+</node>
+<node TEXT="gkeepapi" ID="ID_1265530141" CREATED="1566536882399" MODIFIED="1566536885029"/>
+</node>
+<node TEXT="cms" ID="ID_169815097" CREATED="1566536843092" MODIFIED="1566536846712"/>
+</node>
+<node TEXT="keys / passwords" POSITION="right" ID="ID_1481717863" CREATED="1566552020609" MODIFIED="1566552025770">
+<edge COLOR="#ff0000"/>
+<node TEXT="https://pypi.org/project/keyring/" ID="ID_533441071" CREATED="1566552026567" MODIFIED="1566552026567" LINK="https://pypi.org/project/keyring/"/>
+<node TEXT="for windows" ID="ID_1530530477" CREATED="1566552055594" MODIFIED="1566552063100">
+<node TEXT="https://docs.microsoft.com/en-us/windows/uwp/security/credential-locker" ID="ID_913905557" CREATED="1566552064083" MODIFIED="1566552064083" LINK="https://docs.microsoft.com/en-us/windows/uwp/security/credential-locker"/>
+</node>
 </node>
 <node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
 <edge COLOR="#007c00"/>

@@ -21,7 +21,7 @@ from .foreign_key import ForeignKey
 from .canonical_name import CN_KEY
 
 
-class NamedObject(with_metaclass(SchemaMetaclass, ProtocolBase, HasCanonicalName)):
+class NamedObject(with_metaclass(SchemaMetaclass, HasCanonicalName, ProtocolBase)):
     """
     Class to deal with metadata and parents/children relationships
     """

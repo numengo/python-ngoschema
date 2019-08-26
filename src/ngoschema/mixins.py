@@ -87,6 +87,8 @@ class HasCanonicalName(HasName, HasParent):
             HasParent._set_parent(self, value)
             self._register_cnamed()
 
+    _parent = property(HasParent._get_parent,_set_parent)
+
     _canonicalName = None
     def set_canonicalName(self, value):
         value = value.replace('-', '_')
@@ -96,23 +98,20 @@ class HasCanonicalName(HasName, HasParent):
             self._canonicalName = cn
             self._register_cnamed()
 
-    _cnam = None
-    @property
-    def _cname(self):
-        if self._cnam is None:
-            par = self._parent
-            par_cn = None
-            while par and not self._canonicalName:
-                if isinstance(par, HasCanonicalName):
-                    par_cn = par._cname
-                    break
-                par = par._parent
-            self._cnam = self._canonicalName or \
-                 '%s.%s' % (par_cn, self._name or '') if par_cn else self._name
-        return self._cnam
+    _cname = None
+    def _update_cname(self):
+        par = self._parent
+        par_cn = None
+        while par and not self._canonicalName:
+            if isinstance(par, HasCanonicalName):
+                par_cn = par._cname
+                break
+            par = par._parent
+        self._cname = self._canonicalName or \
+            '%s.%s' % (par_cn, self._name or '') if par_cn else self._name
 
     def _touch_children(self):
-        self._cnam = None # reset canonical name cache
+        self._update_cname()
         HasParent._touch_children(self)
 
     def _register_child(self, child):

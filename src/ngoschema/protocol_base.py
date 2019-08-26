@@ -39,7 +39,7 @@ from .decorators import assert_arg
 from .serializers import JsonSerializer
 
 # loader to register module with a transforms folder where to look for model transformations
-models_module_loader = utils.GenericModuleFileLoader('models/schemas')
+models_module_loader = utils.GenericModuleFileLoader('schemas')
 
 def load_module_models(module_name):
     return models_module_loader.register(module_name)
@@ -375,7 +375,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         self.logger.info(pjo_util.lazy_format("INIT {0} with {1}", self.short_repr(), utils.any_pprint(props)))
 
         cls = self.__class__
-        
+
         self._key2attr = dict()
         self._lazy_loading = props.pop('lazy_loading', None) or cls.__lazy_loading__
         self._validate_lazy = props.pop('validate_lazy', None) or cls.__validate_lazy__
@@ -652,8 +652,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         def json_if_not_of_objects(obj):
             cur = obj
             if isinstance(obj, pjo_wrapper_types.ArrayWrapper):
-                while issubclass(cur.get('__itemtype__', None), pjo_wrapper_types.ArrayWrapper):
+                while issubclass(getattr(cur, '__itemtype__', None), pjo_wrapper_types.ArrayWrapper):
                     cur = cur.__itemtype__
+                return cur
             if isinstance(cur, pjo_literals.LiteralValue):
                 return cur.for_json()
             elif isinstance(cur, ProtocolBase):
@@ -716,6 +717,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         self._extended_properties[name] = val
 
     def _get_prop(self, name):
+        """
+        Accessor to property dealing with lazy_data, standard properties and potential extended properties
+        """
         if self._lazy_loading and name in self._lazy_data:
             setattr(self, name, self._lazy_data.pop(name))
         if name in self.__prop_names_flatten__.values():
@@ -723,6 +727,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
         return self._extended_properties.get(name)
 
     def _get_prop_value(self, name, default=None, no_defaults=True):
+        """
+        Accessor to property value (as for json)
+        """
         if self._lazy_loading and name in self._lazy_data:
             val = self._lazy_data[name]
             return val.for_json(no_defaults=no_defaults) if hasattr(val, 'for_json') else val
@@ -731,7 +738,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasInstanceQuery, mixins.HasCache, H
 
     def _set_prop_value(self, name, value):
         """
-        Set a property shorcutting the setter. To be used in setters
+        Set a property shortcutting the setter. To be used in setters
         """
         if self._lazy_loading:
             self._lazy_data[name] = value

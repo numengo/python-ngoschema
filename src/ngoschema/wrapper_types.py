@@ -53,6 +53,15 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 return False
         return True
 
+    def _touch_children(self):
+        if self._typed is None:
+            return
+        for item in self.typed_elems:
+            try:
+                item._touch_children()
+                pass
+            except Exception as er:
+                pass
 
     def for_json(self, no_defaults=True):
         from python_jsonschema_objects import classbuilder
@@ -155,7 +164,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                                 sys.exc_info()[2])
                 else:
                     if isinstance(val, HasParent):
-                        val._parent = self._parent
+                        val._set_parent(self._parent)
                     val.do_validate()
                     typed_elems.append(val)
 
@@ -166,7 +175,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         #pjo_wrapper_types.ArrayWrapper.validate_items(self)
         #if self._parent:
         #    self.set_items_parent()
-    
+
     def set_items_parent(self):
         if not self._parent or not self._typed:
             return
