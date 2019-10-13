@@ -17,8 +17,8 @@ from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from . import utils
 from .relationship import  Relationship
 from .decorators import classproperty
-from .mixins import HasCache
-from ngoschema.logger import HasLogger
+from .mixins import HasCache, HasLogger
+
 
 class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
     _keys = None
@@ -41,14 +41,14 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
 
     @classproperty
     def key(cls):
-        return cls._propinfo('key','canonicalName')
+        return cls._propinfo('key', 'canonicalName')
 
     @classproperty
-    def keys(cls):
+    def fkeys(cls):
         return [cls.key]
 
     def __init__(self, value):
-        from .metadata import NamedObject
+        from ngoschema.keyed_object import NamedObject
         from .wrapper_types import ArrayWrapper
         HasCache.__init__(self)
         self._set_inputs(self.key)
@@ -96,7 +96,7 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
             # not instanciated yet (lazy loading?)
             # look for a common ancestor
             ancs = self._value.split('.')
-            from .metadata import NamedObject
+            from ngoschema.keyed_object import NamedObject
             for i in NamedObject._instances:
                 ival = str(i.get(key))
                 iancs = ival.split('.')
@@ -125,7 +125,7 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
             self._ref = weakref.ref(instance)
             bp = self.backPopulates
             if bp:
-                key = bp['keys'][0] if 'keys' in bp else bp.get('key', 'canonicalName')
+                key = bp['fkeys'][0] if 'fkeys' in bp else bp.get('fkey', 'canonicalName')
                 backref = instance[key]
                 if self.isOne2Many:
                     if self._value not in backref:
@@ -159,8 +159,7 @@ class CnameForeignKey(ForeignKey):
         if self._value is None:
             return
         try:
-            from . import mixins
-            ref = mixins.HasCanonicalName.resolve_cname(self._value)
+            ref = self._context.resolve_cname(self._value)
             self._set_ref(ref)
             return ref
         except Exception as er:

@@ -19,7 +19,6 @@ from pyrsistent import pmap
 from python_jsonschema_objects.validators import ValidationError
 
 from .exceptions import InvalidValue
-from .validators import convert_validate
 
 # about decorators and why using wrapt
 # https://hynek.me/articles/decorators/
@@ -123,6 +122,7 @@ def assert_arg(arg, schema):
     :param schema: json-schema for the type
     :type schema: dict
     """
+    from .validators import convert_validate
 
     def to_decorate(wrapped):
         # find argument in signature
@@ -144,7 +144,8 @@ def assert_arg(arg, schema):
         def wrapper(wrapped, instance, args, kwargs):
 
             # make assert optional with kwargs
-            if not kwargs.get('assert_args', True):
+            assert_args = kwargs.pop('assert_args', True)
+            if not assert_args:
                 return wrapped(*args, **kwargs)
 
             arg_i2 = arg_i if not instance and arg_i is not None else arg_i - 1
@@ -307,3 +308,24 @@ def classproperty(func):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
+
+class memoized_property(object):
+    """A read-only @property that is only evaluated once."""
+
+    def __init__(self, fget, doc=None):
+        self.fget = fget
+        self.__doc__ = doc or fget.__doc__
+        self.__name__ = fget.__name__
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        obj.__dict__[self.__name__] = result = self.fget(obj)
+        return result
+
+    def _reset(self, obj):
+        memoized_property.reset(obj, self.__name__)
+
+    @classmethod
+    def reset(cls, obj, name):
+        obj.__dict__.pop(name, None)

@@ -8,9 +8,25 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import weakref
 from python_jsonschema_objects.classbuilder import LiteralValue
-from .decorators import classproperty
+
+from .decorators import classproperty, memoized_property
+
+
+class HasLogger:
+    logger = None
+
+    @classmethod
+    def init_class_logger(cls):
+        from . import utils
+        cls.logger = logging.getLogger(utils.fullname(cls))
+
+    @classmethod
+    def set_logLevel(cls, logLevel):
+        level = logging.getLevelName(logLevel)
+        cls.logger.setLevel(level)
 
 class HasName:
 
@@ -67,52 +83,68 @@ class HasParent:
         for c in self._children:
             c._touch_children()
 
+    @property
+    def root(self):
+        cur = self
+        while cur._parent:
+            cur = cur._parent
+        return cur
+
+    @memoized_property
+    def handler(self):
+        return self.root._handler
+
+    @memoized_property
+    def session(self):
+        return self.handler._session
+
+
     _children = property(_get_children)
 
 
 class HasCanonicalName(HasName, HasParent):
     _cn_instances = weakref.WeakValueDictionary()
 
+    def __init__(self):
+        self._cn_instances[id(self)] = self
+
+    def get_name(self):
+        return self._name #or '<anonymous>'
+
     def set_name(self, value):
         value = value.replace('-', '_')
         n = str(value) if value else None
         if self._name != n:
-            self._unregister_cnamed()
             HasName.set_name(self, n)
-            self._register_cnamed()
+            self._touch_children()
 
     def _set_parent(self, value):
         if self._parent is not value:
-            self._unregister_cnamed()
             HasParent._set_parent(self, value)
-            self._register_cnamed()
 
     _parent = property(HasParent._get_parent,_set_parent)
 
-    _canonicalName = None
-    def set_canonicalName(self, value):
-        value = value.replace('-', '_')
-        cn = str(value) if value else None
-        if self._cname != cn:
-            self._unregister_cnamed()
-            self._canonicalName = cn
-            self._register_cnamed()
-
     _cname = None
     def _update_cname(self):
+        not_redef = (self._get_prop('canonicalName') is not None
+                    and self._get_prop_value('canonicalName') == self._cname
+                    and self._cname is not None) or self._cname is None
         par = self._parent
         par_cn = None
-        while par and not self._canonicalName:
-            if isinstance(par, HasCanonicalName):
-                par_cn = par._cname
+        while par:
+            if isinstance(par, HasCanonicalName) and par._name is not None:
                 break
             par = par._parent
-        self._cname = self._canonicalName or \
-            '%s.%s' % (par_cn, self._name or '') if par_cn else self._name
+        cname = '%s.%s' % (par._cname, self._name or '') if par and par._cname else self._name
+        # invalidate cache
+        if not_redef and cname is not None:
+            self._cname = cname
+            self._set_prop_value('canonicalName', cname)
 
     def _touch_children(self):
         self._update_cname()
-        HasParent._touch_children(self)
+        for c in self._children:
+            c._touch_children()
 
     def _register_child(self, child):
         HasParent._register_child(self, child)
@@ -122,48 +154,13 @@ class HasCanonicalName(HasName, HasParent):
         HasParent._unregister_child(self, child)
         child._touch_children()
 
-    def _register_cnamed(self):
-        self._cn_instances[self._cname] = self
-
-    def _unregister_cnamed(self):
-        self._cn_instances.pop(self._cname, None)
-        self._touch_children()
-
     @classmethod
-    def resolve_cname(cls, cname):
-        from .wrapper_types import ArrayWrapper
-        cn = str(cname)
-        ret = cls._cn_instances.get(cn)
-        if ret:
-            return ret()
-        best_ancestor = None
-        pstack = []
-        while best_ancestor is None and '.' in cn:
-            cn, _ = cn.rsplit('.', 1)
-            pstack.append(_)
-            best_ancestor = cls._cn_instances.get(cn)
-        if best_ancestor is None:
-            raise Exception('Unresolvable canonical name %s' % (cname))
-        cur = best_ancestor
-        while pstack:
-            n = pstack.pop(-1)
-            try:
-                ch = next(c for c in cur._children if getattr(c, '_name', None) == n)
-                if not pstack:
-                    return ch
-            except Exception as er:
-                pstack.append(n)
-                ch = None
-            cur = ch or cur
-            if ch is None:
-                from . import canonical_name
-                pstack.append(cur._name)
-                pstack.reverse()
-                _, path = canonical_name.resolve_cname_path(pstack, cur._lazy_data)
-                for p in path:
-                    cur = cur[p]
-                return cur
-        raise Exception('Unresolvable canonical name %s in %s' % (cname, best_ancestor._cname))
+    def _get_instance_cnamed(cls, cname):
+        return next(filter(lambda x: x() and x().get_canonicalName() == cname,
+                      cls._cn_instances.valuerefs()), None)
+
+    def resolve_cname(self, cname):
+        return self.session.resolve_cname(cname)
 
 
 class RootRelativeCname:
@@ -228,7 +225,7 @@ class HasCache:
         return True
 
     def _set_context(self, context):
-        self._context = weakref.ref(context)
+        self._context = context
 
     def _set_inputs(self, *inputs):
         self._inputs = set(inputs)
@@ -243,19 +240,8 @@ class HasCache:
         self._outputs.update(outputs)
 
     def __prop(self, key):
-        from .protocol_base import ProtocolBase
-        from .foreign_key import ForeignKey
-        cur = self._context()
+        cur = self._context
         return getattr(cur, key, None)
-        return cur.get(key, None)
-        #for k in key.split('.'):
-        #    if isinstance(cur, ForeignKey):
-        #        cur = cur.ref
-        #    if not isinstance(cur, ProtocolBase):
-        #        return
-        #    cur = cur.get(k)
-        #    #cur = cur.get(k, None)
-        #return cur
 
     @property
     def _input_props(self):
@@ -274,9 +260,10 @@ class HasCache:
         }
 
     def __prop_value(self, key):
-        val = self._context()._get_prop_value(key)
+        val = self._context._get_prop_value(key)
         return val.for_json() if isinstance(val, LiteralValue) else val
 
+    @property
     def _input_values(self):
         return {} if not self._context else {
             k: self.__prop_value(k)
@@ -284,11 +271,11 @@ class HasCache:
         }
 
     def is_dirty(self):
-        return self._dirty or (self._cache != self._input_values())
+        return self._dirty or (self._cache != self._input_values)
 
     def set_clean(self, recursive=False):
         self._dirty = False
-        self._cache = self._input_values()
+        self._cache = self._input_values
 
     def touch(self, recursive=False):
         self._dirty = True
@@ -317,64 +304,3 @@ class HasCache:
         else:
             self.touch()
     _validated = property(get_validated, set_validated)
-
-
-class HasInstanceQuery:
-
-    @classmethod
-    def one(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls._instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            raise ValueError('Entry %s does not exist' % attrs_value)
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def one_or_none(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        ret = list(
-            Query(cls._instances)._filter_or_exclude(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-        if len(ret) == 0:
-            return None
-        elif len(ret) > 1:
-            import logging
-            cls.logger.error(ret)
-            raise ValueError('Multiple objects returned')
-        return ret[0]
-
-    @classmethod
-    def first(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves exactly one instance corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        return next(
-            Query(cls._instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classmethod
-    def filter(cls, *attrs, load_lazy=False, **attrs_value):
-        """retrieves a list of instances corresponding to query
-
-        Query can used all usual operators"""
-        from .query import Query
-        return list(
-            Query(cls._instances).filter(
-                *attrs, load_lazy=load_lazy, **attrs_value))
-
-    @classproperty
-    def _instances(cls):
-        return (v() for v in cls.__instances__.valuerefs() if v())

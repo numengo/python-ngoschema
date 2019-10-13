@@ -49,7 +49,7 @@ def test_factory_and_query():
     assert len(doc_loader.exclude(filepath__suffix=".ngoprj")) == 2
     assert len(doc_loader.filter(filepath__suffix=".ngoprj")) == 1
     assert len(doc_loader.filter(filepath__suffix__not=".ngoprj")) == 2
-    
+
 
     assert len(doc_loader.filter(filepath__suffix__not=".ngoprj", author__istartswith="doc")) == 1
     assert len(doc_loader.filter(author__istartswith="doc")) == 2

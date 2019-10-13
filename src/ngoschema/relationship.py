@@ -27,7 +27,7 @@ class Relationship:
         return cls._propinfo('$schema')
 
     @classproperty
-    def keys(cls):
+    def fkeys(cls):
         return cls._propinfo('keys')
 
     @classproperty
@@ -61,4 +61,4 @@ class Relationship:
         return self.foreignClass.resolve_by_keys(keys)
 
     def __get__(self):
-        return self.resolve(self.keys)
+        return self.resolve(self.fkeys)

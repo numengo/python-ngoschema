@@ -12,30 +12,20 @@ from __future__ import unicode_literals
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from ngomf import variable, variable_group, component, package
-from ngoschema import object_registry
+from ngoschema.object_handlers import JsonFileObjectHandler, YamlFileObjectHandler
+from ngoschema.document import Document
+#from ngomf.component import ComponentDefinition
+from ngoci.project import Project
 
-r1 = object_registry.ObjectRegistry()
-r2 = object_registry.ObjectWeakRegistry()
+def test_json_handler():
+    d1 = Document(filepath="/Users/cedric/Devel/python/python-ngomf/src/ngomf/models/Ngo/MoistAir/PhaseChange/MACND00.json")
+    h1  = JsonFileObjectHandler(objectClass='ngomf.component.ComponentDefinition', document=d1)
+    c1 = h1.load()
 
-def test_registry_add():
-    v1 = variable.RealVariable(name="v1")
-    v2 = variable.RealVariable(name="v2")
-    r1.add(v1)
-    r1.add(v2)
-
-    r2.add(v1)
-    r2.add(v2)
-
-def test_registry_persistence():
-    assert len(r1)==2
-    assert len(r2)==2
-    ks = list(r1.keys())
-    for k in ks:
-        r1.remove(k)
-    print(len(r2))
-    assert len(r2)==0
+    d2 = Document(filepath="/Users/cedric/Devel/python/python-ngoci/tests/fixtures/projects.ngoprj")
+    h2  = YamlFileObjectHandler(objectClass=Project, document=d2, many=True)
+    c2s = h2.load()
+    print(len(c2s))
 
 if __name__ == "__main__":
-    test_registry_add()
-    test_registry_persistence()
+    test_json_handler()

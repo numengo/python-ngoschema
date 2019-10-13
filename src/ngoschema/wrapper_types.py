@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 import logging
 import sys
+import weakref
+
 import six
 import json
 
@@ -10,7 +12,7 @@ from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 
-from .uri_identifier import resolve_uri
+from ngoschema.resolver import resolve_uri
 from .mixins import HasCache, HasParent, HandleRelativeCname
 from . import utils
 
@@ -84,9 +86,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
     def validate_items(self):
         if not self._dirty and self._typed is not None:
+            # necessary if element came typed before context was set
+            if self._context:
+                self._set_context(self._context)
             return self._typed
-        if not self._parent:
-            return pjo_wrapper_types.ArrayWrapper.validate_items(self)
         from python_jsonschema_objects import classbuilder
 
         if self.__itemtype__ is None:
@@ -169,12 +172,20 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     typed_elems.append(val)
 
         self._typed = typed_elems
+        if self._context:
+            self._set_context(self._context)
         self.set_items_parent()
         self.set_clean()
         return self._typed
         #pjo_wrapper_types.ArrayWrapper.validate_items(self)
         #if self._parent:
         #    self.set_items_parent()
+
+    def _set_context(self, context):
+        HasCache._set_context(self, context)
+        if self._typed:
+            for item in self._typed:
+                item._set_context(context)
 
     def set_items_parent(self):
         if not self._parent or not self._typed:

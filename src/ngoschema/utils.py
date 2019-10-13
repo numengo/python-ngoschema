@@ -13,6 +13,7 @@ import collections
 import copy
 import importlib
 import inspect
+import itertools
 import logging
 import pathlib
 import re
@@ -24,36 +25,117 @@ import tokenize
 from builtins import object
 from builtins import str
 from contextlib import contextmanager
+import threading
+import  weakref
+from urllib.parse import urlsplit
 
 import inflection
 import six
 from ngofile.pathlist import PathList
 from past.builtins import basestring
+from past.types import basestring
 
 from ._qualname import qualname
 from .exceptions import InvalidValue
 from .mixins import HasCache, HasParent
 from collections import OrderedDict as odict
+from collections import Mapping, MutableMapping
+from abc import abstractmethod
 
-class GenericRegistry(object):
+
+class _KeyModifierMapping(MutableMapping):
+
+    @classmethod
+    def key_modifier(cls, value):
+        """method to override"""
+        return value
+
+    @classmethod
+    def _k(cls, value):
+        return value.lower() if is_string(value) else value
+
+    def __init__(self, *args, **kwargs):
+        self._dict = {}
+        temp_dict = dict(*args, **kwargs)
+        for key, value in temp_dict.items():
+            self._dict[self.__class__._k(key)] = value
+
+    def __getitem__(self, key):
+        return self._dict[self.__class__._k(key)]
+
+    def __setitem__(self, key, value):
+        self._dict[self.__class__._k(key)] = value
+
+    def __delitem__(self, key):
+        del self._dict[self.__class__._k(key)]
+
+    def __contains__(self, key):
+        return self.__class__._k(key) in self._dict
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+class CaseInsensitiveDict(_KeyModifierMapping):
+
+    @classmethod
+    def key_modifier(cls, key):
+        return key.lower()
+
+class UriDict(_KeyModifierMapping):
+
+    @classmethod
+    def key_modifier(cls, key):
+        return urlsplit(key).geturl()
+
+
+class Registry(Mapping):
+
     def __init__(self):
-        self.registry = {}
+        self._registry = collections.OrderedDict()
+
+    def __getitem__(self, key):
+        return self._registry[key]
+
+    def __iter__(self):
+        return six.iterkeys(self._registry)
+
+    def __len__(self):
+        return len(self._registry)
+
+    def register(self, key, value):
+        self._registry[key] = value
+
+    def unregister(self, key):
+        del self._registry[key]
+
+class WeakRegistry(Registry):
+
+    def __init__(self):
+        self._registry = weakref.WeakValueDictionary()
+
+    def __getitem__(self, key):
+        # callv weak reference
+        return self._registry[key]()
+
+
+class GenericClassRegistry(Registry):
 
     def register(self, name=None):
         def f(functor):
-            self.registry[name
-                          if name is not None else functor.__name__] = functor
+            self._registry[name if name is not None
+                           else functor.__name__] = functor
             return functor
 
         return f
 
-    def __call__(self, name):
-        return self.registry.get(name)
 
+class GenericModuleFileLoader(Registry):
 
-class GenericModuleFileLoader(object):
     def __init__(self, subfolder_name):
-        self.registry = {}
+        Registry.__init__(self)
         self.subfolderName = subfolder_name
 
     def register(self, module, subfolder_name=None):
@@ -62,9 +144,9 @@ class GenericModuleFileLoader(object):
         subfolder = pathlib.Path(
             m.__file__).parent.joinpath(subfolder_name).resolve()
         if subfolder.exists():
-            if module not in self.registry:
-                self.registry[module] = []
-            self.registry[module].append(subfolder)
+            if module not in self._registry:
+                self._registry[module] = []
+            self._registry[module].append(subfolder)
         return subfolder
 
     def preload(self,
@@ -73,7 +155,7 @@ class GenericModuleFileLoader(object):
                 recursive=False,
                 serializers=[]):
         from .document import get_document_registry
-        all_paths = list(sum(self.registry.values(), []))
+        all_paths = list(sum(self._registry.values(), []))
         for d in all_paths:
             get_document_registry().\
                 register_from_directory(d,
@@ -82,7 +164,7 @@ class GenericModuleFileLoader(object):
                                         recursive=recursive,
                                         serializers=serializers)
 
-    def find(self, name):
+    def find_one(self, name):
         """
         find first name/pattern in loader's pathlist
 
@@ -92,9 +174,9 @@ class GenericModuleFileLoader(object):
         name = name.replace('\\', '/')
         if '/' in name:
             module, path = name.split('/', 1)
-            if module in self.registry:
-                return PathList(*self.registry[module]).pick_first(path)
-        all_paths = list(sum(self.registry.values(), []))
+            if module in self._registry:
+                return PathList(*self._registry[module]).pick_first(path)
+        all_paths = list(sum(self._registry.values(), []))
         return PathList(*all_paths).pick_first(name)
 
 
@@ -167,7 +249,7 @@ def is_string(value):
 
 def is_pattern(value):
     """
-    Test if value is a pattern, ie contains {{ }} formatted content 
+    Test if value is a pattern, ie contains {{ }} formatted content
     """
     return is_string(value) and ("{{" in value or "{%" in value)
 
@@ -379,75 +461,41 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
         func(coll, k if is_map else i, level=level, **func_kwargs)
         if recursive:
             v = coll.get(k) if is_map else (
-                coll[i] if i < len(coll) else 
+                coll[i] if i < len(coll) else
                 None)
             if is_collection(v):
                 apply_through_collection(v, func, recursive, level=level+1, **func_kwargs)
 
 
-def filter_keys(container, keys, keep=True, recursive=False):
-    if is_mapping(container):
-        for k in keys.intersection(container.keys()):
-            if not keep:
-                container.pop(k)
-            elif recursive:
-                filter_keys(container[k], keys, keep, recursive)
-    elif is_sequence(container):
-        for v in container:
-            filter_keys(v, keys, keep, recursive)
-    return container
-
-
-def process_collection(data,
-                       only=(),
-                       but=(),
-                       many=False,
-                       object_class=None,
-                       object_from_schema=None,
-                       **opts):
+def filter_collection(data,
+                      only=(),
+                      but=(),
+                      recursive=False):
     """
     process a collection keeping some/only fields.
-    If a json-schema is provided, an object is constructed according
-    to the schema.
-    If a class is provided, an object is constructed from the
-    data provided.
 
     :param only: only keys to keep
     :param but: keys to exclude
-    :param many: process collection as a list/sequence. if collection is
-    a dictionary and many=True, values are processed
     """
-    logger = opts.get('logger') or logging.getLogger(__name__)
 
-    if many:
-        datas = list(data) if is_sequence(data) else data.values()
-        return [
-            process_collection(
-                d, only, but, object_class=object_class, **opts) for d in datas
-        ]
+    def _filter_keys(container, keys, keep=True):
+        if is_mapping(container):
+            for k in keys.intersection(container.keys()):
+                if not keep:
+                    container.pop(k)
+                elif recursive:
+                    _filter_keys(container[k], keys, keep, recursive)
+        elif is_sequence(container):
+            for v in container:
+                _filter_keys(v, keys, keep, recursive)
+        return container
 
     if only or but:
-        rec = opts.get("fields_recursive", False)
         data = copy.deepcopy(data)
         if only:
-            data = filter_keys(data, set(only), keep=True, recursive=rec)
+            data = _filter_keys(data, set(only), keep=True)
         if but:
-            data = filter_keys(data, set(but), keep=False, recursive=rec)
-
-    if object_class is not None:
-        return object_class(**data)
-
-    if object_from_schema:
-        from .classbuilder import ClassBuilder
-        from .resolver import get_resolver
-        resolver = get_resolver()
-        schema = object_from_schema
-        nm = schema['title'] if 'title' in schema else schema.get(
-            'id', 'Nameless')
-        nm = inflection.parameterize(six.text_type(nm), '_')
-        object_class = ClassBuilder(resolver).construct(nm, schema)
-        return object_class(**data)
-
+            data = _filter_keys(data, set(but), keep=False)
     return data
 
 
@@ -663,3 +711,18 @@ class Bracket:
         p = context.find(f_call, context)
         brs = Bracket.find_brackets(context)
 
+def threadsafe_counter(init_value=1):
+    """Return a threadsafe counter function.
+    credit: sqlachemy """
+    lock = threading.Lock()
+    counter = itertools.count(init_value)
+
+    # avoid the 2to3 "next" transformation...
+    def _next():
+        lock.acquire()
+        try:
+            return next(counter)
+        finally:
+            lock.release()
+
+    return _next

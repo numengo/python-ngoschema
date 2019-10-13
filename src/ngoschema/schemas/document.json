@@ -9,8 +9,7 @@
       "additionalProperties": false,
       "properties": {
         "filepath": {
-          "type": "path",
-          "isPathExisting": true
+          "type": "path"
         },
         "url": {
           "type": "string",
@@ -21,7 +20,7 @@
           "type": "string",
           "format": "uri-reference"
         },
-        "$id": {
+        "id": {
           "type": "string",
           "format": "uri-reference"
         },

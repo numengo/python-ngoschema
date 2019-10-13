@@ -16,7 +16,6 @@ from python_jsonschema_objects.literals import LiteralValue
 
 from . import utils
 from .protocol_base import get_descendant, ProtocolBase
-from .canonical_name import CN_KEY
 
 _operators = [
     # operator library
@@ -138,7 +137,7 @@ class Query(object):
                            distinct=False,
                            **attrs_value):
         """
-        Make a filter/exclude generator for an iterable. The flag `negate` allow to return 
+        Make a filter/exclude generator for an iterable. The flag `negate` allow to return
         the excluded objects corresponding to the criteria. This generator filters/excludes
         objects respecting ANY of the criteria (OR).
 
@@ -170,7 +169,7 @@ class Query(object):
                 ks, ops, ops_negate = attrs_ops[k]
                 o = get_descendant(obj, ks, load_lazy)
                 if o is None:
-                    # breaking the look we never go in the for/ELSE statement where 
+                    # breaking the look we never go in the for/ELSE statement where
                     # an object is potentially yielded
                     test = False
                     break
@@ -192,10 +191,10 @@ class Query(object):
                     if test2:
                         break
                 elif not test:
-                    break            
+                    break
 
             for k in attrs:
-                ks = k.split('__') 
+                ks = k.split('__')
                 test2 = get_descendant(obj, ks, load_lazy) is not None
                 test = (test or test2) if any_of else (test and test2)
                 if any_of:
@@ -220,8 +219,8 @@ class Query(object):
                distinct=None,
                **attrs_value):
         return Query(
-                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
-                                                    load_lazy=load_lazy, 
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs,
+                                                    load_lazy=load_lazy,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
                 order_by=order_by or self._order_by,
@@ -236,9 +235,9 @@ class Query(object):
                 distinct=None,
                 **attrs_value):
         return Query(
-                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
-                                                    load_lazy=load_lazy, 
-                                                    negate=True, 
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs,
+                                                    load_lazy=load_lazy,
+                                                    negate=True,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
                 order_by=order_by or self._order_by,
@@ -253,8 +252,8 @@ class Query(object):
                distinct=None,
                **attrs_value):
         return Query(
-                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
-                                                    load_lazy=load_lazy, 
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs,
+                                                    load_lazy=load_lazy,
                                                     any_of=True,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
@@ -270,10 +269,10 @@ class Query(object):
                 distinct=None,
                 **attrs_value):
         return Query(
-                (x for x in Query._filter_or_exclude(self._iterable, *attrs, 
-                                                    load_lazy=load_lazy, 
-                                                    any_of=True, 
-                                                    negate=True, 
+                (x for x in Query._filter_or_exclude(self._iterable, *attrs,
+                                                    load_lazy=load_lazy,
+                                                    any_of=True,
+                                                    negate=True,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
                 order_by=order_by or self._order_by,
@@ -340,7 +339,7 @@ class Query(object):
 
     def get(self, *attrs, load_lazy=False, **attrs_value):
         ret = list(Query._filter_or_exclude(self._iterable,
-                                        *attrs, 
+                                        *attrs,
                                         load_lazy=load_lazy,
                                         distinct=self._distinct,
                                         **attrs_value))
@@ -355,9 +354,9 @@ class Query(object):
     def next(self, *attrs, load_lazy=False, **attrs_value):
         return next(
                 Query._filter_or_exclude(self._iterable,
-                                         *attrs, 
+                                         *attrs,
                                          distinct=self._distinct,
-                                         load_lazy=load_lazy, 
+                                         load_lazy=load_lazy,
                                          **attrs_value))
 
     def first(self):

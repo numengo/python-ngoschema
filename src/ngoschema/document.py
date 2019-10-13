@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 utilities and stores to resolve canonical names in models
 
 author: Cedric ROMAN
 email: roman@numengo.com
-licence: GNU GPLv3  
+licence: GNU GPLv3
 """
 from __future__ import print_function
 from __future__ import unicode_literals
@@ -13,24 +13,22 @@ import codecs
 
 import arrow
 import six
+import itertools
+
 from future.utils import with_metaclass
 from ngofile.list_files import list_files
 from six.moves.urllib.request import urlopen
+from collections import Mapping, ChainMap
 
 from . import utils
-from .canonical_name import CN_ID
-from .canonical_name import register_document_with_cname
-from .canonical_name import resolve_cname
-from ngoschema import ProtocolBase
+#from .canonical_name import resolve_cname
+from .protocol_base import ProtocolBase
 from .decorators import SCH_PATH_DIR
 from .decorators import SCH_PATH_FILE
 from .decorators import assert_arg
-from .deserializers import deserializer_registry
 from .query import Query
 from .schema_metaclass import SchemaMetaclass
-from .uri_identifier import URI_ID
-from .uri_identifier import register_document_with_uri_id
-from .uri_identifier import resolve_uri
+from ngoschema.resolver import resolve_uri
 
 
 class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -46,9 +44,11 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _contentRaw = None
     _content = None
     _loaded = False
-    _is_deserialized = False
 
     _identifier = None
+
+    def __init__(self, *args, **props):
+        ProtocolBase.__init__(self, *args, **props)
 
     @property
     def identifier(self):
@@ -56,15 +56,16 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             self._identifier = self.filepath or self.url
         return str(self._identifier) if self._identifier else ''
 
-    def load(self, encoding="utf-8"):
+    def load(self, mode='r'):
         """
         Load document in memory
 
         :param encoding: character encoding
         """
         content = None
+        encoding = str(self.charset)
         if self.filepath:
-            with codecs.open(str(self.filepath), 'r', encoding) as f:
+            with codecs.open(str(self.filepath), mode, encoding) as f:
                 content = f.read()
         elif self.url:
             response = urlopen(str(self.url))
@@ -78,44 +79,34 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def loaded(self):
         return self._loaded
 
+    def write(self, content, mode='w'):
+        if self.filepath:
+            with codecs.open(str(self.filepath), mode, self.charset) as f:
+                f.write(content.encode(self.charset))
+                self._contentRaw = content
+        elif self.url:
+            raise Exception('impossible to write on a URL referenced document')
+
+    def _deserialize(self, load_function):
+        import json
+        if not self.loaded:
+            self.load('r')
+        self._content = load_function(self._contentRaw)
+        self.get_id()
+        return self._content
+
+    def deserialize_json(self):
+        import json
+        return self._deserialize(json.loads)
+
+    def deserialize_yaml(self):
+        from ruamel.yaml import YAML
+        yaml = YAML(typ="safe")
+        return self._deserialize(yaml.load)
+
     @property
     def contentRaw(self):
         return self._contentRaw
-
-    def deserialize(self, deserializers=[], **deserializer_opts):
-        """
-        Deserialize document using provided deserializers (or registered one if none 
-        provided)
-
-        :param deserializers: list of deserializers to try to deserialize document
-        :param deserializers_opts: dictionary of options for deserializer
-        """
-        if not self.loaded:
-            self.load()
-        ds = deserializers  # alias
-        ds = ds if isinstance(ds, list) else [ds]
-        # if no deserializer provided, try all registered ones
-        ds = ds if ds else deserializer_registry.registry.values()
-        for deserializer in ds:
-            try:
-                doc = deserializer.loads(self.contentRaw, **deserializer_opts)
-                break
-            except Exception as er:
-                pass
-        else:
-            raise IOError("Impossible to load %s with deserializers %s." %
-                          (self.identifier, ds))
-        self._content = doc
-        self._is_deserialized = True
-        if CN_ID in doc:
-            register_document_with_cname(self, doc[CN_ID])
-        if URI_ID in doc:
-            register_document_with_uri_id(self, doc[URI_ID])
-        return doc
-
-    @property
-    def isDeserialized(self):
-        return self._is_deserialized
 
     def get_dateCreated(self):
         return arrow.get(self.filepath.stat().st_ctime)
@@ -148,7 +139,8 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def get_id(self):
         if self._id is None and self.content:
-            self._id = self.content['id']
+            if '$id' in self.content:
+                self._id = self.content['$id']
         return self._id
 
 
@@ -165,56 +157,50 @@ def get_document_registry():
     return _default_document_registry
 
 
-class DocumentRegistry(object):
+class DocumentRegistry(Mapping):
     def __init__(self):
-        self.registry = {}
+        from .object_handlers import JsonFileObjectHandler
+        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', keys=['filepath'])
+        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', keys=['uri'])
+        self._chained = ChainMap(self._fp_registry._registry,
+                                 self._url_registry._registry)
+
+    def __getitem__(self, key):
+        return self._chained[key]
+
+    def __iter__(self):
+        return six.iterkeys(self._chained)
+
+    def __len__(self):
+        return len(self._chained)
 
     @assert_arg(1, SCH_PATH_FILE)
-    def register_from_file(self,
-                           fp,
-                           assert_args=True,
-                           deserialize=False,
-                           deserializers=[],
-                           deserializers_opts={}):
+    def register_from_file(self, fp):
         """
         Register a document from a filepath
 
         :param fp: path of document to register
-        :param assert_args: flag to check/convert argument types
-        :param deserialize: flag to deserialize document in memory
-        :param deserializers: list of deserializers to try to use if `deserialize`=True
-        :param deserializers_opts: dictionary of options for deserializers
         """
         fp.resolve()
-        if str(fp) not in self.registry:
-            # no need for lazy loading as deserialize will load it anyway
-            self.registry[str(fp)] = Document(filepath=fp)
-        doc = self.registry[str(fp)]
-        if deserialize and not doc.isDeserialized:
-            doc.deserialize(deserializers=deserializers, **deserializers_opts)
+        if str(fp) not in self._fp_registry._registry:
+            # no need for lazy loading as deserialize will load it anyway            doc =
+            self._fp_registry.register(Document(filepath=fp))
+        doc = self._fp_registry.get_instance(str(fp))
         return doc
 
     @assert_arg(1, {"type": "string", "format": "uri-reference"})
-    def register_from_url(self,
-                          url,
-                          assert_args=True,
-                          deserialize=False,
-                          deserializers=[],
-                          deserializers_opts={}):
+    def register_from_url(self, url):
         """
         Register a document from an URL
 
         :param url: url of document to register
-        :param assert_args: flag to check/convert argument types
         :param deserialize: flag to deserialize document in memory
         :param deserializers: list of deserializers to try to use if `deserialize`=True
         :param deserializers_opts: dictionary of options for deserializers
         """
-        if str(url) not in self.registry:
-            self.registry[str(url)] = Document(url=url)
-        doc = self.registry[str(url)]
-        if deserialize and not doc.deserialized:
-            doc.deserialize(deserializers=deserializers, **deserializers_opts)
+        if str(url) not in self._url_registry:
+            self._url_registry.add(Document(url=url))
+        doc = self._url_registry[str(url)]
         return doc
 
     @assert_arg(1, SCH_PATH_DIR)
@@ -222,31 +208,18 @@ class DocumentRegistry(object):
                                 src,
                                 includes=["*"],
                                 excludes=[],
-                                recursive=False,
-                                assert_args=True,
-                                deserialize=False,
-                                deserializers=[],
-                                deserializers_opts={}):
+                                recursive=False):
         """
         Register documents from a search in a directory
-       
+
         :param src: directory containing files to register
         :param includes: pattern or list of patterns (*.py, *.txt, etc...)
         :param excludes: pattern or patterns to exclude
         :param recursive: list files recursively
-        :param assert_args: flag to check/convert argument types
-        :param deserialize: flag to deserialize document in memory
-        :param deserializers: list of deserializers to try to use if `deserialize`=True
-        :param deserializers_opts: dictionary of options for deserializers
         """
         # no need to assert_args in regiser_from_file as list_files return a file
         return [
-            self.register_from_file(
-                fp,
-                assert_args=False,
-                deserialize=deserialize,
-                deserializers=deserializers,
-                deserializers_opts=deserializers_opts) for fp in list_files(
+            self.register_from_file(fp) for fp in list_files(
                     src, includes, excludes, recursive, folders=0)
         ]
 
@@ -255,25 +228,24 @@ class DocumentRegistry(object):
         Make a `Query` on registered documents
         """
         __doc__ = Query.filter.__doc__
-        return Query(self.registry.values()).filter(
+        wow = list(self._chained.values())
+        return Query(self._chained.values()).filter(
             *attrs, order_by=order_by, **attrs_value)
 
-    def __iter__(self):
-        return six.itervalues(self.registry)
 
-
-def resolve_ref(ref):
-    if not utils.is_string(ref):
-        ref = str(ref)
-    if '/' in ref:
-        try:
-            return resolve_uri(ref)
-        except:
-            try:
-                doc = get_document_registry().register_from_file(ref)
-                doc.deserialize()
-                return doc.content
-            except:
-                raise ValueError('Impossible to resolve %s as a URI or a file' % ref)
-    else:
-        return resolve_cname(ref)
+#TODO: change resolve_ref, resolve_cname
+#def resolve_ref(ref):
+#    if not utils.is_string(ref):
+#        ref = str(ref)
+#    if '/' in ref:
+#        try:
+#            return resolve_uri(ref)
+#        except:
+#            try:
+#                doc = get_document_registry().register_from_file(ref)
+#                doc.deserialize()
+#                return doc.content
+#            except:
+#                raise ValueError('Impossible to resolve %s as a URI or a file' % ref)
+#    else:
+#        return resolve_cname(ref)

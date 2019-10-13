@@ -18,21 +18,15 @@ from builtins import str
 
 import inflection
 import six
-from jsonschema._utils import URIDict
+
 from ngofile.list_files import list_files
 
+from .resolver import register_doc_with_uri_id, get_uri_doc_store
 from .exceptions import SchemaError
-
-_all_schemas_store = URIDict()
-
-
-def get_all_schemas_store():
-    return _all_schemas_store
 
 
 def _id_of(schema):
     return schema.get("$id", schema.get("id"))
-
 
 def _load_schema(name):
     """
@@ -40,9 +34,7 @@ def _load_schema(name):
 
     """
     data = pkgutil.get_data("ngoschema", "schemas/{0}.json".format(name))
-    #return json.loads(data.decode("utf-8"), object_pairs_hook=collections.OrderedDict)
-    return json.loads(data.decode("utf-8"))
-
+    return json.loads(data.decode("utf-8"), object_pairs_hook=collections.OrderedDict)
 
 def load_schema(schema, schemas_store=None):
     """
@@ -52,7 +44,7 @@ def load_schema(schema, schemas_store=None):
 
     :param schema: schema as dictionary
     :type schema: dict
-    :param schemas_store: optional schemas_store to fill 
+    :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     """
     uri = _id_of(schema).rstrip('#')
@@ -64,9 +56,7 @@ def load_schema(schema, schemas_store=None):
             "are missing.\n%s" % schema)
     if schemas_store is not None:
         schemas_store[uri] = schema
-    _all_schemas_store[uri] = schema
-    # also register in uri_identifier document store
-    from .uri_identifier import register_doc_with_uri_id
+    # add to main registry
     register_doc_with_uri_id(schema, uri)
     return uri, schema
 
@@ -75,16 +65,15 @@ def load_schema_file(schema_path, schemas_store=None):
     """
     Load a schema from a file to the metaschema store
     and returns the schema dictionary.
-    
+
     :param schema_path: path to file containing schema
     :type schema_path: [string, path]
-    :param schemas_store: optional schemas_store to fill 
+    :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     :rtype: dict
     """
     with open(str(schema_path), "rb") as f:
         schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
-        #schema = json.loads(f.read().decode("utf-8"))
         schema.setdefault('$id', pathlib.Path(schema_path).stem)
         return load_schema(schema, schemas_store)
 
@@ -97,9 +86,9 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     will be created.
 
     return the loaded schema store
-    
+
     :param module: module name where to look
-    :param schemas_store: optional schemas_store to fill 
+    :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     :rtype: dict
     """
@@ -107,7 +96,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     libpath = imp.find_module(module)[1]
 
     if schemas_store is None:
-        schemas_store = URIDict()
+        schemas_store = get_uri_doc_store()
     for ms in list_files(libpath, "schemas/**.json", recursive=True):
         try:
             load_schema_file(ms, schemas_store)

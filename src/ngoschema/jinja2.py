@@ -25,8 +25,6 @@ import six
 from . import utils
 from .decorators import SCH_PATH_DIR_EXISTS
 from .decorators import assert_arg
-from .serializers import Serializer
-from .serializers import serializer_registry
 from .query import Query
 
 templates_module_loader = utils.GenericModuleFileLoader('templates')
@@ -73,9 +71,9 @@ class TemplatedString(object):
     """
 
     def __init__(self, templated_str):
-        self._templated_str = templated_str
-        self._template = default_jinja2_env().from_string(templated_str)
-        self._has_dot = regex_has_dot.search(templated_str) is not None
+        self._templated_str = str(templated_str)
+        self._template = default_jinja2_env().from_string(self._templated_str)
+        self._has_dot = regex_has_dot.search(self._templated_str) is not None
 
     def __call__(self, **obj):
         # ctx = context.as_dict() if hasattr(context,'as_dict') else context
@@ -84,15 +82,15 @@ class TemplatedString(object):
         return self._template.render(**obj)
 
 
-@serializer_registry.register()
-class Jinja2Serializer(Serializer):
+#@handler_registry.register()
+class Jinja2FileObjectHandler(object):
     logger = logging.getLogger(__name__)
 
     def __init__(self, template, environment=None):
         """
         Serializer based on a jinja template. Template is loaded from
         environment. If no environment is provided, use the default one
-        `default_jinja2_env` 
+        `default_jinja2_env`
         """
         self.jinja = environment or default_jinja2_env()
         self.jinja.globals.update(_jinja2_globals)
@@ -119,7 +117,7 @@ class Jinja2Serializer(Serializer):
 
     def dumps(self, objs, **opts):
         data = objs.for_json() if hasattr(objs, "for_json") else objs
-        data = utils.process_collection(data, **opts)
+        data = utils.filter_collection(data, **opts)
         return self.jinja.get_template(self.template).render(data)
 
     @assert_arg(2, SCH_PATH_DIR_EXISTS)
@@ -182,7 +180,7 @@ class Jinja2Serializer(Serializer):
             self.logger.debug("data:\n%r ", utils.any_pprint(context))
             outfile.write(stream)
 
-    def dumps_macro(self, 
+    def dumps_macro(self,
                     macro_name,
                     protected_regions=None,
                     macro_args=[],
@@ -242,7 +240,7 @@ def get_variables(source, remove_this=True):
 
 # ADDITIONAL FILTERS FROM INFLECTION
 
-filters_registry = utils.GenericRegistry()
+filters_registry = utils.GenericClassRegistry()
 
 
 @filters_registry.register()
@@ -322,7 +320,7 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
     def __init__(self, **opts):
         loader = jinja2.PrefixLoader({
             mname: jinja2.PackageLoader(mname, path.name)
-            for mname, paths in templates_module_loader.registry.items()
+            for mname, paths in templates_module_loader.items()
             for path in paths
         })
 
@@ -330,5 +328,5 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
         self.globals.update(_jinja2_globals)
 
         # add filters
-        for k, v in filters_registry.registry.items():
+        for k, v in filters_registry.items():
             self.filters[k] = v

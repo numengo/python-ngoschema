@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="35" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="54" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -1626,7 +1626,7 @@
 </node>
 </node>
 </node>
-<node TEXT="DATA MODELS" POSITION="right" ID="ID_1591279921" CREATED="1554974607633" MODIFIED="1554974612241">
+<node TEXT="DATA MODELS" FOLDED="true" POSITION="right" ID="ID_1591279921" CREATED="1554974607633" MODIFIED="1554974612241">
 <edge COLOR="#ff00ff"/>
 <node TEXT="Series" ID="ID_1029483465" CREATED="1554974614488" MODIFIED="1554974623419">
 <node TEXT="meta" ID="ID_861511117" CREATED="1554974744661" MODIFIED="1554974746583"/>
@@ -1714,7 +1714,7 @@
 <node TEXT="kivi ?" POSITION="right" ID="ID_1695412190" CREATED="1564166662601" MODIFIED="1564166666600">
 <edge COLOR="#ff00ff"/>
 </node>
-<node TEXT="OpenAPI / JsonSchema" POSITION="right" ID="ID_37039276" CREATED="1563971904624" MODIFIED="1563971912952">
+<node TEXT="OpenAPI / JsonSchema" FOLDED="true" POSITION="right" ID="ID_37039276" CREATED="1563971904624" MODIFIED="1563971912952">
 <edge COLOR="#0000ff"/>
 <node TEXT="openapi-and-json-schema-divergence-part-1" ID="ID_529443736" CREATED="1563971928701" MODIFIED="1563971952902" LINK="https://apisyouwonthate.com/blog/openapi-and-json-schema-divergence-part-1">
 <node ID="ID_840590910" CREATED="1563972590320" MODIFIED="1563972590320"><richcontent TYPE="NODE">
@@ -1831,7 +1831,7 @@
 <node TEXT="https://www.freeplane.org/wiki/index.php/Scripting:_Other_languages" ID="ID_169581073" CREATED="1564381969718" MODIFIED="1564381969718" LINK="https://www.freeplane.org/wiki/index.php/Scripting:_Other_languages"/>
 </node>
 </node>
-<node TEXT="serveur local" POSITION="right" ID="ID_1585107801" CREATED="1564385155613" MODIFIED="1564385164670">
+<node TEXT="serveur local" FOLDED="true" POSITION="right" ID="ID_1585107801" CREATED="1564385155613" MODIFIED="1564385164670">
 <edge COLOR="#00007c"/>
 <node TEXT="tourne en demon" ID="ID_1371646889" CREATED="1564385170612" MODIFIED="1564385174571"/>
 <node TEXT="watch des directory" ID="ID_46220685" CREATED="1564385174879" MODIFIED="1564385178875">
@@ -1881,7 +1881,7 @@
 <node TEXT="une vue mindmap" ID="ID_721529825" CREATED="1564477073860" MODIFIED="1564477078039"/>
 </node>
 </node>
-<node TEXT="packages" POSITION="right" ID="ID_192486155" CREATED="1564487663116" MODIFIED="1564487667280">
+<node TEXT="packages" FOLDED="true" POSITION="right" ID="ID_192486155" CREATED="1564487663116" MODIFIED="1564487667280">
 <edge COLOR="#0000ff"/>
 <node TEXT="https://github.com/asifpy/django-crudbuilder" ID="ID_610311349" CREATED="1564487668370" MODIFIED="1564487668370" LINK="https://github.com/asifpy/django-crudbuilder"/>
 <node TEXT="DRF" ID="ID_1284868518" CREATED="1564487719189" MODIFIED="1564487725448" LINK="https://www.django-rest-framework.org/tutorial/quickstart/"/>
@@ -1912,11 +1912,16 @@
 <node TEXT="&lt;plugin&gt;_settings.json" ID="ID_1819933616" CREATED="1564510981815" MODIFIED="1564511001541"/>
 </node>
 </node>
-<node TEXT="faire une methode from_mm" POSITION="right" ID="ID_979087916" CREATED="1564516810723" MODIFIED="1564516822000">
+<node TEXT="faire une methode from_mm" FOLDED="true" POSITION="right" ID="ID_979087916" CREATED="1564516810723" MODIFIED="1564516822000">
 <edge COLOR="#00ffff"/>
 <node TEXT="qui construit un object ProtocolBased sur une mindmap" ID="ID_1661462138" CREATED="1564516824100" MODIFIED="1564516844543"/>
 <node TEXT="class" ID="ID_1004057364" CREATED="1566642966627" MODIFIED="1566642975493"/>
-<node TEXT="enum" ID="ID_954608509" CREATED="1566642982506" MODIFIED="1566642984468"/>
+<node TEXT="enum" ID="ID_954608509" CREATED="1566642982506" MODIFIED="1566642984468">
+<node TEXT="name" ID="ID_1153098785" CREATED="1566643348684" MODIFIED="1566643350764">
+<node TEXT="value" ID="ID_680878570" CREATED="1566643352168" MODIFIED="1566643354020"/>
+</node>
+<node TEXT="" ID="ID_373774116" CREATED="1566643357180" MODIFIED="1566643357180"/>
+</node>
 <node TEXT="function" ID="ID_716978733" CREATED="1566642984824" MODIFIED="1566642987167">
 <node TEXT="description" ID="ID_615243926" CREATED="1566643242485" MODIFIED="1566643246488"/>
 <node TEXT="arguments" ID="ID_3008360" CREATED="1566642988349" MODIFIED="1566642993024">
@@ -1948,7 +1953,7 @@
 <node TEXT="astro match localis&#xe9;" ID="ID_651277816" CREATED="1564875279344" MODIFIED="1564875286832"/>
 </node>
 </node>
-<node TEXT="equivalence class / openapi" POSITION="right" ID="ID_102038829" CREATED="1564764693231" MODIFIED="1566637731976">
+<node TEXT="equivalence class / openapi" FOLDED="true" POSITION="right" ID="ID_102038829" CREATED="1564764693231" MODIFIED="1566637731976">
 <edge COLOR="#00007c"/>
 <node TEXT="package" ID="ID_29017800" CREATED="1564764739846" MODIFIED="1564764774830">
 <node TEXT="resources" ID="ID_1685027403" CREATED="1564764735722" MODIFIED="1564764737914"/>
@@ -2028,6 +2033,184 @@
 <node TEXT="https://docs.microsoft.com/en-us/windows/uwp/security/credential-locker" ID="ID_913905557" CREATED="1566552064083" MODIFIED="1566552064083" LINK="https://docs.microsoft.com/en-us/windows/uwp/security/credential-locker"/>
 </node>
 </node>
+<node TEXT="canonicalName" POSITION="right" ID="ID_781175154" CREATED="1566844189107" MODIFIED="1566844194815">
+<edge COLOR="#00ff00"/>
+<node TEXT="_cname" ID="ID_430540243" CREATED="1566844195671" MODIFIED="1566844204881">
+<node TEXT="read-only" ID="ID_1410153187" CREATED="1566844270107" MODIFIED="1566844274117"/>
+<node TEXT="parent._cname + &quot;.&quot; + name" ID="ID_142907289" CREATED="1566844205104" MODIFIED="1566844391465"/>
+</node>
+<node TEXT="canonicalName" ID="ID_793458808" CREATED="1566844277393" MODIFIED="1566844281407">
+<node TEXT="read / write" ID="ID_902360320" CREATED="1566844283346" MODIFIED="1566844296359"/>
+<node TEXT="default" ID="ID_1289022403" CREATED="1566844296639" MODIFIED="1566844299460">
+<node TEXT="cname" ID="ID_1273327386" CREATED="1566844299599" MODIFIED="1566844300829"/>
+</node>
+</node>
+<node TEXT="strategy" ID="ID_1454066318" CREATED="1566845047657" MODIFIED="1566845053147">
+<node TEXT="change in name or parent.cname" ID="ID_82236773" CREATED="1566845053754" MODIFIED="1566845077794">
+<node TEXT="update_cname" ID="ID_1213926388" CREATED="1566845082516" MODIFIED="1566845087612"/>
+</node>
+</node>
+<node TEXT="RETHINK" ID="ID_133918755" CREATED="1566845256873" MODIFIED="1566845266112">
+<node TEXT="canonicalName should be read-only" ID="ID_1485822429" CREATED="1566845266430" MODIFIED="1566845283248"/>
+<node TEXT="actually, what if we want to initialize an object out of all his parents???" ID="ID_1529251611" CREATED="1566849971195" MODIFIED="1566850008972"/>
+</node>
+<node TEXT="dont have a registry by cname" ID="ID_1928714946" CREATED="1566853167626" MODIFIED="1566853182576">
+<node TEXT="have a registry by id" ID="ID_30609881" CREATED="1566853183695" MODIFIED="1566853199374">
+<node TEXT="never unregister cname" ID="ID_495427101" CREATED="1566853200771" MODIFIED="1566853212013"/>
+</node>
+</node>
+</node>
+<node TEXT="FMI" POSITION="right" ID="ID_1951743253" CREATED="1567430836197" MODIFIED="1567430837374">
+<edge COLOR="#7c0000"/>
+<node TEXT="FMI_for_ModelExchange_and_CoSimulation_v2.0.pdf" ID="ID_778669261" CREATED="1567508132223" MODIFIED="1567508132227" LINK="../../../Documents/DEV%20RESOURCES/FMI_for_ModelExchange_and_CoSimulation_v2.0/FMI_for_ModelExchange_and_CoSimulation_v2.0.pdf"/>
+<node TEXT="Status" ID="ID_130391162" CREATED="1567430684522" MODIFIED="1567430841660">
+<node TEXT="Ok" ID="ID_1757163797" CREATED="1567430688121" MODIFIED="1567430690697"/>
+<node TEXT="Warning" FOLDED="true" ID="ID_1652849015" CREATED="1567430691487" MODIFIED="1567430693046">
+<node TEXT="things are not quite right, but the computation can continue. Function &#x201c;logger&#x201d; was called in the model (see below) and it is expected that this function has shown the prepared information message to the user." ID="ID_174121592" CREATED="1567430722046" MODIFIED="1567430722046"/>
+</node>
+<node TEXT="Discard" FOLDED="true" ID="ID_1300822466" CREATED="1567430693507" MODIFIED="1567430695337">
+<node TEXT="For &#x201c;model exchange&#x201d;: It is recommended to perform a smaller step size and evaluate the model equations again, for example because an iterative solver in the model did not converge or because a function is outside of its domain (for example sqrt(&lt;negative number&gt;)). If this is not possible, the simulation has to be terminated. For &#x201c;co-simulation&#x201d;: fmifmi2Discard is returned also if the slave is not able to return the required status information. The master has to decide if the simulation run can be continued. In both cases, function &#x201c;logger&#x201d; was called in the FMU (see below) and it is expected that this function has shown the prepared information message to the user if the FMU was called in debug mode (loggingOn = fmifmi2True). Otherwise, &#x201c;logger&#x201d; should not show a message." ID="ID_165010925" CREATED="1567430741288" MODIFIED="1567430741288"/>
+</node>
+<node TEXT="Error" FOLDED="true" ID="ID_1134453689" CREATED="1567430695745" MODIFIED="1567430697138">
+<node TEXT="the FMU encountered an error. The simulation cannot be continued with this FMU instance" ID="ID_1514151389" CREATED="1567430754866" MODIFIED="1567430759189"/>
+<node TEXT="Further processing is possible after this call; especially other FMU instances are not affected. Function &#x201c;logger&#x201d; was called in the FMU (see below) and it is expected that this function has shown the prepared information message to the user." ID="ID_1749556387" CREATED="1567430767495" MODIFIED="1567430769324"/>
+</node>
+<node TEXT="Fatal" FOLDED="true" ID="ID_175775287" CREATED="1567430697531" MODIFIED="1567430699620">
+<node TEXT="the model computations are irreparably corrupted for all FMU instances. [For example, due to a run-time exception such as access violation or integer division by zero during the execution of an fmi function]. Function &#x201c;logger&#x201d; was called in the FMU (see below) and it is expected that this function has shown the prepared information message to the user. It is not possible to call any other function for any of the FMU instances." ID="ID_821663402" CREATED="1567430795054" MODIFIED="1567430796591"/>
+</node>
+<node TEXT="Pending" FOLDED="true" ID="ID_1876690108" CREATED="1567430699933" MODIFIED="1567430702352">
+<node TEXT="is returned only from the co-simulation interface, if the slave executes the function in an asynchronous way. That means the slave starts to compute but returns immediately. The master has to call fmifmi2GetStatus(..., fmifmi2DoStepStatus) to determine, if the slave has finished the computation. Can be returned only by fmifmi2DoStep and by fmifmi2GetStatus" ID="ID_954267912" CREATED="1567430818987" MODIFIED="1567430818987"/>
+</node>
+</node>
+<node TEXT="Instanciate" ID="ID_656026141" CREATED="1567430851404" MODIFIED="1567430855198">
+<node TEXT="instanceName" ID="ID_935008803" CREATED="1567430857820" MODIFIED="1567430861544"/>
+<node TEXT="type" ID="ID_438489634" CREATED="1567430861960" MODIFIED="1567430867021"/>
+<node TEXT="GUID" ID="ID_1768022449" CREATED="1567430867445" MODIFIED="1567430869990"/>
+<node TEXT="ResourceLocation" ID="ID_945370623" CREATED="1567430870857" MODIFIED="1567430878265"/>
+<node TEXT="functions" ID="ID_1728433733" CREATED="1567430881068" MODIFIED="1567430888864"/>
+<node TEXT="visible" ID="ID_1245300955" CREATED="1567430892852" MODIFIED="1567430895313"/>
+<node TEXT="loggingOn" ID="ID_661134879" CREATED="1567430897410" MODIFIED="1567430902540"/>
+</node>
+<node TEXT="setupExperiment" ID="ID_6569394" CREATED="1567430945058" MODIFIED="1567430950208">
+<node TEXT="component" ID="ID_1447930805" CREATED="1567430951907" MODIFIED="1567430953745"/>
+<node TEXT="bool toleranceDefined" ID="ID_1657523750" CREATED="1567430954477" MODIFIED="1567430965421"/>
+<node TEXT="tolerance" ID="ID_347351053" CREATED="1567430966028" MODIFIED="1567430968364"/>
+<node TEXT="startTime" ID="ID_1558868593" CREATED="1567430968651" MODIFIED="1567430973537"/>
+<node TEXT="stopTimeDefined" ID="ID_1018038838" CREATED="1567430973777" MODIFIED="1567430978287"/>
+<node TEXT="stopTime" ID="ID_442779757" CREATED="1567430978551" MODIFIED="1567430980628"/>
+</node>
+<node TEXT="enterInitializationMode" ID="ID_988307172" CREATED="1567431079098" MODIFIED="1567431085789">
+<node TEXT="Informs the FMU to enter Initialization Mode. Before calling this function, all variables with attribute &lt;ScalarVariable initial = &quot;exact&quot; or &quot;approx&quot;&gt; can be set with the &#x201c;fmifmi2SetXXX&#x201d; functions (the ScalarVariable attributes are defined in the Model Description File, see section 2.2.7). Setting other variables is not allowed. Furthermore, fmifmi2SetupExperiment must be called at least once before calling fmifmi2EnterInitializationMode, in order that startTime is defined." ID="ID_462211129" CREATED="1567431095825" MODIFIED="1567431095825"/>
+</node>
+<node TEXT="exitInitializationMode" ID="ID_1866114088" CREATED="1567431050432" MODIFIED="1567431059031">
+<node TEXT="Informs the FMU to exit Initialization Mode. For fmuType = fmifmi2ModelExchange, this function switches off all initialization equations and the FMU enters implicitely Event Mode, that is all continuous-time and active discrete-time equations are available" ID="ID_1987023957" CREATED="1567431070775" MODIFIED="1567431070775"/>
+</node>
+<node TEXT="getState" ID="ID_732312517" CREATED="1567431175443" MODIFIED="1567431182475"/>
+<node TEXT="setState" ID="ID_1977240750" CREATED="1567431183990" MODIFIED="1567431208302"/>
+<node TEXT="freeState" ID="ID_434213934" CREATED="1567431209133" MODIFIED="1567431212125"/>
+<node TEXT="state" ID="ID_1883053387" CREATED="1567431242297" MODIFIED="1567431247739">
+<node TEXT="get" ID="ID_1423082360" CREATED="1567431248688" MODIFIED="1567431250400"/>
+<node TEXT="set" ID="ID_190592360" CREATED="1567431250652" MODIFIED="1567431251662"/>
+<node TEXT="free" ID="ID_1729394934" CREATED="1567431251999" MODIFIED="1567431253123"/>
+<node TEXT="serializedSize" ID="ID_1884391610" CREATED="1567431255030" MODIFIED="1567431271287"/>
+<node TEXT="serialized" ID="ID_453261529" CREATED="1567431358540" MODIFIED="1567431365531">
+<node TEXT="serialize()" ID="ID_921004065" CREATED="1567431259509" MODIFIED="1567431264731"/>
+</node>
+<node TEXT="deserialize" ID="ID_1292268899" CREATED="1567431288569" MODIFIED="1567431300755">
+<node TEXT="deserialize &apos;serialized&apos;of lenght size" ID="ID_1431956595" CREATED="1567431309735" MODIFIED="1567431356068"/>
+</node>
+</node>
+<node TEXT="getEventIndicators" ID="ID_1288180260" CREATED="1567450770714" MODIFIED="1567450781886"/>
+<node TEXT="modelDescription" ID="ID_1669465192" CREATED="1567431878231" MODIFIED="1567431886367">
+<node TEXT="version" ID="ID_1767097512" CREATED="1567431887964" MODIFIED="1567431889867"/>
+<node TEXT="name" ID="ID_1626351822" CREATED="1567431890145" MODIFIED="1567431891963"/>
+<node TEXT="guid" ID="ID_1377922306" CREATED="1567431892322" MODIFIED="1567431893237"/>
+<node TEXT="description" ID="ID_1729682273" CREATED="1567431894063" MODIFIED="1567431897258"/>
+<node TEXT="author" ID="ID_212291921" CREATED="1567431897592" MODIFIED="1567431898667"/>
+<node TEXT="fmiVersion" ID="ID_668234779" CREATED="1567431899106" MODIFIED="1567431906353"/>
+<node TEXT="copyright" ID="ID_994956678" CREATED="1567431907732" MODIFIED="1567431911203"/>
+<node TEXT="license" ID="ID_1150236309" CREATED="1567431911569" MODIFIED="1567431914534"/>
+<node TEXT="generationTool" ID="ID_1108372101" CREATED="1567431914991" MODIFIED="1567431920584"/>
+<node TEXT="generation" ID="ID_1752569889" CREATED="1567431921401" MODIFIED="1567431926141">
+<node TEXT="tool" ID="ID_451814590" CREATED="1567431926970" MODIFIED="1567431928084"/>
+<node TEXT="datetime" ID="ID_392094534" CREATED="1567431928447" MODIFIED="1567431932103"/>
+<node TEXT="variableNamingConvention" ID="ID_867131790" CREATED="1567431932659" MODIFIED="1567431948801"/>
+</node>
+<node TEXT="eventIndicators" ID="ID_517969518" CREATED="1567431953994" MODIFIED="1567431958340"/>
+</node>
+<node TEXT="logCategory" ID="ID_1611818671" CREATED="1567432083463" MODIFIED="1567432091214">
+<node TEXT="Events" ID="ID_1413824975" CREATED="1567432091518" MODIFIED="1567432194560"/>
+<node TEXT="SingularLinearSystems" ID="ID_661201561" CREATED="1567432093962" MODIFIED="1567432189504"/>
+<node TEXT="NonLinearSystems" ID="ID_266193797" CREATED="1567432102422" MODIFIED="1567432108388"/>
+<node TEXT="DynamicStateSelection" ID="ID_1540811097" CREATED="1567432109355" MODIFIED="1567432158356"/>
+<node TEXT="StatusDiscard" ID="ID_1047570730" CREATED="1567432159130" MODIFIED="1567432167434"/>
+<node TEXT="StatusFatal" ID="ID_578379529" CREATED="1567432167685" MODIFIED="1567508253190"/>
+<node TEXT="StatusPending" ID="ID_1463866163" CREATED="1567432172298" MODIFIED="1567432181185"/>
+<node TEXT="All" ID="ID_935272348" CREATED="1567432175645" MODIFIED="1567432177311"/>
+</node>
+<node TEXT="scalarVariable" ID="ID_264847500" CREATED="1567432229244" MODIFIED="1567432236718">
+<node TEXT="name" ID="ID_559334263" CREATED="1567432236980" MODIFIED="1567432237784"/>
+<node TEXT="valueReference" ID="ID_1258135552" CREATED="1567432238950" MODIFIED="1567432241399"/>
+<node TEXT="description" ID="ID_1378584776" CREATED="1567432241489" MODIFIED="1567432255917"/>
+<node TEXT="causality" ID="ID_1684181291" CREATED="1567432257597" MODIFIED="1567432262189">
+<node TEXT="parameter" ID="ID_221534144" CREATED="1567432268126" MODIFIED="1567432272848"/>
+<node TEXT="calculatedParameter" ID="ID_349324992" CREATED="1567432273216" MODIFIED="1567432280596"/>
+<node TEXT="input" ID="ID_1031090719" CREATED="1567432280816" MODIFIED="1567432282701"/>
+<node TEXT="output" ID="ID_1699914736" CREATED="1567432283163" MODIFIED="1567432284339"/>
+<node TEXT="local" ID="ID_1645127497" CREATED="1567432284836" MODIFIED="1567432287041"/>
+<node TEXT="independant" ID="ID_1202891977" CREATED="1567432287302" MODIFIED="1567432290639"/>
+</node>
+<node TEXT="variability" ID="ID_1939083366" CREATED="1567432291962" MODIFIED="1567432295246">
+<node TEXT="constant" ID="ID_331174326" CREATED="1567432295599" MODIFIED="1567432300277"/>
+<node TEXT="fixed" ID="ID_86662974" CREATED="1567432300554" MODIFIED="1567432310408"/>
+<node TEXT="tunable" ID="ID_1710665972" CREATED="1567432311713" MODIFIED="1567432313580"/>
+<node TEXT="discrete" ID="ID_1615262978" CREATED="1567432313980" MODIFIED="1567432315878"/>
+<node TEXT="continuous" ID="ID_1684842570" CREATED="1567432316156" MODIFIED="1567432318725"/>
+</node>
+<node TEXT="initial" ID="ID_775539238" CREATED="1567432322052" MODIFIED="1567432324056">
+<node TEXT="exact" ID="ID_1424755517" CREATED="1567432324397" MODIFIED="1567432326217"/>
+<node TEXT="approx" ID="ID_512039114" CREATED="1567432326444" MODIFIED="1567432328508"/>
+<node TEXT="calculated" ID="ID_1412979433" CREATED="1567432328865" MODIFIED="1567432332317"/>
+</node>
+</node>
+<node TEXT="modelStructure" ID="ID_267313741" CREATED="1567435820076" MODIFIED="1567435824798">
+<node TEXT="Outputs" ID="ID_1302619541" CREATED="1567435825388" MODIFIED="1567435827493"/>
+<node TEXT="Derivatives" ID="ID_1955912123" CREATED="1567435827831" MODIFIED="1567435830680"/>
+<node TEXT="InitialUnkowns" ID="ID_628856999" CREATED="1567435831324" MODIFIED="1567435842944"/>
+<node TEXT="Unknown" ID="ID_1743857369" CREATED="1567435861118" MODIFIED="1567435877108">
+<node TEXT="dependencies" ID="ID_1259007687" CREATED="1567435877372" MODIFIED="1567435881418"/>
+<node TEXT="dependenciesKind" ID="ID_188358409" CREATED="1567435881796" MODIFIED="1567435891153">
+<node TEXT="dependent" ID="ID_1956606432" CREATED="1567435893442" MODIFIED="1567435912575">
+<node TEXT="no particular structure, &#x210e;(..,&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56;,..)" ID="ID_1160795450" CREATED="1567507444391" MODIFIED="1567507444391"/>
+</node>
+<node TEXT="constant" ID="ID_1382378377" CREATED="1567435912951" MODIFIED="1567435914623">
+<node TEXT="Only for Real unknowns" ID="ID_176428603" CREATED="1567507500681" MODIFIED="1567507500681"/>
+<node TEXT="constant factor" ID="ID_166377470" CREATED="1567507543902" MODIFIED="1567507543902"/>
+</node>
+<node TEXT="fixed" ID="ID_695314186" CREATED="1567435914819" MODIFIED="1567435916491">
+<node TEXT="fixed factor, &#xd835;&#xdc5d;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc5d; is an expression that is evaluated before fmifmi2ExitInitializationMode is called." ID="ID_1828290145" CREATED="1567507576116" MODIFIED="1567507576116"/>
+</node>
+<node TEXT="tunable" ID="ID_697520236" CREATED="1567435916853" MODIFIED="1567435918532">
+<node TEXT="tunable factor, &#xd835;&#xdc5d;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc5d; is an expression that is evaluated before fmifmi2ExitInitializationMode is called and in Event Mode due to an external event (ModelExchange) or at a Communication Point (CoSimulation)" ID="ID_1825650321" CREATED="1567507589592" MODIFIED="1567507589592"/>
+</node>
+<node TEXT="discrete" ID="ID_1611872220" CREATED="1567435918880" MODIFIED="1567435921440">
+<node TEXT="discrete factor, &#xd835;&#xdc51;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc51; is an expression that is evaluated before fmifmi2ExitInitializationMode is called and in Event Mode due to an external or internal event or at a Communication Point (CoSimulation)." ID="ID_1307153158" CREATED="1567507684362" MODIFIED="1567507686118"/>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="mode" ID="ID_95593780" CREATED="1567450159400" MODIFIED="1567450163922">
+<node TEXT="initialization" ID="ID_579629071" CREATED="1567450164131" MODIFIED="1567450169406">
+<node TEXT="This mode is used to compute at the start time &#xd835;&#xdc61;0 initial values for continuous-time states, &#xd835;&#xdc31;&#xd835;&#xdc50;(&#xd835;&#xdc61;0), and for the previous (internal) discrete-time states, &#xd835;&#xdc31; &#x25cf;&#xd835;&#xdc51;(&#xd835;&#xdc61;0) , by utilizing extra equations not present in the other modes (for example equations to define the start value for a state or for the derivative of a state)." ID="ID_1696147492" CREATED="1567450190905" MODIFIED="1567450190905"/>
+</node>
+<node TEXT="continuous-time" ID="ID_478539081" CREATED="1567450169725" MODIFIED="1567450176666">
+<node TEXT="This mode is used to compute the values of all (real) continuous-time variables between events by numerically solving ordinary differential and algebraic equations. All discrete-time variables are fixed during this phase and the corresponding discrete-time equations are not evaluated." ID="ID_343305885" CREATED="1567450202201" MODIFIED="1567450202201"/>
+</node>
+<node TEXT="event mode" ID="ID_1481847711" CREATED="1567450177746" MODIFIED="1567450180882">
+<node TEXT="This mode is used to compute new values for all continuous-time variables, as well as for all discrete-time variables that are activated at the current event instant &#xd835;&#xdc61;, given the values of the variables from the previous instant&#xd835;&#xdc61; &#x2022;. This is performed by solving algebraic equations consisting of all continuous-time and all active discrete-time equations. In FMI 2.0 there is no mechanism that the FMU can provide the information whether a discrete-time variable is active or is not active (is not computed) at an event instant. Therefore, the environment has to assume that at an event instant always all discrete-time variables are computed, although internally in the FMU only a subset might be newly computed." ID="ID_625890264" CREATED="1567450215981" MODIFIED="1567450215981"/>
+</node>
+</node>
+</node>
 <node TEXT="RULE" POSITION="left" ID="ID_1472485660" CREATED="1561806490260" MODIFIED="1561806493063">
 <edge COLOR="#007c00"/>
 <node TEXT="class attributes" ID="ID_1289278252" CREATED="1561806493745" MODIFIED="1561806502171">
@@ -2041,6 +2224,551 @@
 </node>
 <node TEXT="$" ID="ID_1972541974" CREATED="1561806568757" MODIFIED="1561806572716">
 <node TEXT="comment or uri" ID="ID_510430760" CREATED="1561806574031" MODIFIED="1561806582289"/>
+</node>
+</node>
+<node TEXT="to add / modify" POSITION="right" ID="ID_519374594" CREATED="1567508200042" MODIFIED="1567510563263">
+<edge COLOR="#00007c"/>
+<node TEXT="initialization" ID="ID_1696874430" CREATED="1567510377438" MODIFIED="1567510380486">
+<node TEXT="pre" ID="ID_100054869" CREATED="1567510380739" MODIFIED="1567510381579"/>
+<node TEXT="post" ID="ID_472373736" CREATED="1567510381876" MODIFIED="1567510383022"/>
+</node>
+<node TEXT="add __iadd__ and __isub__ to arraywrapper" ID="ID_1398498497" CREATED="1567433801617" MODIFIED="1567433815749"/>
+<node TEXT="make it resilient to complex canonical names" ID="ID_388702497" CREATED="1567424574752" MODIFIED="1567424595635">
+<node TEXT="this.variables.coucou.unit" ID="ID_1454067418" CREATED="1567424595926" MODIFIED="1567424618823"/>
+</node>
+<node TEXT="properties level" ID="ID_443070065" CREATED="1567510881381" MODIFIED="1567510886742">
+<node TEXT="default" ID="ID_1553714139" CREATED="1567175434612" MODIFIED="1567175436269">
+<node TEXT="getter" ID="ID_1601526812" CREATED="1567421500997" MODIFIED="1567421509228"/>
+<node TEXT="setter" ID="ID_318133146" CREATED="1567421509551" MODIFIED="1567421511203">
+<node TEXT="set_prop_default" ID="ID_1271124127" CREATED="1567421648479" MODIFIED="1567421675042">
+<node TEXT="lazy_data.setdefault(...)" ID="ID_374103265" CREATED="1567421675865" MODIFIED="1567421712109"/>
+</node>
+</node>
+<node TEXT="lazy" ID="ID_1294400586" CREATED="1567349509362" MODIFIED="1567349517103">
+<node TEXT="default" ID="ID_1234555235" CREATED="1567351242067" MODIFIED="1567351244265"/>
+</node>
+</node>
+<node TEXT="exec" ID="ID_928948922" CREATED="1567421542530" MODIFIED="1567510593318">
+<node TEXT="getter/setter" ID="ID_1194389498" CREATED="1567421552778" MODIFIED="1567510697271">
+<node TEXT="get_xxxx" ID="ID_356389095" CREATED="1567421567203" MODIFIED="1567421573031"/>
+<node TEXT="set_xxxx" ID="ID_295560963" CREATED="1567421574515" MODIFIED="1567421579286"/>
+</node>
+<node TEXT="formatting" ID="ID_1303152769" CREATED="1567175436697" MODIFIED="1567175438523">
+<node TEXT="templating" ID="ID_1788849842" CREATED="1567349453714" MODIFIED="1567349487582"/>
+<node TEXT="dependencies" ID="ID_1322641175" CREATED="1567349488150" MODIFIED="1567349491472"/>
+</node>
+</node>
+<node TEXT="cache" ID="ID_370378295" CREATED="1567510597565" MODIFIED="1567510599705">
+<node TEXT="._xxxx" ID="ID_1809004882" CREATED="1567510607967" MODIFIED="1567510613836"/>
+</node>
+<node TEXT="storage" ID="ID_1514432236" CREATED="1567510658101" MODIFIED="1567510659890">
+<node TEXT="properties" ID="ID_1913508183" CREATED="1567349517932" MODIFIED="1567351220668">
+<node TEXT="extended properties" ID="ID_1261849294" CREATED="1567351254947" MODIFIED="1567351263790"/>
+</node>
+</node>
+<node TEXT="cache" ID="ID_736559273" CREATED="1567175626071" MODIFIED="1567175627632">
+<node TEXT="getter" ID="ID_68565867" CREATED="1567421500997" MODIFIED="1567421509228">
+<node TEXT="[]" ID="ID_441534409" CREATED="1567422060470" MODIFIED="1567422064373"/>
+<node TEXT=".get(" ID="ID_946291431" CREATED="1567422064712" MODIFIED="1567422068743"/>
+<node TEXT=".xxxxx" ID="ID_689018906" CREATED="1567422069761" MODIFIED="1567422075743"/>
+<node TEXT="for_json" ID="ID_190557461" CREATED="1567422538757" MODIFIED="1567422541952"/>
+</node>
+<node TEXT="setter" ID="ID_828251028" CREATED="1567421509551" MODIFIED="1567421511203">
+<node TEXT="[]" ID="ID_694458329" CREATED="1567422060470" MODIFIED="1567422064373"/>
+<node TEXT=".set(" ID="ID_547542651" CREATED="1567422064712" MODIFIED="1567422084523"/>
+<node TEXT=".xxxxx" ID="ID_510748636" CREATED="1567422069761" MODIFIED="1567422075743"/>
+</node>
+<node TEXT="invalidation" ID="ID_1206889960" CREATED="1567422097772" MODIFIED="1567422101278">
+<node TEXT="self.__dependencies__" ID="ID_1654858070" CREATED="1567422763079" MODIFIED="1567422765225"/>
+<node TEXT=".touch(" ID="ID_768916114" CREATED="1567422101447" MODIFIED="1567422107078"/>
+</node>
+</node>
+<node TEXT="when i m a user getting a property, i only set the lazy_data of the property" ID="ID_1484223647" CREATED="1567175510519" MODIFIED="1567175583965"/>
+<node TEXT="levels" ID="ID_399364856" CREATED="1567349506308" MODIFIED="1567349509016">
+<node TEXT="properties" ID="ID_566521720" CREATED="1567349517932" MODIFIED="1567351220668">
+<node TEXT="extended properties" ID="ID_1973558870" CREATED="1567351254947" MODIFIED="1567351263790"/>
+</node>
+<node TEXT="formatted/evaluated" ID="ID_150566233" CREATED="1567351221089" MODIFIED="1567351231722"/>
+</node>
+<node TEXT="get_prop_value" ID="ID_1439836493" CREATED="1567423990727" MODIFIED="1567423997060"/>
+<node TEXT="set_prop_value" ID="ID_99754812" CREATED="1567423997370" MODIFIED="1567424000412"/>
+<node TEXT="pseudo_literal" ID="ID_1356662825" CREATED="1567424109782" MODIFIED="1567424114374">
+<node TEXT="_prop" ID="ID_235691359" CREATED="1567424192509" MODIFIED="1567424194466">
+<node TEXT="" ID="ID_1658890432" CREATED="1567424196443" MODIFIED="1567424196443"/>
+</node>
+<node TEXT="_prop_value" ID="ID_1433125705" CREATED="1567424212823" MODIFIED="1567424216417"/>
+<node TEXT="pseudo_literal.__prop_value" ID="ID_1478701417" CREATED="1567424002439" MODIFIED="1567424012794"/>
+<node TEXT="_output_props" ID="ID_1676278966" CREATED="1567424122495" MODIFIED="1567424136819">
+<node TEXT="does it make sense" ID="ID_1589906712" CREATED="1567424137258" MODIFIED="1567424144558"/>
+<node TEXT="kind of, we don t take the value, just the prop..." ID="ID_845264565" CREATED="1567424368475" MODIFIED="1567424381696"/>
+<node TEXT="bof" ID="ID_857175815" CREATED="1567424387436" MODIFIED="1567424388645"/>
+</node>
+<node TEXT="_input_props" ID="ID_866531359" CREATED="1567424148509" MODIFIED="1567424153521"/>
+<node TEXT="_input_values" ID="ID_1544435668" CREATED="1567424391658" MODIFIED="1567424406003"/>
+</node>
+</node>
+<node TEXT="revoir" ID="ID_90482449" CREATED="1567175428945" MODIFIED="1567175434158">
+<node TEXT="prop" ID="ID_1220149057" CREATED="1567423259945" MODIFIED="1567423266941">
+<node TEXT="list" ID="ID_1564632227" CREATED="1567423267269" MODIFIED="1567423269167"/>
+<node TEXT="defined" ID="ID_728619771" CREATED="1567423271964" MODIFIED="1567423273982"/>
+</node>
+<node TEXT="make a test case" ID="ID_64821858" CREATED="1567424635936" MODIFIED="1567537469466">
+<node TEXT="" ID="ID_638562038" CREATED="1567424641967" MODIFIED="1567424641967"/>
+</node>
+<node TEXT="mixins" ID="ID_1142884977" CREATED="1567535758948" MODIFIED="1567535763572">
+<node TEXT="HasDefault" ID="ID_735951935" CREATED="1567537432656" MODIFIED="1567537477560">
+<icon BUILTIN="help"/>
+</node>
+<node TEXT="HasUid" ID="ID_642455532" CREATED="1567537585445" MODIFIED="1567537588216">
+<node TEXT="HasCanonicalName" ID="ID_1064054498" CREATED="1567541796130" MODIFIED="1567541819298"/>
+<node TEXT="HasFlatName" ID="ID_1949897796" CREATED="1567544436944" MODIFIED="1567544475425"/>
+<node TEXT="HasPrimaryKey" ID="ID_1655698445" CREATED="1567544476152" MODIFIED="1567545385800"/>
+</node>
+<node TEXT="HasTemplating" ID="ID_1940448892" CREATED="1567535802306" MODIFIED="1567535888077">
+<node TEXT="context" ID="ID_1081698952" CREATED="1567537504147" MODIFIED="1567537506471"/>
+</node>
+<node TEXT="HasCache" ID="ID_720304730" CREATED="1567535764280" MODIFIED="1567535766863">
+<node TEXT="for" ID="ID_825367352" CREATED="1567535767137" MODIFIED="1567535772459">
+<node TEXT="ArrayWrapper" ID="ID_1952596199" CREATED="1567535772626" MODIFIED="1567535779209"/>
+<node TEXT="LiteralValue" ID="ID_81178759" CREATED="1567535779858" MODIFIED="1567535782967"/>
+<node TEXT="ProtocolBase" ID="ID_1018044049" CREATED="1567537401925" MODIFIED="1567537406559"/>
+</node>
+<node TEXT="touch" ID="ID_771513393" CREATED="1567536914383" MODIFIED="1567536916671">
+<node TEXT="update the property" ID="ID_784448467" CREATED="1567537407544" MODIFIED="1567537421992"/>
+<node TEXT="update all properties" ID="ID_1911250477" CREATED="1567537422292" MODIFIED="1567537427894"/>
+</node>
+<node TEXT="context" ID="ID_1945598100" CREATED="1567537512221" MODIFIED="1567537514307"/>
+<node TEXT="inputs" ID="ID_1955557162" CREATED="1567537515311" MODIFIED="1567537518091"/>
+</node>
+<node TEXT="HasParent" FOLDED="true" ID="ID_598821059" CREATED="1567536009631" MODIFIED="1567536016392">
+<node TEXT="touch_children" ID="ID_1830340070" CREATED="1567536927593" MODIFIED="1567536932905"/>
+</node>
+<node TEXT="HasDependencies" ID="ID_1816858432" CREATED="1567536022426" MODIFIED="1567536149262">
+<node TEXT="Dependency" ID="ID_430967422" CREATED="1567536992223" MODIFIED="1567536997092">
+<node TEXT="dependenciesKind" ID="ID_1762304112" CREATED="1567435881796" MODIFIED="1567435891153">
+<node TEXT="dependent" ID="ID_243517470" CREATED="1567435893442" MODIFIED="1567435912575">
+<node TEXT="no particular structure, &#x210e;(..,&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56;,..)" ID="ID_1416580842" CREATED="1567507444391" MODIFIED="1567507444391"/>
+</node>
+<node TEXT="constant" ID="ID_1447942032" CREATED="1567435912951" MODIFIED="1567435914623">
+<node TEXT="Only for Real unknowns" ID="ID_287151668" CREATED="1567507500681" MODIFIED="1567507500681"/>
+<node TEXT="constant factor" ID="ID_305923319" CREATED="1567507543902" MODIFIED="1567507543902"/>
+</node>
+<node TEXT="fixed" ID="ID_1877260848" CREATED="1567435914819" MODIFIED="1567435916491">
+<node TEXT="fixed factor, &#xd835;&#xdc5d;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc5d; is an expression that is evaluated before fmifmi2ExitInitializationMode is called." ID="ID_380218894" CREATED="1567507576116" MODIFIED="1567507576116"/>
+</node>
+<node TEXT="tunable" ID="ID_717806178" CREATED="1567435916853" MODIFIED="1567435918532">
+<node TEXT="tunable factor, &#xd835;&#xdc5d;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc5d; is an expression that is evaluated before fmifmi2ExitInitializationMode is called and in Event Mode due to an external event (ModelExchange) or at a Communication Point (CoSimulation)" ID="ID_1762576173" CREATED="1567507589592" MODIFIED="1567507589592"/>
+</node>
+<node TEXT="discrete" ID="ID_1082214309" CREATED="1567435918880" MODIFIED="1567435921440">
+<node TEXT="discrete factor, &#xd835;&#xdc51;&#x2219;&#xd835;&#xdc63;&#xd835;&#xdc58;&#xd835;&#xdc5b;&#xd835;&#xdc5c;&#xd835;&#xdc64;&#xd835;&#xdc5b;,&#xd835;&#xdc56; where &#xd835;&#xdc51; is an expression that is evaluated before fmifmi2ExitInitializationMode is called and in Event Mode due to an external or internal event or at a Communication Point (CoSimulation)." ID="ID_1459666758" CREATED="1567507684362" MODIFIED="1567507686118"/>
+</node>
+</node>
+</node>
+</node>
+<node TEXT="HasInit??" ID="ID_586546529" CREATED="1567536207694" MODIFIED="1567585028557">
+<icon BUILTIN="button_ok"/>
+<node TEXT="PreInit" ID="ID_1724483632" CREATED="1567536315020" MODIFIED="1567536317970">
+<node TEXT="pre_init_hook" ID="ID_12247677" CREATED="1567585032000" MODIFIED="1567585039484"/>
+</node>
+<node TEXT="PostInit" ID="ID_1674386870" CREATED="1567536318738" MODIFIED="1567536321971">
+<node TEXT="post_init_hook" ID="ID_1798530382" CREATED="1567585032000" MODIFIED="1567585046758"/>
+</node>
+<node TEXT="https://stackoverflow.com/questions/795190/how-to-perform-common-post-initialization-tasks-in-inherited-python-classes" ID="ID_584144107" CREATED="1567536460566" MODIFIED="1567536460566" LINK="https://stackoverflow.com/questions/795190/how-to-perform-common-post-initialization-tasks-in-inherited-python-classes"/>
+</node>
+<node TEXT="HasEvent" ID="ID_1874510657" CREATED="1567536461644" MODIFIED="1567606940105">
+<icon BUILTIN="help"/>
+<node TEXT="EventInfo" ID="ID_826598276" CREATED="1567536795516" MODIFIED="1567536799749">
+<node TEXT="fmifmi2Boolean newDiscreteStatesNeeded;&#xd;fmifmi2Boolean terminateSimulation;&#xd;fmifmi2Boolean nominalsOfContinuousStatesChanged;&#xd;fmifmi2Boolean valuesOfContinuousStatesChanged;&#xd;fmifmi2Boolean nextEventTimeDefined;&#xd;fmifmi2Real nextEventTime;" ID="ID_1206953631" CREATED="1567537115243" MODIFIED="1567537115243"/>
+</node>
+<node TEXT="event handling" ID="ID_588838315" CREATED="1567510383534" MODIFIED="1567510392113">
+<node TEXT="discontinuity" ID="ID_178258121" CREATED="1567510392542" MODIFIED="1567510457470"/>
+<node TEXT="event indicator" ID="ID_72404677" CREATED="1567510465898" MODIFIED="1567510469789"/>
+<node TEXT="USE A MIXIN" ID="ID_1222778028" CREATED="1567510478983" MODIFIED="1567510484197"/>
+<node TEXT="pydispatcher" ID="ID_1902820242" CREATED="1567434118021" MODIFIED="1567434138023">
+<node TEXT="http://pydispatcher.sourceforge.net/" ID="ID_1727772657" CREATED="1567434107089" MODIFIED="1567434107089" LINK="http://pydispatcher.sourceforge.net/"/>
+<node TEXT="http://pydispatcher.sourceforge.net/pydoc/pydispatch.dispatcher.html" ID="ID_46218784" CREATED="1567434115782" MODIFIED="1567434115782" LINK="http://pydispatcher.sourceforge.net/pydoc/pydispatch.dispatcher.html"/>
+<node TEXT="http://code.activestate.com/recipes/87056/" ID="ID_705207133" CREATED="1567434135192" MODIFIED="1567434135192" LINK="http://code.activestate.com/recipes/87056/"/>
+</node>
+<node TEXT="dispatcher" ID="ID_1847520408" CREATED="1567602472879" MODIFIED="1567602478291">
+<node TEXT="connect" ID="ID_963828509" CREATED="1567602478557" MODIFIED="1567602480487">
+<node TEXT="handler_function" ID="ID_1320433032" CREATED="1567602480754" MODIFIED="1567602562113"/>
+<node TEXT="signal_name" ID="ID_58718988" CREATED="1567602487102" MODIFIED="1567602494645"/>
+<node TEXT="sender" ID="ID_980349779" CREATED="1567602494934" MODIFIED="1567602498674"/>
+</node>
+<node TEXT="send" ID="ID_1309057307" CREATED="1567602499804" MODIFIED="1567602501192"/>
+<node TEXT="handler_function" ID="ID_930762454" CREATED="1567602502856" MODIFIED="1567602599474">
+<node TEXT="sender=None" ID="ID_1070791013" CREATED="1567602599648" MODIFIED="1567602627667"/>
+<node TEXT="signal=None" ID="ID_702720073" CREATED="1567602601084" MODIFIED="1567602631209"/>
+<node TEXT="args" ID="ID_1590961336" CREATED="1567602636827" MODIFIED="1567602638928"/>
+<node TEXT="kwargs" ID="ID_1777481216" CREATED="1567602632145" MODIFIED="1567602635138"/>
+</node>
+</node>
+</node>
+<node TEXT="signals" ID="ID_1843721823" CREATED="1567603039637" MODIFIED="1567603042368">
+<node TEXT="new-discrete-states-needed" ID="ID_190548163" CREATED="1567602914944" MODIFIED="1567602980366"/>
+<node TEXT="terminate-simulation" ID="ID_159934584" CREATED="1567602962717" MODIFIED="1567602969079"/>
+<node TEXT="nominals-of-continuous-states-changed" ID="ID_316821648" CREATED="1567602982492" MODIFIED="1567603002066">
+<node TEXT="fmi2GetNominalsOfContinuousStates" ID="ID_1178083177" CREATED="1567606354566" MODIFIED="1567606354566">
+<node TEXT="c" ID="ID_1684254421" CREATED="1567606322851" MODIFIED="1567606324269"/>
+<node TEXT="x[]" ID="ID_1205048072" CREATED="1567606324646" MODIFIED="1567606327585"/>
+<node TEXT="nx" ID="ID_1102227135" CREATED="1567606328289" MODIFIED="1567606329786"/>
+<node TEXT="This function should always be called after calling function fmi2NewDiscreteStates if it returns with eventInfo-&gt; nominalsOfContinuousStatesChanged" ID="ID_1059471110" CREATED="1567606565445" MODIFIED="1567606573691"/>
+</node>
+</node>
+<node TEXT="values-of-continuous-states-changed" ID="ID_718520471" CREATED="1567603002479" MODIFIED="1567603017669">
+<node TEXT="fmi2GetContinuousStates" ID="ID_1790107407" CREATED="1567606314696" MODIFIED="1567606314696">
+<node TEXT="c" ID="ID_1592077134" CREATED="1567606322851" MODIFIED="1567606324269"/>
+<node TEXT="x[]" ID="ID_1190039551" CREATED="1567606324646" MODIFIED="1567606327585"/>
+<node TEXT="nx" ID="ID_1776658371" CREATED="1567606328289" MODIFIED="1567606329786"/>
+</node>
+</node>
+<node TEXT="next-event-time-defined" ID="ID_1657606701" CREATED="1567603018493" MODIFIED="1567603025712"/>
+<node TEXT="nextEventTime" ID="ID_1366435509" CREATED="1567603026200" MODIFIED="1567606245724"/>
+</node>
+</node>
+<node TEXT="FmiModel" FOLDED="true" ID="ID_1634804293" CREATED="1567606413106" MODIFIED="1567606931087">
+<icon BUILTIN="messagebox_warning"/>
+<node TEXT="fmi2EnterEventMode" ID="ID_285268215" CREATED="1567606704419" MODIFIED="1567606704937">
+<node TEXT="The model enters Event Mode from the Continuous-Time Mode and discrete-time equations may become active (and relations are not &#x201c;frozen&#x201d;)." ID="ID_1040124511" CREATED="1567606724734" MODIFIED="1567606724734"/>
+</node>
+<node TEXT="fmi2NewDiscreteStates" ID="ID_1243059597" CREATED="1567606747207" MODIFIED="1567606747701">
+<node TEXT="c" ID="ID_1379872773" CREATED="1567606751529" MODIFIED="1567606752538"/>
+<node TEXT="EventInfo" ID="ID_723154247" CREATED="1567606752842" MODIFIED="1567606763479"/>
+<node TEXT="The FMU is in Event Mode and the super dense time is incremented by this call.&#xd;If the super dense time before a call to fmifmi2NewDiscreteStates was (tR,tI) then the time instant after the call is (tR,tI+1)." ID="ID_929537615" CREATED="1567606794531" MODIFIED="1567606796378"/>
+</node>
+<node TEXT="fmi2GetDerivatives" ID="ID_633340641" CREATED="1567606429159" MODIFIED="1567606429159">
+<node TEXT="c" ID="ID_801895772" CREATED="1567606441909" MODIFIED="1567606442905"/>
+<node TEXT="derivatives" ID="ID_1656284495" CREATED="1567606443592" MODIFIED="1567606447783"/>
+<node TEXT="nx" ID="ID_246310154" CREATED="1567606465511" MODIFIED="1567606469179"/>
+</node>
+<node TEXT="fmi2GetEventIndicators" ID="ID_690386599" CREATED="1567606440181" MODIFIED="1567606440181">
+<node TEXT="c" ID="ID_1455392268" CREATED="1567606449152" MODIFIED="1567606450149"/>
+<node TEXT="eventIndicators" ID="ID_202144324" CREATED="1567606450486" MODIFIED="1567606458622">
+<node TEXT="The FMU must guarantee that at an event restart zj &#x2260; 0, for example by shifting zj with a small value. Furthermore, zj should be scaled in the FMU with its nominal value (so all elements of the returned vector &#x201c;eventIndicators&#x201d; should be in the order of &#x201c;one&#x201d;). The event indicators are returned as a vector with &#x201c;ni&#x201d; elements." ID="ID_534440318" CREATED="1567606514979" MODIFIED="1567606514979"/>
+</node>
+<node TEXT="ni" ID="ID_1986041906" CREATED="1567606458935" MODIFIED="1567606461489"/>
+</node>
+<node TEXT="fmi2EnterContinuousTimeMode" ID="ID_741760949" CREATED="1567606638715" MODIFIED="1567606641502">
+<node TEXT="The model enters Continuous-Time Mode and all discrete-time equations become inactive and all relations are &#x201c;frozen&#x201d;.&#xd;This function has to be called when changing from Event Mode (after the global event iteration in Event Mode over all involved FMUs and other models has converged) into Continuous-Time Mode." ID="ID_1261084367" CREATED="1567606672798" MODIFIED="1567606672798"/>
+</node>
+</node>
+</node>
+<node TEXT="class" ID="ID_1173725939" CREATED="1567535806518" MODIFIED="1567535807710">
+<node TEXT="CanonicalName" ID="ID_245795914" CREATED="1567535808453" MODIFIED="1567535821151">
+<node TEXT="Token" ID="ID_1808506935" CREATED="1567535824334" MODIFIED="1567535828360"/>
+</node>
+<node TEXT="ProtocolBase" ID="ID_1184734788" CREATED="1567536908948" MODIFIED="1567536913426"/>
+</node>
+<node TEXT="Builder" ID="ID_813032632" CREATED="1567896191505" MODIFIED="1567896193412">
+<node TEXT="tout ce qui concerne les references interclasses (cn, fmi_id, flatname) must be resolved in the builder" ID="ID_281371436" CREATED="1567754323712" MODIFIED="1567896039145"/>
+<node TEXT="and  all classes created from a builder must know its builder" ID="ID_912953082" CREATED="1567896041078" MODIFIED="1567896105304"/>
+<node TEXT="name_convention" ID="ID_262152688" CREATED="1567906423802" MODIFIED="1567906431842"/>
+</node>
+<node TEXT="Model vs Schema" ID="ID_1858255028" CREATED="1567944060432" MODIFIED="1567944064749">
+<node TEXT="Model needs Schema" ID="ID_1315666004" CREATED="1567944065067" MODIFIED="1567944069531"/>
+<node TEXT="Schema has no link to models" ID="ID_1643033742" CREATED="1567944069987" MODIFIED="1567944080853"/>
+</node>
+<node TEXT="ProtocolBase" ID="ID_1393966635" CREATED="1567907833602" MODIFIED="1567907839598">
+<node TEXT="&apos;=DeclarativeBase" ID="ID_151162078" CREATED="1567895486051" MODIFIED="1567946734541"/>
+<node TEXT="builder" ID="ID_282834951" CREATED="1567895498175" MODIFIED="1567896458101">
+<icon BUILTIN="help"/>
+</node>
+<node TEXT="create_all" ID="ID_1719892141" CREATED="1567895513157" MODIFIED="1567895518304">
+<node TEXT="engine" ID="ID_1057806651" CREATED="1567895510247" MODIFIED="1567895512255"/>
+</node>
+<node TEXT="RelationShip" ID="ID_823009920" CREATED="1567542117060" MODIFIED="1567542127967"/>
+<node TEXT="ForeignKey" ID="ID_170773118" CREATED="1567542099749" MODIFIED="1567542104438">
+<node TEXT="LiteralValue" ID="ID_941423526" CREATED="1567542107329" MODIFIED="1567542116316"/>
+<node TEXT="declarativeBase" ID="ID_1772804035" CREATED="1567906464067" MODIFIED="1567906593664"/>
+</node>
+<node TEXT="create_all" ID="ID_989893004" CREATED="1567907902920" MODIFIED="1567907913057">
+<node TEXT="engine" ID="ID_245759715" CREATED="1567907913291" MODIFIED="1567907915247"/>
+<node TEXT="builder" ID="ID_1250379934" CREATED="1567907915549" MODIFIED="1567907917433"/>
+</node>
+</node>
+<node TEXT="Session" ID="ID_285761345" CREATED="1567705642050" MODIFIED="1567705644101">
+<node TEXT="serializers" ID="ID_1160772558" CREATED="1567706405742" MODIFIED="1567896224462"/>
+<node TEXT="engines" ID="ID_12850396" CREATED="1567908396665" MODIFIED="1567908402101"/>
+<node TEXT="actions" ID="ID_1815910823" CREATED="1567706412318" MODIFIED="1567754333642">
+<node TEXT="commit" ID="ID_1314384639" CREATED="1567754333922" MODIFIED="1567754337511">
+<node TEXT="serialize" ID="ID_1221698836" CREATED="1567754364272" MODIFIED="1567754369283">
+<node TEXT="?" ID="ID_1304993707" CREATED="1567754377273" MODIFIED="1567754379666"/>
+</node>
+</node>
+<node TEXT="query" ID="ID_122660217" CREATED="1567754337729" MODIFIED="1567754344768"/>
+<node TEXT="db" ID="ID_1093343975" CREATED="1567754358729" MODIFIED="1567754363880"/>
+<node TEXT="add" ID="ID_890375576" CREATED="1567895424228" MODIFIED="1567895424987"/>
+<node TEXT="configure" ID="ID_1760561900" CREATED="1567895473770" MODIFIED="1567895476404">
+<node TEXT="bind" ID="ID_1916065510" CREATED="1567895477032" MODIFIED="1567895479573"/>
+</node>
+</node>
+<node TEXT="session keeps instances" ID="ID_1735517951" CREATED="1567896166887" MODIFIED="1567896177246"/>
+<node TEXT="identityMap" ID="ID_1182921382" CREATED="1568025746160" MODIFIED="1568025751020">
+<node TEXT="https://martinfowler.com/eaaCatalog/identityMap.html" ID="ID_1198691103" CREATED="1568025741423" MODIFIED="1568025741423" LINK="https://martinfowler.com/eaaCatalog/identityMap.html"/>
+</node>
+<node TEXT="https://docs.sqlalchemy.org/en/13/orm/session_basics.html" ID="ID_1256581821" CREATED="1568025796154" MODIFIED="1568025796154" LINK="https://docs.sqlalchemy.org/en/13/orm/session_basics.html"/>
+<node TEXT="session keep tracks of active objects" ID="ID_1319148136" CREATED="1568127387481" MODIFIED="1568127400686">
+<node TEXT="where they come from" ID="ID_1254193832" CREATED="1568127401131" MODIFIED="1568127409110">
+<node TEXT="binder" ID="ID_1891413568" CREATED="1568127411997" MODIFIED="1568127414210"/>
+</node>
+<node TEXT="allow to query" ID="ID_897882410" CREATED="1568127415557" MODIFIED="1568127428271"/>
+<node TEXT="" ID="ID_1624278735" CREATED="1568127431769" MODIFIED="1568127431769"/>
+</node>
+</node>
+<node TEXT="PackageLoader" ID="ID_1015252795" CREATED="1567936366600" MODIFIED="1567936391802">
+<node TEXT="SchemaLoader" ID="ID_1813392100" CREATED="1567936377795" MODIFIED="1567936407045"/>
+<node TEXT="ModelLoader" ID="ID_888309409" CREATED="1567936935576" MODIFIED="1567936939336">
+<node TEXT="ModelFactory" ID="ID_834565531" CREATED="1567936935576" MODIFIED="1567953649197"/>
+<node TEXT="&apos;=Session?" ID="ID_413975219" CREATED="1567953738854" MODIFIED="1567953746723"/>
+</node>
+<node TEXT="packages" ID="ID_892856767" CREATED="1567953801935" MODIFIED="1567953804336"/>
+<node TEXT="components" ID="ID_282814276" CREATED="1567953804665" MODIFIED="1567953808326"/>
+</node>
+<node TEXT="Loader" ID="ID_342384282" CREATED="1567958030002" MODIFIED="1567958033101">
+<node TEXT="create" ID="ID_119856223" CREATED="1567958085506" MODIFIED="1567958200553"/>
+<node TEXT="load_from_document" ID="ID_1430747608" CREATED="1567958033561" MODIFIED="1567958040447"/>
+<node TEXT="load_from_uri" ID="ID_1857020858" CREATED="1567958041013" MODIFIED="1567958048008"/>
+<node TEXT="load_from_file" ID="ID_634033870" CREATED="1567958048450" MODIFIED="1567958054746"/>
+<node TEXT="load_from_db" ID="ID_119527935" CREATED="1567958204829" MODIFIED="1567958220276"/>
+</node>
+<node TEXT="Mapper" ID="ID_198381882" CREATED="1568018598121" MODIFIED="1568018601797">
+<node TEXT="class_manager" ID="ID_65443850" CREATED="1568018601993" MODIFIED="1568018608828"/>
+<node TEXT="class_" ID="ID_896262635" CREATED="1568018609163" MODIFIED="1568018610859"/>
+<node TEXT="common_parent(other)" ID="ID_284025810" CREATED="1568025899906" MODIFIED="1568025909300"/>
+<node TEXT="identity_key_from_instance(instance)" ID="ID_704473532" CREATED="1568025954008" MODIFIED="1568025976668"/>
+<node TEXT="identity_key_from_primary_key(primary_key, identity_token)" ID="ID_950745145" CREATED="1568025977406" MODIFIED="1568026028406"/>
+<node TEXT="identity_key_from_row(row, identity_token=None, adapter=None)" ID="ID_1916310127" CREATED="1568026032974" MODIFIED="1568026076471"/>
+</node>
+</node>
+<node TEXT="naming convention" ID="ID_1120989888" CREATED="1567511160067" MODIFIED="1567511163130">
+<node TEXT="flat" ID="ID_1079199828" CREATED="1567511170870" MODIFIED="1567511172627"/>
+<node TEXT="structured" ID="ID_1309139784" CREATED="1567511172914" MODIFIED="1567511177313">
+<node TEXT="canonicalName" ID="ID_1204197230" CREATED="1567511177562" MODIFIED="1567511182937"/>
+</node>
+</node>
+</node>
+<node TEXT="sqlalchemy" POSITION="right" ID="ID_1487846264" CREATED="1568147047307" MODIFIED="1568147053322">
+<edge COLOR="#007c00"/>
+<node TEXT="multithreading" ID="ID_1917116" CREATED="1568147054110" MODIFIED="1568147216496">
+<node TEXT="https://copdips.com/2019/05/using-python-sqlalchemy-session-in-multithreading.html" ID="ID_1634498177" CREATED="1568147217334" MODIFIED="1568147217334" LINK="https://copdips.com/2019/05/using-python-sqlalchemy-session-in-multithreading.html"/>
+<node TEXT="https://docs.sqlalchemy.org/en/13/orm/contextual.html#using-thread-local-scope-with-web-applications" ID="ID_990484520" CREATED="1568147934146" MODIFIED="1568147934146" LINK="https://docs.sqlalchemy.org/en/13/orm/contextual.html#using-thread-local-scope-with-web-applications"/>
+</node>
+</node>
+<node TEXT="multithreading" POSITION="right" ID="ID_1977668079" CREATED="1568376605760" MODIFIED="1568376608913">
+<edge COLOR="#7c007c"/>
+<node TEXT="2 types of threads" FOLDED="true" ID="ID_1897860375" CREATED="1568377286226" MODIFIED="1568377302713">
+<node TEXT="Kernel threads" ID="ID_556760602" CREATED="1568377315885" MODIFIED="1568377333606">
+<node ID="ID_1975417830" CREATED="1568377629944" MODIFIED="1568377629944"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    part of the operating system
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node ID="ID_1054229556" CREATED="1568377325118" MODIFIED="1568377325118"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      User-space Threads or user threads
+    </p>
+  </body>
+</html>
+
+</richcontent>
+<node ID="ID_134812945" CREATED="1568377642594" MODIFIED="1568377642594"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    a thread user-space thread is similar to a function or procedure call.
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="advantages" ID="ID_1905520313" CREATED="1568377696867" MODIFIED="1568377698642">
+<node ID="ID_1893963042" CREATED="1568377705061" MODIFIED="1568377705061"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    Multithreaded programs can run faster on computer systems with multiple CPUs, because theses threads can be executed truly concurrent.
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1030141280" CREATED="1568377711956" MODIFIED="1568377711956"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    A program can remain responsive to input. This is true both on single and on multiple CPU
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1609973396" CREATED="1568377720436" MODIFIED="1568377720436"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    Threads of a process can share the memory of global variables. If a global variable is changed in one thread, this change is valid for all threads. A thread can have local variables.
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node ID="ID_1117736823" CREATED="1568377760522" MODIFIED="1568377760522"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    sometimes called light-weight process (LWP)
+  </body>
+</html>
+
+</richcontent>
+<node ID="ID_858904957" CREATED="1568377769831" MODIFIED="1568377769831"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    handling of threads is simpler than the handling of processes for an operating system
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node TEXT="library &quot;threading&quot;" ID="ID_1432529495" CREATED="1568377811269" MODIFIED="1568377825683">
+<node ID="ID_785913650" CREATED="1568377842010" MODIFIED="1568377842010"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    every thread corresponds to an object.
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="ObjectRegistry" POSITION="right" ID="ID_1751149373" CREATED="1568392647616" MODIFIED="1568392651795">
+<edge COLOR="#ff0000"/>
+<node TEXT="class_" ID="ID_351151707" CREATED="1568392615660" MODIFIED="1568392620824"/>
+<node TEXT="key" ID="ID_385189003" CREATED="1568392610643" MODIFIED="1568392612244"/>
+<node TEXT="registry" ID="ID_1391928106" CREATED="1568392605843" MODIFIED="1568392610349"/>
+</node>
+<node TEXT="ObjectFactory" POSITION="right" ID="ID_1465222929" CREATED="1568553051564" MODIFIED="1568553058180">
+<edge COLOR="#00ff00"/>
+<node TEXT="create" ID="ID_1726480737" CREATED="1568401037655" MODIFIED="1568401039498"/>
+<node TEXT="create_from_document" ID="ID_1328384804" CREATED="1568401039847" MODIFIED="1568401047728"/>
+<node TEXT="create_from_file" ID="ID_1915234016" CREATED="1568392678998" MODIFIED="1568392709775"/>
+</node>
+<node TEXT="ObjectLoader" POSITION="right" ID="ID_459779934" CREATED="1568392604145" MODIFIED="1568392647329">
+<edge COLOR="#7c7c00"/>
+<node TEXT="factory" ID="ID_1498991650" CREATED="1568553091000" MODIFIED="1568553093120"/>
+</node>
+<node TEXT="session" POSITION="right" ID="ID_116742744" CREATED="1568377262131" MODIFIED="1568390411906">
+<edge COLOR="#007c7c"/>
+<node TEXT="_registries" ID="ID_143576760" CREATED="1568390436433" MODIFIED="1568392718696"/>
+<node TEXT="" ID="ID_1248623434" CREATED="1568392721229" MODIFIED="1568392721229"/>
+<node TEXT="add_loader" ID="ID_1131080611" CREATED="1568390412116" MODIFIED="1568390415630"/>
+</node>
+<node TEXT="in ProtocolBase, make chidren a dict (name, child)" POSITION="right" ID="ID_1814760244" CREATED="1568477377874" MODIFIED="1568636884153">
+<edge COLOR="#0000ff"/>
+</node>
+<node TEXT="convertir process_collection en transfo" POSITION="right" ID="ID_621618108" CREATED="1568756844024" MODIFIED="1568756881581">
+<icon BUILTIN="help"/>
+<edge COLOR="#00ffff"/>
+</node>
+<node TEXT="Handler" POSITION="right" ID="ID_1004471407" CREATED="1568638071816" MODIFIED="1568756574124">
+<edge COLOR="#ff00ff"/>
+<node TEXT="object_class" ID="ID_196007622" CREATED="1568756584115" MODIFIED="1568756602673"/>
+<node TEXT="many" ID="ID_914905726" CREATED="1568638166940" MODIFIED="1568638168937"/>
+<node TEXT="deserializer/serializer" ID="ID_1007462038" CREATED="1568638210593" MODIFIED="1568638224250"/>
+<node TEXT="document" ID="ID_1801493853" CREATED="1568638144239" MODIFIED="1568756990217">
+<node TEXT="url" ID="ID_898473446" CREATED="1568638154069" MODIFIED="1568638155359"/>
+<node TEXT="path" ID="ID_1467315918" CREATED="1568638155852" MODIFIED="1568638158494"/>
+</node>
+<node TEXT="transfos" ID="ID_1742677753" CREATED="1568638195650" MODIFIED="1568756841663"/>
+<node TEXT="load" ID="ID_1183283920" CREATED="1568757330283" MODIFIED="1568757349088"/>
+<node TEXT="write" ID="ID_266016941" CREATED="1568757349524" MODIFIED="1568757352684"/>
+</node>
+<node TEXT="refacto" POSITION="right" ID="ID_16091341" CREATED="1569089445459" MODIFIED="1569089448471">
+<edge COLOR="#7c0000"/>
+<node TEXT="passer dans ngoschemapremium" ID="ID_175423453" CREATED="1569089449443" MODIFIED="1569089460863">
+<node TEXT="keyed_object" ID="ID_1964002811" CREATED="1569089467732" MODIFIED="1569089475990"/>
+<node TEXT="foreign" ID="ID_106674165" CREATED="1569089506100" MODIFIED="1569585689714"/>
+</node>
+</node>
+<node TEXT="load_package" POSITION="right" ID="ID_521629577" CREATED="1569585690860" MODIFIED="1569585698035">
+<edge COLOR="#00007c"/>
+<node TEXT="args" ID="ID_1740654777" CREATED="1569585698288" MODIFIED="1569585707528">
+<node TEXT="session" ID="ID_1732331458" CREATED="1569585707807" MODIFIED="1569585710254"/>
+<node TEXT="filepath" ID="ID_284615619" CREATED="1569585710568" MODIFIED="1569585714740"/>
+</node>
+<node TEXT="function" ID="ID_1804021819" CREATED="1569585716231" MODIFIED="1569585718191">
+<node TEXT="load json files recursively in filepath parent" ID="ID_1626743849" CREATED="1569585718414" MODIFIED="1569585743751"/>
+<node TEXT="adds the registry to the session if not existing" ID="ID_447533415" CREATED="1569863979591" MODIFIED="1569863987963"/>
+<node TEXT="adds the binder to session" ID="ID_194024666" CREATED="1569863905970" MODIFIED="1569863920970"/>
+</node>
+</node>
+<node TEXT="session" POSITION="right" ID="ID_1469264799" CREATED="1569586033607" MODIFIED="1569586040244">
+<edge COLOR="#007c00"/>
+<node TEXT="object_handler" ID="ID_960024287" CREATED="1569586056229" MODIFIED="1569586084671">
+<node TEXT="json" ID="ID_837012819" CREATED="1569586084998" MODIFIED="1569586098548"/>
+</node>
+<node TEXT="object_registry" ID="ID_528184224" CREATED="1569586174156" MODIFIED="1569586180379">
+<node TEXT="key" ID="ID_1892873572" CREATED="1569586181646" MODIFIED="1569586188045"/>
+</node>
+<node TEXT="add_registry" ID="ID_1818964364" CREATED="1569588624386" MODIFIED="1569588628788"/>
+<node TEXT="chainmap(registries)" ID="ID_443504570" CREATED="1569588632977" MODIFIED="1569588644293"/>
+<node TEXT="binder" ID="ID_1602588388" CREATED="1569864550903" MODIFIED="1569885103369"/>
+</node>
+<node TEXT="object_handler" POSITION="right" ID="ID_1646890033" CREATED="1569588580621" MODIFIED="1569588589449">
+<edge COLOR="#7c007c"/>
+<node TEXT="add a read_only attribute??" ID="ID_831833894" CREATED="1569588590400" MODIFIED="1569588603036"/>
+</node>
+<node TEXT="uploads" POSITION="right" ID="ID_1159114331" CREATED="1569941183872" MODIFIED="1569941186478">
+<edge COLOR="#007c7c"/>
+<node TEXT="https://stackoverflow.com/questions/50105094/python-upload-large-files-s3-fast" ID="ID_533927725" CREATED="1569941187201" MODIFIED="1569941187201" LINK="https://stackoverflow.com/questions/50105094/python-upload-large-files-s3-fast"/>
+<node TEXT="https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html" ID="ID_953163946" CREATED="1569941227712" MODIFIED="1569941227712" LINK="https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html"/>
+<node TEXT="https://www.jtouzi.net/uploading-a-large-file-to-amazon-web-services-s3/" ID="ID_1102888150" CREATED="1569941998451" MODIFIED="1569941998451" LINK="https://www.jtouzi.net/uploading-a-large-file-to-amazon-web-services-s3/"/>
+<node TEXT="https://github.com/boto/boto3/issues/256" ID="ID_1184201230" CREATED="1569942517003" MODIFIED="1569942520218" LINK="https://github.com/boto/boto3/issues/256">
+<icon BUILTIN="messagebox_warning"/>
+<node TEXT="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#module-boto3.s3.transfer" ID="ID_1678579528" CREATED="1569942781725" MODIFIED="1569942781725" LINK="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#module-boto3.s3.transfer"/>
 </node>
 </node>
 </node>

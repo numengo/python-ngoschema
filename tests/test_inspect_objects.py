@@ -9,7 +9,6 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoschema.deserializers import Deserializer
 from ngoschema.inspect_objects import ClassInspector
 from ngoschema.inspect_objects import FunctionInspector
 from ngoschema.schemas_loader import load_module_schemas
@@ -28,12 +27,13 @@ def test_FunctionInspector():
 
 
 def test_ClassInspector():
-    ci = ClassInspector(Deserializer)
-    assert ci.methods["load"].shortDescription
-    assert ci.methods["load"].parameters[0].name == "path"
-    assert not ci.methods["load"].parameters[0].default
-    assert ci.methods["load"].parameters[0].doc
-    assert ci.methods["load"].keywords == 'opts'
+    from ngoschema import ProtocolBase
+
+    ci = ClassInspector(ProtocolBase)
+    assert ci.methods["set_configfiles_defaults"].shortDescription
+    assert ci.methods["set_configfiles_defaults"].parameters[0].name == "overwrite"
+    assert not ci.methods["set_configfiles_defaults"].parameters[0].default
+    assert ci.methods["set_configfiles_defaults"].parameters[0].doc
 
 
 if __name__ == "__main__":

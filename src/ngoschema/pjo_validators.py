@@ -15,6 +15,7 @@ from decimal import Decimal
 
 import arrow
 import six
+from ngoschema.utils import is_importable
 from past.builtins import basestring
 from python_jsonschema_objects import validators
 from python_jsonschema_objects.validators import ValidationError
@@ -29,6 +30,7 @@ string_types = (basestring, str)
 datetime_types = (datetime.datetime, arrow.Arrow)
 
 NGO_TYPE_MAPPING = (
+    ("importable", string_types),
     ("path", string_types + (pathlib.Path, )),
     ("date", string_types + datetime_types + (datetime.date, )),
     ("time", string_types + datetime_types + (datetime.time, )),
@@ -126,6 +128,11 @@ def check_datetime_type(param, value, _):
     if not isinstance(value, datetime.datetime):
         raise ValidationError("{0} is not a datetime".format(value))
 
+@type_registry.register(name="importable")
+def check_importable_type(param, value, _):
+    if not is_importable(value):
+        raise ValidationError("{0} is not a importable string".format(value))
+
 
 # converters
 ############
@@ -151,8 +158,8 @@ def convert_number(param, value, detail):
     return value
 
 
-@converter_registry.register(name="string")
-def convert_string(param, value, detail):
+@converter_registry.register(name="importable")
+def convert_importable(param, value, detail):
     if not utils.is_string(value) and utils.is_imported(value):
         return utils.fullname(value)
     return value

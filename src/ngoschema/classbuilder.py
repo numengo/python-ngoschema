@@ -82,7 +82,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
     def __init__(self, resolver):
         pjo_classbuilder.ClassBuilder.__init__(self, resolver)
-        self.definitions = {}
+        self._imported = {}
+        self.annuary = {}
+
+    def create_annuary(self):
+        for (_, cn), cls in self._imported.items():
+            self.annuary['%s.%s' % (cls.__module__, cn)] = cls
+        self._imported = {}
 
     def resolve_or_build(self, uri, scope=None):
         resolver = self.resolver
@@ -122,11 +128,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             return True
 
         def validate_pseudo(self):
-            instance = self._context() if self._context else None
-            #if getattr(self, "_pattern", False):
             if '_pattern' in self.__dict__:
-                self._value = jinja2.TemplatedString(self._pattern)(this=instance)
+                self._value = jinja2.TemplatedString(self._pattern)(
+                    this=self._context,
+                    **self._input_values)
             pjo_literals.LiteralValue.validate(self)
+            # type importable: store imported as protected member
+            if self.propinfo('__literal__').get('type') == 'importable':
+                self._imported = utils.import_from_string(self._value)
 
         #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
@@ -168,7 +177,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         typ = clsdata.get('type')
 
         if typ not in (
-            'string', 'path', 'date', 'time', 'datetime',
+            'string', 'importable', 'path', 'date', 'time', 'datetime',
             'integer', 'number', 'boolean', 'null'
         ) and not set(clsdata.keys()).intersection(['foreignKey', 'enum']):
             return pjo_classbuilder.ClassBuilder._construct(
@@ -184,6 +193,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, bool)
         elif typ == 'string' or 'enum' in clsdata:
+            self.resolved[uri] = self._build_pseudo_literal(
+                uri, clsdata, str)
+        elif typ == 'importable':
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, str)
         elif typ == 'path':
@@ -225,7 +237,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         class_attrs = kw.get('class_attrs', {})
 
         # complete object attribute list with class attributes to use prop  attribute setter
-        __object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
+
+        #__object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
+        __object_attr_list__ = set(ProtocolBase.__object_attr_list__)
+        for p in ProtocolBase.__mro__:
+            __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
+            __object_attr_list__.update([a for a in p.__dict__.keys() if not a.startswith('__')])
 
         cls_schema = clsdata
         props['__schema__'] = nm
@@ -353,7 +370,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=typ.__doc__)
                 properties[prop]['$ref'] = uri
-                properties[prop]['type'] = typ
+                properties[prop]['_type'] = typ
 
             elif 'oneOf' in detail:
                 potential = self.resolve_classes(detail['oneOf'])
@@ -514,7 +531,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
         props['__propagate__'] = class_attrs.get('__propagate__', False)
         props['__strict__'] = bool(required) or kw.get('strict', False) or class_attrs.get('__strict__', False)
-        props['__instances__'] = weakref.WeakValueDictionary()
+        #props['__instances__'] = weakref.WeakValueDictionary()
 
         cls = type(clsname, tuple(parents), props)
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
@@ -527,12 +544,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         dp = nm.split('definitions/')
         dp = [_.strip('/') for _ in dp]
-        if len(dp)>1:
-            dpath.util.new(self.definitions, dp[1:], cls)
-            logger.info('CREATE %s', '.'.join(dp[1:]))
-        else:
-            logger.info('CREATE %s', clsname)
-            self.definitions[clsname] = cls
+        logger.info('CREATED %s', '.'.join(dp[1:]))
+
+        #if len(dp)>1:
+        #    dpath.util.new(self.definitions, dp[1:], cls)
+        #    logger.info('CREATE %s', '.'.join(dp[1:]))
+        ##else:
+        #    logger.info('CREATE %s', clsname)
+        #    self.definitions[clsname] = cls
 
         return cls
 

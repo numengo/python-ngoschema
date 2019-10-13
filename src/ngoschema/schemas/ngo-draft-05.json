@@ -49,6 +49,7 @@
     },
     "complexTypes": {
       "enum": [
+        "importable",
         "path",
         "date",
         "time",
@@ -71,9 +72,6 @@
     "KeyedObject": {
       "type": "object",
       "additionalProperties": false,
-      "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/ProtocolBase"
-      ],
       "properties": {
         "primaryKeys": {
           "type": "array",
@@ -86,12 +84,16 @@
     "NamedObject": {
       "type": "object",
       "additionalProperties": false,
-      "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/KeyedObject"
+      "extends": ["#/definitions/KeyedObject"],
+      "notSerialized": [
+        "canonicalName"
       ],
       "properties": {
         "name": {
-          "default": "<anonymous>",
+          "type": "string"
+        },
+        "name_plural": {
+          "default": "{{this.name|pluralize}}",
           "type": "string"
         },
         "canonicalName": {
@@ -158,6 +160,24 @@
         }
       }
     },
+    "Tag": {
+      "type": "object",
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/NamedObject"
+      ],
+      "properties": {
+        "personFK": {
+          "type": "integer"
+        },
+        "eventFK": {
+          "type": "integer"
+        },
+        "placeFK": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
     "Metadata": {
       "type": "object",
       "extends": [
@@ -170,9 +190,36 @@
         },
         "description": {
           "type": "string"
+        },
+        "extra": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "http://numengo.org/draft-05/schema#/definitions/Tag"
+          }
         }
       },
       "additionalProperties": true
+    },
+    "Category": {
+      "type": "object",
+      "extends": [
+        "http://numengo.org/draft-05/schema#/definitions/Metadata"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "thumbnail": {
+          "$ref": "http://numengo.org/ngomedia#/definitions/Picture"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "properties": {
@@ -362,6 +409,9 @@
     },
     "not": {
       "$ref": "#"
+    },
+    "primaryKeys": {
+      "$ref": "#/definitions/stringArray"
     },
     "notSerialized": {
       "$ref": "#/definitions/stringArray"

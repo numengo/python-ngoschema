@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 EXCLUDED_MODULES = [
     None, str.__class__.__module__, "future.types.newobject", "__builtin__",
-    '_abcoll', 'abc'
+    '_abcoll', 'abc', 'collections.abc'
 ]
 
 

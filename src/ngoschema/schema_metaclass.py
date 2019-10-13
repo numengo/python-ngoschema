@@ -108,9 +108,9 @@ class SchemaMetaclass(type):
 
             attrs[k] = fn
 
-        # shouldn't we assert ProtocolBase is in mro?
-        if schema_uri is not None:
-            clsname = schema_uri
         cls = builder.construct(
-            clsname, schema, parent=bases, class_attrs=dict(attrs))
+            schema_uri or clsname, schema, parent=bases, class_attrs=dict(attrs))
+
+        builder._imported[id(cls), clsname] = cls
+
         return cls

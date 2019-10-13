@@ -14,14 +14,15 @@ import pathlib
 from builtins import object
 from builtins import str
 
+from ruamel.yaml import YAML
 import appdirs
 import six
 from backports import configparser2
 from dpath.util import merge
 from ngofile.pathlist import PathList
 
-from .deserializers import Deserializer, YamlDeserializer
-from .str_utils import CaseInsensitiveDict
+from .decorators import assert_arg, SCH_PATH_FILE_EXISTS
+from ngoschema.utils import CaseInsensitiveDict
 
 
 def search_app_config_files(appname=None, appauthor=None, version=None):
@@ -32,17 +33,6 @@ def search_app_config_files(appname=None, appauthor=None, version=None):
         if pathlib.Path(cdir).exists():
             pl.add(cdir)
     return pl.list_files(['*.cfg', '*.ini'])
-
-
-class ConfigParser(Deserializer):
-    logger = logging.getLogger(__name__)
-
-    @classmethod
-    def loads(cls, stream, **kwargs):
-        __doc__ = Deserializer.loads.__doc__
-        config = configparser2.ConfigParser()
-        config.read_string(stream)
-        return config
 
 
 class ConfigLoader(object):
@@ -71,7 +61,9 @@ class ConfigLoader(object):
         """
         Add a config file to registry
         """
-        cfg = ConfigParser.load(configFilepath)
+        cfg = configparser2.ConfigParser()
+        with open(str(configFilepath), 'r') as f:
+            cfg.read_string(f.read())
         self._registry[str(configFilepath)] = cfg
 
         for name, options in dict(cfg._sections).items():
@@ -150,14 +142,14 @@ DEFAULT_LOGGING = {
 
 logging.config.dictConfig(DEFAULT_LOGGING)
 
-class LogConfigParser(YamlDeserializer):
-    logger = logging
+@assert_arg(0, SCH_PATH_FILE_EXISTS)
+def load_log_config(filepath):
+    yaml = YAML(typ="safe")
+    cfg = copy.deepcopy(DEFAULT_LOGGING)
+    with filepath.open('r') as f:
+        cfg2 = yaml.load(f.read())
+    cfg.update(cfg2)
+    logging.config.dictConfig(cfg)
+    return cfg
 
-    @classmethod
-    def loads(cls, stream, **kwargs):
-        __doc__ = Deserializer.loads.__doc__
-        cfg = copy.deepcopy(DEFAULT_LOGGING)
-        cfg.update(YamlDeserializer.loads(stream))
-        logging.config.dictConfig(cfg)
-        return cfg
 
