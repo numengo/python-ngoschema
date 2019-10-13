@@ -1,0 +1,105 @@
+{
+    "$schema": "http://numengo.org/draft-05/schema",
+    "$id": "http://numengo.org/draft-05/ngoschemapremium/object-factory",
+    "definitions": {
+        "ObjectHandler": {
+            "type": "object",
+            "abstract": true,
+            "additionalProperties": false,
+            "properties": {
+                "objectClass": {
+                    "type": "importable"
+                },
+                "many": {
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "FilterObjectHandlerMixin": {
+            "type": "object",
+            "abstract": true,
+            "additionalProperties": false,
+            "properties": {
+                "only": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "but": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "recursive": {
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "FileObjectHandler": {
+            "type": "object",
+            "abstract": true,
+            "additionalProperties": false,
+            "extends": [
+                "#definitions/ObjectHandler",
+                "#definitions/FilterObjectHandlerMixin"
+            ],
+            "properties": {
+                "document": {
+                    "$ref": "http://numengo.org/draft-05/ngoschema/document#/definitions/Document"
+                }
+            }
+        },
+        "JsonFileObjectHandler": {
+            "type": "object",
+            "extends": [
+                "#definitions/FileObjectHandler"
+            ],
+            "additionalProperties": false
+        },
+        "YamlFileObjectHandler": {
+            "type": "object",
+            "extends": [
+                "#definitions/FileObjectHandler"
+            ],
+            "additionalProperties": false
+        },
+        "ObjectFactory": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "objectClass": {
+                    "type": "importable"
+                },
+                "lazy_loading": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "deserializers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ObjectLoader": {
+            "type": "object",
+            "extends": [
+                "#/definitions/ObjectFactory"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "primaryKeys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
