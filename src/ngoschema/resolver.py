@@ -23,11 +23,10 @@ import dpath.util
 import requests
 from jsonschema.compat import urldefrag
 from jsonschema.validators import RefResolver
-from ngoschema import utils
-from ngoschema.utils import UriDict
 
+from .utils import UriDict
 from .utils import apply_through_collection
-from .utils import is_string
+from .utils import is_string, is_sequence
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +105,7 @@ def resolve_fragment(doc, fragment):
     for part in parts:
         try:
             part = part.replace(u"~1", u"/").replace(u"~0", u"~")
-            if utils.is_sequence(doc):
+            if is_sequence(doc):
                 part = int(part)
             doc = doc[part]
         except:

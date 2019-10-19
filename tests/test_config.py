@@ -7,7 +7,6 @@ import os.path
 
 from ngoschema.protocol_base import objects_config_loader
 from ngoschema.config import ConfigLoader
-from ngoschemapremium.object_loader import ObjectLoader
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("python_jsonschema_objects.classbuilder").setLevel(

@@ -21,15 +21,14 @@ from ngofile.list_files import list_files
 from six.moves.urllib.request import urlopen
 from collections import Mapping, ChainMap
 
-from . import utils
-from .protocol_base import ProtocolBase
-from .decorators import SCH_PATH_DIR
-from .decorators import SCH_PATH_FILE
-from .decorators import assert_arg
-from .query import Query
-from .schema_metaclass import SchemaMetaclass
-from ngoschema.resolver import resolve_uri
-from .resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
+from ngoschema import utils
+from ..protocol_base import ProtocolBase
+from ..decorators import SCH_PATH_DIR
+from ..decorators import SCH_PATH_FILE
+from ..decorators import assert_arg
+from ..query import Query
+from ..schema_metaclass import SchemaMetaclass
+from ..resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
 
 
 class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -174,9 +173,9 @@ def get_document_registry():
 
 class DocumentRegistry(Mapping):
     def __init__(self):
-        from .object_handlers import JsonFileObjectHandler
-        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', fkeys=['filepath'])
-        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', fkeys=['uri'])
+        from ..object_handlers import JsonFileObjectHandler
+        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
+        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
         self._chained = ChainMap(self._fp_registry._registry,
                                  self._url_registry._registry)
 
@@ -246,21 +245,3 @@ class DocumentRegistry(Mapping):
         wow = list(self._chained.values())
         return Query(self._chained.values()).filter(
             *attrs, order_by=order_by, **attrs_value)
-
-
-#TODO: change resolve_ref, resolve_cname
-#def resolve_ref(ref):
-#    if not utils.is_string(ref):
-#        ref = str(ref)
-#    if '/' in ref:
-#        try:
-#            return resolve_uri(ref)
-#        except:
-#            try:
-#                doc = get_document_registry().register_from_file(ref)
-#                doc.deserialize()
-#                return doc.content
-#            except:
-#                raise ValueError('Impossible to resolve %s as a URI or a file' % ref)
-#    else:
-#        return resolve_cname(ref)

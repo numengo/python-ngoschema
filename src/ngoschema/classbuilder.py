@@ -29,7 +29,6 @@ from future.utils import text_to_native_str as native_str
 from .protocol_base import ProtocolBase, make_property
 from . import utils
 from .resolver import get_resolver
-from .foreign_key import ForeignKey, CnameForeignKey
 from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
 
@@ -96,6 +95,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         return self.resolved[uri]
 
     def _build_pseudo_literal(self, nm, clsdata, *parents):
+        from .models.foreign_key import ForeignKey, CnameForeignKey
 
         def __init_pseudo__(self, *args, **kwargs):
             HasCache.__init__(self)
@@ -122,10 +122,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             return True
 
         def validate_pseudo(self):
-            from . import jinja2
+            from .utils.jinja2 import TemplatedString
             if '_pattern' in self.__dict__:
                 try:
-                    self._value = jinja2.TemplatedString(self._pattern)(
+                    self._value = TemplatedString(self._pattern)(
                         this=self._context,
                         **self._input_values)
                 except Exception as er:
@@ -175,6 +175,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+        from .models.foreign_key import ForeignKey
         if '$ref' in clsdata:
             self.resolved[uri] = cls = self.resolve_or_build(clsdata['$ref'], uri)
             return cls

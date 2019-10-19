@@ -10,7 +10,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
-from ngoschemapremium.object_loader import ObjectLoader
 
 doc1 = {
     "filepath": r"D:\CODES\projects.ngoprj",
@@ -34,7 +33,7 @@ doc3 = {
 
 
 def test_factory_and_query():
-    doc_loader = ObjectLoader(objectClass='ngoschema.document.Document')
+    doc_loader = ObjectLoader(objectClass='ngoschema.models.document.Document')
     objs = doc_loader.create([doc1, doc2, doc3], many=True)
 
     assert len(doc_loader.filter(filepath__suffix__not=".ngoprj").all())==2

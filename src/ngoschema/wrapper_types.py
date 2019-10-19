@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import logging
 import sys
-import weakref
 
 import six
 import json
@@ -14,7 +13,7 @@ import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 
 from ngoschema.resolver import resolve_uri
 from .mixins import HasCache, HasParent, HandleRelativeCname
-from .str_utils import ProtocolJSONEncoder
+from ngoschema.utils.json import ProtocolJSONEncoder
 from . import utils
 
 logger = logging.getLogger(__name__)
@@ -202,7 +201,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         constraints permitted by JSON Schema v4.
         """
         from python_jsonschema_objects.classbuilder import LiteralValue
-        from python_jsonschema_objects.classbuilder import ProtocolBase as pjo_ProtocolBase
         from python_jsonschema_objects.classbuilder import TypeProxy, TypeRef
         from ngoschema import ProtocolBase
         klassbuilder = addl_constraints.pop("classbuilder", None)

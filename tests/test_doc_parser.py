@@ -9,8 +9,8 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoschema.doc_rest_parser import parse_docstring
-from ngoschema.doc_rest_parser import parse_type_string as pts
+from ngoschema.inspect.doc_rest_parser import parse_docstring
+from ngoschema.inspect.doc_rest_parser import parse_type_string as pts
 
 
 def test_doc_parsing():

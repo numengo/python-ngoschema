@@ -24,9 +24,9 @@ import six
 
 from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
-from .exceptions import InvalidValue
-from .utils import import_from_string
-from .utils import is_string
+from ngoschema.exceptions import InvalidValue
+from ngoschema.utils import import_from_string
+from ngoschema.utils import is_string
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,4 @@
-import os.path
-import pathlib
-from datetime import date
-from datetime import datetime
-from datetime import time
-import sys
-
-from ngoschema.metadata import Metadata
+from ngoschema.models.metadata import Metadata
 
 def test_fkey_relationship():
 
@@ -43,7 +36,7 @@ def test_fkey_relationship():
 
     # change name and check propagation
     A.name = 'AA'
-    assert str(A.name) == 'AA' 
+    assert str(A.name) == 'AA'
     assert A.iname == 'AA'
     assert str(B._parent) == 'AA', str(B._parent)
     assert str(A.canonicalName) == 'AA'

@@ -6,7 +6,7 @@ import re
 import sys
 from builtins import object
 
-from .str_utils import multiple_replace
+from ngoschema.utils.str_utils import multiple_replace
 
 # Copyright 2015: Mirantis Inc.
 # All Rights Reserved.

@@ -14,10 +14,9 @@ import sys
 
 import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
-from . import utils
 from .relationship import  Relationship
-from .decorators import classproperty
-from .mixins import HasCache, HasLogger
+from ngoschema.decorators import classproperty
+from ngoschema.mixins import HasCache, HasLogger
 
 
 class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
@@ -48,8 +47,6 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
         return [cls.key]
 
     def __init__(self, value):
-        from ngoschema.keyed_object import NamedObject
-        from .wrapper_types import ArrayWrapper
         HasCache.__init__(self)
         self._set_inputs(self.key)
         self._value = None
@@ -96,7 +93,7 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
             # not instanciated yet (lazy loading?)
             # look for a common ancestor
             ancs = self._value.split('.')
-            from ngoschema.keyed_object import NamedObject
+            from ngoschema.models.keyed_object import NamedObject
             for i in NamedObject._instances:
                 ival = str(i.get(key))
                 iancs = ival.split('.')

@@ -16,10 +16,10 @@ import weakref
 from ngoschema import SchemaMetaclass, ProtocolBase
 from ngoschema.mixins import HasCanonicalName
 
-from .protocol_base import ProtocolBase
-from .schema_metaclass import SchemaMetaclass
+from ngoschema.protocol_base import ProtocolBase
+from ngoschema.schema_metaclass import SchemaMetaclass
 
-from .decorators import classproperty
+from ngoschema.decorators import classproperty
 
 
 class KeyedObject(with_metaclass(SchemaMetaclass, ProtocolBase)):

@@ -27,10 +27,10 @@ from python_jsonschema_objects import \
 from . import utils
 from . import mixins
 from .mixins import HasParent, HasLogger
-from ngoschema.resolver import resolve_uri
+from .resolver import resolve_uri
 from .validators import DefaultValidator
 from .config import ConfigLoader
-from .str_utils import ProtocolJSONEncoder
+from .utils.json import ProtocolJSONEncoder
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
@@ -205,7 +205,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 validator = infotype(val)
                 # handle case of patterns
                 if utils.is_pattern(val):
-                    from .jinja2 import get_variables
+                    from ngoschema.utils.jinja2 import get_variables
                     vars = get_variables(val)
                     depends_of.update(vars)
                     validator._pattern = val

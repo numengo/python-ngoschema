@@ -17,30 +17,25 @@ import itertools
 import logging
 import pathlib
 import re
-import pprint
 import subprocess
 import sys
 import json
 import tokenize
-from builtins import object
 from builtins import str
 from contextlib import contextmanager
 import threading
 import  weakref
 from urllib.parse import urlsplit
 
-import inflection
 import six
 from ngofile.pathlist import PathList
-from past.builtins import basestring
 from past.types import basestring
 
-from ._qualname import qualname
-from .exceptions import InvalidValue
-from .mixins import HasCache, HasParent
+from ngoschema.utils._qualname import qualname
+from ngoschema.exceptions import InvalidValue
+from ngoschema.mixins import HasCache, HasParent
 from collections import OrderedDict as odict
 from collections import Mapping, MutableMapping
-from abc import abstractmethod
 
 
 class _KeyModifierMapping(MutableMapping):
@@ -179,30 +174,6 @@ class GenericModuleFileLoader(Registry):
         all_paths = list(sum(self._registry.values(), []))
         return PathList(*all_paths).pick_first(name)
 
-# loader to register module with a models folder where to look for templates
-templates_module_loader = GenericModuleFileLoader('templates')
-
-def load_module_templates(module_name):
-    templates_module_loader.register(module_name)
-
-
-# loader to register module with a models folder where to look for models
-models_module_loader = GenericModuleFileLoader('models')
-
-def load_module_models(module_name):
-    return models_module_loader.register(module_name)
-
-# loader to register module with a transforms folder where to look for model transformations
-transforms_module_loader = GenericModuleFileLoader('transforms')
-
-def load_module_transforms(module_name):
-    transforms_module_loader.register(module_name)
-
-# loader to register module with a models folder where to look for objects
-objects_module_loader = GenericModuleFileLoader('objects')
-
-def load_module_objects(module_name):
-    objects_module_loader.register(module_name)
 
 def gcs(*classes):
     """
@@ -617,34 +588,6 @@ def any_pprint(val, **kwargs):
     else:
         return str(val)[:STR_LMAX]
 
-
-def decistmt(s):
-    """Substitute Decimals for floats in a string of statements.
-
-    >>> from decimal import Decimal
-    >>> s = 'print +21.3e-5*-.1234/81.7'
-    >>> decistmt(s)
-    "print +Decimal ('21.3e-5')*-Decimal ('.1234')/Decimal ('81.7')"
-
-    >>> exec(s)
-    -3.21716034272e-007
-    >>> exec(decistmt(s))
-    -3.217160342717258261933904529E-7
-    """
-    # from: https://docs.python.org/2/library/tokenize.html
-    result = []
-    g = tokenize.generate_tokens(io.StringIO(s).readline)   # tokenize the string
-    for toknum, tokval, _, _, _  in g:
-        if toknum == tokenize.NUMBER and '.' in tokval:  # replace NUMBER tokens
-            result.extend([
-                (tokenize.NAME, 'Decimal'),
-                (tokenize.OP, '('),
-                (tokenize.STRING, repr(tokval)),
-                (tokenize.OP, ')')
-            ])
-        else:
-            result.append((toknum, tokval))
-    return tokenize.untokenize(result)
 
 class Bracket:
     _context = None

@@ -12,7 +12,7 @@ import logging
 import weakref
 from python_jsonschema_objects.classbuilder import LiteralValue
 
-from .decorators import classproperty, memoized_property
+from ..decorators import memoized_property
 
 
 class HasLogger:
@@ -20,7 +20,7 @@ class HasLogger:
 
     @classmethod
     def init_class_logger(cls):
-        from . import utils
+        from .. import utils
         cls.logger = logging.getLogger(utils.fullname(cls))
 
     @classmethod
@@ -44,7 +44,7 @@ class HasParent:
             if self._parent_ref and self._parent_ref():
                 self._parent_ref()._unregister_child(self)
                 self._parent_ref = None
-        from .foreign_key import ForeignKey
+        from ngoschema.models.foreign_key import ForeignKey
         if isinstance(value, ForeignKey):
             self._parent_ref = value._ref
         if isinstance(value, HasParent):
@@ -288,7 +288,7 @@ class HasCache:
             p.do_validate(force)
 
         if self._dirty or force:
-            from .wrapper_types import ArrayWrapper
+            from ..wrapper_types import ArrayWrapper
             if not isinstance(self, ArrayWrapper):
                 self.set_clean()
             self.validate()

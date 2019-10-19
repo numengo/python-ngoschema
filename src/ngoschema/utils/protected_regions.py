@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 retrieve protected regions from a string
 
 author: Cedric ROMAN
 email: roman@numengo.com
-licence: GNU GPLv3  
+licence: GNU GPLv3
 """
 from __future__ import print_function
 from __future__ import unicode_literals
 
 import codecs
 import re
-
-from ngofile.pathlist import PathList
 
 from ngoschema.decorators import SCH_PATH
 from ngoschema.decorators import assert_arg
@@ -57,16 +55,3 @@ def get_protected_regions_from_file(fp, encoding='utf-8'):
         return get_protected_regions(f.read())
 
 
-def load_project_protected_regions(project):
-    src_dir = project.repoDir.joinpath('src', str(project.packageName))
-    incl_dir = project.repoDir.joinpath('include', str(project.packageName))
-    simx_dir = project.repoDir.joinpath('modelica', str(project.alias))
-    ame_dir = project.repoDir.joinpath('amesim', str(project.alias),
-                                       'submodels')
-    mlab_dir = project.repoDir.joinpath('simulink', str(project.alias),
-                                        'submodels')
-    user_code = {}
-    for f in PathList(src_dir, incl_dir).list_files(
-        ['*.c', '*.cpp', '*.h', '*.mo'], recursive=True):
-        user_code.update(get_protected_regions_from_file(f))
-    return user_code

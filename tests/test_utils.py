@@ -20,8 +20,7 @@ import pytest
 import six
 from future.utils import text_to_native_str
 
-
-from ngoschema import str_utils
+from ngoschema.utils import str_utils
 from ngoschema import utils
 from ngoschema.exceptions import InvalidValue
 
@@ -95,7 +94,7 @@ def test_string_utils():
                                   ",|") == ["one", "two", "three"]
 
 def test_jinja_tokens():
-    from ngoschema.jinja2 import get_variables
+    from ngoschema.utils.jinja2 import get_variables
     vars = get_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
     print(vars)
 

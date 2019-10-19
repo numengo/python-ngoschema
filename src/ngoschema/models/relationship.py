@@ -9,7 +9,7 @@ created on 28/01/2019
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from .decorators import classproperty
+from ngoschema.decorators import classproperty
 
 
 class Relationship:
@@ -45,8 +45,8 @@ class Relationship:
     _foreignClass = None
     @classproperty
     def foreignClass(cls):
-        from .classbuilder import get_builder
-        from .keyed_object import KeyedObject
+        from ..classbuilder import get_builder
+        from ngoschema.models.keyed_object import KeyedObject
         if not cls._foreignClass and cls.foreignSchema:
             try:
                 cls._foreignClass = get_builder().resolve_or_build(cls.foreignSchema)

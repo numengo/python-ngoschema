@@ -27,7 +27,7 @@ from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import type_registry
 from python_jsonschema_objects.pattern_properties import ExtensibleValidator as pjo_ExtensibleValidator
 
-from . import utils
+from ngoschema import utils
 
 logger = logging.getLogger(__name__)
 

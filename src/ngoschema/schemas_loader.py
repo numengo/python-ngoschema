@@ -21,8 +21,7 @@ import six
 
 from ngofile.list_files import list_files
 
-from .resolver import register_doc_with_uri_id, get_uri_doc_store
-from .exceptions import SchemaError
+from ngoschema.exceptions import SchemaError
 
 
 def _id_of(schema):
@@ -47,6 +46,7 @@ def load_schema(schema, schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     """
+    from .resolver import register_doc_with_uri_id, get_uri_doc_store
     uri = _id_of(schema).rstrip('#')
     if not uri and "title" in schema:
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")
@@ -92,6 +92,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     :type schemas_store: dict
     :rtype: dict
     """
+    from .resolver import register_doc_with_uri_id, get_uri_doc_store
     logger = logging.getLogger(__name__)
     libpath = imp.find_module(module)[1]
 

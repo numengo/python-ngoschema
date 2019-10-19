@@ -9,9 +9,9 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from future.utils import with_metaclass
-from ngoschema.keyed_object import NamedObject
+from ngoschema.models.keyed_object import NamedObject
 
-from .schema_metaclass import SchemaMetaclass
+from ngoschema.schema_metaclass import SchemaMetaclass
 
 
 class Metadata(with_metaclass(SchemaMetaclass, NamedObject)):
