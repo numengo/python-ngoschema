@@ -14,6 +14,7 @@ import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 
 from ngoschema.resolver import resolve_uri
 from .mixins import HasCache, HasParent, HandleRelativeCname
+from .str_utils import ProtocolJSONEncoder
 from . import utils
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,9 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
     def __init__(self, ary):
         HasCache.__init__(self)
+        # convert to array is necessary
+        if not utils.is_sequence(ary) or isinstance(ary, ArrayWrapper):
+            ary = [ary]
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
 
     def __str__(self):
@@ -42,6 +46,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             self.__class__.__name__,
             [json.dumps(e.for_json()) for e in self.typed_elems]
         )
+
+    def append(self, value):
+        self.data.append(value)
+        self._dirty = True
 
     def __eq__(self, other):
         if not utils.is_sequence(other):
@@ -65,24 +73,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             except Exception as er:
                 pass
 
-    def for_json(self, no_defaults=True):
-        from python_jsonschema_objects import classbuilder
-        from .protocol_base import ProtocolBase
-
-        out = []
-        for item in self.typed_elems:
-            if isinstance(item, (ProtocolBase, ArrayWrapper)):
-                out.append(item.for_json(no_defaults=no_defaults))
-            elif isinstance(item, (
-                    classbuilder.ProtocolBase,
-                    classbuilder.LiteralValue,
-                    ArrayWrapper)):
-                out.append(item.for_json())
-            else:
-                out.append(item)
-
-        return out
-
+    def serialize(self, **opts):
+        self.validate()
+        enc = ProtocolJSONEncoder(**opts)
+        return enc.encode(self)
 
     def validate_items(self):
         if not self._dirty and self._typed is not None:
@@ -177,9 +171,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         self.set_items_parent()
         self.set_clean()
         return self._typed
-        #pjo_wrapper_types.ArrayWrapper.validate_items(self)
-        #if self._parent:
-        #    self.set_items_parent()
 
     def _set_context(self, context):
         HasCache._set_context(self, context)

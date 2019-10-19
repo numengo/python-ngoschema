@@ -18,8 +18,6 @@ import datetime
 import inspect
 import pathlib
 import re
-import weakref
-import dpath.util
 
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 import python_jsonschema_objects.literals as pjo_literals
@@ -29,8 +27,6 @@ import python_jsonschema_objects.validators as pjo_validators
 from future.utils import text_to_native_str as native_str
 
 from .protocol_base import ProtocolBase, make_property
-from . import jinja2
-from . import pjo_validators as ngo_pjo_validators
 from . import utils
 from .resolver import get_resolver
 from .foreign_key import ForeignKey, CnameForeignKey
@@ -38,8 +34,6 @@ from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
 
 logger = logging.getLogger(__name__)
-
-_NEW_TYPES = ngo_pjo_validators.NGO_TYPE_MAPPING
 
 # default builder global variable
 _default_builder = None
@@ -91,7 +85,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         self._imported = {}
 
     def resolve_or_build(self, uri, scope=None):
-        resolver = self.resolver
+        resolver = get_resolver()
         scope = scope or resolver.resolution_scope
         uri = resolver._urljoin_cache(scope, uri)
         if uri not in self.resolved:
@@ -128,10 +122,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             return True
 
         def validate_pseudo(self):
+            from . import jinja2
             if '_pattern' in self.__dict__:
-                self._value = jinja2.TemplatedString(self._pattern)(
-                    this=self._context,
-                    **self._input_values)
+                try:
+                    self._value = jinja2.TemplatedString(self._pattern)(
+                        this=self._context,
+                        **self._input_values)
+                except Exception as er:
+                    logger.warning('evaluating pattern "%s" in literal: %s', self._pattern, er)
+                    self._value = self._pattern
             pjo_literals.LiteralValue.validate(self)
             # type importable: store imported as protected member
             if self.propinfo('__literal__').get('type') == 'importable':
@@ -146,7 +145,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         if 'foreignKey' in cls_schema:
             # we merge the schema in propinfo to access it directly
+            self.resolver.push_scope(nm.rsplit('#', 1)[0])
             uri, sch = self.resolver.resolve(cls_schema['foreignKey']['$schema'])
+            self.resolver.pop_scope()
             clsFK = CnameForeignKey if cls_schema['foreignKey'].get('key', 'canonicalName') == 'canonicalName' \
                 else ForeignKey
             cls_schema['foreignKey']['$schema'] = uri
@@ -174,6 +175,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+        if '$ref' in clsdata:
+            self.resolved[uri] = cls = self.resolve_or_build(clsdata['$ref'], uri)
+            return cls
         typ = clsdata.get('type')
 
         if typ not in (
@@ -225,7 +229,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # To support circular references, we tag objects that we're
         # currently building as "under construction"
         self.under_construction.add(nm)
-        current_scope = self.resolver.resolution_scope
+        current_scope = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, nm).rsplit("#", 1)[0]
+        #current_scope = self.resolver.resolution_scope
 
         # necessary to build type
         clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
@@ -274,11 +279,23 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # flattening
         name_translation_flatten = collections.OrderedDict()
-        for p in reversed(parents):
+        for p in parents:
             name_translation_flatten.update(getattr(p, '__prop_names_flatten__',
                                              getattr(p, '__prop_names__', {})))
         name_translation_flatten.update(name_translation)
         name_translated = {v: k for k, v in name_translation_flatten.items() if v != k}
+
+        # prepare set of inherited required, read_only, not_serialized attributes
+        required = set.union(
+            *[getattr(p, '__required__', set()) for p in parents])
+        read_only = set.union(
+            *[getattr(p, '__read_only__', set()) for p in parents])
+        not_serialized = set.union(
+            *[getattr(p, '__not_serialized__', set()) for p in parents])
+
+        required.update(cls_schema.get('required', []))
+        read_only.update(cls_schema.get('readOnly', []))
+        not_serialized.update(cls_schema.get('notSerialized', []))
 
         # looking for default values, getters and setters overriding inherited properties
         from_parents = set(name_translation_flatten.values()).difference(name_translation.values())
@@ -304,7 +321,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 else:
                     raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
 
-
         # look for getter/setter/defaultvalue first in class definition
         for prop, detail in properties.items():
             prop = name_translation_flatten[prop]
@@ -328,6 +344,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
+
+            if prop in required and detail.get('default') is None:
+                # assume all references are to object-like
+                if detail.get('type') == 'object' or '$ref' in detail:
+                    detail['default'] = {}
 
             if detail.get('default') is None and detail.get('type') == 'array':
                 detail['default'] = []
@@ -485,29 +506,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__prop_translated_flatten__'] = name_translated
         props['__has_default__'] = defaults
 
-        # automatically adds property names to foreign keys
-        #for prop_name, prop in properties.items():
-        #    fkey = prop.get('foreignKey')
-        #    if fkey and 'name' not in fkey:
-        #        prop['foreignKey']['name'] = prop_name
-        #    # case array of foreignkeys
-        #    fkey =  prop.get('items', {}).get('foreignKey')
-        #    if fkey and 'name' not in fkey:
-        #        prop['items']['foreignKey']['name'] = prop_name
-
         props['__propinfo__'] = properties
-
-        # prepare set of inherited required, read_only, not_serialized attributes
-        required = set.union(
-            *[getattr(p, '__required__', set()) for p in parents])
-        read_only = set.union(
-            *[getattr(p, '__read_only__', set()) for p in parents])
-        not_serialized = set.union(
-            *[getattr(p, '__not_serialized__', set()) for p in parents])
-
-        required.update(cls_schema.get('required', []))
-        read_only.update(cls_schema.get('readOnly', []))
-        not_serialized.update(cls_schema.get('notSerialized', []))
 
         invalid_requires = [
             req for req in required if req not in properties

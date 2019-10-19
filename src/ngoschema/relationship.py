@@ -28,7 +28,7 @@ class Relationship:
 
     @classproperty
     def fkeys(cls):
-        return cls._propinfo('keys')
+        return cls._propinfo('fkeys')
 
     @classproperty
     def isOne2Many(cls):

@@ -8,7 +8,6 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import io
 import logging
 import re
 import os
@@ -21,16 +20,15 @@ import inflection
 import jinja2
 import jinja2.parser
 import six
+from future.utils import with_metaclass
+from ngoschema.utils import templates_module_loader
+
+from .schema_metaclass import SchemaMetaclass
+from .document import Document
+from .object_handlers import handler_registry, FileObjectHandler
 
 from . import utils
-from .decorators import SCH_PATH_DIR_EXISTS
-from .decorators import assert_arg
 from .query import Query
-
-templates_module_loader = utils.GenericModuleFileLoader('templates')
-
-def load_module_templates(module_name):
-    templates_module_loader.register(module_name)
 
 # default jinja2 environment instance
 _default_jinja_env = None
@@ -77,144 +75,7 @@ class TemplatedString(object):
 
     def __call__(self, **obj):
         # ctx = context.as_dict() if hasattr(context,'as_dict') else context
-        if self._has_dot:
-            return self._template.render(**obj)
         return self._template.render(**obj)
-
-
-#@handler_registry.register()
-class Jinja2FileObjectHandler(object):
-    logger = logging.getLogger(__name__)
-
-    def __init__(self, template, environment=None):
-        """
-        Serializer based on a jinja template. Template is loaded from
-        environment. If no environment is provided, use the default one
-        `default_jinja2_env`
-        """
-        self.jinja = environment or default_jinja2_env()
-        self.jinja.globals.update(_jinja2_globals)
-        self.template = template
-
-    def dump(self,
-             objs,
-             path,
-             overwrite=False,
-             encoding="utf-8",
-             logger=None,
-             **opts):
-        __doc__ = Serializer.dump.__doc__
-        logger = logger or self.logger
-        logger.info("DUMP template '%s' file %s", self.template, path)
-        logger.debug("data:\n%r ", objs)
-
-        if path.exists() and not overwrite:
-            raise IOError("file '%s' already exists" % str(path))
-        with io.open(str(path), 'w', encoding=encoding) as outfile:
-            stream = self.dumps(objs, encoding=encoding, **opts)
-            stream = six.text_type(stream)
-            outfile.write(stream)
-
-    def dumps(self, objs, **opts):
-        data = objs.for_json() if hasattr(objs, "for_json") else objs
-        data = utils.filter_collection(data, **opts)
-        return self.jinja.get_template(self.template).render(data)
-
-    @assert_arg(2, SCH_PATH_DIR_EXISTS)
-    def dump_macro(self,
-                   macro_name,
-                   output_dir,
-                   templated_path,
-                   overwrite=True,
-                   encoding="utf-8",
-                   protected_regions=None,
-                   macro_args=[],
-                   context=None,
-                   **kwargs):
-        """
-        Serializes a jinja2 macro into a file by given by a possibly templated filepath.
-        Missing directories are created.
-        If output already exists with exact same content, file is not overwritten.
-
-        :param macro_name: macro name in the template file
-        :param output_dir: existing output directory
-        :param templated_path: templated relative path of output
-        :param protected_regions: an optional dictionary of protected regions (key: region canonical name, value: string)
-        :param macro_args: macro list of arguments
-        :param context: context used by jinja to render template
-        """
-
-        relpath = TemplatedString(templated_path)(**context)
-        path = output_dir.joinpath(relpath)
-        context = context or kwargs
-
-        if path.exists() and not overwrite:
-            raise IOError("file '%s' already exists" % str(path))
-
-        stream = self.dumps_macro(
-                macro_name,
-                protected_regions=protected_regions,
-                macro_args=macro_args,
-                context=context)
-        stream = six.text_type(stream)
-
-        if not path.parent.exists():
-            os.makedirs(str(path.parent))
-
-        if path.suffix in ['.h', '.c', '.cpp']:
-            tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=path.suffix, dir=path.parent, delete=True)
-            tf.write(stream.encode('utf-8'))
-            stream = subprocess.check_output(
-                'clang-format %s' % tf.name, cwd=str(output_dir), shell=True)
-            tf.close()
-            stream = stream.decode('utf-8')
-
-        if path.exists():
-            with io.open(str(path), 'r', encoding=encoding) as f:
-                if stream == f.read():
-                    self.logger.info("File '%s' already exists with same content. Not overwriting.", path)
-                    return
-
-        with io.open(str(path), 'w', encoding=encoding) as outfile:
-            self.logger.info("DUMP macro %s of template '%s' file %s", macro_name, self.template, path)
-            self.logger.debug("data:\n%r ", utils.any_pprint(context))
-            outfile.write(stream)
-
-    def dumps_macro(self,
-                    macro_name,
-                    protected_regions=None,
-                    macro_args=[],
-                    context=None,
-                    **kwargs):
-        """
-        Serializes a jinja2 macro
-
-        :param macro_name: macro name in the template file
-        :param protected_regions: an optional dictionary of protected regions (key: region canonical name, value: string)
-        :param macro_args: macro list of arguments
-        :param context: context used by jinja to render template
-        """
-        context = context or kwargs
-        #args = ['arg%i'%i for i in range(len(macro_args))]
-        #args = ['arg%i'%i for i in range(len(macro_args))]
-        #ctx = { "arg%i"%i: o for i, o in enumerate(macro_args)}
-        if 'protected_regions' not in macro_args:
-            macro_args.append('protected_regions')
-
-        self.jinja.globals['protected_regions'] = protected_regions or {}
-
-        #context['protected_regions'] = protected_regions or {}
-        args = [k for k in macro_args if k in context]
-        #args += ['%s=%s' % (k, k) for k in context.keys() if k not in macro_args]
-        #context['Query'] = Query
-        to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
-            self.template, macro_name, macro_name, ', '.join(args))
-        try:
-            template = self.jinja.from_string(to_render)
-            return template.render(**context)
-        except Exception as er:
-            self.logger.info(er)
-            raise er
 
 
 def get_variables(source, remove_this=True):
@@ -330,3 +191,81 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
         # add filters
         for k, v in filters_registry.items():
             self.filters[k] = v
+
+
+@handler_registry.register()
+class Jinja2FileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2FileObjectHandler"
+
+    def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
+        """
+        Serializer based on a jinja template. Template is loaded from
+        environment. If no environment is provided, use the default one
+        `default_jinja2_env`
+        """
+        FileObjectHandler.__init__(self, template=template, **kwargs)
+        self._jinja = environment or default_jinja2_env()
+        self._jinja.globals.update(_jinja2_globals)
+        self._context = context or {}
+        self._protected_regions = self._jinja.globals['protected_regions'] = protectedRegions or {}
+
+    def pre_commit(self):
+        return self._context
+
+    def deserialize_data(self):
+        raise Exception("not implemented")
+
+    def serialize_data(self, data):
+        self.logger.info("DUMP template '%s' file %s", self.template, self.document.filepath)
+        self.logger.debug("data:\n%r ", data)
+
+        stream = self._jinja.get_template(self.template).render(data)
+        return six.text_type(stream)
+
+
+@handler_registry.register()
+class Jinja2MacroFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2FileObjectHandler)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroFileObjectHandler"
+
+    def serialize_data(self, data):
+        macro_args = self.macroArgs.for_json()
+        if 'protected_regions' not in macro_args:
+            macro_args.append('protected_regions')
+        args = [k for k in macro_args if k in data]
+        to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
+            self.template, self.macroName, self.macroName, ', '.join(args))
+        try:
+            template = self._jinja.from_string(to_render)
+            context = self._context.copy()
+            context.update(**data)
+            return template.render(context)
+        except Exception as er:
+            self.logger.error('SERIALIZE Jinja2MacroFileObjectHandler: %s', er)
+            raise er
+
+
+@handler_registry.register()
+class Jinja2MacroTemplatedPathFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2MacroFileObjectHandler)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroTemplatedPathFileObjectHandler"
+
+    def serialize_data(self, data):
+        self.logger.info('SERIALIZE Jinja2MacroFileObjectHandler')
+        try:
+            tpath = TemplatedString(self.templatedPath)(**self._context)
+        except Exception as er:
+            self.logger.error('SERIALIZE Jinja2MacroTemplatedPathFileObjectHandler: %s', er)
+        fpath = self.outputDir.joinpath(tpath)
+        self.document = self.document or Document()
+        self.document.filepath = fpath
+        if not fpath.parent.exists():
+            os.makedirs(str(fpath.parent))
+        stream = Jinja2MacroFileObjectHandler.serialize_data(self, data)
+        if fpath.suffix in ['.h', '.c', '.cpp']:
+            tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=fpath.suffix, dir=fpath.parent, delete=False)
+            tf.write(stream.encode('utf-8'))
+            tf.close()
+            stream = subprocess.check_output(
+                'clang-format %s' % tf.name, cwd=str(self.outputDir), shell=True)
+            stream = stream.decode('utf-8')
+            os.remove(tf.name)
+        return stream

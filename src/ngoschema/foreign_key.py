@@ -163,6 +163,6 @@ class CnameForeignKey(ForeignKey):
             self._set_ref(ref)
             return ref
         except Exception as er:
-            raise ValueError("Impossible to resolve reference '%s'.\n%s" % (self._value, sys.exc_info()[2]))
+            raise ValueError("Impossible to resolve canonical name '%s'.\n%s" % (self._value, sys.exc_info()[2]))
 
     ref = property(resolve, ForeignKey._set_ref)

@@ -11,10 +11,9 @@
         "filepath": {
           "type": "path"
         },
-        "url": {
-          "type": "string",
-          "format": "uri-reference",
-          "default": "{{this.uri}}"
+        "binary": {
+          "type": "boolean",
+          "default": false
         },
         "uri": {
           "type": "string",

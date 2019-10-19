@@ -10,11 +10,8 @@ created on 11/06/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import codecs
 import itertools
-import weakref
 
-import inflection
 import six
 import collections
 import copy
@@ -29,18 +26,11 @@ from python_jsonschema_objects import \
 
 from . import utils
 from . import mixins
-from .mixins import HasCache, HasParent, HasLogger
+from .mixins import HasParent, HasLogger
 from ngoschema.resolver import resolve_uri
 from .validators import DefaultValidator
 from .config import ConfigLoader
-from .decorators import SCH_PATH_DIR_EXISTS, SCH_STR
-from .decorators import assert_arg
-
-# loader to register module with a transforms folder where to look for model transformations
-models_module_loader = utils.GenericModuleFileLoader('schemas')
-
-def load_module_models(module_name):
-    return models_module_loader.register(module_name)
+from .str_utils import ProtocolJSONEncoder
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
@@ -100,7 +90,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
             self.logger.error(er)
             raise AttributeError("No attribute %s" % propname)
         except Exception as er:
-            self.logger.error(er)
+            self.logger.error("problem validating attribute %s: %s", propname, er)
             raise AttributeError(er)
 
     def setprop(self, val):
@@ -341,7 +331,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
         if '$schema' in props:
             if props['$schema'] != cls.__schema__:
-                cls = get_builder().resolve_or_build(props.pop('$schema'))
+                cls = get_builder().resolve_or_build(props['$schema'])
 
         cls.init_class_logger()
 
@@ -371,7 +361,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         self.logger.info(pjo_util.lazy_format("INIT {0} with {1}", self.short_repr(), utils.any_pprint(props)))
 
         cls = self.__class__
-        props.pop('$schema', None)
+        #props.pop('$schema', None)
 
         self._key2attr = dict()
         self._lazy_loading = props.pop('lazy_loading', None) or cls.__lazy_loading__
@@ -389,15 +379,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
         self._lazy_data = dict()
         self._extended_properties = dict()
-        self._properties = dict(zip(
-                    self.__prop_names_flatten__.values(),
-                    [None for x in six.moves.xrange(len(self.__prop_names_flatten__))]))
-
-        # To support defaults, we have to actually execute the constructors
-        # but only for the ones that have defaults set.
-        for k, v in self.__has_default__.items():
-            if k not in props:
-                self._lazy_data.setdefault(k, copy.copy(v))
+        self._properties = dict()
+        for prop in self.__prop_names_flatten__.values():
+            self._properties.setdefault(prop, None)
 
         self.pre_init_hook(*args, **props)
 
@@ -411,6 +395,15 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         for k in self.__read_only__.intersection(props.keys()):
             props.pop(k)
             self.logger.warning('property %s is read-only. Initial value provided not used.', k)
+
+        # To support defaults, we have to actually execute the constructors
+        # but only for the ones that have defaults set.
+        for k, v in self.__has_default__.items():
+            if k not in props:
+                if self._lazy_loading:
+                    self._lazy_data.setdefault(k, copy.copy(v))
+                else:
+                    setattr(self, k, v)
 
         if 'name' in props:
             if isinstance(self, mixins.HasCanonicalName):
@@ -436,8 +429,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         else:
             try:
                 for k, prop in props.items():
-                    if prop is not None:
-                        setattr(self, self.__prop_names_flatten__.get(k, k), prop)
+                    setattr(self, k, prop)
                 if self.__strict__:
                     self.do_validate(force=True)
             except Exception as er:
@@ -450,9 +442,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def _set_context(self, context):
         mixins.HasCache._set_context(self, context)
         for k, p in self._properties.items():
-            if p is not None:
-                p._set_context(context)
-        for k, p in self._extended_properties.items():
             if p is not None:
                 p._set_context(context)
 
@@ -498,79 +487,15 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 return False
         return True
 
-    def for_json(self, no_defaults=True):
-        """
-        serialization method, removing all members flagged as NotSerialized
-        """
-        out = collections.OrderedDict()
-        for pn_id, pn in self.__prop_names_flatten__.items():
-            if pn_id in getattr(self, '__not_serialized__', []):
-                continue
-            prop = self._get_prop(pn)
-            if no_defaults:
-                if prop is None:
-                    continue
-                defv = self.__has_default__.get(pn)
-                if isinstance(prop, pjo_literals.LiteralValue):
-                    if getattr(prop, '_pattern', '') == defv:
-                        continue
-                    val = self._get_prop_value(pn)
-                    if val == defv:
-                        continue
-                    if val is not None:
-                        out[pn_id] = val
-                else:
-                    if isinstance(prop, pjo_classbuilder.ProtocolBase):
-                        if len(prop) == len(prop.__has_default__):
-                            if all(prop._get_prop_value(p) == d for p, d in prop.__has_default__):
-                                continue
-                    if isinstance(prop, pjo_wrapper_types.ArrayWrapper):
-                        if len(prop) == len(defv):
-                            if not defv or prop == defv:
-                                continue
-                    val = prop.for_json(no_defaults=no_defaults)
-                    if val:
-                        out[pn_id] = val
-            else:
-                out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
-        for pn, prop in self._extended_properties.items():
-            out[pn_id] = self._get_prop_value(pn, no_defaults=no_defaults)
-        return out
-
-    def for_xml(self, no_defaults=True):
-        from lxml import etree
-        def get_tag(obj):
-            return inflection.underscore(obj.__class__.__name__)
-        tag = get_tag(self)
-        attribs = {k: v for k, v in self._properties.items() if isinstance(v, pjo_literals.LiteralValue)}
-        attribs.update({k: ', '.join(list(v)) for k, v in self._properties.items() if isinstance(v, pjo_wrapper_types.ArrayWrapper) and issubclass(v.__itemtype__, pjo_literals.LiteralValue)})
-        elt = etree.Element(tag, attrib=attribs)
-        sub_elts = {get_tag(v): v for k, v in self._properties.items() if isinstance(v, ProtocolBase)}
-        sub_elts.update({k: ', '.join(list(v)) for k, v in self._properties.items() if isinstance(v, pjo_wrapper_types.ArrayWrapper) and issubclass(v.__itemtype__, pjo_literals.ProtocolBase)})
+    def serialize(self, **opts):
+        self.validate()
+        enc = ProtocolJSONEncoder(**opts)
+        return enc.encode(self)
 
     @classmethod
     def jsonschema(cls):
         from .resolver import get_resolver
         return get_resolver().resolve(cls.__schema__)[1]
-
-    @property
-    def _id(self):
-        return id(self)
-
-    @assert_arg(1, SCH_PATH_DIR_EXISTS)
-    @assert_arg(2, SCH_STR)
-    def serialize_json(self, output_dir, filename, no_defaults=True, overwrite=False):
-        output_fp = output_dir.joinpath(filename)
-        if output_fp.exists() and not overwrite:
-            self.logger.warning("File '%s' already exists. Not overwriting.", output_fp)
-        else:
-            self.logger.info("SERIALIZING '%s'", output_fp)
-            pb_json = self.for_json(no_defaults=no_defaults)
-            if isinstance(self, mixins.HasCanonicalName):
-                pb_json['canonicalName'] = str(self.canonicalName)
-
-            with codecs.open(str(output_fp), 'w', 'utf-8') as f:
-                json.dump(pb_json, f)
 
     def validate(self):
         if self._lazy_loading:
@@ -614,7 +539,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def propinfo(cls, propname):
         propid = cls.__prop_translated_flatten__.get(propname, propname)
         for c in cls.__pbase_mro__:
-            if propname in c.__prop_names__:
+            if propid in c.__prop_names__:
                 return c.__propinfo__[propid]
             elif c is not cls and propid in getattr(c, '__prop_names_flatten__', {}):
                 return c.propinfo(propid)
@@ -661,48 +586,30 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         raise AttributeError("'{0}' is not a valid property of {1}".format(
                              name, self.__class__.__name__))
 
-
     def get(self, key, default=None):
+        #  collections.Mapping.get is bugged in our case if prop are None, default is not returned
+        #return collections.Mapping.get(self, key, default)
         try:
-            v = self.__getitem__(key)
+            v = self[key]
             if v is None:
                 v = default
             return v
         except KeyError as er:
-            if default is None:
-                return None
-            info = self.propinfo(key)
-            if utils.is_mapping(default):
-                return info['type'](**default)
-            else:
-                return info['type'](default).to_json()
+            return default
+
+    def __contains__(self, key):
+        # add test for existence in lazy_data and that prop is not None
+        key = self.__prop_names_flatten__.get(key, key)
+        return key in self._lazy_data or self._properties.get(key) is not None or key in self._extended_properties
 
     def __getitem__(self, key):
         """access property as in a dict and returns json if not composed of objects """
-        def json_if_not_of_objects(obj):
-            cur = obj
-            if isinstance(obj, pjo_wrapper_types.ArrayWrapper):
-                while issubclass(getattr(cur, '__itemtype__', None), pjo_wrapper_types.ArrayWrapper):
-                    cur = cur.__itemtype__
-                return cur
-            if isinstance(cur, pjo_literals.LiteralValue):
-                return cur.for_json()
-            return cur
-            #elif isinstance(cur, ProtocolBase):
-            #    return cur
-
         try:
-            # to be able to call
-            if '.' in key:
-                keys = key.strip('#').split('.')
-                cur = ProtocolBase.__getattr__(self, keys[0])
-                for _ in keys:
-                    cur = ProtocolBase.__getattr__(cur, _)
-                return json_if_not_of_objects(cur)
+            key = self.__prop_names_flatten__.get(key, key)
             ret = getattr(self, key)
-            #if ret is None:
-            #    raise KeyError(key)
-            return json_if_not_of_objects(ret)
+            if isinstance(ret, pjo_literals.LiteralValue):
+                return ret._value
+            return ret
         except AttributeError as er:
             raise KeyError(key)
         except Exception as er:

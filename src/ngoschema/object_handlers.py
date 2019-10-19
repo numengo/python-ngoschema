@@ -10,14 +10,11 @@ from __future__ import unicode_literals
 
 import os
 import logging
-import subprocess
-import tempfile
 from abc import abstractmethod
 
-import six
 from future.utils import with_metaclass
-from ngoschema.jinja2 import TemplatedString
-from ngoschema.decorators import SCH_PATH_DIR_EXISTS, assert_arg
+from ngoschema.decorators import assert_arg, SCH_PATH_FILE, SCH_PATH
+from ngoschema.session import sessionmaker, scoped_session
 
 try:
     from StringIO import StringIO
@@ -27,15 +24,15 @@ except ImportError:
 import json
 from ruamel import yaml
 from ruamel.yaml import YAML
+import xmltodict
 
 from .query import Query
 from .protocol_base import ProtocolBase
 from .document import Document
 from .schema_metaclass import SchemaMetaclass
+from .str_utils import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence
-from .jinja2 import default_jinja2_env, _jinja2_globals
 from .keyed_object import KeyedObject, NamedObject
-from .decorators import memoized_property
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +48,13 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
         ProtocolBase.__init__(self, **kwargs)
         self._registry = Registry()
         self._class = self.objectClass._imported if self.objectClass is not None else None
-        self._keys = None
-        if self.keys is not None:
-            self._keys = self.keys.for_json()
+        self._fkeys = None
+        if self.fkeys is not None:
+            self._fkeys = self.fkeys.for_json()
         elif issubclass(self._class, KeyedObject):
-            self._keys = tuple(self._class.primaryKeys)
+            self._fkeys = tuple(self._class.primaryKeys)
         self._session = None
+        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
 
     @property
     def session(self):
@@ -65,11 +63,11 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def _identity_key(self, instance):
         if not isinstance(instance, self._class):
             raise Exception("%r is not an instance of %r" % (instance, self._class))
-        if self._keys:
-            if len(self._keys)>1:
-                return tuple([instance._get_prop_value(k) for k in self._keys])
+        if self._fkeys:
+            if len(self._fkeys)>1:
+                return tuple([instance._get_prop_value(k) for k in self._fkeys])
             else:
-                return instance._get_prop_value(self._keys[0])
+                return instance._get_prop_value(self._fkeys[0])
         return id(instance)
 
     def register(self, instance):
@@ -120,7 +118,7 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
                 # canonical name which is going to be read again
                 for d2, c2, p2 in _resolve_cname_path(cn_path, d, c[:-1], p):
                     return i, p2
-        raise Exception("Unresolvable canonical name '{0}' in '{1}'", cname, i)
+        raise Exception("Unresolvable canonical name '%s' in '%s'" % (cname, i))
 
     def resolve_cname(self, cname):
         cur, path = self.resolve_cname_path(cname)
@@ -140,9 +138,14 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return Query(self.instances).filter(
             *attrs, order_by=order_by, **attrs_value)
 
-
     def pre_commit(self):
-        return [o.for_json() for o in self._registry.values()]
+        values = self.instances
+        if not self.many:
+            if not len(values)==1:
+                raise Exception('handler is configured for 1 registered objects (%i).' % len(list(values)))
+            return self._encoder.default(values[0])
+        else:
+            return [self._encoder.default(o) for o in values]
 
     @abstractmethod
     def commit(self):
@@ -179,6 +182,12 @@ class FilterObjectHandlerMixin(object):
 class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObjectHandlerMixin)):
     __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/FileObjectHandler"
 
+    def __init__(self, filepath=None, document=None, **kwargs):
+        if filepath is not None:
+            document = document or Document()
+            document.filepath = filepath
+        ObjectHandler.__init__(self, document=document, **kwargs)
+
     @abstractmethod
     def deserialize_data(self):
         pass
@@ -200,9 +209,12 @@ class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObj
         return self.serialize_data(data)
 
     def commit(self):
+        stream = self.dumps()
         doc = self.document
         fpath = doc.filepath
-        stream = self.dumps()
+        if not fpath.parent.exists():
+            self.logger.info("creating missing directory '%s'", fpath.parent)
+            os.makedirs(str(fpath.parent))
         if fpath.exists():
             doc.load()
             if stream == doc.contentRaw:
@@ -214,6 +226,30 @@ class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObj
         doc.write(stream)
 
 
+
+@assert_arg(0, SCH_PATH_FILE)
+def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
+    session = session or scoped_session(sessionmaker())()
+    handler_cls = handler_cls or JsonFileObjectHandler
+    handler = handler_cls(filepath=fp, **kwargs)
+    session.bind_handler(handler)
+    logger.info("LOAD %s from '%s'", handler.objectClass, fp)
+    handler.load()
+    instances = handler.instances
+    return instances if handler.many else instances[0]
+
+
+@assert_arg(1, SCH_PATH)
+def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
+    session = session or scoped_session(sessionmaker())()
+    handler_cls = handler_cls or JsonFileObjectHandler
+    handler = handler_cls(filepath=fp, **kwargs)
+    session.bind_handler(handler)
+    logger.info("LOAD %s from '%s'", handler.objectClass, fp)
+    handler.register(obj)
+    handler.commit()
+
+
 @handler_registry.register()
 class JsonFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
     __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/JsonFileObjectHandler"
@@ -222,7 +258,8 @@ class JsonFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
         FileObjectHandler.__init__(self, **kwargs)
 
     def deserialize_data(self):
-        return self.document.deserialize_json()
+        data = self.document._deserialize(json.loads, **self._extended_properties)
+        return data
 
     def serialize_data(self, data):
         return json.dumps(
@@ -240,83 +277,41 @@ class YamlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
-        return self.document.deserialize_yaml()
+        data = self.document._deserialize(self._yaml.load, **self._extended_properties)
+        return data
 
     def serialize_data(self, data):
         yaml.indent = self.get("indent", 2)
         yaml.allow_unicode = self.get("encoding", "utf-8") == "utf-8"
 
         output = StringIO()
-        self._yaml.safe_dump(data, output, default_flow_style=False)
+        self._yaml.safe_dump(data, output, default_flow_style=False, **self._extended_properties)
         return output.getvalue()
 
 
 @handler_registry.register()
-class Jinja2FileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2FileObjectHandler"
+class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/XmlFileObjectHandler"
 
-    def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
-        """
-        Serializer based on a jinja template. Template is loaded from
-        environment. If no environment is provided, use the default one
-        `default_jinja2_env`
-        """
-        FileObjectHandler.__init__(self, template=template, **kwargs)
-        self._jinja = environment or default_jinja2_env()
-        self._jinja.globals.update(_jinja2_globals)
-        self._context = context or {}
-        self._protected_regions = self._jinja.globals['protected_regions'] = protectedRegions or {}
+    def __init__(self, tag=None, **kwargs):
+        self._tag = str(tag or self._class.__name__)
+        FileObjectHandler.__init__(self, tag=self._tag, **kwargs)
+        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
+                                            remove_refs=self.remove_refs)
 
-    def pre_commit(self):
-        return self._context
 
     def deserialize_data(self):
-        raise Exception("not implemented")
+        return self.document._deserialize(xmltodict.parse,
+                                          attr_prefix=str(self.attr_prefix),
+                                          cdata_key=str(self.cdata_key)
+                                          )[self._tag]
 
     def serialize_data(self, data):
-        logger.info("DUMP template '%s' file %s", self.template, self.document.filepath)
-        logger.debug("data:\n%r ", data)
-
-        stream = self._jinja.get_template(self.template).render(data)
-        return six.text_type(stream)
-
-
-@handler_registry.register()
-class Jinja2MacroFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroFileObjectHandler"
-
-    def serialize_data(self, data):
-        macro_args = self.macroArgs.for_json()
-        if 'protected_regions' not in macro_args:
-            macro_args.append('protected_regions')
-        args = [k for k in macro_args if k in data]
-        to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
-            self.template, self.macroName, self.macroName, ', '.join(args))
-        try:
-            template = self._jinja.from_string(to_render)
-            return template.render(**data)
-        except Exception as er:
-            logger.info(er)
-            raise er
+        return xmltodict.unparse(
+            {self._tag: data},
+            pretty=bool(self.pretty),
+            attr_prefix=str(self.attr_prefix),
+            cdata_key=str(self.cdata_key),
+            short_empty_elements=bool(self.short_empty_elements))
 
 
-@handler_registry.register()
-class Jinja2MacroTemplatedPathFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2MacroFileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroTemplatedPathFileObjectHandler"
-
-    def serialize_data(self, data):
-        tpath = TemplatedString(self.templatedPath)(**data)
-        fpath = self.outputDir.joinpath(tpath)
-        self.document = self.document or Document()
-        self.document.filepath = fpath
-        if not fpath.parent.exists():
-            os.makedirs(str(fpath.parent))
-        stream = Jinja2MacroFileObjectHandler.serialize_data(self, data)
-        if fpath.suffix in ['.h', '.c', '.cpp']:
-            tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=fpath.suffix, dir=fpath.parent, delete=True)
-            tf.write(stream.encode('utf-8'))
-            stream = subprocess.check_output(
-                'clang-format %s' % tf.name, cwd=str(self.outputDir), shell=True)
-            tf.close()
-            stream = stream.decode('utf-8')
-        return stream

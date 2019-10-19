@@ -12,6 +12,7 @@ created: 01/05/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import copy
 import functools
 import posixpath
@@ -28,6 +29,8 @@ from ngoschema.utils import UriDict
 from .utils import apply_through_collection
 from .utils import is_string
 
+logger = logging.getLogger(__name__)
+
 URI_ID = '$id'
 CURRENT_DRAFT = "draft-05"
 
@@ -43,6 +46,12 @@ _uri_doc_store = UriDict()
 
 def get_uri_doc_store():
     return _uri_doc_store
+
+def unregister_doc_with_uri_id(uri_id):
+    try:
+        del _uri_doc_store[uri_id]
+    except KeyError:
+        logger.warning("no %s uri in URI registry", uri_id)
 
 
 def register_doc_with_uri_id(doc, uri_id):
@@ -62,14 +71,16 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     :type base_uri: string
     """
     global _resolver
-    base_uri, dummy = urldefrag(base_uri)
     ms = get_uri_doc_store()
+    base_uri, dummy = urldefrag(base_uri)
     if base_uri not in ms:
         raise IOError("%s not found in loaded documents (%s)" %
                       (base_uri, ", ".join(ms.keys())))
     referrer = ms[base_uri]
-    if not _resolver or set(ms.keys()).difference(set(_resolver.store)):
+    if _resolver is None:
         _resolver = RefResolver(base_uri, referrer, ms)
+    if not set(ms.keys()).issubset(_resolver.store.keys()):
+        _resolver.store.update(ms)
     if base_uri != _resolver.base_uri:
         _resolver.push_scope(base_uri)
     return _resolver

@@ -10,6 +10,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import codecs
+import os
 
 import arrow
 import six
@@ -21,7 +22,6 @@ from six.moves.urllib.request import urlopen
 from collections import Mapping, ChainMap
 
 from . import utils
-#from .canonical_name import resolve_cname
 from .protocol_base import ProtocolBase
 from .decorators import SCH_PATH_DIR
 from .decorators import SCH_PATH_FILE
@@ -29,6 +29,7 @@ from .decorators import assert_arg
 from .query import Query
 from .schema_metaclass import SchemaMetaclass
 from ngoschema.resolver import resolve_uri
+from .resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
 
 
 class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -51,12 +52,17 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         ProtocolBase.__init__(self, *args, **props)
 
     @property
+    def _id(self):
+        if self._content:
+            return self._content.get('$id')
+
+    @property
     def identifier(self):
         if self._identifier is None:
             self._identifier = self.filepath or self.url
         return str(self._identifier) if self._identifier else ''
 
-    def load(self, mode='r'):
+    def load(self):
         """
         Load document in memory
 
@@ -65,8 +71,12 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         content = None
         encoding = str(self.charset)
         if self.filepath:
-            with codecs.open(str(self.filepath), mode, encoding) as f:
-                content = f.read()
+            if not self.binary:
+                with codecs.open(str(self.filepath), 'r', encoding) as f:
+                    content = f.read()
+            else:
+                with open(str(self.filepath), mode='rb') as f:
+                    content = f.read()
         elif self.url:
             response = urlopen(str(self.url))
             content = response.read().decode(encoding)
@@ -75,34 +85,46 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._contentRaw = content
         self._loaded = True
 
+    def delete_file(self):
+        if not self.filepath:
+            raise AttributeError('no filepath defined.')
+        if not self.filepath.exists():
+            raise ValueError('%s does not exist.' % self.filepath)
+        os.remove(str(self.filepath))
+
     @property
     def loaded(self):
         return self._loaded
 
+    def unload(self):
+        # remove reference from main registry
+        if self._id:
+            unregister_doc_with_uri_id(self._id)
+        self._contentRaw = self._content = None
+
     def write(self, content, mode='w'):
         if self.filepath:
-            with codecs.open(str(self.filepath), mode, self.charset) as f:
-                f.write(content.encode(self.charset))
-                self._contentRaw = content
+            if not self.binary:
+                enc = str(self.charset)
+                with codecs.open(str(self.filepath), mode, enc) as f:
+                    f.write(content)
+            else:
+                with open(str(self.filepath), mode+'b') as f:
+                    f.write(content)
+            self._contentRaw = content if mode != 'a' else self._contentRaw + content
         elif self.url:
             raise Exception('impossible to write on a URL referenced document')
 
-    def _deserialize(self, load_function):
+    def _deserialize(self, load_function, **kwargs):
         import json
         if not self.loaded:
-            self.load('r')
-        self._content = load_function(self._contentRaw)
-        self.get_id()
+            self.load()
+        self._content = load_function(self._contentRaw, **kwargs)
+        try:
+            register_doc_with_uri_id(self._content, self._id)
+        except Exception as er:
+            pass
         return self._content
-
-    def deserialize_json(self):
-        import json
-        return self._deserialize(json.loads)
-
-    def deserialize_yaml(self):
-        from ruamel.yaml import YAML
-        yaml = YAML(typ="safe")
-        return self._deserialize(yaml.load)
 
     @property
     def contentRaw(self):
@@ -133,15 +155,8 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def get_content(self):
         return self._content or self._contentRaw
+
     content = property(get_content)
-
-    _id = None
-
-    def get_id(self):
-        if self._id is None and self.content:
-            if '$id' in self.content:
-                self._id = self.content['$id']
-        return self._id
 
 
 _default_document_registry = None
@@ -160,8 +175,8 @@ def get_document_registry():
 class DocumentRegistry(Mapping):
     def __init__(self):
         from .object_handlers import JsonFileObjectHandler
-        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', keys=['filepath'])
-        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', keys=['uri'])
+        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', fkeys=['filepath'])
+        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.document.Document', fkeys=['uri'])
         self._chained = ChainMap(self._fp_registry._registry,
                                  self._url_registry._registry)
 

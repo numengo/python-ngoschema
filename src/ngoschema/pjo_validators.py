@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import datetime
 import pathlib
+import logging
 from builtins import str
 from decimal import Decimal
 
@@ -18,13 +19,17 @@ import six
 from ngoschema.utils import is_importable
 from past.builtins import basestring
 from python_jsonschema_objects import validators
+from python_jsonschema_objects.literals import MakeLiteral
 from python_jsonschema_objects.validators import ValidationError
 from python_jsonschema_objects.validators import converter_registry
 from python_jsonschema_objects.validators import formatter_registry
 from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import type_registry
+from python_jsonschema_objects.pattern_properties import ExtensibleValidator as pjo_ExtensibleValidator
 
 from . import utils
+
+logger = logging.getLogger(__name__)
 
 string_types = (basestring, str)
 datetime_types = (datetime.datetime, arrow.Arrow)
@@ -90,6 +95,16 @@ def isPathExisting(param, value, type_data):
 
 # type checkers
 ################
+BOOLEAN_TRUE_STR_LIST = ['true']
+BOOLEAN_FALSE_STR_LIST = ['false']
+@type_registry.register(name='boolean')
+def check_boolean_type(param, value, _):
+    if isinstance(value, string_types):
+        if value.lower() in (BOOLEAN_TRUE_STR_LIST + BOOLEAN_FALSE_STR_LIST):
+            return
+    if not isinstance(value, bool):
+        raise ValidationError(
+            "{0} is not a boolean".format(value))
 
 
 @type_registry.register(name="string")
@@ -136,6 +151,18 @@ def check_importable_type(param, value, _):
 
 # converters
 ############
+@converter_registry.register(name="boolean")
+def convert_boolean(param, value, detail):
+    if utils.is_string(value):
+        if value.lower() in BOOLEAN_FALSE_STR_LIST:
+            return False
+        if value.lower() in BOOLEAN_TRUE_STR_LIST:
+            return True
+    try:
+        return bool(value)
+    except:
+        pass
+    return value
 
 @converter_registry.register(name="integer")
 def convert_integer(param, value, detail):
@@ -311,3 +338,36 @@ def format_arrow(param, value, details):
         frmt = details["format"]
         return value.format(frmt)
     return str(value)
+
+#TODO to remove
+class ExtensibleValidator(pjo_ExtensibleValidator):
+    """better handling of additional properties as objects """
+
+    def instantiate(self, name, val):
+
+        for p in self._pattern_types:
+            if p.pattern.search(name):
+                logger.debug(
+                    "Found patternProperties match: %s %s" % (
+                        p.pattern.pattern, name
+                    ))
+                return self._make_type(p.schema_type, val)
+
+        if self._additional_type is True:
+
+            valtype = [k for k, t
+                       in (validators.SCHEMA_TYPE_MAPPING
+                          +validators.USER_TYPE_MAPPING)
+                       if t is not None and isinstance(val, t)]
+            valtype = valtype[0]
+            # CRN: add treatment for objects
+            if valtype == 'object':
+                return dict(val)
+            return MakeLiteral(name, valtype, val)
+
+        elif isinstance(self._additional_type, type):
+            return self._make_type(self._additional_type, val)
+
+        raise validators.ValidationError(
+            "additionalProperties not permitted "
+            "and no patternProperties specified")

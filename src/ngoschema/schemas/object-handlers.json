@@ -10,7 +10,7 @@
                 "objectClass": {
                     "type": "importable"
                 },
-                "keys": {
+                "fkeys": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -19,6 +19,14 @@
                 "many": {
                     "type": "boolean",
                     "default": false
+                },
+                "no_defaults": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "remove_refs": {
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
@@ -76,6 +84,34 @@
                 "#definitions/FileObjectHandler"
             ],
             "additionalProperties": true
+        },
+        "XmlFileObjectHandler": {
+            "type": "object",
+            "extends": [
+                "#definitions/FileObjectHandler"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "pretty": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "attr_prefix": {
+                  "type": "string",
+                  "default": "@"
+                },
+                "cdata_key": {
+                  "type": "string",
+                  "default": "#text"
+                },
+                "short_empty_elements": {
+                    "type": "boolean",
+                    "default": true
+                }
+            }
         },
         "Jinja2FileObjectHandler": {
             "type": "object",

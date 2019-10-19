@@ -3,7 +3,7 @@
 <node TEXT="NUMENGO" FOLDED="false" ID="ID_1508363761" CREATED="1560152088771" MODIFIED="1560848402492" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="54" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="55" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -2568,7 +2568,6 @@
     part of the operating system
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -2584,7 +2583,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node ID="ID_134812945" CREATED="1568377642594" MODIFIED="1568377642594"><richcontent TYPE="NODE">
 
@@ -2596,7 +2594,6 @@
     a thread user-space thread is similar to a function or procedure call.
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -2612,7 +2609,6 @@
     Multithreaded programs can run faster on computer systems with multiple CPUs, because theses threads can be executed truly concurrent.
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1030141280" CREATED="1568377711956" MODIFIED="1568377711956"><richcontent TYPE="NODE">
@@ -2625,7 +2621,6 @@
     A program can remain responsive to input. This is true both on single and on multiple CPU
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1609973396" CREATED="1568377720436" MODIFIED="1568377720436"><richcontent TYPE="NODE">
@@ -2638,7 +2633,6 @@
     Threads of a process can share the memory of global variables. If a global variable is changed in one thread, this change is valid for all threads. A thread can have local variables.
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -2652,7 +2646,6 @@
     sometimes called light-weight process (LWP)
   </body>
 </html>
-
 </richcontent>
 <node ID="ID_858904957" CREATED="1568377769831" MODIFIED="1568377769831"><richcontent TYPE="NODE">
 
@@ -2664,7 +2657,6 @@
     handling of threads is simpler than the handling of processes for an operating system
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -2679,7 +2671,6 @@
     every thread corresponds to an object.
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -2770,6 +2761,9 @@
 <icon BUILTIN="messagebox_warning"/>
 <node TEXT="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#module-boto3.s3.transfer" ID="ID_1678579528" CREATED="1569942781725" MODIFIED="1569942781725" LINK="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#module-boto3.s3.transfer"/>
 </node>
+</node>
+<node TEXT="add clang-format to dependencies of ngomf" POSITION="right" ID="ID_1994417241" CREATED="1570952610998" MODIFIED="1570952622270">
+<edge COLOR="#7c7c00"/>
 </node>
 </node>
 </map>
