@@ -227,18 +227,6 @@ class HasCache:
         self._outputs = outputs or set()
         self._dirty = True
 
-    def __eq__(self, other):
-        if not isinstance(other, HasCache):
-            return False
-        iprops = self._input_props
-        oprops = other._input_props
-        if iprops.keys() != oprops.keys():
-            return False
-        for k, v in iprops.items():
-            if v != oprops[k]:
-                return False
-        return True
-
     def _set_context(self, context):
         self._context = context
 

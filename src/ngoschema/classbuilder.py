@@ -112,13 +112,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             else:
                 return pjo_literals.LiteralValue.__getattribute__(self, name)
 
-        def __eq_pseudo__(self, other):
-            if not pjo_literals.LiteralValue.__eq__(self, other):
-                return False
-            if not HasCache.__eq__(self, other):
-                return False
-            return True
-
         def validate_pseudo(self):
             from .utils.jinja2 import TemplatedString
             if '_pattern' in self.__dict__:
@@ -134,7 +127,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if self.propinfo('__literal__').get('type') == 'importable':
                 self._imported = utils.import_from_string(self._value)
 
-        #cls_schema = copy.deepcopy(clsdata)
         cls_schema = clsdata
         propinfo = {
             '__literal__': cls_schema,
@@ -167,7 +159,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 '__propinfo__': propinfo,
                 '__subclass__': parents[0],
                 '__getattr__': __getattr_pseudo__,
-                '__eq__': __eq_pseudo__,
                 'validate': validate_pseudo,
             },
         )

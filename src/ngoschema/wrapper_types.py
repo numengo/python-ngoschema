@@ -61,8 +61,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def __eq__(self, other):
         if not utils.is_sequence(other):
             return False
-        if not HasCache.__eq__(self, other):
-            return False
         if len(self) != len(other):
             return False
         for i, e in enumerate(self):

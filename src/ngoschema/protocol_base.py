@@ -66,6 +66,7 @@ def get_descendant(obj, key_list, load_lazy=False):
     return get_descendant(child, key_list[1:], load_lazy) \
             if child and len(key_list)>1 else child
 
+total = 0
 
 def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     # flag to know if variable is readOnly check is active
@@ -74,7 +75,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     def getprop(self):
         self.logger.debug(lazy_format("GET {!s}.{!s}", self.short_repr, propname))
 
-        # load missing component
+        # load lazy data
         if propname in self._lazy_data:
             try:
                 self.logger.debug("lazy loading of '%s'", propname)
@@ -84,21 +85,20 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 self._lazy_data[propname] = v
                 self.logger.error(lazy_format("GET {!s}.{!s} lazy loading failed with data {!s})",
                                               self.short_repr,
-                                              propname, v))
-                self.logger.error(er, exc_info=True)
+                                              propname, v),
+                                  exc_info=True)
                 raise
 
         prop = self._properties.get(propname)
 
         if fget and (prop is None or prop.is_dirty()):
             try:
-                #self._properties[propname] = val
                 info['RO_active'] = False
                 setprop(self, fget(self))
                 prop = self._properties[propname]
             except Exception as er:
                 info['RO_active'] = True
-                self.logger.error( "GET {!s}.{!s}.\n%s", self, propname, er)
+                self.logger.error( "GET {!s}.{!s}.", self, propname, er, exc_info=True)
                 raise
         try:
             if prop is not None:
@@ -259,6 +259,8 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 # call the setter, and get the value stored in _properties
                 fset(self, val)
             if old_val is not None:
+                global total
+                total +=1
                 # notifies dependencies content has changed but set state to clean
                 val.touch(recursive=True)
                 val.set_clean()
@@ -438,8 +440,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 if self.__strict__:
                     self.do_validate(force=True)
             except Exception as er:
-                self.logger.error('problem initializing %s' % self)
-                self.logger.error(er, exc_info=True)
+                self.logger.error('problem initializing %s.', self, exc_info=True)
                 raise
 
         self.post_init_hook(*args, **props)
@@ -475,11 +476,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         )
 
     def __eq__(self, other):
-        if mixins.HasCache.__eq__(self, other):
-            return True
-        if not isinstance(other, ProtocolBase):
+        if not utils.is_mapping(other):
             return False
-        for k in set(self.keys()).intersection(other.keys()):
+        if len(self) != len(other):
+            return False
+        for k in self.keys():
             if self.get(k) != other.get(k):
                 return False
         return True
@@ -529,7 +530,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     cls.logger.debug("CONFIG SET %s.%s = %s", utils.fullname(cls), k, v)
                     cls.__propinfo__[k]['default'] = v
                 except Exception as er:
-                    cls.logger.error(er, exc_info=True)
+                    cls.logger.error("CONFIG SET %s.%s = %s", utils.fullname(cls), k, v, exc_info=True)
 
     @classmethod
     def pbase_mro(cls, ngo_base=False):
