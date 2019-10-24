@@ -108,7 +108,6 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
 
     def _set_ref(self, instance):
         if instance is not None:
-            self._set_context(instance)
             self._ref = weakref.ref(instance)
             bp = self.backPopulates
             if bp:

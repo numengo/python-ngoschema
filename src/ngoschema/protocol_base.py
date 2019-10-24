@@ -66,7 +66,6 @@ def get_descendant(obj, key_list, load_lazy=False):
     return get_descendant(child, key_list[1:], load_lazy) \
             if child and len(key_list)>1 else child
 
-total = 0
 
 def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     # flag to know if variable is readOnly check is active
@@ -108,7 +107,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 prop.do_validate(force)
                 return prop
         except Exception as er:
-            self.logger.error("problem validating attribute %s: %s", propname, er)
+            self.logger.error("problem validating attribute %s: %s", propname, er, exc_info=True)
             raise
 
     def setprop(self, val):
@@ -259,8 +258,6 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 # call the setter, and get the value stored in _properties
                 fset(self, val)
             if old_val is not None:
-                global total
-                total +=1
                 # notifies dependencies content has changed but set state to clean
                 val.touch(recursive=True)
                 val.set_clean()

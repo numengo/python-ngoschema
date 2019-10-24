@@ -50,7 +50,7 @@ class NamedObject(with_metaclass(SchemaMetaclass, HasCanonicalName, KeyedObject)
     __schema__ = "http://numengo.org/draft-05/schema#/definitions/NamedObject"
 
     def __init__(self, *args, **kwargs):
-        HasCanonicalName.__init__(self)
+        #HasCanonicalName.__init__(self)
         KeyedObject.__init__(self, *args, **kwargs)
 
     @classproperty

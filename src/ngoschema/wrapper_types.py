@@ -85,10 +85,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
     def validate_items(self):
         if not self._dirty and self._typed is not None:
-            # necessary if element came typed before context was set
-            # SHOUD BE USELESS SOON when instances are created with context
-            #if self._context:
-            #    self._set_context(self._context)
             return self._typed
         from python_jsonschema_objects import classbuilder
 
@@ -118,83 +114,57 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 typed_elems.append(elem)
 
             elif util.safe_issubclass(typ, classbuilder.LiteralValue):
-                val = typ(elem)
+                val = typ(elem, _parent=self._parent)
                 val.do_validate()
                 typed_elems.append(val)
             elif util.safe_issubclass(typ, classbuilder.ProtocolBase):
                 if not isinstance(elem, typ):
                     try:
-                        if isinstance(elem, (six.string_types, six.integer_types, float)):
-                            val = typ(elem)
+                        if isinstance(elem, (six.string_types, six.integer_types, float)) or getattr(self, 'isLiteralClass', False):
+                            val = typ(elem, _parent=self._parent)
                         else:
                             val = typ(_parent=self._parent,
                                       **self._parent._childConf,
                                       **util.coerce_for_expansion(elem))
                     except Exception as e:
-                        self._parent.logger.error(e)
+                        self._parent.logger.error(e, exc_info=True)
                         raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
                                               .format(elem, typ, e))
                 else:
                     val = elem
-                if isinstance(val, HasParent) and id(val._parent) != id(self._parent):
                     val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
             elif util.safe_issubclass(typ, ArrayWrapper):
                 val = typ(elem, _parent=self._parent)
-                # CRn: set parent before validation
-                #val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
             elif isinstance(typ, classbuilder.TypeRef) and isinstance(elem, typ.ref_class):
                 val = elem
+                val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
             elif isinstance(typ, (classbuilder.TypeProxy, classbuilder.TypeRef)):
                 try:
-                    if isinstance(elem, (six.string_types, six.integer_types, float)):
-                        val = typ(elem)
+                    if isinstance(elem, (six.string_types, six.integer_types, float)) or getattr(self, 'isLiteralClass', False):
+                        val = typ(elem, _parent=self._parent)
                     else:
-                        val = typ(_parent=self._parent,
-                                  **self._parent._childConf,
-                                  **util.coerce_for_expansion(elem))
+                        val = typ(**self._parent._childConf,
+                                  **util.coerce_for_expansion(elem),
+                                  _parent=self._parent)
                 except TypeError as e:
                     six.reraise(ValidationError,
                                 ValidationError("'%s' is not a valid value for '%s'" % (elem, typ)),
                                 sys.exc_info()[2])
-                else:
-                    if isinstance(val, HasParent):
-                        val._set_parent(self._parent)
-                    val.do_validate()
-                    typed_elems.append(val)
+                val.do_validate()
+                typed_elems.append(val)
 
         self._typed = typed_elems
-        if self._context:
-            self._set_context(self._context)
-        self.set_items_parent()
         self.set_clean()
         return self._typed
-
-    def _set_context(self, context):
-        HasCache._set_context(self, context)
-        if self._typed:
-            for item in self._typed:
-                if id(item._context) != id(context):
-                    item._set_context(context)
-
-    def set_items_parent(self):
-        if not self._parent or not self._typed:
-            return
-        for item in self._typed:
-            if isinstance(item, HasParent) and item._parent is not self._parent:
-                item._parent = self._parent
-
-    def _set_parent(self, value):
-        HasParent._set_parent(self, value)
-        self.set_items_parent()
 
     @staticmethod
     def create(name, item_constraint=None, **addl_constraints):

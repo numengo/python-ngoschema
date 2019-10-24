@@ -124,7 +124,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     self._value = self._pattern
             pjo_literals.LiteralValue.validate(self)
             # type importable: store imported as protected member
-            if self.propinfo('__literal__').get('type') == 'importable':
+            if self.propinfo('__literal__').get('type') == 'importable' and not hasattr(self, '_imported'):
                 self._imported = utils.import_from_string(self._value)
 
         cls_schema = clsdata

@@ -44,18 +44,6 @@ class HasParent:
     _parent_ref = None
     _children_dict = None
 
-    def _set_parent__(self, value):
-        if value is None:
-            if self._parent_ref and self._parent_ref():
-                self._parent_ref()._unregister_child(self)
-                self._parent_ref = None
-        from ngoschema.models.foreign_key import ForeignKey
-        if isinstance(value, ForeignKey):
-            self._parent_ref = value._ref
-        if isinstance(value, HasParent):
-            self._parent_ref = weakref.ref(value)
-        self._parent_ref()._register_child(self)
-
     def _set_parent(self, value):
         if value is None:
             if self._parent_ref is not None:
@@ -68,9 +56,6 @@ class HasParent:
         else:
             self._parent_ref = value
         self._parent_ref._register_child(self)
-
-    #def _get_parent(self):
-    #    return self._parent_ref() if self._parent_ref else None
 
     def _get_parent(self):
         return self._parent_ref
@@ -124,13 +109,9 @@ class HasParent:
 
 
 class HasCanonicalName(HasName, HasParent):
-    _cn_instances = weakref.WeakValueDictionary()
-
-    def __init__(self):
-        self._cn_instances[id(self)] = self
 
     def get_name(self):
-        return self._name #or '<anonymous>'
+        return self._name
 
     def set_name(self, value):
         value = value.replace('-', '_')
@@ -174,11 +155,6 @@ class HasCanonicalName(HasName, HasParent):
     def _unregister_child(self, child):
         HasParent._unregister_child(self, child)
         child._touch_children()
-
-    @classmethod
-    def _get_instance_cnamed(cls, cname):
-        return next(filter(lambda x: x() and x().get_canonicalName() == cname,
-                      cls._cn_instances.valuerefs()), None)
 
     def resolve_cname(self, cname):
         return self.session.resolve_cname(cname)
