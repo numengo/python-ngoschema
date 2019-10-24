@@ -299,6 +299,7 @@ class HasCache:
                 p.touch()
 
     def do_validate(self, force=False):
+        """validate only if property is dirty or if `force` is True """
         # validate inputs
         for k, p  in self._input_props.items():
             p.do_validate(force)

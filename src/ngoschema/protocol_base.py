@@ -102,8 +102,9 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 raise
         try:
             if prop is not None:
+                # only forces validation for literals
                 # only forces validation if pattern
-                force = hasattr(prop, '_pattern') or isinstance(prop, ProtocolBase) or info["type"] == 'array'
+                force = not getattr(info["type"], "isLiteralClass", False) and not self._lazyLoading
                 prop.do_validate(force)
                 return prop
         except Exception as er:

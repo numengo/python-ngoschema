@@ -66,18 +66,6 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
         else:
             self._value = str(value)
 
-
-    def validate(self):
-        if self._value:
-            pjo_literals.LiteralValue.validate(self)
-        # literal value is validated, now let s see if it corresponds to reference
-        if self._ref and self._ref():
-            ref, key = self._ref(), self.key
-            ref_key_prop = ref._get_prop_value(key)
-            # if key_prop is different, update the value
-            if ref_key_prop != self._value:
-                self._value = str(ref_key_prop)
-
     def resolve(self):
         if self._ref:
             return self._ref()
