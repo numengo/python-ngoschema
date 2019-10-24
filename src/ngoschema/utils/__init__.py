@@ -4,8 +4,13 @@ from .jinja2 import *
 from .protected_regions import *
 from .str_utils import *
 from .module_loaders import *
+from ._qualname import *
+from python_jsonschema_objects.util import resolve_ref_uri
 
 __all__ = [
+    'resolve_ref_uri',
+    'TemplatedString',
+    'qualname',
     # module_loaders
     'templates_module_loader',
     'load_module_templates',
@@ -41,6 +46,7 @@ __all__ = [
     'to_set',
     'apply_through_collection',
     'filter_collection',
+    'nested_dict_iter',
     'logging_call',
     'grouper',
     'casted_as',

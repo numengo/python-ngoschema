@@ -91,6 +91,9 @@ class Registry(Mapping):
     def __init__(self):
         self._registry = collections.OrderedDict()
 
+    def __repr__(self):
+        return repr(self._registry)
+
     def __getitem__(self, key):
         return self._registry[key]
 
@@ -493,6 +496,17 @@ def filter_collection(data,
             data = _filter_keys(data, set(but), keep=False)
     return data
 
+
+def nested_dict_iter(nested, separator='.'):
+    """
+    generator going through a nested dictionary and returning a canonical name / value
+    """
+    for key, value in nested.items():
+        if isinstance(value, collections.Mapping):
+            for inner_key, inner_value in nested_dict_iter(value):
+                yield f'{key}{separator}{inner_key}', inner_value
+        else:
+            yield key, value
 
 def logging_call(popenargs,
                  logger=None,

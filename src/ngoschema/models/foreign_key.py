@@ -46,9 +46,11 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
     def fkeys(cls):
         return [cls.key]
 
-    def __init__(self, value):
-        HasCache.__init__(self)
-        self._set_inputs(self.key)
+    def __init__(self, value, _parent=None):
+        # todo: handle relative cnames/refs
+        deps = self.propinfo('dependencies') or set()
+        deps.add(self.key)
+        HasCache.__init__(self, context=_parent, inputs=deps)
         self._value = None
         self._ref = None
         self._dirty = False
@@ -138,8 +140,9 @@ class CnameForeignKey(ForeignKey):
     def key(cls):
         return 'canonicalName'
 
-    def __init__(self, value):
-        ForeignKey.__init__(self, value)
+    def __init__(self, value, _parent=None):
+        # todo: handle relative cnames/refs
+        ForeignKey.__init__(self, value, _parent=_parent)
 
     def validate(self):
         if self._value:

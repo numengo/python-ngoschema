@@ -83,22 +83,20 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             self.annuary['%s.%s' % (cls.__module__, cn)] = cls
         self._imported = {}
 
-    def resolve_or_build(self, uri, scope=None):
+    def resolve_or_build(self, uri, parent=(ProtocolBase,), **kwargs):
         resolver = get_resolver()
-        scope = scope or resolver.resolution_scope
-        uri = resolver._urljoin_cache(scope, uri)
         if uri not in self.resolved:
             if uri in self.under_construction:
                 return pjo_classbuilder.TypeRef(uri, self.resolved)
             uri, schema = resolver.resolve(uri)
-            self.resolved[uri] = self._construct(uri, schema)
+            self.resolved[uri] = self._build_object(uri, schema, parent, **kwargs)
         return self.resolved[uri]
 
     def _build_pseudo_literal(self, nm, clsdata, *parents):
         from .models.foreign_key import ForeignKey, CnameForeignKey
 
-        def __init_pseudo__(self, *args, **kwargs):
-            HasCache.__init__(self)
+        def __init_pseudo__(self, *args, _parent=None):
+            HasCache.__init__(self, context=_parent, inputs=self.propinfo('dependencies'))
             pjo_literals.LiteralValue.__init__(self, *args)
 
         def __getattr_pseudo__(self, name):
@@ -129,7 +127,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         this=self._context,
                         **self._input_values)
                 except Exception as er:
-                    logger.warning('evaluating pattern "%s" in literal: %s', self._pattern, er)
+                    #logger.info('evaluating pattern "%s" in literal: %s', self._pattern, er)
                     self._value = self._pattern
             pjo_literals.LiteralValue.validate(self)
             # type importable: store imported as protected member
@@ -175,9 +173,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
-        from .models.foreign_key import ForeignKey
         if '$ref' in clsdata:
-            self.resolved[uri] = cls = self.resolve_or_build(clsdata['$ref'], uri)
+            ref_uri = utils.resolve_ref_uri(uri, clsdata['$ref'])
+            self.resolved[uri] = cls = self.resolve_or_build(ref_uri)
             return cls
         typ = clsdata.get('type')
 
@@ -219,6 +217,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, None)
         if 'foreignKey' in clsdata:
+            from .models import ForeignKey
             self.resolved[uri] = self._build_pseudo_literal(
                 uri, clsdata, ForeignKey)
 
@@ -525,12 +524,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # default value on children force its resolution at each init
         # seems the best place to treat this special case
-        props['__add_logging__'] = class_attrs.get('__add_logging__', False)
-        props['__attr_by_name__'] = class_attrs.get('__attr_by_name__', False)
-        props['__lazy_loading__'] = class_attrs.get('__lazy_loading__', False)
-        props['__validate_lazy__'] = class_attrs.get('__validate_lazy__', False)
-        props['__propagate__'] = class_attrs.get('__propagate__', False)
-        props['__strict__'] = bool(required) or kw.get('strict', False) or class_attrs.get('__strict__', False)
+        props['__add_logging__'] = kw.get('_addLogging') or class_attrs.get('__add_logging__', False)
+        props['__attr_by_name__'] = kw.get('_attrByName') or class_attrs.get('__attr_by_name__', False)
+        props['__validate_lazy__'] = kw.get('_validateLazy') or class_attrs.get('__validate_lazy__', False)
+        props['__propagate__'] = kw.get('_propagate') or class_attrs.get('__propagate__', False)
+        props['__lazy_loading__'] = kw.get('_lazyLoading') or class_attrs.get('__lazy_loading__', False)
+        props['__strict__'] = bool(required) or kw.get('_strict') or class_attrs.get('__strict__', False)
+        props['__log_level__'] = kw.get('_logLevel') or class_attrs.get('__log_level__', 'INFO')
         #props['__instances__'] = weakref.WeakValueDictionary()
 
         cls = type(clsname, tuple(parents), props)

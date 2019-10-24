@@ -31,9 +31,24 @@ from .resolver import resolve_uri
 from .validators import DefaultValidator
 from .config import ConfigLoader
 from .utils.json import ProtocolJSONEncoder
+from .decorators import classproperty, memoized_property
+
+DEFAULT_CDATA_KEY = '#text'
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
+
+class lazy_format(object):
+    __slots__ = ('fmt', 'args', 'data_to_pprint', 'kwargs')
+
+    def __init__(self, fmt, *args, data_to_pprint=None, **kwargs):
+        self.fmt = fmt
+        self.args = args
+        self.kwargs = kwargs
+
+    def __str__(self):
+        return self.fmt.format(*[utils.any_pprint(a) for a in self.args],
+                                **{k: utils.any_pprint(v) for k, v in self.kwargs.items()})
 
 def get_descendant(obj, key_list, load_lazy=False):
     """
@@ -57,15 +72,21 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
     info['RO_active'] = True
 
     def getprop(self):
-        self.logger.debug(pjo_util.lazy_format("GET {!s}.{!s}", self.short_repr(), propname))
+        self.logger.debug(lazy_format("GET {!s}.{!s}", self.short_repr, propname))
 
         # load missing component
         if propname in self._lazy_data:
             try:
                 self.logger.debug("lazy loading of '%s'", propname)
-                setattr(self, propname, self._lazy_data.pop(propname))
+                v = self._lazy_data.pop(propname)
+                setattr(self, propname, v)
             except Exception as er:
-                raise AttributeError("Lazy loading of property '%s' failed.\n%s" % (propname, er))
+                self._lazy_data[propname] = v
+                self.logger.error(lazy_format("GET {!s}.{!s} lazy loading failed with data {!s})",
+                                              self.short_repr,
+                                              propname, v))
+                self.logger.error(er, exc_info=True)
+                raise
 
         prop = self._properties.get(propname)
 
@@ -78,24 +99,20 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
             except Exception as er:
                 info['RO_active'] = True
                 self.logger.error( "GET {!s}.{!s}.\n%s", self, propname, er)
-                raise AttributeError(
-                    "Error getting property %s.\n%s" % (propname, er))
+                raise
         try:
             if prop is not None:
                 # only forces validation if pattern
                 force = hasattr(prop, '_pattern') or isinstance(prop, ProtocolBase) or info["type"] == 'array'
                 prop.do_validate(force)
                 return prop
-        except KeyError as er:
-            self.logger.error(er)
-            raise AttributeError("No attribute %s" % propname)
         except Exception as er:
             self.logger.error("problem validating attribute %s: %s", propname, er)
-            raise AttributeError(er)
+            raise
 
     def setprop(self, val):
         self.logger.debug(
-            pjo_util.lazy_format("SET {!s}.{!s}={!s}", self.short_repr(), propname, utils.any_pprint(val)))
+            lazy_format("SET {!s}.{!s}={!s}", self.short_repr, propname, val))
         if val is None and propname not in self.__required__:
             self._properties[propname] = None
             return
@@ -106,12 +123,10 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
         infotype = info["type"]
 
-        depends_of = self.__dependencies__.get(propname, set())
-
         old_prop = self._properties.get(propname)
         old_val = old_prop._value if isinstance(old_prop, pjo_literals.LiteralValue) else None
 
-        if self._attr_by_name:
+        if self._attrByName:
             if utils.is_mapping(val) and 'name' in val:
                 self._key2attr[val['name']] = (propname, None)
             if utils.is_sequence(val):
@@ -144,7 +159,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                     break
                 elif hasattr(typ, "isLiteralClass"):
                     try:
-                        validator = typ(val)
+                        validator = typ(val, _parent=self)
                     except Exception as e:
                         errors.append("Failed to coerce to '{0}': {1}".format(
                             typ, e))
@@ -156,10 +171,11 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                     # force conversion- thus the val rather than validator assignment
                     try:
                         if not utils.is_string(val):
-                            val = typ(**self._child_conf,
-                                      **pjo_util.coerce_for_expansion(val))
+                            val = typ(**self._childConf,
+                                      **pjo_util.coerce_for_expansion(val),
+                                      _parent=self)
                         else:
-                            val = typ(val)
+                            val = typ(val, _parent=self)
                     except Exception as e:
                         errors.append(
                             "Failed to coerce to '%s': %s" % (typ, e))
@@ -172,7 +188,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 elif pjo_util.safe_issubclass(typ,
                                               pjo_wrapper_types.ArrayWrapper):
                     try:
-                        val = typ(val)
+                        val = typ(val, _parent=self)
                     except Exception as e:
                         errors.append(
                             "Failed to coerce to '%s': %s" % (typ, e))
@@ -187,64 +203,45 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                     "Object must be one of %s: \n%s" % (infotype, errstr))
 
         elif infotype == "array":
-            if hasattr(info["validator"].__itemtype__, 'foreignClass'):
-                for i, e in enumerate(val):
-                    if str(e).startswith('#'):
-                        val[i] = self._clean_cname(e)
-            val = info["validator"](val)
-            # only validate if items are not foreignKey
-            if not hasattr(info["validator"].__itemtype__, 'foreignClass'):
-                val._parent = self
+            val = info["validator"](val, _parent=self)
+            # only validate if no lazy loading
+            if not self._lazyLoading:
                 val.do_validate()
 
         elif getattr(infotype, "isLiteralClass", False):
-            if hasattr(infotype, 'foreignClass') and str(val).startswith('#'):
-                val = self._clean_cname(val)
-
             if not isinstance(val, infotype):
-                validator = infotype(val)
+                validator = infotype(val, _parent=self)
                 # handle case of patterns
                 if utils.is_pattern(val):
                     from ngoschema.utils.jinja2 import get_variables
-                    vars = get_variables(val)
-                    depends_of.update(vars)
+                    validator._add_inputs(*get_variables(val))
                     validator._pattern = val
-                    validator.touch()
-                # only validate if it s not a pattern or a foreign key
-                else:
-                    #TODO check what s done here
-                    # it s not a pattern, remove
-                    #if getattr(validator, "_pattern", False):
-                    #    delattr(validator, "_pattern")
-                    #if not getattr(validator, 'foreignClass', False):
-                    if not hasattr(self, 'do_validate'):
-                        raise Exception('WHY????')
-                    validator.do_validate()
+                    # if there are variables, touch it in order to have it evaluated last minute
+                    if vars:
+                        validator.touch()
                 val = validator
 
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
             if not isinstance(val, infotype):
                 if not utils.is_string(val):
-                    val = infotype(**self._child_conf,
+                    val = infotype(_parent=self,
+                                   **self._childConf,
                                    **pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
-            if isinstance(val, HasParent):
-                val._parent = self
             val.do_validate()
 
         elif isinstance(infotype, pjo_classbuilder.TypeProxy):
-            val = infotype(val)
+            val = infotype(val, _parent=self)
 
         elif isinstance(infotype, pjo_classbuilder.TypeRef):
             if not isinstance(val, infotype.ref_class):
                 if not utils.is_string(val):
-                    val = infotype(**self._child_conf,
+                    val = infotype(_parent=self,
+                                   **self._childConf,
                                    **pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
-            if isinstance(val, HasParent):
-                val._parent = self
             val.do_validate()
 
         elif infotype is None:
@@ -256,22 +253,20 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
         else:
             raise TypeError("Unknown object type: '%s'" % infotype)
 
-        # set dependency tree
-        val._set_context(self)
-        val._add_inputs(*depends_of)
-
         if old_val != val:
             if fset:
                 # call the setter, and get the value stored in _properties
                 fset(self, val)
-            val.touch(recursive=True)
-            val.set_clean()
+            if old_val is not None:
+                # notifies dependencies content has changed but set state to clean
+                val.touch(recursive=True)
+                val.set_clean()
 
         self._properties[propname] = val
 
 
     def delprop(self):
-        self.logger.debug(pjo_util.lazy_format("DEL {!s}.{!s}", self.short_repr(), propname))
+        self.logger.debug(lazy_format("DEL {!s}.{!s}", self.short_repr, propname))
         if propname in self.__required__:
             raise AttributeError("'%s' is required" % propname)
         else:
@@ -326,8 +321,10 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         from .resolver import get_resolver
         from .classbuilder import get_builder
 
+        base_uri = cls.__schema__
+
         if '$ref' in props:
-            props.update(resolve_uri(props.pop('$ref')))
+            props.update(resolve_uri(utils.resolve_ref_uri(base_uri, props.pop('$ref'))))
 
         if '$schema' in props:
             if props['$schema'] != cls.__schema__:
@@ -358,28 +355,34 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         main initialization method, dealing with lazy loading
         """
-        self.logger.info(pjo_util.lazy_format("INIT {0} with {1}", self.short_repr(), utils.any_pprint(props)))
+        self.logger.info(lazy_format("INIT {0} with {1}", self.short_repr, props))
 
         cls = self.__class__
         #props.pop('$schema', None)
 
-        self._key2attr = dict()
-        self._lazy_loading = props.pop('lazy_loading', None) or cls.__lazy_loading__
-        self._validate_lazy = props.pop('validate_lazy', None) or cls.__validate_lazy__
-        self._attr_by_name = props.pop('attr_by_name', None) or cls.__attr_by_name__
-        self._propagate = props.pop('propagate', None) or cls.__propagate__
-        self._child_conf = {
-            'lazy_loading':  self._lazy_loading,
-            'validate_lazy': self._validate_lazy,
-            'attr_by_name':  self._attr_by_name,
-            'propagate': self._propagate
-        } if self._propagate else {}
-
-        mixins.HasCache.__init__(self)
-
         self._lazy_data = dict()
         self._extended_properties = dict()
         self._properties = dict()
+        self._key2attr = dict()
+        self._lazyLoading = props.pop('_lazyLoading', None) or cls.__lazy_loading__
+        self._validateLazy = props.pop('_validateLazy', None) or cls.__validate_lazy__
+        self._attrByName = props.pop('_attrByName', None) or cls.__attr_by_name__
+        self._propagate = props.pop('_propagate', None) or cls.__propagate__
+        parent = props.pop('_parent', None)
+        # to avoid calling the setter if None
+        if parent:
+            self._parent = parent
+        self._childConf = {
+            '_lazyLoading':  self._lazyLoading,
+            '_validateLazy': self._validateLazy,
+            '_attrByName':  self._attrByName,
+            '_propagate': self._propagate
+        } if self._propagate else {}
+
+        mixins.HasCache.__init__(self,
+                                 context=parent,
+                                 inputs=self.__dependencies__)
+
         for prop in self.__prop_names_flatten__.values():
             self._properties.setdefault(prop, None)
 
@@ -400,7 +403,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # but only for the ones that have defaults set.
         for k, v in self.__has_default__.items():
             if k not in props:
-                if self._lazy_loading:
+                if self._lazyLoading:
                     self._lazy_data.setdefault(k, copy.copy(v))
                 else:
                     setattr(self, k, v)
@@ -411,13 +414,14 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             elif isinstance(self, mixins.HasName):
                 mixins.HasName.set_name(self, props['name'])
 
-        if self._lazy_loading:
+        if self._lazyLoading:
             self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
-            if self._attr_by_name:
+            if self._attrByName:
+                base_uri = self.__schema__
                 def replace_ref(coll, key, level):
                     if key != '$ref' or level > 2:
                         return
-                    coll.update(resolve_uri(coll.pop('$ref')))
+                    coll.update(resolve_uri(utils.resolve_ref_uri(base_uri, coll.pop('$ref'))))
                 utils.apply_through_collection(self._lazy_data, replace_ref, recursive=True)
                 for k, v in self._lazy_data.items():
                     if utils.is_mapping(v) and 'name' in v:
@@ -435,25 +439,17 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             except Exception as er:
                 self.logger.error('problem initializing %s' % self)
                 self.logger.error(er, exc_info=True)
-                raise er
+                raise
 
         self.post_init_hook(*args, **props)
-
-    def _set_context(self, context):
-        mixins.HasCache._set_context(self, context)
-        for k, p in self._properties.items():
-            if p is not None:
-                p._set_context(context)
 
     def __hash__(self):
         """hash function to store objects references"""
         return id(self)
 
+    @memoized_property
     def short_repr(self):
-        return "<%s id=%s>" % (
-            self.fullname(),
-            id(self)
-        )
+        return "<%s id=%s>" % (self.cls_fullname, id(self))
 
     def __str__(self):
         props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), str(v))
@@ -462,7 +458,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                         if v is not None])
         props = props[:20] + (['...'] if len(props)>=20 else [])
         return "<%s id=%s %s>" % (
-            self.fullname(),
+            self.cls_fullname,
             id(self),
             " ".join(props)
         )
@@ -472,14 +468,14 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                         for k, v in itertools.chain(six.iteritems(self._properties),
                                     six.iteritems(self._extended_properties)) if v])
         return "<%s id=%s %s>" % (
-            self.fullname(),
+            self.cls_fullname,
             id(self),
             " ".join(props)
         )
 
     def __eq__(self, other):
-        if not mixins.HasCache.__eq__(self, other):
-            return False
+        if mixins.HasCache.__eq__(self, other):
+            return True
         if not isinstance(other, ProtocolBase):
             return False
         for k in set(self.keys()).intersection(other.keys()):
@@ -498,8 +494,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return get_resolver().resolve(cls.__schema__)[1]
 
     def validate(self):
-        if self._lazy_loading:
-            if self._lazy_data and self._validate_lazy:
+        if self._lazyLoading:
+            if self._lazy_data and self._validateLazy:
                 pass
         else:
             pjo_classbuilder.ProtocolBase.validate(self)
@@ -509,9 +505,12 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """subclass specific method"""
         return pjo_util.safe_issubclass(cls, klass)
 
-    @classmethod
-    def fullname(cls):
-        return utils.fullname(cls)
+    _cls_fullname = None
+    @classproperty
+    def cls_fullname(cls):
+        if cls._cls_fullname is None:
+            cls._cls_fullname = utils.fullname(cls)
+        return cls._cls_fullname
 
     @classmethod
     def set_configfiles_defaults(cls, overwrite=False):
@@ -522,11 +521,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         :param overwrite: overwrite values already set
         """
         propnames = cls.__prop_names_flatten__
-        defconf = objects_config_loader.get_values(cls.fullname(), propnames)
+        defconf = objects_config_loader.get_values(utils.fullname(cls), propnames)
         for k, v in defconf.items():
             if overwrite:
                 try:
-                    cls.logger.debug("CONFIG SET %s.%s = %s", cls.fullname(), k, v)
+                    cls.logger.debug("CONFIG SET %s.%s = %s", utils.fullname(cls), k, v)
                     cls.__propinfo__[k]['default'] = v
                 except Exception as er:
                     cls.logger.error(er, exc_info=True)
@@ -537,6 +536,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     @classmethod
     def propinfo(cls, propname):
+        # safe proof to name translation and inheritance
         propid = cls.__prop_translated_flatten__.get(propname, propname)
         for c in cls.__pbase_mro__:
             if propid in c.__prop_names__:
@@ -611,29 +611,30 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 return ret._value
             return ret
         except AttributeError as er:
-            raise KeyError(key)
+            raise KeyError(key, str(er))
         except Exception as er:
-            raise er
+            raise
 
     def __setattr__(self, name, val):
         """allow setting of protected attributes"""
+        # protected members
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
-
+        # methods and class attributes
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
                 return object.__setattr__(self, name, val)
 
         name = self.__prop_names_flatten__.get(name, name)
-
-        prop, index = self._key2attr.get(name, (None, None))
-        if prop:
-            if index is None:
-                name = prop
-            else:
-                attr = getattr(self, prop)
-                attr[index] = val
-                return
+        if self._attrByName:
+            prop, index = self._key2attr.get(name, (None, None))
+            if prop:
+                if index is None:
+                    name = prop
+                else:
+                    attr = getattr(self, prop)
+                    attr[index] = val
+                    return
 
         if name in self.__prop_names_flatten__.values():
             # If its in __propinfo__, then it actually has a property defined.
@@ -658,7 +659,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Accessor to property dealing with lazy_data, standard properties and potential extended properties
         """
-        if self._lazy_loading and name in self._lazy_data:
+        if self._lazyLoading and name in self._lazy_data:
             setattr(self, name, self._lazy_data.pop(name))
         if name in self.__prop_names_flatten__.values():
             return self._properties.get(name)
@@ -668,9 +669,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Accessor to property value (as for json)
         """
-        if self._lazy_loading and name in self._lazy_data:
+        if self._lazyLoading and name in self._lazy_data:
             val = self._lazy_data[name]
-            return val.for_json(no_defaults=no_defaults) if hasattr(val, 'for_json') else val
+            return val.for_json() if hasattr(val, 'for_json') else val
         prop = self._get_prop(name)
         return prop.for_json() if prop else default
 
@@ -678,7 +679,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Set a property shortcutting the setter. To be used in setters
         """
-        if self._lazy_loading:
+        if self._lazyLoading:
             self._lazy_data[name] = value
         else:
             prop = self._get_prop(name)

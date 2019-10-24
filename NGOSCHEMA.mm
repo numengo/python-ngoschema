@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="55" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="74" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -2764,6 +2764,547 @@
 </node>
 <node TEXT="add clang-format to dependencies of ngomf" POSITION="right" ID="ID_1994417241" CREATED="1570952610998" MODIFIED="1570952622270">
 <edge COLOR="#7c7c00"/>
+</node>
+<node TEXT="mindmap" FOLDED="true" POSITION="right" ID="ID_516433180" CREATED="1571088436997" MODIFIED="1571088442786">
+<edge COLOR="#ff0000"/>
+<node TEXT="map" ID="ID_608346309" CREATED="1571088443491" MODIFIED="1571088447636">
+<node TEXT="version" ID="ID_1466488056" CREATED="1571088454538" MODIFIED="1571088456275"/>
+</node>
+<node TEXT="node" ID="ID_1470893863" CREATED="1571088448326" MODIFIED="1571088449917">
+<node TEXT="id" ID="ID_28598897" CREATED="1571088450304" MODIFIED="1571088451533"/>
+<node TEXT="text" ID="ID_1788831338" CREATED="1571088458094" MODIFIED="1571088459558"/>
+<node TEXT="link" ID="ID_206964438" CREATED="1571088459981" MODIFIED="1571088461365"/>
+<node TEXT="folded" ID="ID_733328510" CREATED="1571088462487" MODIFIED="1571088465371"/>
+<node TEXT="color" ID="ID_1701452018" CREATED="1571088465821" MODIFIED="1571088467427"/>
+<node TEXT="position" ID="ID_114308144" CREATED="1571088467677" MODIFIED="1571088470692"/>
+</node>
+<node TEXT="edge" ID="ID_1932260965" CREATED="1571088471435" MODIFIED="1571088473020">
+<node TEXT="style" ID="ID_1308523735" CREATED="1571088493208" MODIFIED="1571088496318"/>
+<node TEXT="color" ID="ID_1306076866" CREATED="1571088496701" MODIFIED="1571088501965"/>
+<node TEXT="width" ID="ID_1851525413" CREATED="1571088502294" MODIFIED="1571088504256"/>
+</node>
+<node TEXT="font" ID="ID_1579052251" CREATED="1571088474119" MODIFIED="1571088477894">
+<node TEXT="name" ID="ID_912183167" CREATED="1571088512779" MODIFIED="1571088515197"/>
+<node TEXT="size" ID="ID_1905671012" CREATED="1571088515397" MODIFIED="1571088518807"/>
+<node TEXT="bold" ID="ID_1061327993" CREATED="1571088519074" MODIFIED="1571088521359"/>
+<node TEXT="italic" ID="ID_147763307" CREATED="1571088521610" MODIFIED="1571088525156"/>
+</node>
+<node TEXT="icon" ID="ID_840142111" CREATED="1571088478436" MODIFIED="1571088479431">
+<node TEXT="builtin" ID="ID_273870062" CREATED="1571088528376" MODIFIED="1571088530245"/>
+</node>
+<node TEXT="cloud" ID="ID_44554859" CREATED="1571088480045" MODIFIED="1571088481088">
+<node TEXT="color" ID="ID_1776519273" CREATED="1571088532466" MODIFIED="1571088534135"/>
+</node>
+<node TEXT="arrowlink" ID="ID_504422964" CREATED="1571088481287" MODIFIED="1571088491784">
+<node TEXT="color" ID="ID_1714670657" CREATED="1571088536400" MODIFIED="1571088538102"/>
+<node TEXT="destination" ID="ID_1538154505" CREATED="1571088539156" MODIFIED="1571088548871"/>
+<node TEXT="startarrow" ID="ID_617863290" CREATED="1571088549174" MODIFIED="1571088552682"/>
+<node TEXT="endarrow" ID="ID_453540235" CREATED="1571088553286" MODIFIED="1571088555657"/>
+</node>
+</node>
+<node TEXT="https://bitbucket.org/dkuhlman/generateds/src/default/" POSITION="right" ID="ID_227246653" CREATED="1571091911653" MODIFIED="1571091916442" LINK="https://bitbucket.org/dkuhlman/generateds/src/default/">
+<edge COLOR="#00ff00"/>
+</node>
+<node TEXT="serialize(**kwargs)" POSITION="right" ID="ID_132894143" CREATED="1571213398553" MODIFIED="1571213423362">
+<edge COLOR="#ff00ff"/>
+<node TEXT="remove defaults" ID="ID_1465922234" CREATED="1571213983042" MODIFIED="1571213989963"/>
+</node>
+<node TEXT="for_json()" POSITION="right" ID="ID_423473136" CREATED="1571213423701" MODIFIED="1571213428598">
+<edge COLOR="#00ffff"/>
+<node TEXT="get all members jsonified" ID="ID_189316423" CREATED="1571213957024" MODIFIED="1571213980710"/>
+</node>
+<node TEXT="as_dict()" POSITION="right" ID="ID_1263672833" CREATED="1571213429041" MODIFIED="1571213433099">
+<edge COLOR="#7c0000"/>
+</node>
+<node TEXT="register" POSITION="right" ID="ID_1792282620" CREATED="1571317644636" MODIFIED="1571317727404">
+<edge COLOR="#00007c"/>
+</node>
+<node TEXT="unregister" POSITION="right" ID="ID_1443947402" CREATED="1571317728646" MODIFIED="1571317732202">
+<edge COLOR="#007c7c"/>
+</node>
+<node TEXT="load" POSITION="right" ID="ID_1316611676" CREATED="1571317653945" MODIFIED="1571317655973">
+<edge COLOR="#007c00"/>
+<node TEXT="pre_load" ID="ID_747729232" CREATED="1571317666437" MODIFIED="1571317674086">
+<node TEXT="deserialize_data" ID="ID_1946159783" CREATED="1571317780971" MODIFIED="1571317789325"/>
+<node TEXT="filter_data" ID="ID_393498218" CREATED="1571317789998" MODIFIED="1571317793703"/>
+</node>
+<node TEXT="register" ID="ID_247348889" CREATED="1571317694487" MODIFIED="1571317696990"/>
+</node>
+<node TEXT="commit" POSITION="right" ID="ID_1747632866" CREATED="1571317698605" MODIFIED="1571317701468">
+<edge COLOR="#7c007c"/>
+<node TEXT="dumps" ID="ID_166012242" CREATED="1571317820839" MODIFIED="1571317822762">
+<node TEXT="pre_commit" ID="ID_93305315" CREATED="1571317701882" MODIFIED="1571317704748"/>
+<node TEXT="serialize_data" ID="ID_468283910" CREATED="1571317828638" MODIFIED="1571317835236"/>
+</node>
+</node>
+<node TEXT="merger FilterObjectHandlerMixin avec JsonEnconder?" POSITION="right" ID="ID_209027291" CREATED="1571321501992" MODIFIED="1571321523052">
+<edge COLOR="#ff0000"/>
+<node TEXT="only" ID="ID_1922179484" CREATED="1571321585986" MODIFIED="1571321587927"/>
+<node TEXT="but" ID="ID_250826681" CREATED="1571321589061" MODIFIED="1571321590221"/>
+<node TEXT="recursive" ID="ID_102651078" CREATED="1571321595653" MODIFIED="1571321598097"/>
+</node>
+<node TEXT="xsd" POSITION="right" ID="ID_1993610341" CREATED="1571332817785" MODIFIED="1571332820125">
+<edge COLOR="#0000ff"/>
+<node TEXT="xsd generator" ID="ID_698832396" CREATED="1571332821057" MODIFIED="1571332825690">
+<node TEXT="https://www.freeformatter.com/xsd-generator.html" ID="ID_548691685" CREATED="1571332828067" MODIFIED="1571332828067" LINK="https://www.freeformatter.com/xsd-generator.html">
+<node TEXT="using Salami Slice" ID="ID_1328053667" CREATED="1571332835177" MODIFIED="1571332841148"/>
+</node>
+<node TEXT="used to create" ID="ID_1563992091" CREATED="1571336916259" MODIFIED="1571336920229">
+<node TEXT="amesim_spe.xsd" ID="ID_1091452719" CREATED="1571336931526" MODIFIED="1571336931528" LINK="../python-ngomf/src/ngomf/schemas/amesim_spe.xsd"/>
+<node TEXT="ecore.xsd" ID="ID_1140088462" CREATED="1571336959598" MODIFIED="1571336959598" LINK="../python-ngoschemapremium/src/ngoschemapremium/schemas/ecore.xsd"/>
+</node>
+</node>
+<node TEXT="urldefrag" ID="ID_1581982248" CREATED="1571404772041" MODIFIED="1571404773262"/>
+<node TEXT="urljoin" ID="ID_1459816787" CREATED="1571404780735" MODIFIED="1571404781269"/>
+</node>
+<node TEXT="django-plugin" POSITION="right" ID="ID_1096814860" CREATED="1571563573833" MODIFIED="1571563577769">
+<edge COLOR="#00ff00"/>
+<node TEXT="static/templates/{name}" ID="ID_475029839" CREATED="1571563578427" MODIFIED="1571563702351"/>
+<node TEXT="templates/{name}" ID="ID_269098549" CREATED="1571563578427" MODIFIED="1571563588917"/>
+<node TEXT="templatetags" ID="ID_197527884" CREATED="1571563589913" MODIFIED="1571563594786"/>
+<node TEXT="context.py" ID="ID_1792966240" CREATED="1571563596240" MODIFIED="1571563602469"/>
+<node TEXT="settings.py" ID="ID_1555035821" CREATED="1571563607461" MODIFIED="1571563610965"/>
+<node TEXT="models.py" ID="ID_875430082" CREATED="1571563712611" MODIFIED="1571563715723"/>
+<node TEXT="settings.py" ID="ID_1267996799" CREATED="1571563717185" MODIFIED="1571563719721"/>
+<node TEXT="validators.py" ID="ID_1384992149" CREATED="1571563720960" MODIFIED="1571563724484"/>
+<node TEXT="admin" ID="ID_1455605432" CREATED="1571564361242" MODIFIED="1571564363245">
+<node TEXT="filter.py" ID="ID_1287574306" CREATED="1571564363561" MODIFIED="1571564378450"/>
+<node TEXT="widgets.py" ID="ID_825234447" CREATED="1571564365910" MODIFIED="1571564368957"/>
+</node>
+<node TEXT="utils" ID="ID_1256454200" CREATED="1571564418509" MODIFIED="1571564419732"/>
+<node TEXT="management" ID="ID_1304267655" CREATED="1571564452977" MODIFIED="1571564456796">
+<node TEXT="commands" ID="ID_450864926" CREATED="1571564457129" MODIFIED="1571564459379"/>
+</node>
+</node>
+<node TEXT="model viz" POSITION="right" ID="ID_79015774" CREATED="1571566357142" MODIFIED="1571566369388">
+<edge COLOR="#ff00ff"/>
+<node TEXT="https://github.com/django-extensions/django-extensions/blob/master/django_extensions/management/modelviz.py" ID="ID_318176651" CREATED="1571566371351" MODIFIED="1571566371351" LINK="https://github.com/django-extensions/django-extensions/blob/master/django_extensions/management/modelviz.py"/>
+</node>
+<node TEXT="plugins important" POSITION="right" ID="ID_666376104" CREATED="1571566932933" MODIFIED="1571566943885">
+<edge COLOR="#00ffff"/>
+<node TEXT="django-extensions" ID="ID_1306926254" CREATED="1571566944122" MODIFIED="1571566952155">
+<node TEXT="extra useful commands" ID="ID_1225166865" CREATED="1571566952474" MODIFIED="1571566958083"/>
+<node TEXT="https://vimeo.com/1720508" ID="ID_1317832028" CREATED="1571568607616" MODIFIED="1571568607616" LINK="https://vimeo.com/1720508"/>
+</node>
+<node TEXT="sentry" ID="ID_1073733460" CREATED="1571566960458" MODIFIED="1571566961767">
+<node TEXT="error/exception watcher" ID="ID_971039100" CREATED="1571566962483" MODIFIED="1571566980316"/>
+</node>
+<node TEXT="ChatterBot" ID="ID_923079801" CREATED="1571567147398" MODIFIED="1571567164385" LINK="https://github.com/gunthercox/ChatterBot">
+<node TEXT="machine learning chat engine" ID="ID_237537646" CREATED="1571567167161" MODIFIED="1571567174760"/>
+</node>
+<node TEXT="django-debug-toolbar" ID="ID_1148931745" CREATED="1571567205079" MODIFIED="1571567210750">
+<node TEXT="https://github.com/jazzband/django-debug-toolbar" ID="ID_1644110074" CREATED="1571567211429" MODIFIED="1571567211429" LINK="https://github.com/jazzband/django-debug-toolbar"/>
+</node>
+</node>
+<node TEXT="django" POSITION="right" ID="ID_781679011" CREATED="1571568222899" MODIFIED="1571568225293">
+<edge COLOR="#7c0000"/>
+<node TEXT="views" ID="ID_1975643659" CREATED="1571568227016" MODIFIED="1571568258403">
+<node TEXT="get object or object list" ID="ID_808772026" CREATED="1571568753729" MODIFIED="1571568768965"/>
+<node TEXT="transform" ID="ID_1596131895" CREATED="1571568769920" MODIFIED="1571568778727"/>
+<node TEXT="render template" ID="ID_1766912947" CREATED="1571568779194" MODIFIED="1571568792939"/>
+</node>
+<node TEXT="page" ID="ID_594869015" CREATED="1571568264967" MODIFIED="1571568269778">
+<node TEXT="" ID="ID_1964197882" CREATED="1571568284297" MODIFIED="1571568284297"/>
+</node>
+</node>
+<node TEXT="config" POSITION="right" ID="ID_1289322279" CREATED="1571624411082" MODIFIED="1571624422466">
+<edge COLOR="#00007c"/>
+<node TEXT="maintenancemode" ID="ID_162954843" CREATED="1571624422666" MODIFIED="1571624441229"/>
+<node TEXT="comingsoon" ID="ID_1700817938" CREATED="1571624442331" MODIFIED="1571624449191"/>
+<node TEXT="campain" ID="ID_1159111542" CREATED="1571624425226" MODIFIED="1571624430363"/>
+<node TEXT="cms_redirects" ID="ID_776429108" CREATED="1571624472186" MODIFIED="1571624473857"/>
+<node TEXT="sslify?" ID="ID_1294035359" CREATED="1571624480078" MODIFIED="1571624483519"/>
+<node TEXT="stripe" ID="ID_1028201919" CREATED="1571624501931" MODIFIED="1571624504034"/>
+<node TEXT="grapelli???" ID="ID_1923790682" CREATED="1571624539136" MODIFIED="1571624543438"/>
+<node TEXT="satchmo" ID="ID_1777765023" CREATED="1571624561742" MODIFIED="1571624664821"/>
+<node TEXT="payment" ID="ID_36277671" CREATED="1571624679628" MODIFIED="1571624683508"/>
+<node TEXT="stachmo" ID="ID_1552382410" CREATED="1571624683926" MODIFIED="1571624691756"/>
+<node TEXT="paypal" ID="ID_131595676" CREATED="1571624693809" MODIFIED="1571624695707"/>
+<node TEXT="djstripe" ID="ID_1019223919" CREATED="1571624705480" MODIFIED="1571624707365"/>
+<node ID="ID_339065697" CREATED="1571625366057" MODIFIED="1571625366057"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt">django-templated-email</pre>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1104591734" CREATED="1571625372765" MODIFIED="1571627842760"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt">django-email-as_username</pre>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1905720434" CREATED="1571625558943" MODIFIED="1571625558943"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre>django-filer</pre>
+  </body>
+</html>
+
+</richcontent>
+<node TEXT="https://django-filer.readthedocs.io/en/latest/index.html" ID="ID_1041107563" CREATED="1571625511251" MODIFIED="1571625511251" LINK="https://django-filer.readthedocs.io/en/latest/index.html"/>
+<node TEXT="installed_apps" ID="ID_270733046" CREATED="1571625665685" MODIFIED="1571625671646"/>
+<node TEXT="settings" ID="ID_949814909" CREATED="1571625675000" MODIFIED="1571625676554"/>
+<node TEXT="urlpatterns" ID="ID_675286431" CREATED="1571625692150" MODIFIED="1571625702188">
+<node TEXT="url(r&apos;^filer/&apos;, include(&apos;filer.urls&apos;))" ID="ID_1754908414" CREATED="1571625713132" MODIFIED="1571625715049"/>
+</node>
+<node TEXT="thumbnail processors" ID="ID_1730766187" CREATED="1571625760512" MODIFIED="1571625766204"/>
+</node>
+</node>
+<node TEXT="DJANGO" POSITION="right" ID="ID_1258128959" CREATED="1571627664959" MODIFIED="1571627667943">
+<edge COLOR="#007c00"/>
+<node TEXT="plugins" ID="ID_1940134604" CREATED="1571627668953" MODIFIED="1571627806862">
+<node TEXT="env" ID="ID_1391680358" CREATED="1571628645742" MODIFIED="1571628647559">
+<node TEXT="django-environ" ID="ID_1110636447" CREATED="1571628649129" MODIFIED="1571628652561"/>
+</node>
+<node TEXT="auth" ID="ID_293464158" CREATED="1571627829740" MODIFIED="1571627832171">
+<node TEXT="django-allauth" ID="ID_1373395543" CREATED="1571627807484" MODIFIED="1571627818388">
+<node TEXT="description" ID="ID_1127912452" CREATED="1571628131280" MODIFIED="1571628140582">
+<node TEXT="Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication." ID="ID_1713211696" CREATED="1571628145161" MODIFIED="1571628147411"/>
+</node>
+<node TEXT="homepage" ID="ID_155591470" CREATED="1571628180836" MODIFIED="1571628184035" LINK="http://www.intenct.nl/projects/django-allauth/"/>
+</node>
+<node TEXT="django-email-as_username" ID="ID_599301632" CREATED="1571627849369" MODIFIED="1571627850996"/>
+</node>
+<node TEXT="payment" ID="ID_418797961" CREATED="1571627855194" MODIFIED="1571627859321">
+<node TEXT="djstripe" ID="ID_967240654" CREATED="1571627862179" MODIFIED="1571627866561"/>
+<node TEXT="ngodjstripe" ID="ID_1587371561" CREATED="1571627869705" MODIFIED="1571627875684">
+<node TEXT="forker djstripe?" ID="ID_1770822743" CREATED="1571627893197" MODIFIED="1571627898443">
+<node TEXT="pour integrer leurs modifs et faciliter" ID="ID_1395076206" CREATED="1571627903104" MODIFIED="1571628129010"/>
+</node>
+</node>
+</node>
+<node TEXT="email" ID="ID_1045917872" CREATED="1571628424300" MODIFIED="1571628426877">
+<node ID="ID_1004143763" CREATED="1571628464615" MODIFIED="1571628464615"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre><span class="pl-s1">django-anymail</span></pre>
+  </body>
+</html>
+
+</richcontent>
+<node TEXT="description" ID="ID_698148159" CREATED="1571628485591" MODIFIED="1571628489702">
+<node ID="ID_1525535967" CREATED="1571628492498" MODIFIED="1571628532848"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span class="text-gray-dark mr-2" itemprop="about">Django email backends and webhooks</span>
+  </body>
+</html>
+
+</richcontent>
+<node ID="ID_448263464" CREATED="1571628536062" MODIFIED="1571628536062"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span class="text-gray-dark mr-2" itemprop="about">Amazon SES, Mailgun, Mailjet, Postmark, SendGrid, SendinBlue, SparkPost and more</span>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="homepage" ID="ID_64572124" CREATED="1571628514574" MODIFIED="1571628519928" LINK="https://anymail.readthedocs.io/"/>
+</node>
+</node>
+<node TEXT="django-classy-tags" ID="ID_1036184450" CREATED="1571632225966" MODIFIED="1571632249830">
+<node TEXT="description" ID="ID_1883030709" CREATED="1571632338121" MODIFIED="1571632341096">
+<node TEXT="The goal of this project is to create a new way of writing Django template tags which is fully compatible with the current Django templating infrastructure. This new way should be easy, clean and require as little boilerplate code as possible while still staying as powerful as possible." ID="ID_1437624843" CREATED="1571632341500" MODIFIED="1571632419016"/>
+<node TEXT="features" ID="ID_642845001" CREATED="1571632358842" MODIFIED="1571632361518">
+<node ID="ID_1743170290" CREATED="1571632410737" MODIFIED="1571632410737"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Class based template tags.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1914296382" CREATED="1571632410737" MODIFIED="1571632410737"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Template tag argument parser.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_122260213" CREATED="1571632410738" MODIFIED="1571632410738"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Declarative way to define arguments.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_1852755753" CREATED="1571632410739" MODIFIED="1571632410739"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Supports (theoretically infinite) parse-until blocks.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_181947030" CREATED="1571632410740" MODIFIED="1571632410740"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Extensible
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="homepage" ID="ID_471010187" CREATED="1571632431326" MODIFIED="1571632436249" LINK="https://github.com/divio/django-classy-tags"/>
+<node TEXT="setup" ID="ID_1626323300" CREATED="1571632507611" MODIFIED="1571632511234">
+<node TEXT="requirements" ID="ID_1066757295" CREATED="1571632515063" MODIFIED="1571632521438"/>
+</node>
+</node>
+<node ID="ID_1481689531" CREATED="1571632252303" MODIFIED="1571632252303"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      django-extensions
+    </p>
+  </body>
+</html>
+
+</richcontent>
+<node TEXT="description" ID="ID_372127744" CREATED="1571632273802" MODIFIED="1571632278348">
+<node TEXT="additional commands" ID="ID_40824919" CREATED="1571632278593" MODIFIED="1571632284866"/>
+</node>
+</node>
+<node ID="ID_271004652" CREATED="1571632252303" MODIFIED="1571632252303"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      django-reversion
+    </p>
+  </body>
+</html>
+
+</richcontent>
+<node TEXT="description" ID="ID_1005558705" CREATED="1571632556719" MODIFIED="1571632561862">
+<node ID="ID_1485534557" CREATED="1571632574939" MODIFIED="1571632574939"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      <strong>django-reversion</strong> is an extension to the Django web framework that provides version control for model instances.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_915097484" CREATED="1571632604782" MODIFIED="1571632604782"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      *&#160;&#160;Roll back to any point in a model instance&#8217;s history.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_156828296" CREATED="1571632604783" MODIFIED="1571632604783"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      *&#160;&#160;Recover deleted model instances.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_788222594" CREATED="1571632604784" MODIFIED="1571632604784"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      *&#160;&#160;Simple admin integration.
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="django-categories" ID="ID_1498318610" CREATED="1571637571393" MODIFIED="1571637575114">
+<node TEXT="description" ID="ID_1283888571" CREATED="1571637575384" MODIFIED="1571637577261">
+<node ID="ID_54770610" CREATED="1571637578021" MODIFIED="1571637578021"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <span class="text-gray-dark mr-2" itemprop="about">This app attempts to provide a generic category system that multiple apps could use. It uses MPTT for the tree storage and provides a custom admin for better visualization (copied and modified from feinCMS). </span>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node TEXT="homepage" ID="ID_1221877518" CREATED="1571637585547" MODIFIED="1571637590346" LINK="https://github.com/callowayproject/django-categories"/>
+</node>
+<node ID="ID_363141577" CREATED="1571632252304" MODIFIED="1571633638102">
+<icon BUILTIN="button_cancel"/>
+<richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      django-rq
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+<node ID="ID_912557428" CREATED="1571632252305" MODIFIED="1571632252305"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      django-coreapi
+    </p>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node TEXT="cookiecutters" ID="ID_1740701141" CREATED="1571628285823" MODIFIED="1571628289939">
+<node TEXT="https://github.com/pydanny/cookiecutter-django" ID="ID_78594804" CREATED="1571628291008" MODIFIED="1571628291008" LINK="https://github.com/pydanny/cookiecutter-django">
+<node TEXT="all-auth" ID="ID_1650293160" CREATED="1571628291982" MODIFIED="1571628302769"/>
+<node TEXT="environ" ID="ID_253320850" CREATED="1571628303379" MODIFIED="1571628308663"/>
+</node>
+<node TEXT="https://github.com/pydanny/cookiecutter-djangopackage" ID="ID_1739935447" CREATED="1571646399459" MODIFIED="1571646399459" LINK="https://github.com/pydanny/cookiecutter-djangopackage"/>
+</node>
+<node TEXT="docker" ID="ID_1697222963" CREATED="1571649163460" MODIFIED="1571649166048">
+<node ID="ID_1102745811" CREATED="1571649176028" MODIFIED="1571649176028"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre>docker-compose up</pre>
+  </body>
+</html>
+
+</richcontent>
+</node>
+</node>
+<node TEXT="loading 11.908553" ID="ID_612584008" CREATED="1571830306175" MODIFIED="1571850114086">
+<node TEXT="10.194555" ID="ID_883963476" CREATED="1571851723193" MODIFIED="1571851723193">
+<node TEXT="7.991019" ID="ID_816412447" CREATED="1571853199602" MODIFIED="1571853199602">
+<node TEXT="png_4743392750190859402.png" ID="ID_960275020" CREATED="1571858695451" MODIFIED="1571858695451">
+<hook URI="NGOSCHEMA_files/png_4743392750190859402.png" SIZE="1.0" NAME="ExternalObject"/>
+</node>
+</node>
+<node TEXT="removing call to any_pprint to the new lazy_format class" ID="ID_909136264" CREATED="1571853201563" MODIFIED="1571853239552"/>
+</node>
+<node TEXT="memoizing short_repr" ID="ID_912976014" CREATED="1571851746312" MODIFIED="1571851763349"/>
+</node>
+<node TEXT="serializing 2.789402" ID="ID_408544295" CREATED="1571830306175" MODIFIED="1571850058928">
+<node TEXT="2.337396" ID="ID_1379850682" CREATED="1571851730654" MODIFIED="1571851730654"/>
+</node>
+<node TEXT="loading 0.266558" ID="ID_962770744" CREATED="1571849779588" MODIFIED="1571849779588"/>
+<node TEXT="serializing 13.782692" ID="ID_896633679" CREATED="1571849428769" MODIFIED="1571849428769"/>
 </node>
 </node>
 </map>

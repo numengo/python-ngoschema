@@ -118,11 +118,12 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         import json
         if not self.loaded:
             self.load()
-        self._content = load_function(self._contentRaw, **kwargs)
         try:
-            register_doc_with_uri_id(self._content, self._id)
+            self._content = load_function(self._contentRaw, **kwargs)
         except Exception as er:
-            pass
+            raise Exception('impossible to deserialize %s: %s' % (self.identifier, er))
+        if self._id:
+            register_doc_with_uri_id(self._content, self._id)
         return self._content
 
     @property
@@ -173,7 +174,7 @@ def get_document_registry():
 
 class DocumentRegistry(Mapping):
     def __init__(self):
-        from ..object_handlers import JsonFileObjectHandler
+        from ..handlers import JsonFileObjectHandler
         self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
         self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
         self._chained = ChainMap(self._fp_registry._registry,

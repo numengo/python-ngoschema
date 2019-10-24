@@ -64,9 +64,9 @@ class TemplatedString(object):
         self._template = default_jinja2_env().from_string(self._templated_str)
         self._has_dot = regex_has_dot.search(self._templated_str) is not None
 
-    def __call__(self, **obj):
+    def __call__(self, *args, **kwargs):
         # ctx = context.as_dict() if hasattr(context,'as_dict') else context
-        return self._template.render(**obj)
+        return self._template.render(*args, **kwargs)
 
 
 def get_variables(source, remove_this=True):
@@ -86,7 +86,11 @@ def get_variables(source, remove_this=True):
                 vars.append(''.join(var))
                 var = []
                 continue
-            var.append(t.value)
+            if t.type == 'integer' and var[-1] == '.':
+                var.pop(-1)
+                var.append(f'[{t.value}]')
+            else:
+                var.append(t.value)
     return vars if not remove_this \
         else [v.replace('this.', '').replace('self.', '') for v in vars]
 

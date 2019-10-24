@@ -3,6 +3,7 @@ from .foreign_key import *
 from .keyed_object import *
 from .metadata import *
 from .relationship import *
+from ngoschema.transforms.object_transform import *
 
 __all__ = [
     # document
@@ -18,5 +19,7 @@ __all__ = [
     # metadata
     'Metadata',
     # Relationship
-    'Relationship'
+    'Relationship',
+    # transforms
+    "ObjectTransform"
 ]

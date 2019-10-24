@@ -25,13 +25,21 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     This implements all of the array like behavior that one would want,
     with a dirty-tracking mechanism to avoid constant validation costs.
     """
+    __propinfo__ = {}
 
-    def __init__(self, ary):
-        HasCache.__init__(self)
+    def __init__(self, ary, _parent=None):
         # convert to array is necessary
         if not utils.is_sequence(ary) or isinstance(ary, ArrayWrapper):
             ary = [ary]
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
+        HasCache.__init__(self,
+                          context=_parent,
+                          inputs=self.propinfo('dependencies'))
+        self._parent = _parent
+
+    @classmethod
+    def propinfo(cls, propname):
+        return cls.__propinfo__.get(propname) or {}
 
     def __str__(self):
         return "<%s=%s>" % (
@@ -80,8 +88,9 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def validate_items(self):
         if not self._dirty and self._typed is not None:
             # necessary if element came typed before context was set
-            if self._context:
-                self._set_context(self._context)
+            # SHOUD BE USELESS SOON when instances are created with context
+            #if self._context:
+            #    self._set_context(self._context)
             return self._typed
         from python_jsonschema_objects import classbuilder
 
@@ -111,8 +120,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 typed_elems.append(elem)
 
             elif util.safe_issubclass(typ, classbuilder.LiteralValue):
-                if hasattr(typ, 'foreignClass') and str(elem).startswith('#'):
-                    elem = self._clean_cname(elem)
                 val = typ(elem)
                 val.do_validate()
                 typed_elems.append(val)
@@ -122,7 +129,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                         if isinstance(elem, (six.string_types, six.integer_types, float)):
                             val = typ(elem)
                         else:
-                            val = typ(**self._parent._child_conf,
+                            val = typ(_parent=self._parent,
+                                      **self._parent._childConf,
                                       **util.coerce_for_expansion(elem))
                     except Exception as e:
                         self._parent.logger.error(e)
@@ -130,15 +138,15 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                                               .format(elem, typ, e))
                 else:
                     val = elem
-                if isinstance(val, HasParent):
+                if isinstance(val, HasParent) and id(val._parent) != id(self._parent):
                     val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
             elif util.safe_issubclass(typ, ArrayWrapper):
-                val = typ(elem)
+                val = typ(elem, _parent=self._parent)
                 # CRn: set parent before validation
-                val._parent = self._parent
+                #val._parent = self._parent
                 val.do_validate()
                 typed_elems.append(val)
 
@@ -152,7 +160,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     if isinstance(elem, (six.string_types, six.integer_types, float)):
                         val = typ(elem)
                     else:
-                        val = typ(**self._parent._child_conf,
+                        val = typ(_parent=self._parent,
+                                  **self._parent._childConf,
                                   **util.coerce_for_expansion(elem))
                 except TypeError as e:
                     six.reraise(ValidationError,
@@ -175,7 +184,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         HasCache._set_context(self, context)
         if self._typed:
             for item in self._typed:
-                item._set_context(context)
+                if id(item._context) != id(context):
+                    item._set_context(context)
 
     def set_items_parent(self):
         if not self._parent or not self._typed:
@@ -204,7 +214,6 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         from python_jsonschema_objects.classbuilder import TypeProxy, TypeRef
         from ngoschema import ProtocolBase
         klassbuilder = addl_constraints.pop("classbuilder", None)
-        props = {}
 
         if item_constraint is not None:
             if isinstance(item_constraint, (tuple, list)):
@@ -281,11 +290,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     item_constraint = klassbuilder.construct(
                         uri, item_constraint)
 
-        props['__itemtype__'] = item_constraint
-
-        props.update(addl_constraints)
-
-
+        props = {
+            '__itemtype__': item_constraint,
+            '__propinfo__': addl_constraints
+        }
         validator = type(str(name), (ArrayWrapper,), props)
 
         return validator

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://numengo.org/draft-05/schema",
+  "$id": "http://numengo.org/draft-05/ngoschema/object-transform",
+  "additionalProperties": false,
+  "type": "object",
+  "definitions": {
+      "ObjectTransform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "to_": {
+               "format": "uri-reference",
+                "type": "string"
+            },
+            "from_": {
+                "format": "uri-reference",
+                "type": "string"
+            }
+          }
+      }
+  }
+}

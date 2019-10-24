@@ -191,10 +191,13 @@ class FunctionInspector(object):
         if not type(function) in [staticmethod, classmethod]:
             self.name = getattr(function, "__name__", None)
             _module = importlib.import_module(function.__module__)
-            self.module = _module
-            self.moduleName = _module.__name__
-            if self.moduleName in EXCLUDED_MODULES:
-                return
+        else:
+            self.name = getattr(function, "__name__", None)
+            _module = importlib.import_module(function.__class__.__module__)
+        self.module = _module
+        self.moduleName = _module.__name__
+        if self.moduleName in EXCLUDED_MODULES:
+            return
 
         def _visit_FunctionDef(node):
             if (node.name == self.name

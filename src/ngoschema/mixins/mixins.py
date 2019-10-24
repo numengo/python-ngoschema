@@ -21,11 +21,16 @@ class HasLogger:
     @classmethod
     def init_class_logger(cls):
         from .. import utils
+        # not using the cls_fullname property because it s too early for some meta
         cls.logger = logging.getLogger(utils.fullname(cls))
+        cls.set_logLevel(cls.__log_level__)
 
     @classmethod
     def set_logLevel(cls, logLevel):
+        if not getattr(cls, 'logger', None):
+            cls.init_class_logger()
         level = logging.getLevelName(logLevel)
+        cls.__log_level__ = level
         cls.logger.setLevel(level)
 
 class HasName:
@@ -39,7 +44,7 @@ class HasParent:
     _parent_ref = None
     _children_dict = None
 
-    def _set_parent(self, value):
+    def _set_parent__(self, value):
         if value is None:
             if self._parent_ref and self._parent_ref():
                 self._parent_ref()._unregister_child(self)
@@ -51,8 +56,24 @@ class HasParent:
             self._parent_ref = weakref.ref(value)
         self._parent_ref()._register_child(self)
 
+    def _set_parent(self, value):
+        if value is None:
+            if self._parent_ref is not None:
+                self._parent_ref._unregister_child(self)
+                self._parent_ref = None
+            return
+        from ngoschema.models.foreign_key import ForeignKey
+        if isinstance(value, ForeignKey):
+            self._parent_ref = value.ref # very moche
+        else:
+            self._parent_ref = value
+        self._parent_ref._register_child(self)
+
+    #def _get_parent(self):
+    #    return self._parent_ref() if self._parent_ref else None
+
     def _get_parent(self):
-        return self._parent_ref() if self._parent_ref else None
+        return self._parent_ref
 
     _parent = property(_get_parent, _set_parent)
 
@@ -194,27 +215,21 @@ class HandleRelativeCname:
         pcn = self._root_parent._cname
         return self._cname.replace('%s.' % pcn, '#')
 
-    def _clean_cname(self, value):
-        val = str(value)
-        if val.startswith('#'):
-            return self._root_parent.resolve_relative_cname(val)
-        return val
-
-
 class HasCache:
     _context = None
     _cache = None
     _inputs = set()
     _outputs = set()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, context=None, inputs=None, outputs=None):
+        self._context = context
+        self._inputs = inputs or set()
+        self._outputs = outputs or set()
         self._dirty = True
-        self._inputs = set()
-        self._outputs = set()
 
     def __eq__(self, other):
         if not isinstance(other, HasCache):
-            return True
+            return False
         iprops = self._input_props
         oprops = other._input_props
         if iprops.keys() != oprops.keys():
@@ -284,6 +299,7 @@ class HasCache:
                 p.touch()
 
     def do_validate(self, force=False):
+        # validate inputs
         for k, p  in self._input_props.items():
             p.do_validate(force)
 

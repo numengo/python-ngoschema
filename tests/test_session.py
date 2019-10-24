@@ -12,10 +12,10 @@ from __future__ import unicode_literals
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from ngomf import variable, variable_group, component, package
-from ngoschema.session import sessionmaker, scoped_session
+from ngomf.models import variable
+from ngoschema.session import session_maker, scoped_session
 
-Session = scoped_session(sessionmaker())
+Session = scoped_session(session_maker())
 
 def test_session():
     s1 = Session()

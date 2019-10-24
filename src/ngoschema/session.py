@@ -116,7 +116,7 @@ class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 
 
-class sessionmaker(object):
+class session_maker(object):
     """A configurable :class:`.Session` factory.
 
     The :class:`.sessionmaker` factory generates new

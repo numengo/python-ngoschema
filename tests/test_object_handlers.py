@@ -12,14 +12,14 @@ from __future__ import unicode_literals
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from ngoschema.object_handlers import JsonFileObjectHandler, YamlFileObjectHandler
+from ngoschema.handlers import JsonFileObjectHandler, YamlFileObjectHandler
 from ngoschema.models.document import Document
 #from ngomf.component import ComponentDefinition
-from ngoci.project import Project
+from ngoci.models.project import Project
 
 def test_json_handler():
     d1 = Document(filepath="/Users/cedric/Devel/python/python-ngomf/src/ngomf/models/Ngo/MoistAir/PhaseChange/MACND00.json")
-    h1  = JsonFileObjectHandler(objectClass='ngomf.component.ComponentDefinition', document=d1)
+    h1  = JsonFileObjectHandler(objectClass='ngomf.models.component.ComponentDefinition', document=d1)
     c1 = h1.load()
 
     d2 = Document(filepath="/Users/cedric/Devel/python/python-ngoci/tests/fixtures/projects.ngoprj")

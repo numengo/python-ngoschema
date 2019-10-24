@@ -16,8 +16,9 @@ from abc import abstractmethod
 
 import six
 from future.utils import with_metaclass
+
 from .decorators import assert_arg, SCH_PATH_FILE, SCH_PATH
-from .session import sessionmaker, scoped_session
+from .session import session_maker, scoped_session
 from .utils import default_jinja2_env, TemplatedString
 from .utils.jinja2 import _jinja2_globals
 
@@ -99,7 +100,7 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     if cn2 == cn:
                         yield cur, cn, cur_path
                     for k, v in cur.items():
-                        if is_mapping(cur) or is_sequence(cur):
+                        if is_mapping(v) or is_sequence(v):
                             for _ in _resolve_cname_path(cn, v, cn2, cur_path + [k]):
                                 yield _
             if is_sequence(cur):
@@ -234,7 +235,7 @@ class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObj
 
 @assert_arg(0, SCH_PATH_FILE)
 def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
-    session = session or scoped_session(sessionmaker())()
+    session = session or scoped_session(session_maker())()
     handler_cls = handler_cls or JsonFileObjectHandler
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
@@ -246,7 +247,7 @@ def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
 
 @assert_arg(1, SCH_PATH)
 def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
-    session = session or scoped_session(sessionmaker())()
+    session = session or scoped_session(session_maker())()
     handler_cls = handler_cls or JsonFileObjectHandler
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
@@ -396,3 +397,5 @@ class Jinja2MacroTemplatedPathFileObjectHandler(with_metaclass(SchemaMetaclass, 
             stream = stream.decode('utf-8')
             os.remove(tf.name)
         return stream
+
+

@@ -70,7 +70,7 @@ install_requires = [
     'future',
     'python-gettext',
     'click',
-    'git+https://github.com/Julian/jsonschema.git@draft7',
+    'git+https://github.com/Julian/jsonschema.git',
     'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
     'ngofile',
     'attrs',
@@ -86,7 +86,8 @@ install_requires = [
     'requests',
     'ruamel.yaml',
     'python-magic-bin',
-    'openapi-core'
+    'openapi-core',
+    'xmldict'
 ]
 
 post_install_requires = [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]

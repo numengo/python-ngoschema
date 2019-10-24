@@ -51,7 +51,7 @@ class Relationship:
             try:
                 cls._foreignClass = get_builder().resolve_or_build(cls.foreignSchema)
             except Exception as er:
-                cls.logger.error(er)
+                cls.logger.error(er, exc_info=True)
             if not issubclass(cls._foreignClass, KeyedObject):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
                                 % (cls._foreignClass, KeyedObject))
