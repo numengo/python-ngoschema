@@ -10,10 +10,108 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import re
+import json
 from builtins import str
-
+import pprint
+import collections
+from itertools import islice
+from .utils import is_mapping, is_sequence, is_collection, is_string
 from past.builtins import basestring
 from ngoschema.decorators import take_arrays
+
+PPRINT_MAX_EL = 10
+PPRINT_MAX_STRL = 80
+
+
+class PrettyShortPrinter(pprint.PrettyPrinter):
+    _dispatch = pprint.PrettyPrinter._dispatch
+
+    def __init__(self, max_level=2, max_el=PPRINT_MAX_EL, max_str_len=PPRINT_MAX_STRL, **kwargs):
+        self.maxLevel = max_level
+        self.maxEl = max_el
+        self.maxStrLen = max_str_len
+        pprint.PrettyPrinter.__init__(self, **kwargs)
+
+    def _pprint_dict(self, object, stream, indent, allowance, context, level):
+        write = stream.write
+        write('{')
+        if self._indent_per_level > 1:
+            write((self._indent_per_level - 1) * ' ')
+        length = len(object)
+        items = sorted(islice(object.items(), 0, self.maxEl), key=pprint._safe_tuple)
+        self._format_dict_items(items, stream, indent, allowance + 1, context, level)
+        if length>=self.maxEl:
+            self._format('+%i...' % (length-self.maxEl), stream, indent, allowance+1, context, level)
+        write('}')
+
+    _dispatch[dict.__repr__] = _pprint_dict
+    _dispatch[collections.OrderedDict.__repr__] = _pprint_dict
+
+    def _pprint_list(self, object, stream, indent, allowance, context, level):
+        stream.write('[')
+        self._format_items(object[:self.maxEl], stream, indent, allowance + 1,
+                           context, level)
+        if len(object)>=self.maxEl:
+            self._format('+%i...' % (len(object)-self.maxEl), stream, indent, allowance+1, context, level)
+        stream.write(']')
+
+    _dispatch[list.__repr__] = _pprint_list
+
+    def _pprint_str(self, object, stream, indent, allowance, context, level):
+        if not len(object):
+            stream.write(repr(object))
+            return
+        if len(object)>=self.maxStrLen:
+            object = str(object)[:self.maxStrLen] + '+%i...' % (len(object)-self.maxStrLen)
+        return pprint.PrettyPrinter._pprint_str(self, object, stream, indent, allowance, context, level)
+
+    _dispatch[str.__repr__] = _pprint_str
+
+    def _format__(self, object, stream, indent, allowance, context, level):
+        if hasattr(object, '__propinfo__'):
+            object = str(object)
+        return pprint.PrettyPrinter._format(self, object, stream, indent, allowance, context, level)
+
+    def _format(self, object, stream, indent, allowance, context, level):
+        objid = id(object)
+        if objid in context:
+            stream.write(pprint._recursion(object))
+            self._recursive = True
+            self._readable = False
+            return
+        if hasattr(object, '__propinfo__'):
+            # we use our str representation as a safe repr
+            rep = str(object)
+            if hasattr(object, 'isLiteralClass'):
+                if len(rep) >= self.maxStrLen:
+                    rep = rep[:self.maxStrLen] + '+%i' % (len(rep)-self.maxStrLen)
+        elif is_collection(object) and len(object) >= self.maxEl:
+            if is_mapping(object):
+                rep = self._repr({k: v for k, v in  islice(object.items(), 0, self.maxEl)}, context, level)
+                rep = rreplace(rep, '}', '+%i...}' % (len(object)-self.maxEl))
+            else:
+                rep = self._repr([v for v in object[0:self.maxEl]], context, level)
+                rep = rreplace(rep, ']', '+%i...]' % (len(object)-self.maxEl))
+        elif is_string(object) and len(object) >= self.maxStrLen:
+            object = object[:self.maxStrLen] + f'+{len(object) - self.maxStrLen}...'
+            rep = self._repr(object, context, level)
+        else:
+            rep = self._repr(object, context, level)
+        max_width = self._width - indent - allowance
+        if len(rep) > max_width:
+            p = self._dispatch.get(type(object).__repr__, None)
+            if p is not None:
+                context[objid] = 1
+                p(self, object, stream, indent, allowance, context, level + 1)
+                del context[objid]
+                return
+            elif isinstance(object, dict):
+                context[objid] = 1
+                self._pprint_dict(object, stream, indent, allowance,
+                                  context, level + 1)
+                del context[objid]
+                return
+        stream.write(rep)
 
 
 def _multiple_replacer(replace_dict):
@@ -56,3 +154,9 @@ def get_unicode(str_or_unicode, encoding='utf-8'):
     if isinstance(str_or_unicode, (str, basestring)):
         return str_or_unicode
     return str(str_or_unicode, encoding, errors='ignore')
+
+
+def rreplace(s, old, new, occurrence=1):
+    """right replace function"""
+    li = s.rsplit(old, occurrence)
+    return new.join(li)

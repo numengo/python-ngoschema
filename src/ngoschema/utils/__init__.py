@@ -50,10 +50,12 @@ __all__ = [
     'logging_call',
     'grouper',
     'casted_as',
-    'any_pprint',
     'Bracket',
     'threadsafe_counter',
     # strings
+    'PPRINT_MAX_EL',
+    'PPRINT_MAX_STRL',
+    'PrettyShortPrinter',
     'multiple_replace',
     'split_string',
     # protected regions

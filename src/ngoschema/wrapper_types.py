@@ -7,6 +7,7 @@ import sys
 import six
 import json
 
+from ngoschema.utils import rreplace
 from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
@@ -18,6 +19,7 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
+PPRINT_MAX_EL = utils.PPRINT_MAX_EL
 
 class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParent, HasCache):
     """ A wrapper for array-like structures.
@@ -42,17 +44,23 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         return cls.__propinfo__.get(propname) or {}
 
     def __str__(self):
-        return "<%s=%s>" % (
-            self.__class__.__name__,
-            [str(e) for i, e in enumerate(self.typed_elems)
-             if i < 20] + (['...'] if len(self) >= 20 else [])
-        )
+        items = self.data if self._dirty else self._typed
+        if len(items) >= PPRINT_MAX_EL:
+            return rreplace(str([str(e) for e in items[:PPRINT_MAX_EL]]), ']', ' +%i...]')
+        return str([str(e) for e in items])
 
     def __repr__(self):
-        return "<%s=%s>" % (
-            self.__class__.__name__,
-            [json.dumps(e.for_json()) for e in self.typed_elems]
+        items = self.data if self._dirty else self._typed
+        cls = self.__class__
+        return "<%s id=%s validated=%s %s>" % (
+            getattr(cls, 'cls_fullname', cls.__name__),
+            id(self),
+            not self._dirty,
+            [str(e) for e in items]
         )
+
+    def __format__(self, format_spec):
+        return str([str(e) for e in self.typed_elems]).__format__(format_spec)
 
     def append(self, value):
         self.data.append(value)
@@ -101,7 +109,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 .format(self.__itemtype__, self.data))
 
         typed_elems = []
-        for elem, typ in zip(self.data, type_checks):
+        for i, (elem, typ) in enumerate(zip(self.data, type_checks)):
             # replace references
             if utils.is_mapping(elem) and '$ref' in elem:
                 elem.update(resolve_uri(elem.pop('$ref')))
@@ -127,7 +135,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                                       **self._parent._childConf,
                                       **util.coerce_for_expansion(elem))
                     except Exception as e:
-                        self._parent.logger.error(e, exc_info=True)
+                        self._parent.logger.error('problem instanciating array item [%i]', i, exc_info=True)
                         raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
                                               .format(elem, typ, e))
                 else:

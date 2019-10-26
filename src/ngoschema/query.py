@@ -108,6 +108,72 @@ def _apply_ops_test(ops, negate, a, b):
     return not a if negate else a
 
 
+class Filter(object):
+
+    def __init__(self,
+                 *attrs,
+                 negate=False,
+                 any_of=False,
+                 load_lazy = False,
+                 **attrs_value):
+        self.negate = negate
+        self.anyOf = any_of
+        self.loadLazy = load_lazy
+        self.attrs_value = attrs_value
+        self.attrs = attrs
+
+        self.attrs_ops = {}
+        for k, v2 in attrs_value.items():
+            ks, ops = _sort_criteria(k)
+            ops_negate = 'not' in ops
+            if ops_negate:
+                ops.remove('not')
+            self.attrs_ops[k] = (ks, ops, ops_negate)
+
+    def __call__(self, obj):
+        test = not self.anyOf
+        for k, v2 in self.attrs_value.items():
+            ks, ops, ops_negate = self.attrs_ops[k]
+            o = get_descendant(obj, ks, self.anyOf)
+            if o is None:
+                # breaking the look we never go in the for/ELSE statement where
+                # an object is potentially yielded
+                test = False
+                break
+            elif ops and utils.is_mapping(o):
+                # check if it s not a child
+                for op in ops:
+                    o2 = get_descendant(o, op, self.anyOf)
+                    if o2:
+                        o = o2
+                        ks.append(ops.pop(0))
+                    else:
+                        test = False
+                        break
+            ops = ops or ['eq']
+            v = _comparable(o)
+            test2 = bool(_apply_ops_test(ops, ops_negate, v, v2))
+            test = (test or test2) if self.anyOf else (test and test2)
+            if self.anyOf:
+                if test2:
+                    break
+            elif not test:
+                break
+
+        for k in self.attrs:
+            ks = k.split('__')
+            test2 = get_descendant(obj, ks, self.loadLazy) is not None
+            test = (test or test2) if self.anyOf else (test and test2)
+            if self.anyOf:
+                if test2:
+                    break
+            elif not test:
+                break
+        # todo change
+        if test is not self.negate:
+            return True
+        return False
+
 class Query(object):
 
     def __init__(self, iterable, distinct=False, order_by=False, reverse=False):
@@ -127,6 +193,8 @@ class Query(object):
 
     def _chain(self):
         return Query(self._iterable, self._distinct, self._order_by, self._reverse)
+
+
 
     @staticmethod
     def _filter_or_exclude(iterable,
@@ -152,6 +220,33 @@ class Query(object):
         :param attrs: select/reject objects with given attributes defined
         :param attrs_value: select/objects objects with given attribute/value pairs
         """
+        test_op = Filter(*attrs,
+                           load_lazy=load_lazy,
+                           negate=negate,
+                           any_of=any_of,
+                           **attrs_value)
+        seen = set()
+        for obj in iterable:
+            if not obj: # todo change to is None??
+                continue
+            if test_op(obj):
+                if distinct:
+                    comparable = _comparable(obj)
+                    if comparable not in seen:
+                        seen.add(comparable)
+                    else:
+                        continue
+                yield obj
+
+    @staticmethod
+    def _filter_or_exclude__(iterable,
+                               *attrs,
+                               load_lazy=False,
+                               negate=False,
+                               any_of=False,
+                               distinct=False,
+                               **attrs_value):
+
         seen = set()
         attrs_ops = {}
         for k, v2 in attrs_value.items():

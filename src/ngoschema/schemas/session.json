@@ -4,14 +4,13 @@
     "definitions": {
         "Session": {
             "type": "object",
-            "abstract": true,
             "additionalProperties": false,
             "properties": {
                 "autoflush": {
                     "type": "boolean",
                     "default": true
                 },
-                "expireOnCommit": {
+                "expire_on_commit": {
                     "type": "boolean",
                     "default": true
                 },
@@ -21,7 +20,7 @@
                 },
                 "bind": {
                     "type": "object",
-                    "additionalProperties": "string"
+                    "additionalProperties": true
                 }
             }
         }

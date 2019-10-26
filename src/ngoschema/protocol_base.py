@@ -32,23 +32,27 @@ from .validators import DefaultValidator
 from .config import ConfigLoader
 from .utils.json import ProtocolJSONEncoder
 from .decorators import classproperty, memoized_property
+from .utils import PPRINT_MAX_EL, PPRINT_MAX_STRL, PrettyShortPrinter
 
 DEFAULT_CDATA_KEY = '#text'
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
 
+_pprinter = PrettyShortPrinter(indent=0, depth=2, width=100)
+_log_format = _pprinter.pformat
+
 class lazy_format(object):
     __slots__ = ('fmt', 'args', 'data_to_pprint', 'kwargs')
 
-    def __init__(self, fmt, *args, data_to_pprint=None, **kwargs):
+    def __init__(self, fmt, *args, **kwargs):
         self.fmt = fmt
         self.args = args
         self.kwargs = kwargs
 
     def __str__(self):
-        return self.fmt.format(*[utils.any_pprint(a) for a in self.args],
-                                **{k: utils.any_pprint(v) for k, v in self.kwargs.items()})
+        return self.fmt.format(*[_log_format(a) for a in self.args],
+                              **{k: _log_format(v) for k, v in self.kwargs.items()})
 
 def get_descendant(obj, key_list, load_lazy=False):
     """
@@ -308,6 +312,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     """
 
     # additional private and protected props
+    _pprinter = PrettyShortPrinter(indent=0, depth=2, width=10000)
     _validator = None
     __prop_names__ = dict()
     __prop_translated__ = dict()
@@ -355,6 +360,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         main initialization method, dealing with lazy loading
         """
+        # TODO need to change to put props directly
         self.logger.info(lazy_format("INIT {0} with {1}", self.short_repr, props))
 
         cls = self.__class__
@@ -451,26 +457,51 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return "<%s id=%s>" % (self.cls_fullname, id(self))
 
     def __str__(self):
-        props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), str(v))
-                        for k, v in itertools.chain(six.iteritems(self._properties),
-                                    six.iteritems(self._extended_properties))
-                        if v is not None])
-        props = props[:20] + (['...'] if len(props)>=20 else [])
-        return "<%s id=%s %s>" % (
+        def format_prop(prop):
+            if utils.is_mapping(prop):
+                return '{%i}' % len(prop)
+            if utils.is_sequence(prop):
+                return '[%i]' % len(prop)
+            if utils.is_collection(prop._value):
+                return format_prop(prop._value)
+            str_prop = str(prop)
+            if len(str_prop) > PPRINT_MAX_STRL:
+                str_prop = str_prop[:PPRINT_MAX_STRL] + '+%i...' % (len(str_prop)-PPRINT_MAX_STRL)
+            return '"%s"' % str_prop
+
+        props = ["%s=%s" % (self.__prop_translated_flatten__.get(k, k),
+                             format_prop(v))
+                 for k, v in itertools.islice(
+                                itertools.chain(six.iteritems(self._properties),
+                                                six.iteritems(self._extended_properties)),
+                                0, 20)
+                 if v is not None and not (utils.is_collection(v) and not len(v))]
+        props = props[:20] + (['+%i...' % (len(props)-PPRINT_MAX_EL)]
+                              if len(props) >= PPRINT_MAX_EL
+                              else [])
+        return "<%s {%s}>" % (
             self.cls_fullname,
-            id(self),
-            " ".join(props)
+            ", ".join(props)
         )
 
     def __repr__(self):
-        props = sorted(["%s=%s" % (self.__prop_translated_flatten__.get(k, k), json.dumps(v.for_json()))
-                        for k, v in itertools.chain(six.iteritems(self._properties),
-                                    six.iteritems(self._extended_properties)) if v])
-        return "<%s id=%s %s>" % (
+        props = ["%s=%s" % (self.__prop_translated_flatten__.get(k, k), v)
+                  for k, v in itertools.chain(six.iteritems(self._properties),
+                                              six.iteritems(self._extended_properties))
+                  if v is not None and not (utils.is_collection(v) and not len(v))]
+        return "<%s id=%s validated=%s {%s}>" % (
             self.cls_fullname,
             id(self),
-            " ".join(props)
+            not self._dirty,
+            ", ".join(props)
         )
+
+    def __format__(self, format_spec):
+        props = {self.__prop_translated_flatten__.get(k, k): v.__format__(format_spec)
+                        for k, v in itertools.chain(six.iteritems(self._properties),
+                                    six.iteritems(self._extended_properties))
+                        if v is not None and not (utils.is_collection(v) and not len(v))}
+        return props.__format__(format_spec)
 
     def __eq__(self, other):
         if not utils.is_mapping(other):
@@ -509,6 +540,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def cls_fullname(cls):
         if cls._cls_fullname is None:
             cls._cls_fullname = utils.fullname(cls)
+            if cls._cls_fullname.startswith('<abc.'):
+                cls._cls_fullname = cls.__name__
         return cls._cls_fullname
 
     @classmethod

@@ -19,8 +19,6 @@ import pathlib
 import re
 import subprocess
 import sys
-import json
-import tokenize
 from builtins import str
 from contextlib import contextmanager
 import threading
@@ -33,7 +31,6 @@ from past.types import basestring
 
 from ngoschema.utils._qualname import qualname
 from ngoschema.exceptions import InvalidValue
-from ngoschema.mixins import HasCache, HasParent
 from collections import OrderedDict as odict
 from collections import Mapping, MutableMapping
 
@@ -284,7 +281,7 @@ def import_from_string(value):
                     continue
                 ret = getattr(ret, a, None)
                 if not ret:
-                    raise InvalidValue(
+                    raise ValueError(
                         "%s is not an importable object" % value)
             return ret
         except Exception as er:
@@ -553,55 +550,6 @@ def casted_as(instance, cls):
     instance.__class__ = cls
     yield instance
     instance.__class__ = instance_cls
-
-
-STR_LMAX = 512
-
-def coll_pprint(coll, max_length=20, sep=''):
-    is_map = is_mapping(coll)
-    # remove private members
-    if is_map:
-        coll = collections.OrderedDict([(k, v) for k, v in coll.items() if k[0] != '_'])
-
-    trunc = len(coll) > max_length
-    if is_map:
-        coll = {k: v
-                for i, (k, v) in enumerate(coll.items())
-                if i < max_length}
-    else:
-        coll = coll[0: max_length]
-
-    def truncate(value):
-        if isinstance(value, HasParent):
-            return str(value)[:STR_LMAX]
-        if is_mapping(value) and value:
-            return '{...}'
-        if is_sequence(value) and value:
-            return '[...]'
-        return str(value)[:STR_LMAX]
-
-    if is_mapping(coll):
-        coll = collections.OrderedDict([(k, truncate(v)) for k, v in coll.items()])
-    for i, k in enumerate(coll):
-        ik = k if is_map else i
-        v = coll[ik]
-        coll[ik] = truncate(v)
-
-    lines = json.dumps(coll).split('\n')
-    if trunc:
-        lines.append('(...)')
-    return sep.join(lines)
-
-
-def any_pprint(val, **kwargs):
-    # easiest way of testing for protocol basee
-    if isinstance(val, HasCache):
-        return str(val)[:STR_LMAX]
-    elif is_collection(val):
-        return coll_pprint(val, **kwargs)
-    else:
-        return str(val)[:STR_LMAX]
-
 
 class Bracket:
     _context = None

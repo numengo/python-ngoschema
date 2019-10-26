@@ -32,6 +32,7 @@ from ruamel import yaml
 from ruamel.yaml import YAML
 import xmltodict
 
+from .exceptions import InvalidOperationException
 from .query import Query
 from .protocol_base import ProtocolBase
 from .models.document import Document
@@ -136,7 +137,7 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def instances(self):
         return list(self._registry.values())
 
-    def query(self, *attrs, order_by=False, **attrs_value):
+    def filter(self, *attrs, order_by=False, **attrs_value):
         """
         Make a `Query` on registered documents
         """
@@ -183,6 +184,17 @@ class FilterObjectHandlerMixin(object):
         but = self.but.for_json() if self.but else ()
         rec = bool(self.recursive)
         return filter_collection(data, only, but, rec)
+
+
+class MemoryObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObjectHandlerMixin)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/MemoryObjectHandler"
+
+    def commit(self):
+        raise InvalidOperationException('commit is not possible with MemoryObjectHandler')
+
+    def pre_load(self):
+        return {}
+        raise InvalidOperationException('pre_load is not possible with MemoryObjectHandler')
 
 
 class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObjectHandlerMixin)):

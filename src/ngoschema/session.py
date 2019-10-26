@@ -35,6 +35,7 @@ def _state_session(state):
     return None
 
 class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
+    __schema__ = "http://numengo.org/draft-05/ngoschema/session#/definitions/Session"
 
     def __init__(self, bind=None, builder=None, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
@@ -49,8 +50,8 @@ class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         self._new = {}  # InstanceState->object, strong refs object
         self._deleted = {}  # same
-        self.hash_key = _new_sessionid()
-        _sessions[self.hash_key] = self
+        self._hash_key = _new_sessionid()
+        _sessions[self._hash_key] = self
 
     def bind_handler(self, handler):
         self._handlers.append(handler)

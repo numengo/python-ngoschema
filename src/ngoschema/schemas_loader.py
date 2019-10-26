@@ -20,8 +20,7 @@ import inflection
 import six
 
 from ngofile.list_files import list_files
-
-from ngoschema.exceptions import SchemaError
+from jsonschema.exceptions import SchemaError
 
 
 def _id_of(schema):

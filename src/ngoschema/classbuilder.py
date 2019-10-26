@@ -95,6 +95,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def _build_pseudo_literal(self, nm, clsdata, *parents):
         from .models.foreign_key import ForeignKey, CnameForeignKey
 
+        def __repr_pseudo__(self):
+            return '<%s<%s> id=%s validated=%s "%s">' % (
+                self.__class__.__name__,
+                self._value.__class__.__name__,
+                id(self),
+                self._validated,
+                str(self)
+            )
+
+        def __format_pseudo__(self, format_spec):
+            return self._value.__format__(format_spec)
+
         def __init_pseudo__(self, *args, _parent=None):
             HasCache.__init__(self, context=_parent, inputs=self.propinfo('dependencies'))
             pjo_literals.LiteralValue.__init__(self, *args)
@@ -148,6 +160,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 (clsFK, ),
                 {
                     '__propinfo__': propinfo,
+                    '__repr__': __repr_pseudo__,
+                    '__format__': __format_pseudo__,
+                    'validate': validate_pseudo,
                 },
             )
 
@@ -158,6 +173,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 '__init__': __init_pseudo__,
                 '__propinfo__': propinfo,
                 '__subclass__': parents[0],
+                '__repr__': __repr_pseudo__,
+                '__format__': __format_pseudo__,
                 '__getattr__': __getattr_pseudo__,
                 'validate': validate_pseudo,
             },
@@ -314,6 +331,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # look for getter/setter/defaultvalue first in class definition
         for prop, detail in properties.items():
+            prop_uri = f'{nm}/properties/{prop}'
             prop = name_translation_flatten[prop]
 
             defv = class_attrs.get(prop)
@@ -351,18 +369,17 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
 
             if detail.get('type', None) == 'object':
-                uri = '{0}/{1}_{2}'.format(nm, prop, '<anonymous>')
-                self.resolved[uri] = self.construct(uri, detail,
+                typ = self.resolved[prop_uri] = self.construct(prop_uri, detail,
                                                     (ProtocolBase,))
 
                 props[prop] = make_property(
                     prop,
-                    {'type': self.resolved[uri]},
+                    {'type': typ},
                     fget=getter,
                     fset=setter,
-                    desc=self.resolved[uri].__doc__,
+                    desc=typ.__doc__,
                 )
-                properties[prop]['type'] = self.resolved[uri]
+                properties[prop]['type'] = typ
 
             elif 'type' not in detail and '$ref' in detail:
                 ref = detail['$ref']
@@ -405,14 +422,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                                        detail['items']['$ref'])
                         typ = self.construct(uri, detail['items'])
                         propdata = {
-                            'type':
-                            'array',
-                            'validator':
-                            ArrayWrapper.create(uri, item_constraint=typ),
+                            'type': 'array',
+                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typ),
                         }
                     else:
-                        uri = '{0}/{1}_{2}'.format(nm, prop,
-                                                   '<anonymous_field>')
                         try:
                             if 'oneOf' in detail['items']:
                                 typ = pjo_classbuilder.TypeProxy([
@@ -429,21 +442,16 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                         'items']['oneOf'])
                                 ])
                             else:
-
-                                typ = self._construct(uri, detail['items'])
+                                typ = self._construct(prop_uri, detail['items'])
                             propdata = {
-                                'type':
-                                'array',
-                                'validator':
-                                ArrayWrapper.create(uri, item_constraint=typ, **detail),
+                                'type': 'array',
+                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **detail),
                             }
                         except NotImplementedError:
                             typ = copy.deepcopy(detail['items'])
                             propdata = {
-                                'type':
-                                'array',
-                                'validator':
-                                ArrayWrapper.create(uri, item_constraint=typ, **detail),
+                                'type': 'array',
+                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **detail),
                             }
 
                     props[prop] = make_property(
@@ -455,7 +463,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 elif 'items' in detail:
                     typs = []
                     for i, elem in enumerate(detail['items']):
-                        uri = '{0}/{1}/<anonymous_{2}>'.format(nm, prop, i)
+                        uri = '{0}/{1}>'.format(prop_uri, i)
                         typ = self.construct(uri, elem)
                         typs.append(typ)
 
@@ -464,8 +472,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             else:
                 desc = detail['description'] if 'description' in detail else ''
-                uri = '{0}/{1}'.format(nm, prop)
-                typ = self.construct(uri, detail)
+                typ = self.construct(prop_uri, detail)
 
                 props[prop] = make_property(
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
@@ -500,7 +507,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__propinfo__'] = properties
 
         invalid_requires = [
-            req for req in required if req not in properties
+            req for req in required if name_translated.get(req, req) not in properties
         ]
         if len(invalid_requires) > 0:
             raise pjo_validators.ValidationError(
@@ -536,13 +543,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         dp = nm.split('definitions/')
         dp = [_.strip('/') for _ in dp]
         logger.info('CREATED %s', '.'.join(dp[1:]))
-
-        #if len(dp)>1:
-        #    dpath.util.new(self.definitions, dp[1:], cls)
-        #    logger.info('CREATE %s', '.'.join(dp[1:]))
-        ##else:
-        #    logger.info('CREATE %s', clsname)
-        #    self.definitions[clsname] = cls
 
         return cls
 

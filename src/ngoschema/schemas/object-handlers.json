@@ -53,6 +53,14 @@
                 }
             }
         },
+        "MemoryObjectHandler": {
+            "type": "object",
+            "additionalProperties": false,
+            "extends": [
+                "#definitions/ObjectHandler",
+                "#definitions/FilterObjectHandlerMixin"
+            ]
+        },
         "FileObjectHandler": {
             "type": "object",
             "abstract": true,
