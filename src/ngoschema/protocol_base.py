@@ -15,7 +15,9 @@ import itertools
 import six
 import collections
 import copy
-import json
+
+from ngoschema.utils import lazy_format
+from ngoschema.utils.str_utils import _pprinter
 
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
@@ -39,20 +41,6 @@ DEFAULT_CDATA_KEY = '#text'
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
 
-_pprinter = PrettyShortPrinter(indent=0, depth=2, width=100)
-_log_format = _pprinter.pformat
-
-class lazy_format(object):
-    __slots__ = ('fmt', 'args', 'data_to_pprint', 'kwargs')
-
-    def __init__(self, fmt, *args, **kwargs):
-        self.fmt = fmt
-        self.args = args
-        self.kwargs = kwargs
-
-    def __str__(self):
-        return self.fmt.format(*[_log_format(a) for a in self.args],
-                              **{k: _log_format(v) for k, v in self.kwargs.items()})
 
 def get_descendant(obj, key_list, load_lazy=False):
     """
@@ -88,7 +76,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 self._lazy_data[propname] = v
                 self.logger.error(lazy_format("GET {!s}.{!s} lazy loading failed with data {!s})",
                                               self.short_repr,
-                                              propname, v),
+                                              propname, v, to_format=[2]),
                                   exc_info=True)
                 raise
 
@@ -116,7 +104,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
 
     def setprop(self, val):
         self.logger.debug(
-            lazy_format("SET {!s}.{!s}={!s}", self.short_repr, propname, val))
+            lazy_format("SET {!s}.{!s}={!s}", self.short_repr, propname, val, to_format=[2]))
         if val is None and propname not in self.__required__:
             self._properties[propname] = None
             return
@@ -361,7 +349,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         main initialization method, dealing with lazy loading
         """
         # TODO need to change to put props directly
-        self.logger.info(lazy_format("INIT {0} with {1}", self.short_repr, props))
+        self.logger.info(lazy_format("INIT {0} with {1}", self.short_repr, props, to_format=[1]))
 
         cls = self.__class__
         #props.pop('$schema', None)
@@ -457,44 +445,51 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return "<%s id=%s>" % (self.cls_fullname, id(self))
 
     def __str__(self):
-        def format_prop(prop):
-            if utils.is_mapping(prop):
-                return '{%i}' % len(prop)
-            if utils.is_sequence(prop):
-                return '[%i]' % len(prop)
-            if utils.is_collection(prop._value):
-                return format_prop(prop._value)
-            str_prop = str(prop)
-            if len(str_prop) > PPRINT_MAX_STRL:
-                str_prop = str_prop[:PPRINT_MAX_STRL] + '+%i...' % (len(str_prop)-PPRINT_MAX_STRL)
-            return '"%s"' % str_prop
+        rep = "<%s {" % (self.cls_fullname)
+        elts = []
+        for k in self.keys():
+            prop = self._get_prop(k)
+            if prop is None:
+                continue
+            if hasattr(prop, 'isLiteralClass'):
+                s = str(prop._value)
+                if utils.is_string(prop._value):
+                    s = '"%s"' % s
+                    if len(s) >= PPRINT_MAX_STRL:
+                        s = s[:PPRINT_MAX_STRL] + '..."'
+                elts.append("%s=%s" % (k, s))
+            elif len(prop):
+                if utils.is_mapping(prop):
+                    elts.append("%s={%i}" % (k, len(prop)))
+                if utils.is_sequence(prop):
+                    elts.append("%s=[%i]" % (k, len(prop)))
+            if len(elts) == PPRINT_MAX_EL:
+                elts.append('...')
+                break
+        return rep + ' '.join(elts) + '}>'
 
-        props = ["%s=%s" % (self.__prop_translated_flatten__.get(k, k),
-                             format_prop(v))
-                 for k, v in itertools.islice(
-                                itertools.chain(six.iteritems(self._properties),
-                                                six.iteritems(self._extended_properties)),
-                                0, 20)
-                 if v is not None and not (utils.is_collection(v) and not len(v))]
-        props = props[:20] + (['+%i...' % (len(props)-PPRINT_MAX_EL)]
-                              if len(props) >= PPRINT_MAX_EL
-                              else [])
-        return "<%s {%s}>" % (
-            self.cls_fullname,
-            ", ".join(props)
-        )
 
     def __repr__(self):
-        props = ["%s=%s" % (self.__prop_translated_flatten__.get(k, k), v)
-                  for k, v in itertools.chain(six.iteritems(self._properties),
-                                              six.iteritems(self._extended_properties))
-                  if v is not None and not (utils.is_collection(v) and not len(v))]
-        return "<%s id=%s validated=%s {%s}>" % (
-            self.cls_fullname,
-            id(self),
-            not self._dirty,
-            ", ".join(props)
-        )
+        rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not self._dirty)
+        elts = []
+        for k in self.keys():
+            prop = self._get_prop(k)
+            if prop is None:
+                continue
+            if hasattr(prop, 'isLiteralClass'):
+                s = str(prop._value)
+                if utils.is_string(prop._value):
+                    s = '"%s"' % s
+                    if len(s) >= PPRINT_MAX_STRL:
+                        s = s[:PPRINT_MAX_STRL] + '..."'
+                elts.append("%s=%s" % (k, s))
+            elif len(prop):
+                elts.append("%s=%s" % (k, prop))
+            if len(elts) == PPRINT_MAX_EL:
+                elts.append('...')
+                break
+        return rep + ''.join(elts) + '}>'
+
 
     def __format__(self, format_spec):
         props = {self.__prop_translated_flatten__.get(k, k): v.__format__(format_spec)
@@ -697,7 +692,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             return self._properties.get(name)
         return self._extended_properties.get(name)
 
-    def _get_prop_value(self, name, default=None, no_defaults=True):
+    def _get_prop_value(self, name, default=None):
         """
         Accessor to property value (as for json)
         """

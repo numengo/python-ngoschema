@@ -15,6 +15,9 @@ from builtins import str
 import pprint
 import collections
 from itertools import islice
+
+from ngoschema import utils
+
 from .utils import is_mapping, is_sequence, is_collection, is_string
 from past.builtins import basestring
 from ngoschema.decorators import take_arrays
@@ -26,10 +29,10 @@ PPRINT_MAX_STRL = 80
 class PrettyShortPrinter(pprint.PrettyPrinter):
     _dispatch = pprint.PrettyPrinter._dispatch
 
-    def __init__(self, max_level=2, max_el=PPRINT_MAX_EL, max_str_len=PPRINT_MAX_STRL, **kwargs):
-        self.maxLevel = max_level
-        self.maxEl = max_el
-        self.maxStrLen = max_str_len
+    def __init__(self, max_el=PPRINT_MAX_EL, max_str_len=PPRINT_MAX_STRL, **kwargs):
+        self._maxEl = max_el
+        self._maxStrLen = max_str_len
+        self._maxCollLen = max_el * max_str_len
         pprint.PrettyPrinter.__init__(self, **kwargs)
 
     def _pprint_dict(self, object, stream, indent, allowance, context, level):
@@ -38,10 +41,10 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
         if self._indent_per_level > 1:
             write((self._indent_per_level - 1) * ' ')
         length = len(object)
-        items = sorted(islice(object.items(), 0, self.maxEl), key=pprint._safe_tuple)
+        items = sorted(islice(object.items(), 0, self._maxEl), key=pprint._safe_tuple)
         self._format_dict_items(items, stream, indent, allowance + 1, context, level)
-        if length>=self.maxEl:
-            self._format('+%i...' % (length-self.maxEl), stream, indent, allowance+1, context, level)
+        if length>=self._maxEl:
+            self._format('+%i...' % (length-self._maxEl), stream, indent, allowance+1, context, level)
         write('}')
 
     _dispatch[dict.__repr__] = _pprint_dict
@@ -49,10 +52,10 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
 
     def _pprint_list(self, object, stream, indent, allowance, context, level):
         stream.write('[')
-        self._format_items(object[:self.maxEl], stream, indent, allowance + 1,
+        self._format_items(object[:self._maxEl], stream, indent, allowance + 1,
                            context, level)
-        if len(object)>=self.maxEl:
-            self._format('+%i...' % (len(object)-self.maxEl), stream, indent, allowance+1, context, level)
+        if len(object)>=self._maxEl:
+            self._format('+%i...' % (len(object)-self._maxEl), stream, indent, allowance+1, context, level)
         stream.write(']')
 
     _dispatch[list.__repr__] = _pprint_list
@@ -61,16 +64,11 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
         if not len(object):
             stream.write(repr(object))
             return
-        if len(object)>=self.maxStrLen:
-            object = str(object)[:self.maxStrLen] + '+%i...' % (len(object)-self.maxStrLen)
+        if len(object)>=self._maxStrLen:
+            object = str(object)[:self._maxStrLen] + '+%i...' % (len(object)-self._maxStrLen)
         return pprint.PrettyPrinter._pprint_str(self, object, stream, indent, allowance, context, level)
 
     _dispatch[str.__repr__] = _pprint_str
-
-    def _format__(self, object, stream, indent, allowance, context, level):
-        if hasattr(object, '__propinfo__'):
-            object = str(object)
-        return pprint.PrettyPrinter._format(self, object, stream, indent, allowance, context, level)
 
     def _format(self, object, stream, indent, allowance, context, level):
         objid = id(object)
@@ -83,17 +81,26 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
             # we use our str representation as a safe repr
             rep = str(object)
             if hasattr(object, 'isLiteralClass'):
-                if len(rep) >= self.maxStrLen:
-                    rep = rep[:self.maxStrLen] + '+%i' % (len(rep)-self.maxStrLen)
-        elif is_collection(object) and len(object) >= self.maxEl:
+                if len(rep) >= self._maxStrLen:
+                    rep = rep[:self._maxStrLen] + '+%i...' % (len(rep)-self._maxStrLen)
+        elif is_collection(object):
+            max_coll_len = self._maxCollLen
+            if self._depth is not None:
+                max_coll_len = (1 + self._depth - level) * self._maxCollLen
             if is_mapping(object):
-                rep = self._repr({k: v for k, v in  islice(object.items(), 0, self.maxEl)}, context, level)
-                rep = rreplace(rep, '}', '+%i...}' % (len(object)-self.maxEl))
+                rep = self._repr({k: v for k, v in islice(object.items(), 0, self._maxEl)}, context, level)
+                if len(object) >= self._maxEl:
+                    rep = rreplace(rep, '}', '+%i...}' % (len(object)-self._maxEl))
+                if len(rep) >= max_coll_len:
+                    rep = rep[:max_coll_len] + '...}'
             else:
-                rep = self._repr([v for v in object[0:self.maxEl]], context, level)
-                rep = rreplace(rep, ']', '+%i...]' % (len(object)-self.maxEl))
-        elif is_string(object) and len(object) >= self.maxStrLen:
-            object = object[:self.maxStrLen] + f'+{len(object) - self.maxStrLen}...'
+                rep = self._repr([v for v in object[0:self._maxEl]], context, level)
+                if len(object) >= self._maxEl:
+                    rep = rreplace(rep, ']', '+%i...]' % (len(object)-self._maxEl))
+                if len(rep) >= max_coll_len:
+                    rep = rep[:max_coll_len] + '...]'
+        elif is_string(object) and len(object) >= self._maxStrLen:
+            object = object[:self._maxStrLen] + f'+{len(object) - self._maxStrLen}...'
             rep = self._repr(object, context, level)
         else:
             rep = self._repr(object, context, level)
@@ -112,6 +119,28 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
                 del context[objid]
                 return
         stream.write(rep)
+
+
+_pprinter = PrettyShortPrinter(indent=0, depth=2, width=10000)
+log_format = _pprinter.pformat
+
+
+class lazy_format(object):
+    __slots__ = ('fmt', 'args', 'to_format', 'kwargs')
+
+    def __init__(self, fmt, *args, to_format=[], **kwargs):
+        self.fmt = fmt
+        self.args = list(args)
+        self.kwargs = kwargs
+        self.to_format = to_format
+
+    def __str__(self):
+        for a in self.to_format:
+            if utils.is_integer(a):
+                self.args[a] = log_format(list(self.args)[a])
+            else:
+                self.kwargs[a] = log_format(self.kwargs[a])
+        return self.fmt.format(*self.args, **self.kwargs)
 
 
 def _multiple_replacer(replace_dict):
@@ -160,3 +189,4 @@ def rreplace(s, old, new, occurrence=1):
     """right replace function"""
     li = s.rsplit(old, occurrence)
     return new.join(li)
+
