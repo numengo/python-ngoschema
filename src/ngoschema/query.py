@@ -174,6 +174,14 @@ class Filter(object):
             return True
         return False
 
+def search_object(obj, path, *attrs, **attrs_value):
+    """wrapper around dpath.util with filters on attributes presence and value"""
+    import dpath.util
+    afilter = Filter(*attrs, **attrs_value) if attrs or attrs_value else None
+    for p, e in dpath.util.search(obj, path, yielded=True):
+        if afilter and afilter(e):
+            yield p, e
+
 class Query(object):
 
     def __init__(self, iterable, distinct=False, order_by=False, reverse=False):

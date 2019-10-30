@@ -242,6 +242,13 @@ def is_string(value):
     return isinstance(value, (str, basestring))
 
 
+def is_literal(value):
+    """
+    Test if value is literal (string, boolean, integer or number
+    """
+    return is_string(value) or is_bool(value) or is_integer(value) or is_number(value)
+
+
 def is_pattern(value):
     """
     Test if value is a pattern, ie contains {{ }} formatted content

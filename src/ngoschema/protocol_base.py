@@ -16,8 +16,6 @@ import six
 import collections
 import copy
 
-from ngoschema.utils import lazy_format
-from ngoschema.utils.str_utils import _pprinter
 
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
@@ -34,9 +32,7 @@ from .validators import DefaultValidator
 from .config import ConfigLoader
 from .utils.json import ProtocolJSONEncoder
 from .decorators import classproperty, memoized_property
-from .utils import PPRINT_MAX_EL, PPRINT_MAX_STRL, PrettyShortPrinter
-
-DEFAULT_CDATA_KEY = '#text'
+from .utils import PPRINT_MAX_EL, PPRINT_MAX_STRL, lazy_format
 
 # loader of objects default configuration
 objects_config_loader = ConfigLoader()
@@ -300,7 +296,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     """
 
     # additional private and protected props
-    _pprinter = PrettyShortPrinter(indent=0, depth=2, width=10000)
     _validator = None
     __prop_names__ = dict()
     __prop_translated__ = dict()
@@ -348,8 +343,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         main initialization method, dealing with lazy loading
         """
-        # TODO need to change to put props directly
-        self.logger.info(lazy_format("INIT {0} with {1}", self.short_repr, props, to_format=[1]))
+        self.logger.debug(lazy_format("INIT {0} with {1}", self.short_repr, props, to_format=[1]))
 
         cls = self.__class__
         #props.pop('$schema', None)
@@ -513,6 +507,12 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         enc = ProtocolJSONEncoder(**opts)
         return enc.encode(self)
 
+    _def_enc = ProtocolJSONEncoder()
+    def for_json(self):
+        """removes None or empty or defaults of non required members """
+        return {k: v for k, v in self._def_enc.default(self).items()
+                if (v or utils.is_literal(v)) and v != self.__has_default__.get(k) and k not in self.__required__}
+
     @classmethod
     def jsonschema(cls):
         from .resolver import get_resolver
@@ -585,7 +585,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         if name in self._lazy_data:
             return self._get_prop(name)
 
-        # check it s a standard attribute or method
+        # check inner properties to get proper getter
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
                 return object.__getattribute__(self, name)
@@ -647,7 +647,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # protected members
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
-        # methods and class attributes
+        # check inner properties to get proper setter
         for c in self.pbase_mro():
             if name in c.__object_attr_list__:
                 return object.__setattr__(self, name, val)
@@ -722,3 +722,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self._properties[name] = prop
                 else:
                     raise AttributeError("no type specified for property '%s'"% name)
+
+    def search(self, path, *attrs, **attrs_value):
+        from .query import search_object
+        return search_object(dict(self), path, *attrs, **attrs_value)

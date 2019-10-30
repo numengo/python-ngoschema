@@ -4,7 +4,7 @@ __author__ = """Cedric ROMAN"""
 __email__ = "roman@numengo.com"
 __version__ = "__version__ = '0.2.2'"
 
-from .schemas_loader import load_module_schemas, load_schema, load_schema_file
+from .schemas_loader import load_module_schemas, load_schema, load_schema_file, get_schema_store_list
 load_module_schemas('ngoschema')
 
 from .exceptions import InvalidOperationException, SchemaError, ValidationError
@@ -19,7 +19,7 @@ from .resolver import get_resolver
 from .classbuilder import get_builder
 from .schema_metaclass import SchemaMetaclass
 from .protocol_base import ProtocolBase
-from .protocol_base import DEFAULT_CDATA_KEY
+from ngoschema.utils import DEFAULT_CDATA_KEY
 from .handlers import *
 from .query import Query, Filter
 
@@ -39,10 +39,10 @@ __all__ = [
     'load_schema',
     'load_schema_file',
     'load_module_schemas',
+    'get_schema_store_list',
     # infos
     'DEFAULT_MS_URI',
     'CURRENT_DRAFT',
-    'DEFAULT_CDATA_KEY',
     # builder and protocol
     'get_resolver',
     'get_builder',
@@ -61,5 +61,8 @@ __all__ = [
     'Jinja2MacroFileObjectHandler',
     'Jinja2MacroTemplatedPathFileObjectHandler',
     'load_object_from_file',
+    'load_json_from_file',
+    'load_yaml_from_file',
+    'load_xml_from_file',
     'serialize_object_to_file'
 ]

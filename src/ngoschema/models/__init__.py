@@ -1,3 +1,4 @@
+from .generic_object import *
 from .document import *
 from .foreign_key import *
 from .keyed_object import *
@@ -6,6 +7,7 @@ from .relationship import *
 from ngoschema.transforms.object_transform import *
 
 __all__ = [
+    'GenericObject',
     # document
     'Document',
     'get_document_registry',

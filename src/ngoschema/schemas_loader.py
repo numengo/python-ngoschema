@@ -22,6 +22,10 @@ import six
 from ngofile.list_files import list_files
 from jsonschema.exceptions import SchemaError
 
+def get_schema_store_list():
+    from .resolver import get_uri_doc_store
+    return [k for k, d in get_uri_doc_store().items() if 'definitions' in d]
+
 
 def _id_of(schema):
     return schema.get("$id", schema.get("id"))

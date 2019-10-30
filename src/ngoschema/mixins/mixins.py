@@ -191,6 +191,7 @@ class HandleRelativeCname:
         pcn = self._root_parent._cname
         return self._cname.replace('%s.' % pcn, '#')
 
+
 class HasCache:
     _context = None
     _cache = None

@@ -68,7 +68,7 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return self._session
 
     def _identity_key(self, instance):
-        if not isinstance(instance, self._class):
+        if self._class and not isinstance(instance, self._class):
             raise Exception("%r is not an instance of %r" % (instance, self._class))
         if self._fkeys:
             if len(self._fkeys)>1:
@@ -166,12 +166,12 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def load(self):
         data = self.pre_load()
         if self.many:
-            objs = [self._class(**d) for d in data]
+            objs = [self._class(**d) if self._class else d for d in data]
             for obj in objs:
                 self.register(obj)
             return objs
         else:
-            obj = self._class(**data)
+            obj = self._class(**data) if self._class else data
             self.register(obj)
             return obj
 
@@ -289,6 +289,11 @@ class JsonFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
         )
 
 
+@assert_arg(0, SCH_PATH_FILE)
+def load_json_from_file(fp, session=None, **kwargs):
+    return load_object_from_file(fp, handler_cls=JsonFileObjectHandler, session=session, **kwargs)
+
+
 @handler_registry.register()
 class YamlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
     __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/YamlFileObjectHandler"
@@ -307,22 +312,35 @@ class YamlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
         return output.getvalue()
 
 
+@assert_arg(0, SCH_PATH_FILE)
+def load_yaml_from_file(fp, session=None, **kwargs):
+    return load_object_from_file(fp, handler_cls=YamlFileObjectHandler, session=session, **kwargs)
+
+
 @handler_registry.register()
 class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
     __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/XmlFileObjectHandler"
 
     def __init__(self, tag=None, **kwargs):
-        self._tag = str(tag or self._class.__name__)
-        FileObjectHandler.__init__(self, tag=self._tag, **kwargs)
+        FileObjectHandler.__init__(self, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             remove_refs=self.remove_refs)
+        self._tag = tag
+        if not tag and self._class:
+            self._tag = self._class.__name__
 
 
     def deserialize_data(self):
-        return self.document._deserialize(xmltodict.parse,
+        parsed = self.document._deserialize(xmltodict.parse,
                                           attr_prefix=str(self.attr_prefix),
                                           cdata_key=str(self.cdata_key)
-                                          )[self._tag]
+                                          )
+        if not self._tag:
+            keys = list(parsed.keys())
+            if len(keys) != 1:
+                raise NotImplemented('ambiguous request. use tag argument.')
+            self._tag = keys[0]
+        return parsed[self._tag]
 
     def serialize_data(self, data):
         return xmltodict.unparse(
@@ -331,6 +349,11 @@ class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
             attr_prefix=str(self.attr_prefix),
             cdata_key=str(self.cdata_key),
             short_empty_elements=bool(self.short_empty_elements))
+
+
+@assert_arg(0, SCH_PATH_FILE)
+def load_xml_from_file(fp, session=None, **kwargs):
+    return load_object_from_file(fp, handler_cls=XmlFileObjectHandler, session=session, **kwargs)
 
 
 @handler_registry.register()

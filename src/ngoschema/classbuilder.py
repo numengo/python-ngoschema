@@ -76,12 +76,47 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def __init__(self, resolver):
         pjo_classbuilder.ClassBuilder.__init__(self, resolver)
         self._imported = {}
-        self.annuary = {}
+        self._usernamespace = {}
 
-    def create_annuary(self):
-        for (_, cn), cls in self._imported.items():
-            self.annuary['%s.%s' % (cls.__module__, cn)] = cls
-        self._imported = {}
+    def set_namespace(self, ns, uri):
+        self._usernamespace[ns] = uri
+
+    @property
+    def _namespaces(self):
+        return {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0]
+                for k in self.resolved.keys()}
+
+    @property
+    def namespaces(self):
+        return collections.ChainMap(self._usernamespace, self._namespaces)
+
+    def namespace_cnames(self, ns_name):
+        ns = self.namespaces.get(ns_name)
+        in_ns = [k.split(ns)[-1] for k in self.resolved.keys() if k.startswith(ns)]
+        in_ns = ['.'.join(k.split('/definitions/')).replace('#', ns_name) for k in in_ns if '/properties' not in k]
+        return in_ns
+
+    @property
+    def available_namespaces(self):
+        from .schemas_loader import get_schema_store_list
+        return {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0] for k in get_schema_store_list()}
+
+    def load_namespace(self, ns_name):
+        ns = self.available_namespaces.get(ns_name)
+        if not ns:
+            raise ValueError('"%s" is not available in loaded documents %s.' % (ns_name, self.available_namespaces))
+        return self.resolve_or_build(ns)
+
+    def resolve_cname(self, cname):
+        ns_name, defs = cname.split('.', 1)
+        ns = self.namespaces.get(ns_name)
+        if not ns:
+            raise ValueError('"%s" namespace is not available %s.' % (ns, list(self.namespaces.keys())))
+        uri = f'{ns}#/' + '/'.join(['definitions/' + d for d in defs.split('.')])
+        cls = self.resolved.get(uri)
+        if not cls:
+            raise ValueError('"%s" could not be resolved in namespace definitions: %s.' % (cname, self.namespace_cnames(ns_name)))
+        return cls
 
     def resolve_or_build(self, uri, parent=(ProtocolBase,), **kwargs):
         resolver = get_resolver()
@@ -124,6 +159,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             else:
                 return pjo_literals.LiteralValue.__getattribute__(self, name)
 
+        def enum(self):
+            info = self.propinfo('__literal__')
+            return info.get('enum')
+
         def validate_pseudo(self):
             from .utils.jinja2 import TemplatedString
             if '_pattern' in self.__dict__:
@@ -163,6 +202,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     '__repr__': __repr_pseudo__,
                     '__format__': __format_pseudo__,
                     'validate': validate_pseudo,
+                    'enum': property(enum)
                 },
             )
 
@@ -242,6 +282,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # necessary to build type
         clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
+        # if we build a namespace, we need # for subsequent definitions/properties
+        nm_orig = nm
+        if '#' not in nm:
+            nm += '#'
 
         props = dict()
         defaults = dict()
@@ -255,7 +299,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         __object_attr_list__ = set(ProtocolBase.__object_attr_list__)
         for p in ProtocolBase.__mro__:
             __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
-            __object_attr_list__.update([a for a in p.__dict__.keys() if not a.startswith('__')])
+            __object_attr_list__.update([a for a, v in p.__dict__.items()
+                                         if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
 
         cls_schema = clsdata
         props['__schema__'] = nm
@@ -271,7 +316,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # add parent attributes to class attribute list
         for p in reversed(parents):
             __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
-            __object_attr_list__.update([a for a in p.__dict__.keys() if not a.startswith('__')])
+            __object_attr_list__.update([a for a, v in p.__dict__.items()
+                                         if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
             defaults.update(getattr(p, '__has_default__', {}))
 
         properties = collections.OrderedDict(cls_schema.get('properties', {}))
@@ -282,7 +328,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
 
-            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop)
+            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop.split(':')[-1])
             name_translation[prop] = translated
 
         # flattening
@@ -478,6 +524,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
                 properties[name_translated.get(prop, prop)]['_type'] = typ
 
+        # build inner definitions and add the class as members
+        for definition, detail in clsdata.get('definitions', {}).items():
+            def_uri = f'{nm}/definitions/{definition}'
+            cls = self.resolved[def_uri] = self.construct(def_uri, detail,
+                                                         (ProtocolBase,))
+            properties[definition] = cls
 
         """
         If this object itself has a 'oneOf' designation, then
@@ -492,7 +544,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             nm, cls_schema, self)
 
         # add class attrs after removing defaults
-        __object_attr_list__.update([a for a in class_attrs.keys() if not a.startswith('__')])
+        __object_attr_list__.update([a for a, v in class_attrs.items()
+                                     if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
         props['__object_attr_list__'] = __object_attr_list__
 
         # we set class attributes as properties now, and they will be
@@ -535,7 +588,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
         cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))
 
-        self.under_construction.remove(nm)
+        self.under_construction.remove(nm_orig)
 
         # set default from config file
         cls.set_configfiles_defaults()

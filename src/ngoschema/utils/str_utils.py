@@ -27,7 +27,7 @@ PPRINT_MAX_STRL = 80
 
 
 class PrettyShortPrinter(pprint.PrettyPrinter):
-    _dispatch = pprint.PrettyPrinter._dispatch
+    _dispatch = pprint.PrettyPrinter._dispatch.copy()
 
     def __init__(self, max_el=PPRINT_MAX_EL, max_str_len=PPRINT_MAX_STRL, **kwargs):
         self._maxEl = max_el
