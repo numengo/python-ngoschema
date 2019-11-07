@@ -21,6 +21,7 @@ from urllib.parse import unquote, urlparse
 
 import dpath.util
 import requests
+import inflection
 from jsonschema.compat import urldefrag
 from jsonschema.validators import RefResolver
 
@@ -35,7 +36,7 @@ CURRENT_DRAFT = "draft-05"
 
 
 def uri_ngo(name, draft=CURRENT_DRAFT):
-    return "http://numengo.org/%s/%s" % (draft, name)
+    return "http://numengo.org/%s/%s" % (draft, inflection.dasherize(name))
 
 
 DEFAULT_MS_URI = uri_ngo("schema")
@@ -78,6 +79,8 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     referrer = ms[base_uri]
     if _resolver is None:
         _resolver = RefResolver(base_uri, referrer, ms)
+        # rebuild store using our UriDict which deals with lowercase urls
+        _resolver.store = ms
     if not set(ms.keys()).issubset(_resolver.store.keys()):
         _resolver.store.update(ms)
     if base_uri != _resolver.base_uri:

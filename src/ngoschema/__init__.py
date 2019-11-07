@@ -4,6 +4,8 @@ __author__ = """Cedric ROMAN"""
 __email__ = "roman@numengo.com"
 __version__ = "__version__ = '0.2.2'"
 
+from simple_settings import LazySettings
+
 from .schemas_loader import load_module_schemas, load_schema, load_schema_file, get_schema_store_list
 load_module_schemas('ngoschema')
 
@@ -23,8 +25,10 @@ from ngoschema.utils import DEFAULT_CDATA_KEY
 from .handlers import *
 from .query import Query, Filter
 
+settings = LazySettings('ngoschema.project_settings', 'NGOSCHEMA_.environ')
 
 __all__ = [
+    'settings',
     # exceptions
     'SchemaError',
     'ValidationError',

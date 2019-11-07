@@ -13,7 +13,7 @@ import weakref
 from python_jsonschema_objects.classbuilder import LiteralValue
 
 from ..decorators import memoized_property
-
+from .. import utils
 
 class HasLogger:
     logger = None
@@ -89,16 +89,59 @@ class HasParent:
         for c in self._children:
             c._touch_children()
 
-    @property
-    def root(self):
+    def get_root(self):
         cur = self
         while cur._parent:
             cur = cur._parent
         return cur
 
+    def get_path(self):
+        cur = self
+        path = []
+        while cur:
+            par = cur._parent
+            if not par:
+                break
+            found = False
+            for k, v in par.items():
+                if utils.is_sequence(v):
+                    if hasattr(v, '__itemtype__'):
+                        itype = v.__itemtype__
+                        if hasattr(itype, '_class'): # case it s a reference
+                            itype = itype._class
+                        if not isinstance(cur, itype):
+                            continue
+                    for i, e in enumerate(v):
+                        if e is cur:
+                            path.insert(0, i)
+                            path.insert(0, k)
+                            found = True
+                            break
+                elif v is cur:
+                    path.insert(0, k)
+                    found = True
+                if found:
+                    break
+            else:
+                assert False, k
+            cur = par
+        return path
+
+    def get_relative_path(self, src):
+        dst_p = self.get_path()
+        src_p = src.get_path()
+        # find common root - take common elements and the go back to the root array if element is in an array
+        common = [i for i, j in zip(dst_p, src_p) if i == j]
+        lc = len(common)
+        while lc and utils.is_integer(dst_p[lc]):
+            common.pop()
+            lc = len(common)
+        path = ['..'] * (len([p for p in src_p[len(common):] if not utils.is_integer(p)])) + dst_p[len(common):]
+        return path
+
     @memoized_property
     def handler(self):
-        return self.root._handler
+        return self.get_root()._handler
 
     @memoized_property
     def session(self):

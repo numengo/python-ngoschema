@@ -38,7 +38,7 @@ from .protocol_base import ProtocolBase
 from .models.document import Document
 from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
-from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence
+from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence, to_list
 from .models.keyed_object import KeyedObject, NamedObject
 
 logger = logging.getLogger(__name__)
@@ -251,7 +251,7 @@ def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
     handler_cls = handler_cls or JsonFileObjectHandler
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
-    logger.info("LOAD %s from '%s'", handler.objectClass, fp)
+    logger.info("LOAD %s from '%s'", handler.objectClass or '<unknown>', fp)
     handler.load()
     instances = handler.instances
     return instances if handler.many else instances[0]
@@ -321,7 +321,7 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
     __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/XmlFileObjectHandler"
 
-    def __init__(self, tag=None, **kwargs):
+    def __init__(self, tag=None, postprocessor=None, **kwargs):
         FileObjectHandler.__init__(self, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             remove_refs=self.remove_refs)
@@ -329,11 +329,21 @@ class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
         if not tag and self._class:
             self._tag = self._class.__name__
 
+        # this default post processor makes all non attribute be list
+        _prefix = str(self.attr_prefix)
+        def default_postprocessor(path, key, value):
+            return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, to_list(value))
+
+        self._postprocessor = postprocessor or default_postprocessor
 
     def deserialize_data(self):
+        force_list = ('xs:include', 'xs:import', 'xs:element', 'xs:unique', 'xs:simpleType', 'xs:attributeGroup', 'xs:group', 'xs:complexType', 'xs:restriction',
+                      'include', 'import', 'element', 'unique', 'simpleType', 'attributeGroup', 'group', 'complexType', 'restriction')
         parsed = self.document._deserialize(xmltodict.parse,
                                           attr_prefix=str(self.attr_prefix),
-                                          cdata_key=str(self.cdata_key)
+                                          cdata_key=str(self.cdata_key),
+                                          force_list=force_list,
+                                          #postprocessor=self._postprocessor
                                           )
         if not self._tag:
             keys = list(parsed.keys())
@@ -353,7 +363,10 @@ class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
 
 @assert_arg(0, SCH_PATH_FILE)
 def load_xml_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, handler_cls=XmlFileObjectHandler, session=session, **kwargs)
+    return load_object_from_file(fp,
+                                 handler_cls=XmlFileObjectHandler,
+                                 session=session,
+                                 **kwargs)
 
 
 @handler_registry.register()

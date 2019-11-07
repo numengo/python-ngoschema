@@ -158,15 +158,14 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             elif isinstance(typ, (classbuilder.TypeProxy, classbuilder.TypeRef)):
                 try:
                     if isinstance(elem, (six.string_types, six.integer_types, float)) or getattr(self, 'isLiteralClass', False):
-                        val = typ(elem, _parent=self._parent)
+                        val = typ.ref_class(elem, _parent=self._parent)
                     else:
-                        val = typ(**self._parent._childConf,
+                        val = typ.ref_class(**self._parent._childConf,
                                   **util.coerce_for_expansion(elem),
                                   _parent=self._parent)
                 except TypeError as e:
                     six.reraise(ValidationError,
-                                ValidationError("'%s' is not a valid value for '%s'" % (elem, typ)),
-                                sys.exc_info()[2])
+                                ValidationError("'%s' is not a valid value for '%s'" % (elem, typ)))
                 val.do_validate()
                 typed_elems.append(val)
 

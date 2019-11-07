@@ -80,7 +80,7 @@ class UriDict(_KeyModifierMapping):
 
     @classmethod
     def key_modifier(cls, key):
-        return urlsplit(key).geturl()
+        return urlsplit(key).geturl().lower()
 
 
 class Registry(Mapping):
@@ -442,6 +442,15 @@ def to_set(x):
         return set(to_list(x))
     else:
         return x
+
+
+def to_none_single_list(x):
+    xl = to_list(x)
+    if xl is not None:
+        if len(xl) == 1:
+            return xl[0]
+        if len(xl) > 1:
+            return xl
 
 
 def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs):

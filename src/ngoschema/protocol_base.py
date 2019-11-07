@@ -10,6 +10,8 @@ created on 11/06/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import sys
+
 import itertools
 
 import six
@@ -316,7 +318,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
         if '$schema' in props:
             if props['$schema'] != cls.__schema__:
-                cls = get_builder().resolve_or_build(props['$schema'])
+                cls = get_builder().resolve_or_construct(props['$schema'])
 
         cls.init_class_logger()
 
@@ -377,7 +379,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         self.pre_init_hook(*args, **props)
 
         # non keyword argument = reference to property extern to document to be resolved later
-        if len(args)==1 and utils.is_string(args[0]):
+        if len(args) == 1 and utils.is_string(args[0]):
             props['$ref'] = args[0]
         if '$ref' in props:
             props.update(resolve_uri(props.pop('$ref')))
@@ -394,7 +396,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 if self._lazyLoading:
                     self._lazy_data.setdefault(k, copy.copy(v))
                 else:
-                    setattr(self, k, v)
+                    setattr(self, k, copy.copy(v))
 
         if 'name' in props:
             if isinstance(self, mixins.HasCanonicalName):
@@ -482,7 +484,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             if len(elts) == PPRINT_MAX_EL:
                 elts.append('...')
                 break
-        return rep + ''.join(elts) + '}>'
+        return rep + ' '.join(elts) + '}>'
 
 
     def __format__(self, format_spec):
@@ -669,7 +671,16 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             # run its setter. We get it from the class definition and call
             # it directly. XXX Heinous.
             prop = getattr(self.__class__, name)
-            prop.fset(self, val)
+            try:
+                prop.fset(self, val)
+            except Exception as er:
+                raise six.reraise(
+                    pjo_validators.ValidationError,
+                    pjo_validators.ValidationError(
+                        "Error setting property '{0}' in {1}: {2} ".format(name,
+                                                                           self.__class__.__name__,
+                                                                           er)),
+                    sys.exc_info()[2])
             return
 
 
@@ -677,9 +688,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         try:
             val = self.__extensible__.instantiate(name, val)
         except Exception as e:
-            raise pjo_validators.ValidationError(
-                "Attempted to set unknown property '{0}' in {1}: {2} "
-                .format(name, self.__class__.__name__, e))
+            raise six.reraise(
+                pjo_validators.ValidationError,
+                pjo_validators.ValidationError(
+                    "Attempted to set unknown property '{0}' in {1}: {2} ".format(name, self.__class__.__name__, e)),
+                sys.exc_info()[2])
         self._extended_properties[name] = val
 
     def _get_prop(self, name):

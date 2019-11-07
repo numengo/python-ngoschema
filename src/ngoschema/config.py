@@ -109,43 +109,11 @@ class ConfigLoader(object):
         return {k: section[k] for k in keys if k in section}
 
 
-DEFAULT_LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'console': {
-            'format': '%(levelname)s %(asctime)s.%(msecs)03d %(name)s %(funcName)s: %(message)s',
-            'datefmt': '%I:%M:%S'
-        },
-        'standard': {
-            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-        },
-        'verbose': {
-            'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '%(levelname) -10s %(asctime)s %(name) -35s %(funcName) -30s: %(message)s'
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'console',
-            'stream': 'ext://sys.stdout',  # Default is stderr
-        }
-    },
-    'loggers': {
-        '': {  # root logger
-            'handlers': ['console'],
-            'level': 'INFO'
-        },
-    }
-}
-
-logging.config.dictConfig(DEFAULT_LOGGING)
-
 @assert_arg(0, SCH_PATH_FILE_EXISTS)
 def load_log_config(filepath):
+    from . import settings
     yaml = YAML(typ="safe")
-    cfg = copy.deepcopy(DEFAULT_LOGGING)
+    cfg = copy.deepcopy(settings.LOGGING)
     with filepath.open('r') as f:
         cfg2 = yaml.load(f.read())
     cfg.update(cfg2)

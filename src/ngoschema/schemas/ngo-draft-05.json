@@ -1,6 +1,6 @@
 {
-  "$schema": "http://numengo.org/draft-05/schema#",
-  "$id": "http://numengo.org/draft-05/schema#",
+  "$schema": "http://numengo.org/draft-05/schema",
+  "$id": "http://numengo.org/draft-05/schema",
   "title": "numenGo core schema meta-schema",
   "type": [
     "object",

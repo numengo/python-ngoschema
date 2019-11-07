@@ -47,16 +47,16 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                     ret.append(self.default(item))
             return ret
         if isinstance(obj, classbuilder.ProtocolBase):
-            ns =  getattr(obj, '__not_serialized__', [])
-            reqs =  getattr(obj, '__required__', [])
-            defvs =  getattr(obj, '__has_default__', {})
+            ns = getattr(obj, '__not_serialized__', [])
+            reqs = getattr(obj, '__required__', [])
+            defvs = getattr(obj, '__has_default__', {})
             props = collections.OrderedDict()
             to_put_first = []
             for raw, trans in six.iteritems(obj.__prop_names_flatten__):
                 if raw in ns:
                     continue
                 prop = getattr(obj, trans)
-                if not prop:
+                if prop is None:
                     continue
                 if self.no_defaults and raw not in reqs:
                     defv = defvs.get(trans)

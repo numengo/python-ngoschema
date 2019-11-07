@@ -49,7 +49,7 @@ class Relationship:
         from ngoschema.models.keyed_object import KeyedObject
         if not cls._foreignClass and cls.foreignSchema:
             try:
-                cls._foreignClass = get_builder().resolve_or_build(cls.foreignSchema)
+                cls._foreignClass = get_builder().resolve_or_construct(cls.foreignSchema)
             except Exception as er:
                 cls.logger.error("error resolving foreign schema %s", cls.foreignSchema, exc_info=True)
                 raise

@@ -28,7 +28,7 @@ from future.utils import text_to_native_str as native_str
 
 from .protocol_base import ProtocolBase, make_property
 from . import utils
-from .resolver import get_resolver
+from .resolver import get_resolver, resolve_doc, resolve_uri
 from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
 
@@ -83,17 +83,51 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
     @property
     def _namespaces(self):
-        return {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0]
+        ns = {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0]
                 for k in self.resolved.keys()}
+        for k, v in list(ns.items()):
+            try:
+                _, sch = resolve_uri(v)
+                if 'nsPrefix' in sch:
+                    ns[sch['nsPrefix']] = v
+                    del ns[k]
+            except Exception as er:
+                pass
+        return ns
 
     @property
     def namespaces(self):
         return collections.ChainMap(self._usernamespace, self._namespaces)
 
+    def get_ref_cname(self, ref):
+        ns = ref.split('#')[0]
+        if ns in self.namespaces.values():
+            ns_name = {v: k for k, v in self.namespaces.items()}[ns]
+        else:
+            ns_name = ns.split('/')[-1]
+        if '#' not in ref:
+            return ns_name
+        frag = ref.split('#')[-1]
+        cname = ns_name + frag.replace('/definitions/', '.').replace('/properties/', '.')
+        return cname
+
+
+    def get_cname_ref(self, cname):
+        ns_name, ns_cname = cname.split('.', 1)
+        ns_uri = self.namespaces.get(ns_name)
+        defs, name = ns_cname.rsplit('.', 1)
+        uri_frag = '/definitions/'.join(defs)
+        uri, sch = self.resolver.resolve(uri_frag)
+        if name in sch.get('definitions'):
+            return f'{uri}/definitions/{name}'
+        if name in sch.get('properties'):
+            return f'{uri}/properties/{name}'
+
+
     def namespace_cnames(self, ns_name):
         ns = self.namespaces.get(ns_name)
         in_ns = [k.split(ns)[-1] for k in self.resolved.keys() if k.startswith(ns)]
-        in_ns = ['.'.join(k.split('/definitions/')).replace('#', ns_name) for k in in_ns if '/properties' not in k]
+        in_ns = [f'{ns}.' + '.'.join(k.split('/definitions/')).replace('#', ns_name) for k in in_ns if '/properties' not in k]
         return in_ns
 
     @property
@@ -105,7 +139,19 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         ns = self.available_namespaces.get(ns_name)
         if not ns:
             raise ValueError('"%s" is not available in loaded documents %s.' % (ns_name, self.available_namespaces))
-        return self.resolve_or_build(ns)
+        return self.resolve_or_construct(ns)
+
+    def load(self, cname):
+        ns_name = cname.split('.')[0]
+        ns_uri = self.available_namespaces.get(ns_name)
+        if not ns_uri:
+            raise ValueError('"%s" is not available in loaded documents %s.' % (ns_name, self.available_namespaces))
+        uri = ns_uri
+        if '.' in cname: # load symbol
+            defs = cname.split('.', 1)[-1]
+            def_path = '#' + ''.join([f'/definitions/{d}' for d in defs.split('.')])
+            uri = ns_uri + def_path
+        return self.resolve_or_construct(uri)
 
     def resolve_cname(self, cname):
         ns_name, defs = cname.split('.', 1)
@@ -118,13 +164,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             raise ValueError('"%s" could not be resolved in namespace definitions: %s.' % (cname, self.namespace_cnames(ns_name)))
         return cls
 
-    def resolve_or_build(self, uri, parent=(ProtocolBase,), **kwargs):
+    def resolve_or_construct(self, uri, **kwargs):
         resolver = get_resolver()
         if uri not in self.resolved:
             if uri in self.under_construction:
                 return pjo_classbuilder.TypeRef(uri, self.resolved)
+            uri_no_fgt = uri.rsplit('#', 1)[0]
+            if uri_no_fgt:
+                resolver.push_scope(uri_no_fgt)
             uri, schema = resolver.resolve(uri)
-            self.resolved[uri] = self._build_object(uri, schema, parent, **kwargs)
+            self.resolved[uri] = self.construct(uri, schema, **kwargs)
+            if uri_no_fgt:
+                resolver.pop_scope()
         return self.resolved[uri]
 
     def _build_pseudo_literal(self, nm, clsdata, *parents):
@@ -223,7 +274,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
         if '$ref' in clsdata:
             ref_uri = utils.resolve_ref_uri(uri, clsdata['$ref'])
-            self.resolved[uri] = cls = self.resolve_or_build(ref_uri)
+            self.resolved[uri] = cls = self.resolve_or_construct(ref_uri)
             return cls
         typ = clsdata.get('type')
 
@@ -306,12 +357,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__schema__'] = nm
 
         # parent classes
-        extends = [self.resolve_or_build(pjo_util.resolve_ref_uri(current_scope, ext))
-                   for ext in cls_schema.get('extends', [])]
-        extends = tuple(e for e in extends
-                        if not any(issubclass(_, e) for _ in extends if e is not _)
+        extends = [pjo_util.resolve_ref_uri(current_scope, ext) for ext in cls_schema.get('extends', [])]
+
+        e_parents = [self.resolve_or_construct(e) for e in extends]
+        # remove typerefs and remove duplicates
+        e_parents_sorted = tuple(e for e in e_parents
+                        if not isinstance(e, pjo_classbuilder.TypeRef)
+                        and not any(issubclass(_, e) for _ in e_parents if e is not _)
                         and not any(issubclass(p, e) for p in parents))
-        parents = extends + tuple(p for p in parents if not any(issubclass(e, p) for e in extends))
+        parents = e_parents_sorted + tuple(p for p in parents if not any(issubclass(e, p) for e in e_parents_sorted))
 
         # add parent attributes to class attribute list
         for p in reversed(parents):
@@ -322,13 +376,26 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         properties = collections.OrderedDict(cls_schema.get('properties', {}))
 
+        # as any typeref has been removed from parent but add its properties to __object_attr_list__ and name translation
+        for e in e_parents:
+            if isinstance(e, pjo_classbuilder.TypeRef):
+                def add_prop_and_extends(uri):
+                    uri = pjo_util.resolve_ref_uri(current_scope, uri)
+                    _, sch = self.resolver.resolve(uri)
+                    sch_prop = sch.get('properties', {})                    #__object_attr_list__.update(sch_prop.keys())
+                    properties.update(sch_prop)
+                    for ext in sch.get('extends', []):
+                        add_prop_and_extends(ext)
+                add_prop_and_extends(e._ref_uri)
+
+
         # name translation
         name_translation = collections.OrderedDict()
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
 
-            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop.split(':')[-1])
+            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop.split(':')[-1]).replace('-', '_')
             name_translation[prop] = translated
 
         # flattening
@@ -375,11 +442,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 else:
                     raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
 
-        # look for getter/setter/defaultvalue first in class definition
         for prop, detail in properties.items():
             prop_uri = f'{nm}/properties/{prop}'
             prop = name_translation_flatten[prop]
 
+            # look for getter/setter/defaultvalue first in class definition
             defv = class_attrs.get(prop)
             if defv is not None and (
                 inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
@@ -400,9 +467,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
-            if prop in required and detail.get('default') is None:
-                # assume all references are to object-like
-                if detail.get('type') == 'object' or '$ref' in detail:
+            if prop in required and 'default' not in detail and detail.get('type') == 'object':
                     detail['default'] = {}
 
             if detail.get('default') is None and detail.get('type') == 'array':
@@ -425,11 +490,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=typ.__doc__,
                 )
-                properties[prop]['type'] = typ
+                properties[name_translated.get(prop, prop)]['_type'] = typ
 
             elif 'type' not in detail and '$ref' in detail:
                 ref = detail['$ref']
-                # TODO CRN: shouldn't we retrieve also the reference and construct from it??
                 uri = pjo_util.resolve_ref_uri(current_scope, ref)
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
@@ -444,8 +508,17 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fget=getter,
                     fset=setter,
                     desc=typ.__doc__)
-                properties[prop]['$ref'] = uri
-                properties[prop]['_type'] = typ
+
+                alias = name_translated.get(prop, prop) if prop not in properties else prop
+                properties[alias]['$ref'] = uri
+                properties[alias]['_type'] = typ
+                if prop in required and 'default' not in detail:
+                    if issubclass(typ, pjo_classbuilder.ProtocolBase):
+                        defaults[prop] = {}
+                    elif issubclass(typ, ArrayWrapper):
+                        defaults[prop] = []
+                    elif hasattr(typ, 'isLiteralClass') and typ.default() is not None:
+                        defaults[prop] = typ.default()
 
             elif 'oneOf' in detail:
                 potential = self.resolve_classes(detail['oneOf'])
@@ -527,7 +600,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # build inner definitions and add the class as members
         for definition, detail in clsdata.get('definitions', {}).items():
             def_uri = f'{nm}/definitions/{definition}'
-            cls = self.resolved[def_uri] = self.construct(def_uri, detail,
+            cls = self.resolved[def_uri] = self._build_object(def_uri, detail,
                                                          (ProtocolBase,))
             properties[definition] = cls
 
@@ -559,9 +632,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props['__propinfo__'] = properties
 
-        invalid_requires = [
-            req for req in required if name_translated.get(req, req) not in properties
-        ]
+        invalid_requires = [req for req in required if req not in name_translation_flatten]
         if len(invalid_requires) > 0:
             raise pjo_validators.ValidationError(
                 "Schema Definition Error: {0} schema requires "

@@ -1,10 +1,11 @@
 {
     "$schema": "http://numengo.org/draft-05/schema",
     "$id": "http://numengo.org/draft-05/ngoschema/object-handlers",
+    "type": "object",
     "definitions": {
         "ObjectHandler": {
             "type": "object",
-            "abstract": true,
+            "isAbstract": true,
             "additionalProperties": false,
             "properties": {
                 "objectClass": {
@@ -32,7 +33,7 @@
         },
         "FilterObjectHandlerMixin": {
             "type": "object",
-            "abstract": true,
+            "isAbstract": true,
             "additionalProperties": false,
             "properties": {
                 "only": {
@@ -57,17 +58,17 @@
             "type": "object",
             "additionalProperties": false,
             "extends": [
-                "#definitions/ObjectHandler",
-                "#definitions/FilterObjectHandlerMixin"
+                "#/definitions/ObjectHandler",
+                "#/definitions/FilterObjectHandlerMixin"
             ]
         },
         "FileObjectHandler": {
             "type": "object",
-            "abstract": true,
+            "isAbstract": true,
             "additionalProperties": false,
             "extends": [
-                "#definitions/ObjectHandler",
-                "#definitions/FilterObjectHandlerMixin"
+                "#/definitions/ObjectHandler",
+                "#/definitions/FilterObjectHandlerMixin"
             ],
             "properties": {
                 "document": {
@@ -82,23 +83,23 @@
         "JsonFileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/FileObjectHandler"
+                "#/definitions/FileObjectHandler"
             ],
             "additionalProperties": true
         },
         "YamlFileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/FileObjectHandler"
+                "#/definitions/FileObjectHandler"
             ],
             "additionalProperties": true
         },
         "XmlFileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/FileObjectHandler"
+                "#/definitions/FileObjectHandler"
             ],
-            "additionalProperties": false,
+            "additionalProperties": true,
             "properties": {
                 "pretty": {
                     "type": "boolean",
@@ -124,7 +125,7 @@
         "Jinja2FileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/FileObjectHandler"
+                "#/definitions/FileObjectHandler"
             ],
             "additionalProperties": false,
             "properties": {
@@ -148,7 +149,7 @@
         "Jinja2MacroFileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/Jinja2FileObjectHandler"
+                "#/definitions/Jinja2FileObjectHandler"
             ],
             "additionalProperties": false,
             "properties": {
@@ -166,7 +167,7 @@
         "Jinja2MacroTemplatedPathFileObjectHandler": {
             "type": "object",
             "extends": [
-                "#definitions/Jinja2MacroFileObjectHandler"
+                "#/definitions/Jinja2MacroFileObjectHandler"
             ],
             "additionalProperties": false,
             "properties": {

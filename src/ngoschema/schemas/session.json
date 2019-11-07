@@ -1,6 +1,7 @@
 {
     "$schema": "http://numengo.org/draft-05/schema",
     "$id": "http://numengo.org/draft-05/ngoschema/session",
+    "type": "object",
     "definitions": {
         "Session": {
             "type": "object",
