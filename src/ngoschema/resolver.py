@@ -31,15 +31,12 @@ from .utils import is_string, is_sequence
 
 logger = logging.getLogger(__name__)
 
-URI_ID = '$id'
-CURRENT_DRAFT = "draft-05"
+def domain_uri(name, domain=None, draft=None):
+    from . import settings
+    draft = draft or settings.CURRENT_DRAFT
+    domain = domain or settings.MS_DOMAIN
+    return "%s/%s/%s" % (domain, draft, inflection.dasherize(name))
 
-
-def uri_ngo(name, draft=CURRENT_DRAFT):
-    return "http://numengo.org/%s/%s" % (draft, inflection.dasherize(name))
-
-
-DEFAULT_MS_URI = uri_ngo("schema")
 
 _uri_doc_store = UriDict()
 
@@ -61,7 +58,7 @@ def register_doc_with_uri_id(doc, uri_id):
 _resolver = None
 
 
-def get_resolver(base_uri=DEFAULT_MS_URI):
+def get_resolver(base_uri=None):
     """
     Return a resolver set with the main loaded schema store
     with a base URI and the corresponding referred document.
@@ -70,6 +67,8 @@ def get_resolver(base_uri=DEFAULT_MS_URI):
     :param base_uri: base_uri to use for resolver
     :type base_uri: string
     """
+    from . import settings
+    base_uri = base_uri or settings.MS_URI
     global _resolver
     ms = get_uri_doc_store()
     base_uri, dummy = urldefrag(base_uri)

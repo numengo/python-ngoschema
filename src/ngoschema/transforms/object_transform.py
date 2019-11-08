@@ -12,7 +12,10 @@ def _process_cls(value):
     if utils.is_importable(value):
         return utils.import_from_string(value)
     else:
-        return get_builder().resolve_or_construct(value)
+        try:
+            return get_builder().resolve_or_construct(value)
+        except Exception as er:
+            raise ValueError("impossible to import or resolve '%s'" % value)
 
 
 class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
@@ -27,12 +30,12 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._to_cls = _process_cls(self.to_)
 
     @abstractmethod
-    def __call__(self, from_, *args):
+    def __call__(self, src, *args):
         raise Exception("must be overloaded")
 
     @classmethod
-    def transform(cls, from_, *args, **kwargs):
-        return cls(**kwargs)(from_, *args)
+    def transform(cls, src, *args, **kwargs):
+        return cls(**kwargs)(src, *args)
 
 
 transform_registry = GenericClassRegistry()

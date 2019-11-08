@@ -40,3 +40,13 @@ LOGGING = {
         },
     }
 }
+
+# resolver
+URI_ID = '$id'
+CURRENT_DRAFT = 'draft-05'
+MS_DOMAIN = 'http://numengo.org'
+MS_URI = f'{MS_DOMAIN}/{CURRENT_DRAFT}/schema'
+
+# utils.str_utils
+PPRINT_MAX_EL = 10
+PPRINT_MAX_STRL = 80

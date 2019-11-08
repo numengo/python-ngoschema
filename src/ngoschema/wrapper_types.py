@@ -19,7 +19,6 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
-PPRINT_MAX_EL = utils.PPRINT_MAX_EL
 
 class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParent, HasCache):
     """ A wrapper for array-like structures.
@@ -44,9 +43,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         return cls.__propinfo__.get(propname) or {}
 
     def __str__(self):
+        from . import settings
         items = self.data if self._dirty else self._typed
-        if len(items) >= PPRINT_MAX_EL:
-            return rreplace(str([str(e) for e in items[:PPRINT_MAX_EL]]), ']', ' +%i...]')
+        if len(items) >= settings.PPRINT_MAX_EL:
+            return rreplace(str([str(e) for e in items[:settings.PPRINT_MAX_EL]]), ']', ' +%i...]')
         return str([str(e) for e in items])
 
     def __repr__(self):

@@ -18,7 +18,6 @@ import six
 import collections
 import copy
 
-
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
     util as pjo_util, \
@@ -31,13 +30,9 @@ from . import mixins
 from .mixins import HasParent, HasLogger
 from .resolver import resolve_uri
 from .validators import DefaultValidator
-from .config import ConfigLoader
 from .utils.json import ProtocolJSONEncoder
 from .decorators import classproperty, memoized_property
-from .utils import PPRINT_MAX_EL, PPRINT_MAX_STRL, lazy_format
-
-# loader of objects default configuration
-objects_config_loader = ConfigLoader()
+from .utils import lazy_format
 
 
 def get_descendant(obj, key_list, load_lazy=False):
@@ -216,7 +211,7 @@ def make_property(propname, info, fget=None, fset=None, fdel=None, desc=""):
                 if not utils.is_string(val):
                     val = infotype(_parent=self,
                                    **self._childConf,
-                                   **pjo_util.coerce_for_expansion(val))
+                                   **pjo_util.coerce_for_expansion(val or {}))
                 else:
                     val = infotype(val)
             val.do_validate()
@@ -441,6 +436,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return "<%s id=%s>" % (self.cls_fullname, id(self))
 
     def __str__(self):
+        from . import settings
         rep = "<%s {" % (self.cls_fullname)
         elts = []
         for k in self.keys():
@@ -451,21 +447,22 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 s = str(prop._value)
                 if utils.is_string(prop._value):
                     s = '"%s"' % s
-                    if len(s) >= PPRINT_MAX_STRL:
-                        s = s[:PPRINT_MAX_STRL] + '..."'
+                    if len(s) >= settings.PPRINT_MAX_STRL:
+                        s = s[:settings.PPRINT_MAX_STRL] + '..."'
                 elts.append("%s=%s" % (k, s))
             elif len(prop):
                 if utils.is_mapping(prop):
                     elts.append("%s={%i}" % (k, len(prop)))
                 if utils.is_sequence(prop):
                     elts.append("%s=[%i]" % (k, len(prop)))
-            if len(elts) == PPRINT_MAX_EL:
+            if len(elts) == settings.PPRINT_MAX_EL:
                 elts.append('...')
                 break
         return rep + ' '.join(elts) + '}>'
 
 
     def __repr__(self):
+        from . import settings
         rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not self._dirty)
         elts = []
         for k in self.keys():
@@ -476,12 +473,12 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 s = str(prop._value)
                 if utils.is_string(prop._value):
                     s = '"%s"' % s
-                    if len(s) >= PPRINT_MAX_STRL:
-                        s = s[:PPRINT_MAX_STRL] + '..."'
+                    if len(s) >= settings.PPRINT_MAX_STRL:
+                        s = s[:settings.PPRINT_MAX_STRL] + '..."'
                 elts.append("%s=%s" % (k, s))
             elif len(prop):
                 elts.append("%s=%s" % (k, prop))
-            if len(elts) == PPRINT_MAX_EL:
+            if len(elts) == settings.PPRINT_MAX_EL:
                 elts.append('...')
                 break
         return rep + ' '.join(elts) + '}>'
@@ -549,8 +546,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
         :param overwrite: overwrite values already set
         """
-        propnames = cls.__prop_names_flatten__
-        defconf = objects_config_loader.get_values(utils.fullname(cls), propnames)
+        from . import settings
+        defconf = settings.as_dict().get(utils.fullname(cls), {})
         for k, v in defconf.items():
             if overwrite:
                 try:

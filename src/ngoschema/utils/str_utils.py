@@ -22,17 +22,15 @@ from .utils import is_mapping, is_sequence, is_collection, is_string
 from past.builtins import basestring
 from ngoschema.decorators import take_arrays
 
-PPRINT_MAX_EL = 10
-PPRINT_MAX_STRL = 80
-
 
 class PrettyShortPrinter(pprint.PrettyPrinter):
     _dispatch = pprint.PrettyPrinter._dispatch.copy()
 
-    def __init__(self, max_el=PPRINT_MAX_EL, max_str_len=PPRINT_MAX_STRL, **kwargs):
-        self._maxEl = max_el
-        self._maxStrLen = max_str_len
-        self._maxCollLen = max_el * max_str_len
+    def __init__(self, max_el=None, max_str_len=None, **kwargs):
+        from .. import settings
+        self._maxEl = max_el or settings.PPRINT_MAX_EL
+        self._maxStrLen = max_str_len or settings.PPRINT_MAX_STRL
+        self._maxCollLen = self._maxEl * self._maxStrLen
         pprint.PrettyPrinter.__init__(self, **kwargs)
 
     def _pprint_dict(self, object, stream, indent, allowance, context, level):

@@ -53,8 +53,6 @@ __all__ = [
     'Bracket',
     'threadsafe_counter',
     # strings
-    'PPRINT_MAX_EL',
-    'PPRINT_MAX_STRL',
     'PrettyShortPrinter',
     'multiple_replace',
     'split_string',

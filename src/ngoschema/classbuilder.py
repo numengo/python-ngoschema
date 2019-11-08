@@ -113,15 +113,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
 
     def get_cname_ref(self, cname):
-        ns_name, ns_cname = cname.split('.', 1)
-        ns_uri = self.namespaces.get(ns_name)
-        defs, name = ns_cname.rsplit('.', 1)
-        uri_frag = '/definitions/'.join(defs)
-        uri, sch = self.resolver.resolve(uri_frag)
-        if name in sch.get('definitions'):
-            return f'{uri}/definitions/{name}'
-        if name in sch.get('properties'):
-            return f'{uri}/properties/{name}'
+        if '.' in cname:
+            ns_name, ns_cname = cname.split('.', 1)
+            ns_uri = self.namespaces.get(ns_name)
+            defs, name = ns_cname.rsplit('.', 1)
+            uri_frag = '/definitions/'.join(defs)
+            uri, sch = self.resolver.resolve(uri_frag)
+            if name in sch.get('definitions'):
+                return f'{uri}/definitions/{name}'
+            if name in sch.get('properties'):
+                return f'{uri}/properties/{name}'
+        else:
+            return self.namespaces.get(cname)
 
 
     def namespace_cnames(self, ns_name):
@@ -509,16 +512,17 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=typ.__doc__)
 
+                if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
+                    defaults[prop] = typ.default()
+                elif issubclass(typ, ArrayWrapper):
+                    defaults[prop] = []
+
                 alias = name_translated.get(prop, prop) if prop not in properties else prop
                 properties[alias]['$ref'] = uri
                 properties[alias]['_type'] = typ
                 if prop in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
                         defaults[prop] = {}
-                    elif issubclass(typ, ArrayWrapper):
-                        defaults[prop] = []
-                    elif hasattr(typ, 'isLiteralClass') and typ.default() is not None:
-                        defaults[prop] = typ.default()
 
             elif 'oneOf' in detail:
                 potential = self.resolve_classes(detail['oneOf'])
@@ -535,11 +539,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             elif 'type' in detail and detail['type'] == 'array':
                 # for resolution in create in wrapper_types
                 detail['classbuilder'] = self
-                if 'items' in detail and isinstance(detail['items'], dict):
+                if 'items' in detail and utils.is_mapping(detail['items']):
                     if '$ref' in detail['items']:
                         uri = pjo_util.resolve_ref_uri(current_scope,
                                                        detail['items']['$ref'])
                         typ = self.construct(uri, detail['items'])
+                        detail['items']['_type'] = typ
                         propdata = {
                             'type': 'array',
                             'validator': ArrayWrapper.create(prop_uri, item_constraint=typ),
@@ -656,6 +661,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         #props['__instances__'] = weakref.WeakValueDictionary()
 
         cls = type(clsname, tuple(parents), props)
+        cls.__doc__ = clsdata.get('description')
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
         cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))
 
