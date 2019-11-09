@@ -46,16 +46,16 @@ class Relationship:
     @classproperty
     def foreignClass(cls):
         from ..classbuilder import get_builder
-        from ngoschema.models.keyed_object import KeyedObject
+        from ngoschema.models.entity import Entity
         if not cls._foreignClass and cls.foreignSchema:
             try:
                 cls._foreignClass = get_builder().resolve_or_construct(cls.foreignSchema)
             except Exception as er:
                 cls.logger.error("error resolving foreign schema %s", cls.foreignSchema, exc_info=True)
                 raise
-            if not issubclass(cls._foreignClass, KeyedObject):
+            if not issubclass(cls._foreignClass, Entity):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
-                                % (cls._foreignClass, KeyedObject))
+                                % (cls._foreignClass, Entity))
         return cls._foreignClass
 
     def resolve(self, keys):

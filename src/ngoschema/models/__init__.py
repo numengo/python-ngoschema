@@ -1,7 +1,7 @@
 from .generic_object import *
 from .document import *
 from .foreign_key import *
-from .keyed_object import *
+from .entity import *
 from .metadata import *
 from .relationship import *
 from ngoschema.transforms.object_transform import *
@@ -16,8 +16,8 @@ __all__ = [
     'ForeignKey',
     'CnameForeignKey',
     # keyed_object
-    'KeyedObject',
-    'NamedObject',
+    'Entity',
+    'NamedEntity',
     # metadata
     'Metadata',
     # Relationship

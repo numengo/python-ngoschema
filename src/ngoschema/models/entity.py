@@ -22,11 +22,11 @@ from ngoschema.schema_metaclass import SchemaMetaclass
 from ngoschema.decorators import classproperty
 
 
-class KeyedObject(with_metaclass(SchemaMetaclass, ProtocolBase)):
+class Entity(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/KeyedObject"
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
 
     @classproperty
     def _primaryKeys(cls):
@@ -43,15 +43,15 @@ class KeyedObject(with_metaclass(SchemaMetaclass, ProtocolBase)):
         ProtocolBase.__init__(self, *args, **kwargs)
 
 
-class NamedObject(with_metaclass(SchemaMetaclass, HasCanonicalName, KeyedObject)):
+class NamedEntity(with_metaclass(SchemaMetaclass, HasCanonicalName, Entity)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
 
     def __init__(self, *args, **kwargs):
         #HasCanonicalName.__init__(self)
-        KeyedObject.__init__(self, *args, **kwargs)
+        Entity.__init__(self, *args, **kwargs)
 
     @classproperty
     def _primaryKeys(cls):

@@ -39,7 +39,7 @@ from .models.document import Document
 from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence, to_list
-from .models.keyed_object import KeyedObject, NamedObject
+from .models.entity import Entity, NamedEntity
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._fkeys = None
         if self.fkeys is not None:
             self._fkeys = self.fkeys.for_json()
-        elif issubclass(self._class, KeyedObject):
+        elif issubclass(self._class, Entity):
             self._fkeys = tuple(self._class.primaryKeys)
         self._session = None
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
@@ -111,7 +111,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
         cn_path = cname.split('.')
         for i in self.instances:
-            if not isinstance(i, NamedObject) and cname.startswith(str(i.canonicalName)):
+            if not isinstance(i, NamedEntity) and cname.startswith(str(i.canonicalName)):
                 continue
             # found ancestor
             cur_cn = []

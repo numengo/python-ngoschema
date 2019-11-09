@@ -69,7 +69,7 @@
         }
       }
     },
-    "KeyedObject": {
+    "Entity": {
       "type": "object",
       "additionalProperties": false,
       "extends": [
@@ -84,14 +84,14 @@
         }
       }
     },
-    "NamedObject": {
+    "NamedEntity": {
       "type": "object",
       "additionalProperties": false,
       "notSerialized": [
         "canonicalName"
       ],
       "extends": [
-        "http://numengo.org/ngoschema/draft-05#/definitions/KeyedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
       ],
       "properties": {
         "name": {
@@ -168,7 +168,7 @@
     "Tag": {
       "type": "object",
       "extends": [
-        "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
       ],
       "properties": {
         "personFK": {
@@ -186,7 +186,7 @@
     "Metadata": {
       "type": "object",
       "extends": [
-        "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
       ],
       "properties": {
         "title": {

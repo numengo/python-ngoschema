@@ -83,8 +83,8 @@ class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
             # not instanciated yet (lazy loading?)
             # look for a common ancestor
             ancs = self._value.split('.')
-            from ngoschema.models.keyed_object import NamedObject
-            for i in NamedObject._instances:
+            from ngoschema.models.entity import NamedEntity
+            for i in NamedEntity._instances:
                 ival = str(i.get(key))
                 iancs = ival.split('.')
                 comm = []
