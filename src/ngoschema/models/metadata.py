@@ -18,7 +18,7 @@ class Metadata(with_metaclass(SchemaMetaclass, NamedObject)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema__ = "http://numengo.org/draft-05/schema#/definitions/Metadata"
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/Metadata"
 
     def __init__(self, *args, **kwargs):
         NamedObject.__init__(self, *args, **kwargs)

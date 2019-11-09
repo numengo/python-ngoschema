@@ -32,7 +32,7 @@ def hybrid_class():
             return self._count
 
         def set_name(self, value):
-            # value is already set and converted to Literal and accessible with 
+            # value is already set and converted to Literal and accessible with
             # _get_prop_value
             # here can be done any specific treatment
             modified = value.upper()
@@ -55,17 +55,17 @@ def external_schema_class():
 
     class B(with_metaclass(SchemaMetaclass, ProtocolBase)):
         """An external schema can be referred using the __schema__ class argument
-        The resolver will look for the schema in schemas loaded using 
-        load_module_schemas. 
-        In this case, load_module_schemas is called when importing ngoschema, and all 
-        schemas available in ngoschema/schemas were loaded. Schemas are then referred 
-        using their $id or id argument, which is the URI where it is supposed to be 
+        The resolver will look for the schema in schemas loaded using
+        load_module_schemas.
+        In this case, load_module_schemas is called when importing ngoschema, and all
+        schemas available in ngoschema/schemas were loaded. Schemas are then referred
+        using their $id or id argument, which is the URI where it is supposed to be
         available online.
         In this case, the file in ngoschema/schemas/Document.json was loaded and found
         through its id which was registered among all other schemas and metaschemas.
         Other schema loaders are available to load a json-schema, a file or a directory.
         """
-        __schema__ = r'http://numengo.org/draft-05/schema/document#/definitions/Document'
+        __schema__ = r'http://numengo.org/ngoschema/draft-05/document#/definitions/Document'
 
     # schema has an attribute author
     b1 = B(author="Sam")

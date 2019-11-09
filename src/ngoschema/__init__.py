@@ -17,13 +17,11 @@ from .utils import load_module_transforms, transforms_module_loader
 from .utils import load_module_objects, objects_module_loader
 load_module_templates('ngoschema')
 
-#from .resolver import DEFAULT_MS_URI, CURRENT_DRAFT
 from .resolver import get_resolver
 from .classbuilder import get_builder
 from .schema_metaclass import SchemaMetaclass
 from .protocol_base import ProtocolBase
-from ngoschema.utils import DEFAULT_CDATA_KEY
-from .handlers import *
+from .repositories import *
 from .query import Query, Filter
 
 __all__ = [
@@ -53,14 +51,14 @@ __all__ = [
     'Query',
     'Filter',
     # handlers
-    'MemoryObjectHandler',
-    'FileObjectHandler',
-    'JsonFileObjectHandler',
-    'YamlFileObjectHandler',
-    'XmlFileObjectHandler',
-    'Jinja2FileObjectHandler',
-    'Jinja2MacroFileObjectHandler',
-    'Jinja2MacroTemplatedPathFileObjectHandler',
+    'MemoryRepository',
+    'FileRepository',
+    'JsonFileRepository',
+    'YamlFileRepository',
+    'XmlFileRepository',
+    'Jinja2FileRepository',
+    'Jinja2MacroFileRepository',
+    'Jinja2MacroTemplatedPathFileRepository',
     'load_object_from_file',
     'load_json_from_file',
     'load_yaml_from_file',

@@ -35,7 +35,7 @@ def domain_uri(name, domain=None, draft=None):
     from . import settings
     draft = draft or settings.CURRENT_DRAFT
     domain = domain or settings.MS_DOMAIN
-    return "%s/%s/%s" % (domain, draft, inflection.dasherize(name))
+    return "%s/%s" % (domain, inflection.dasherize(name))
 
 
 _uri_doc_store = UriDict()

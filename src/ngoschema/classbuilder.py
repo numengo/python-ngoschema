@@ -87,10 +87,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 for k in self.resolved.keys()}
         for k, v in list(ns.items()):
             try:
-                _, sch = resolve_uri(v)
+                sch = resolve_uri(v)
                 if 'nsPrefix' in sch:
                     ns[sch['nsPrefix']] = v
-                    del ns[k]
+                    if k != sch['nsPrefix']:
+                       del ns[k]
             except Exception as er:
                 pass
         return ns

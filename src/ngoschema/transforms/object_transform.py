@@ -22,7 +22,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Class to do simple model to model transformation
     """
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-transform#/definitions/ObjectTransform"
+    __schema__ = "http://numengo.org/ngoschema/object-transform#/definitions/ObjectTransform"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)

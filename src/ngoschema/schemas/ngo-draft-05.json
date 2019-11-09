@@ -1,6 +1,6 @@
 {
-  "$schema": "http://numengo.org/draft-05/schema",
-  "$id": "http://numengo.org/draft-05/schema",
+  "$schema": "http://numengo.org/ngoschema/draft-05",
+  "$id": "http://numengo.org/ngoschema/draft-05",
   "title": "numenGo core schema meta-schema",
   "type": [
     "object",
@@ -91,7 +91,7 @@
         "canonicalName"
       ],
       "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/KeyedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/KeyedObject"
       ],
       "properties": {
         "name": {
@@ -140,7 +140,7 @@
       "additionalProperties": false,
       "$comment": "to define a relationship to another instance",
       "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/Relationship"
+        "http://numengo.org/ngoschema/draft-05#/definitions/Relationship"
       ],
       "properties": {
         "$schema": {
@@ -168,7 +168,7 @@
     "Tag": {
       "type": "object",
       "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/NamedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
       ],
       "properties": {
         "personFK": {
@@ -186,7 +186,7 @@
     "Metadata": {
       "type": "object",
       "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/NamedObject"
+        "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
       ],
       "properties": {
         "title": {
@@ -202,7 +202,7 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "http://numengo.org/draft-05/schema#/definitions/Tag"
+            "$ref": "http://numengo.org/ngoschema/draft-05#/definitions/Tag"
           }
         }
       },
@@ -211,7 +211,7 @@
     "Category": {
       "type": "object",
       "extends": [
-        "http://numengo.org/draft-05/schema#/definitions/Metadata"
+        "http://numengo.org/ngoschema/draft-05#/definitions/Metadata"
       ],
       "properties": {
         "slug": {

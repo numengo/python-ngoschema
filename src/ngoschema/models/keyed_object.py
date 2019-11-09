@@ -26,7 +26,7 @@ class KeyedObject(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    __schema__ = "http://numengo.org/draft-05/schema#/definitions/KeyedObject"
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/KeyedObject"
 
     @classproperty
     def _primaryKeys(cls):
@@ -47,7 +47,7 @@ class NamedObject(with_metaclass(SchemaMetaclass, HasCanonicalName, KeyedObject)
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema__ = "http://numengo.org/draft-05/schema#/definitions/NamedObject"
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedObject"
 
     def __init__(self, *args, **kwargs):
         #HasCanonicalName.__init__(self)

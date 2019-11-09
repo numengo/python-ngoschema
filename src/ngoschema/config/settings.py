@@ -45,8 +45,10 @@ LOGGING = {
 URI_ID = '$id'
 CURRENT_DRAFT = 'draft-05'
 MS_DOMAIN = 'http://numengo.org'
-MS_URI = f'{MS_DOMAIN}/{CURRENT_DRAFT}/schema'
+MS_URI = f'{MS_DOMAIN}/ngoschema/{CURRENT_DRAFT}'
 
 # utils.str_utils
 PPRINT_MAX_EL = 10
 PPRINT_MAX_STRL = 80
+
+DEFAULT_CDATA_KEY = '#text'

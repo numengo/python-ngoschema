@@ -14,7 +14,6 @@ import json
 import six
 from python_jsonschema_objects import util as pjo_util
 
-DEFAULT_CDATA_KEY = '#text'
 
 class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
 
@@ -22,12 +21,13 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                  no_defaults=True,
                  remove_refs=True,
                  attr_prefix='',
-                 cdata_key=DEFAULT_CDATA_KEY,
+                 cdata_key=None,
                  **kwargs):
+        from .. import settings
         self.no_defaults = no_defaults
         self.remove_refs = remove_refs
         self.attr_prefix = attr_prefix
-        self.cdata_key = cdata_key
+        self.cdata_key = cdata_key or settings.DEFAULT_CDATA_KEY
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):

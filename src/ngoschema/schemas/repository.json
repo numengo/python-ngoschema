@@ -1,9 +1,9 @@
 {
-    "$schema": "http://numengo.org/draft-05/schema",
-    "$id": "http://numengo.org/draft-05/ngoschema/object-handlers",
+    "$schema": "http://numengo.org/ngoschema/draft-05",
+    "$id": "http://numengo.org/ngoschema/repository",
     "type": "object",
     "definitions": {
-        "ObjectHandler": {
+        "Repository": {
             "type": "object",
             "isAbstract": true,
             "additionalProperties": false,
@@ -31,7 +31,7 @@
                 }
             }
         },
-        "FilterObjectHandlerMixin": {
+        "FilterRepositoryMixin": {
             "type": "object",
             "isAbstract": true,
             "additionalProperties": false,
@@ -54,25 +54,25 @@
                 }
             }
         },
-        "MemoryObjectHandler": {
+        "MemoryRepository": {
             "type": "object",
             "additionalProperties": false,
             "extends": [
-                "#/definitions/ObjectHandler",
-                "#/definitions/FilterObjectHandlerMixin"
+                "#/definitions/Repository",
+                "#/definitions/FilterRepositoryMixin"
             ]
         },
-        "FileObjectHandler": {
+        "FileRepository": {
             "type": "object",
             "isAbstract": true,
             "additionalProperties": false,
             "extends": [
-                "#/definitions/ObjectHandler",
-                "#/definitions/FilterObjectHandlerMixin"
+                "#/definitions/Repository",
+                "#/definitions/FilterRepositoryMixin"
             ],
             "properties": {
                 "document": {
-                    "$ref": "http://numengo.org/draft-05/ngoschema/document#/definitions/Document"
+                    "$ref": "http://numengo.org/ngoschema/document#/definitions/Document"
                 },
                 "overwrite": {
                     "type": "boolean",
@@ -80,24 +80,24 @@
                 }
             }
         },
-        "JsonFileObjectHandler": {
+        "JsonFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileObjectHandler"
+                "#/definitions/FileRepository"
             ],
             "additionalProperties": true
         },
-        "YamlFileObjectHandler": {
+        "YamlFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileObjectHandler"
+                "#/definitions/FileRepository"
             ],
             "additionalProperties": true
         },
-        "XmlFileObjectHandler": {
+        "XmlFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileObjectHandler"
+                "#/definitions/FileRepository"
             ],
             "additionalProperties": true,
             "properties": {
@@ -122,10 +122,10 @@
                 }
             }
         },
-        "Jinja2FileObjectHandler": {
+        "Jinja2FileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileObjectHandler"
+                "#/definitions/FileRepository"
             ],
             "additionalProperties": false,
             "properties": {
@@ -146,10 +146,10 @@
                 }
             }
         },
-        "Jinja2MacroFileObjectHandler": {
+        "Jinja2MacroFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/Jinja2FileObjectHandler"
+                "#/definitions/Jinja2FileRepository"
             ],
             "additionalProperties": false,
             "properties": {
@@ -164,10 +164,10 @@
                 }
             }
         },
-        "Jinja2MacroTemplatedPathFileObjectHandler": {
+        "Jinja2MacroTemplatedPathFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/Jinja2MacroFileObjectHandler"
+                "#/definitions/Jinja2MacroFileRepository"
             ],
             "additionalProperties": false,
             "properties": {

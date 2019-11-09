@@ -35,7 +35,7 @@ def _state_session(state):
     return None
 
 class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/session#/definitions/Session"
+    __schema__ = "http://numengo.org/ngoschema/session#/definitions/Session"
 
     def __init__(self, bind=None, builder=None, **kwargs):
         ProtocolBase.__init__(self, **kwargs)

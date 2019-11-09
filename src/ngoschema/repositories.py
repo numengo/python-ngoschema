@@ -43,13 +43,13 @@ from .models.keyed_object import KeyedObject, NamedObject
 
 logger = logging.getLogger(__name__)
 
-handler_registry = GenericClassRegistry()
+repository_registry = GenericClassRegistry()
 
-class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
+class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Class to store read/write operations of objects
     """
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/ObjectHandler"
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Repository"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
@@ -176,8 +176,8 @@ class ObjectHandler(with_metaclass(SchemaMetaclass, ProtocolBase)):
             return obj
 
 
-class FilterObjectHandlerMixin(object):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/FilterObjectHandlerMixin"
+class FilterRepositoryMixin(object):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/FilterRepositoryMixin"
 
     def filter_data(self, data):
         only = self.only.for_json() if self.only else ()
@@ -186,25 +186,25 @@ class FilterObjectHandlerMixin(object):
         return filter_collection(data, only, but, rec)
 
 
-class MemoryObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObjectHandlerMixin)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/MemoryObjectHandler"
+class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/MemoryRepository"
 
     def commit(self):
-        raise InvalidOperationException('commit is not possible with MemoryObjectHandler')
+        raise InvalidOperationException('commit is not possible with MemoryRepository')
 
     def pre_load(self):
         return {}
-        raise InvalidOperationException('pre_load is not possible with MemoryObjectHandler')
+        raise InvalidOperationException('pre_load is not possible with MemoryRepository')
 
 
-class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObjectHandlerMixin)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/FileObjectHandler"
+class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/FileRepository"
 
     def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
             document = document or Document()
             document.filepath = filepath
-        ObjectHandler.__init__(self, document=document, **kwargs)
+        Repository.__init__(self, document=document, **kwargs)
 
     @abstractmethod
     def deserialize_data(self):
@@ -248,7 +248,7 @@ class FileObjectHandler(with_metaclass(SchemaMetaclass, ObjectHandler, FilterObj
 @assert_arg(0, SCH_PATH_FILE)
 def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    handler_cls = handler_cls or JsonFileObjectHandler
+    handler_cls = handler_cls or JsonFileRepository
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
     logger.info("LOAD %s from '%s'", handler.objectClass or '<unknown>', fp)
@@ -260,7 +260,7 @@ def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
 @assert_arg(1, SCH_PATH)
 def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    handler_cls = handler_cls or JsonFileObjectHandler
+    handler_cls = handler_cls or JsonFileRepository
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
     logger.info("LOAD %s from '%s'", handler.objectClass, fp)
@@ -268,12 +268,12 @@ def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
     handler.commit()
 
 
-@handler_registry.register()
-class JsonFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/JsonFileObjectHandler"
+@repository_registry.register()
+class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/JsonFileRepository"
 
     def __init__(self, **kwargs):
-        FileObjectHandler.__init__(self, **kwargs)
+        FileRepository.__init__(self, **kwargs)
 
     def deserialize_data(self):
         data = self.document._deserialize(json.loads, **self._extended_properties)
@@ -291,12 +291,12 @@ class JsonFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
 
 @assert_arg(0, SCH_PATH_FILE)
 def load_json_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, handler_cls=JsonFileObjectHandler, session=session, **kwargs)
+    return load_object_from_file(fp, handler_cls=JsonFileRepository, session=session, **kwargs)
 
 
-@handler_registry.register()
-class YamlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/YamlFileObjectHandler"
+@repository_registry.register()
+class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/YamlFileRepository"
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
@@ -314,15 +314,15 @@ class YamlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
 
 @assert_arg(0, SCH_PATH_FILE)
 def load_yaml_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, handler_cls=YamlFileObjectHandler, session=session, **kwargs)
+    return load_object_from_file(fp, handler_cls=YamlFileRepository, session=session, **kwargs)
 
 
-@handler_registry.register()
-class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/XmlFileObjectHandler"
+@repository_registry.register()
+class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/XmlFileRepository"
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):
-        FileObjectHandler.__init__(self, **kwargs)
+        FileRepository.__init__(self, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             remove_refs=self.remove_refs)
         self._tag = tag
@@ -364,14 +364,14 @@ class XmlFileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
 @assert_arg(0, SCH_PATH_FILE)
 def load_xml_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp,
-                                 handler_cls=XmlFileObjectHandler,
+                                 handler_cls=XmlFileRepository,
                                  session=session,
                                  **kwargs)
 
 
-@handler_registry.register()
-class Jinja2FileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2FileObjectHandler"
+@repository_registry.register()
+class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2FileRepository"
 
     def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
         """
@@ -379,7 +379,7 @@ class Jinja2FileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)
         environment. If no environment is provided, use the default one
         `default_jinja2_env`
         """
-        FileObjectHandler.__init__(self, template=template, **kwargs)
+        FileRepository.__init__(self, template=template, **kwargs)
         self._jinja = environment or default_jinja2_env()
         self._jinja.globals.update(_jinja2_globals)
         self._context = context or {}
@@ -399,9 +399,9 @@ class Jinja2FileObjectHandler(with_metaclass(SchemaMetaclass, FileObjectHandler)
         return six.text_type(stream)
 
 
-@handler_registry.register()
-class Jinja2MacroFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2FileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroFileObjectHandler"
+@repository_registry.register()
+class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2MacroFileRepository"
 
     def serialize_data(self, data):
         macro_args = self.macroArgs.for_json()
@@ -416,26 +416,26 @@ class Jinja2MacroFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2FileObj
             context.update(**data)
             return template.render(context)
         except Exception as er:
-            self.logger.error('SERIALIZE Jinja2MacroFileObjectHandler: %s', er)
+            self.logger.error('SERIALIZE Jinja2MacroFileRepository: %s', er)
             raise er
 
 
-@handler_registry.register()
-class Jinja2MacroTemplatedPathFileObjectHandler(with_metaclass(SchemaMetaclass, Jinja2MacroFileObjectHandler)):
-    __schema__ = "http://numengo.org/draft-05/ngoschema/object-handlers#/definitions/Jinja2MacroTemplatedPathFileObjectHandler"
+@repository_registry.register()
+class Jinja2MacroTemplatedPathFileRepository(with_metaclass(SchemaMetaclass, Jinja2MacroFileRepository)):
+    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2MacroTemplatedPathFileRepository"
 
     def serialize_data(self, data):
-        self.logger.info('SERIALIZE Jinja2MacroFileObjectHandler')
+        self.logger.info('SERIALIZE Jinja2MacroFileRepository')
         try:
             tpath = TemplatedString(self.templatedPath)(**self._context)
         except Exception as er:
-            self.logger.error('SERIALIZE Jinja2MacroTemplatedPathFileObjectHandler: %s', er)
+            self.logger.error('SERIALIZE Jinja2MacroTemplatedPathFileRepository: %s', er)
         fpath = self.outputDir.joinpath(tpath)
         self.document = self.document or Document()
         self.document.filepath = fpath
         if not fpath.parent.exists():
             os.makedirs(str(fpath.parent))
-        stream = Jinja2MacroFileObjectHandler.serialize_data(self, data)
+        stream = Jinja2MacroFileRepository.serialize_data(self, data)
         if fpath.suffix in ['.h', '.c', '.cpp']:
             tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=fpath.suffix, dir=fpath.parent, delete=False)
             tf.write(stream.encode('utf-8'))

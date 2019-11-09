@@ -37,7 +37,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    __schema__ = r'http://numengo.org/draft-05/ngoschema/document#/definitions/Document'
+    __schema__ = r'http://numengo.org/ngoschema/document#/definitions/Document'
     __add_logging__ = False
     __assert_args__ = False
     __attr_by_name__ = False
@@ -174,9 +174,9 @@ def get_document_registry():
 
 class DocumentRegistry(Mapping):
     def __init__(self):
-        from ..handlers import JsonFileObjectHandler
-        self._fp_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
-        self._url_registry = JsonFileObjectHandler(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
+        from ..repositories import JsonFileRepository
+        self._fp_registry = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
+        self._url_registry = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
         self._chained = ChainMap(self._fp_registry._registry,
                                  self._url_registry._registry)
 
