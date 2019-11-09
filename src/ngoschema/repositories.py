@@ -53,7 +53,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
-        self._registry = Registry()
+        self._catalog = Registry()
         self._class = self.objectClass._imported if self.objectClass is not None else None
         self._fkeys = None
         if self.fkeys is not None:
@@ -78,15 +78,15 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return id(instance)
 
     def register(self, instance):
-        self._registry.register(self._identity_key(instance), instance)
+        self._catalog.register(self._identity_key(instance), instance)
         instance._handler = self
 
     def unregister(self, instance):
-        self._registry.unregister(self._identity_key(instance))
+        self._catalog.unregister(self._identity_key(instance))
         instance._handler = None
 
     def get_instance(self, key):
-        return self._registry[key]
+        return self._catalog[key]
 
     def resolve_cname_path(self, cname):
         # use generators because of 'null' which might lead to different paths
@@ -135,7 +135,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     @property
     def instances(self):
-        return list(self._registry.values())
+        return list(self._catalog.values())
 
     def filter(self, *attrs, order_by=False, **attrs_value):
         """

@@ -63,7 +63,7 @@
 </stylenode>
 </map_styles>
 </hook>
-<hook NAME="AutomaticEdgeColor" COUNTER="74" RULE="ON_BRANCH_CREATION"/>
+<hook NAME="AutomaticEdgeColor" COUNTER="81" RULE="ON_BRANCH_CREATION"/>
 <node TEXT="description" POSITION="right" ID="ID_1178909789" CREATED="1560848446794" MODIFIED="1560848464840">
 <edge COLOR="#00ffff"/>
 <node TEXT="summary" ID="ID_649923253" CREATED="1560848465900" MODIFIED="1560848467947">
@@ -2931,7 +2931,6 @@
     <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt">django-templated-email</pre>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1104591734" CREATED="1571625372765" MODIFIED="1571627842760"><richcontent TYPE="NODE">
@@ -2944,7 +2943,6 @@
     <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt">django-email-as_username</pre>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1905720434" CREATED="1571625558943" MODIFIED="1571625558943"><richcontent TYPE="NODE">
@@ -2957,7 +2955,6 @@
     <pre>django-filer</pre>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="https://django-filer.readthedocs.io/en/latest/index.html" ID="ID_1041107563" CREATED="1571625511251" MODIFIED="1571625511251" LINK="https://django-filer.readthedocs.io/en/latest/index.html"/>
 <node TEXT="installed_apps" ID="ID_270733046" CREATED="1571625665685" MODIFIED="1571625671646"/>
@@ -3002,7 +2999,6 @@
     <pre><span class="pl-s1">django-anymail</span></pre>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="description" ID="ID_698148159" CREATED="1571628485591" MODIFIED="1571628489702">
 <node ID="ID_1525535967" CREATED="1571628492498" MODIFIED="1571628532848"><richcontent TYPE="NODE">
@@ -3015,7 +3011,6 @@
     <span class="text-gray-dark mr-2" itemprop="about">Django email backends and webhooks</span>
   </body>
 </html>
-
 </richcontent>
 <node ID="ID_448263464" CREATED="1571628536062" MODIFIED="1571628536062"><richcontent TYPE="NODE">
 
@@ -3027,7 +3022,6 @@
     <span class="text-gray-dark mr-2" itemprop="about">Amazon SES, Mailgun, Mailjet, Postmark, SendGrid, SendinBlue, SparkPost and more</span>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -3051,7 +3045,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1914296382" CREATED="1571632410737" MODIFIED="1571632410737"><richcontent TYPE="NODE">
@@ -3066,7 +3059,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_122260213" CREATED="1571632410738" MODIFIED="1571632410738"><richcontent TYPE="NODE">
@@ -3081,7 +3073,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_1852755753" CREATED="1571632410739" MODIFIED="1571632410739"><richcontent TYPE="NODE">
@@ -3096,7 +3087,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_181947030" CREATED="1571632410740" MODIFIED="1571632410740"><richcontent TYPE="NODE">
@@ -3111,7 +3101,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -3133,7 +3122,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="description" ID="ID_372127744" CREATED="1571632273802" MODIFIED="1571632278348">
 <node TEXT="additional commands" ID="ID_40824919" CREATED="1571632278593" MODIFIED="1571632284866"/>
@@ -3151,7 +3139,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 <node TEXT="description" ID="ID_1005558705" CREATED="1571632556719" MODIFIED="1571632561862">
 <node ID="ID_1485534557" CREATED="1571632574939" MODIFIED="1571632574939"><richcontent TYPE="NODE">
@@ -3166,7 +3153,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_915097484" CREATED="1571632604782" MODIFIED="1571632604782"><richcontent TYPE="NODE">
@@ -3181,7 +3167,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_156828296" CREATED="1571632604783" MODIFIED="1571632604783"><richcontent TYPE="NODE">
@@ -3196,7 +3181,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_788222594" CREATED="1571632604784" MODIFIED="1571632604784"><richcontent TYPE="NODE">
@@ -3211,7 +3195,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -3228,7 +3211,6 @@
     <span class="text-gray-dark mr-2" itemprop="about">This app attempts to provide a generic category system that multiple apps could use. It uses MPTT for the tree storage and provides a custom admin for better visualization (copied and modified from feinCMS). </span>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -3248,7 +3230,6 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
 <node ID="ID_912557428" CREATED="1571632252305" MODIFIED="1571632252305"><richcontent TYPE="NODE">
@@ -3263,9 +3244,10 @@
     </p>
   </body>
 </html>
-
 </richcontent>
 </node>
+<node TEXT="https://www.fomfus.com/articles/how-to-use-email-as-username-for-django-authentication-removing-the-username" ID="ID_802941031" CREATED="1572115490839" MODIFIED="1572115490839" LINK="https://www.fomfus.com/articles/how-to-use-email-as-username-for-django-authentication-removing-the-username"/>
+<node TEXT="https://github.com/awesto/django-shop" ID="ID_415521100" CREATED="1572179816450" MODIFIED="1572179816450" LINK="https://github.com/awesto/django-shop"/>
 </node>
 <node TEXT="cookiecutters" ID="ID_1740701141" CREATED="1571628285823" MODIFIED="1571628289939">
 <node TEXT="https://github.com/pydanny/cookiecutter-django" ID="ID_78594804" CREATED="1571628291008" MODIFIED="1571628291008" LINK="https://github.com/pydanny/cookiecutter-django">
@@ -3285,7 +3267,6 @@
     <pre>docker-compose up</pre>
   </body>
 </html>
-
 </richcontent>
 </node>
 </node>
@@ -3294,6 +3275,21 @@
 <node TEXT="7.991019" ID="ID_816412447" CREATED="1571853199602" MODIFIED="1571853199602">
 <node TEXT="png_4743392750190859402.png" ID="ID_960275020" CREATED="1571858695451" MODIFIED="1571858695451">
 <hook URI="NGOSCHEMA_files/png_4743392750190859402.png" SIZE="1.0" NAME="ExternalObject"/>
+<node TEXT="changing cache/context system" ID="ID_1383966292" CREATED="1571858761999" MODIFIED="1571858771615">
+<node TEXT="png_1528686920125823519.png" ID="ID_489092398" CREATED="1571917196823" MODIFIED="1571917196823">
+<hook URI="NGOSCHEMA_files/png_1528686920125823519.png" SIZE="1.0" NAME="ExternalObject"/>
+<node TEXT="png_5534666460731919237.png" ID="ID_719568329" CREATED="1571917556880" MODIFIED="1571917556880">
+<hook URI="NGOSCHEMA_files/png_5534666460731919237.png" SIZE="1.0" NAME="ExternalObject"/>
+<node TEXT="with current state" ID="ID_388535833" CREATED="1571922552514" MODIFIED="1571922569593"/>
+<node TEXT="png_3335444088633780073.png" ID="ID_149613097" CREATED="1571922573762" MODIFIED="1571922573762">
+<hook URI="NGOSCHEMA_files/png_3335444088633780073.png" SIZE="1.0" NAME="ExternalObject"/>
+</node>
+</node>
+<node TEXT="removing previous foreignKey validate() function" ID="ID_561242862" CREATED="1571917557951" MODIFIED="1571917613750"/>
+<node TEXT="7.842113" ID="ID_551540621" CREATED="1571917668379" MODIFIED="1571917668379"/>
+</node>
+</node>
+<node TEXT="7.919391" OBJECT="java.lang.Double|7.919391" ID="ID_1333446817" CREATED="1571913998866" MODIFIED="1571914836774"/>
 </node>
 </node>
 <node TEXT="removing call to any_pprint to the new lazy_format class" ID="ID_909136264" CREATED="1571853201563" MODIFIED="1571853239552"/>
@@ -3301,10 +3297,120 @@
 <node TEXT="memoizing short_repr" ID="ID_912976014" CREATED="1571851746312" MODIFIED="1571851763349"/>
 </node>
 <node TEXT="serializing 2.789402" ID="ID_408544295" CREATED="1571830306175" MODIFIED="1571850058928">
-<node TEXT="2.337396" ID="ID_1379850682" CREATED="1571851730654" MODIFIED="1571851730654"/>
+<node TEXT="2.337396" ID="ID_1379850682" CREATED="1571851730654" MODIFIED="1571917680398">
+<node TEXT="2.324168" OBJECT="java.lang.Double|2.324168" ID="ID_247776355" CREATED="1571914010416" MODIFIED="1571917680397">
+<node TEXT="2.019516" ID="ID_1159715223" CREATED="1571917683308" MODIFIED="1571917683308"/>
+</node>
+</node>
 </node>
 <node TEXT="loading 0.266558" ID="ID_962770744" CREATED="1571849779588" MODIFIED="1571849779588"/>
 <node TEXT="serializing 13.782692" ID="ID_896633679" CREATED="1571849428769" MODIFIED="1571849428769"/>
+</node>
+<node TEXT="html" POSITION="right" ID="ID_1987109775" CREATED="1572250723191" MODIFIED="1572250725145">
+<edge COLOR="#7c007c"/>
+<node TEXT="schemas" ID="ID_1640640120" CREATED="1572250726157" MODIFIED="1572250729229">
+<node TEXT="https://www.w3.org/TR/xhtml1-schema/" ID="ID_1554199672" CREATED="1572250730191" MODIFIED="1572250730191" LINK="https://www.w3.org/TR/xhtml1-schema/"/>
+<node TEXT="&apos;@xmlns:xs&apos; (4368736752) = {str} &apos;http://www.w3.org/2001/XMLSchema&apos;" ID="ID_1706247246" CREATED="1572259957992" MODIFIED="1572259957992" LINK="http://www.w3.org/2001/XMLSchema&apos;"/>
+<node TEXT="&apos;@xmlns&apos; (4357344760) = {str} &apos;http://www.w3.org/1999/xhtml&apos;" ID="ID_262904449" CREATED="1572259957992" MODIFIED="1572259957992" LINK="http://www.w3.org/1999/xhtml&apos;"/>
+<node TEXT="&apos;@xmlns:html&apos; (4338276336) = {str} &apos;http://www.w3.org/1999/xhtml&apos;" ID="ID_47613756" CREATED="1572259957993" MODIFIED="1572259957993" LINK="http://www.w3.org/1999/xhtml&apos;"/>
+<node TEXT="&apos;@xmlns:svg&apos; (4363986544) = {str} &apos;http://www.w3.org/2000/svg&apos;" ID="ID_1328953604" CREATED="1572259957993" MODIFIED="1572259957993" LINK="http://www.w3.org/2000/svg&apos;"/>
+<node TEXT="&apos;@xmlns:xlink&apos; (4368696816) = {str} &apos;http://www.w3.org/1999/xlink&apos;" ID="ID_1787366147" CREATED="1572259957993" MODIFIED="1572259957993" LINK="http://www.w3.org/1999/xlink&apos;"/>
+<node TEXT="&apos;@xmlns:mml&apos; (4340199792) = {str} &apos;http://www.w3.org/1998/Math/MathML&apos;" ID="ID_1243019681" CREATED="1572259957994" MODIFIED="1572259957994" LINK="http://www.w3.org/1998/Math/MathML&apos;"/>
+<node ID="ID_798092298" CREATED="1572498282494" MODIFIED="1572498282494" LINK="http://www.w3.org/1999/XSL/Transform&amp;quot;"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <pre style="background-color: #2b2b2b; color: #a9b7c6; font-family: Menlo; font-size: 9.0pt"><span style="color: #bababa"><font color="#bababa">xmlns:</font></span><span style="color: #9876aa"><font color="#9876aa">xsl</font></span><span style="color: #6a8759"><font color="#6a8759">=&quot;http://www.w3.org/1999/XSL/Transform&quot;<br/></font></span><span style="color: #bababa"><font color="#bababa">xmlns:</font></span><span style="color: #9876aa"><font color="#9876aa">axsl</font></span><span style="color: #6a8759"><font color="#6a8759">=&quot;http://www.w3.org/1999/XSL/TransformAlias&quot;</font></span><span style="color: #e8bf6a"><font color="#e8bf6a">&gt;<br/></font></span></pre>
+  </body>
+</html>
+</richcontent>
+</node>
+</node>
+</node>
+<node TEXT="FREEPLANE" POSITION="right" ID="ID_592957701" CREATED="1572891997460" MODIFIED="1572892010189">
+<edge COLOR="#007c7c"/>
+<node TEXT="$comment as note" ID="ID_1753480259" CREATED="1572892010659" MODIFIED="1572892020819"/>
+<node TEXT="namespaces" ID="ID_730465908" CREATED="1572892021758" MODIFIED="1572892031445">
+<node TEXT="root attributes" ID="ID_720327137" CREATED="1572892058941" MODIFIED="1572892062504">
+<node TEXT="ns:html" ID="ID_1165832229" CREATED="1572892033944" MODIFIED="1572892040816">
+<node TEXT="http://...." ID="ID_238237673" CREATED="1572892041427" MODIFIED="1572892051813"/>
+</node>
+</node>
+</node>
+<node TEXT="faire un CSS de mindmaps" ID="ID_1515913762" CREATED="1572904295446" MODIFIED="1572904309399"/>
+</node>
+<node TEXT="commande" POSITION="right" ID="ID_789661904" CREATED="1572968458998" MODIFIED="1572968461285">
+<edge COLOR="#7c7c00"/>
+<node TEXT="Donain Driven Design" ID="ID_1883196019" CREATED="1572968462139" MODIFIED="1572968538989"/>
+<node TEXT="CQRS" ID="ID_599727540" CREATED="1572968539475" MODIFIED="1572968545140">
+<node TEXT="command" ID="ID_1863058547" CREATED="1572968545436" MODIFIED="1572968547048"/>
+<node TEXT="query" ID="ID_1711526041" CREATED="1572968551909" MODIFIED="1572968554846"/>
+<node TEXT="responsabilty" ID="ID_681913390" CREATED="1572968555058" MODIFIED="1572968557539"/>
+<node TEXT="segregation" ID="ID_1894463401" CREATED="1572968557799" MODIFIED="1572968560114"/>
+</node>
+</node>
+<node TEXT="node2schema" FOLDED="true" POSITION="right" ID="ID_412035813" CREATED="1573014476586" MODIFIED="1573014482415">
+<edge COLOR="#ff0000"/>
+<node TEXT="special cases" ID="ID_399156685" CREATED="1573014483075" MODIFIED="1573014493301">
+<node TEXT="required" ID="ID_1655215509" CREATED="1573014493584" MODIFIED="1573014499975"/>
+<node TEXT="extends" ID="ID_112183882" CREATED="1573014500623" MODIFIED="1573014502139"/>
+<node TEXT="$ref" ID="ID_1996460048" CREATED="1573014508312" MODIFIED="1573014516124"/>
+<node TEXT="eval(default)" ID="ID_1407064889" CREATED="1573014528130" MODIFIED="1573014537444"/>
+</node>
+</node>
+<node TEXT="domain driven development" POSITION="right" ID="ID_1930050248" CREATED="1573074386942" MODIFIED="1573081038169" LINK="http://blog.infosaurus.fr/public/docs/DDDViteFait.pdf">
+<edge COLOR="#ff00ff"/>
+<node TEXT="model driven development" ID="ID_1593469147" CREATED="1573074379427" MODIFIED="1573074395897">
+<node TEXT="Une meilleure approche est de lier &#xe9;troitement mod&#xe9;lisation du domaine et conception. Le mod&#xe8;le devrait &#xea;tre construit en gardant un &#x153;il sur les consid&#xe9;rations logicielles et conceptuelles. On devrait int&#xe9;grer les d&#xe9;veloppeurs dans le processus de mod&#xe9;lisation. L&apos;id&#xe9;e  importante  est  de  choisir  un  mod&#xe8;le  qui  puisse  &#xea;tre  exprim&#xe9;  convenablement dans du logiciel, pour que le processus de conception soit direct et bas&#xe9; sur le mod&#xe8;le. Le fait de coupler &#xe9;troitement le code &#xe0; un mod&#xe8;le sous-jacent donne du sens au code et rend le mod&#xe8;le pertinent." ID="ID_661427853" CREATED="1573074431016" MODIFIED="1573074450961"/>
+<node TEXT="Lier &#xe9;troitement l&#x2019;impl&#xe9;mentation &#xe0; un mod&#xe8;le n&#xe9;cessite g&#xe9;n&#xe9;ralement des langages et outils  de  d&#xe9;veloppement  qui  supportent  un  paradigme  de  mod&#xe9;lisation,  comme  par exemple la programmation orient&#xe9;e objet." ID="ID_1827991946" CREATED="1573074521044" MODIFIED="1573074522337">
+<node TEXT="La  programmation  orient&#xe9;e  objet  convient  bien  &#xe0;  l&#x2019;impl&#xe9;mentation  de  mod&#xe8;le  car  ils sont tous deux bas&#xe9;s sur le m&#xea;me paradigme. La programmation orient&#xe9;e objet pr&#xe9;voit des classes d&#x2019;objets et leurs associations, des instances d&#x2019;objets, et l&#x2019;envoi de messages entre eux. Les langages de POO rendent possible la cr&#xe9;ation de mappages directs entre les objets du mod&#xe8;le avec leurs relations, et leurs &#xe9;quivalents en programmation." ID="ID_207815416" CREATED="1573074545862" MODIFIED="1573074548042"/>
+</node>
+<node TEXT="png_8546596625098604427.png" ID="ID_980757215" CREATED="1573074783477" MODIFIED="1573074783477">
+<hook URI="NGOSCHEMA_files/png_8546596625098604427.png" SIZE="0.70422536" NAME="ExternalObject"/>
+</node>
+</node>
+<node TEXT="Lorsqu on cr&#xe9;e une application logicielle, une  grande  part  de   &#x2019;application  n&#x2019;est  pas reli&#xe9;e directement au domaine, mais fait partie de l&#x2019;infrastructure ou sert le logiciel lui-m&#xea;me.  Il  peut  arriver,  et  c est  justifi&#xe9;,  que  la  partie  domaine  d une  application  soit  assez r&#xe9;duite compar&#xe9;e au reste, puisqu&#x2019;une application typique contient beaucoup de code  li&#xe9;  &#xe0;  l&#x2019;acc&#xe8;s  &#xe0;  la  base  de  donn&#xe9;es,  &#xe0;  l&#x2019;acc&#xe8;s aux  fichiers  ou  au  r&#xe9;seau,  aux interfaces utilisateur, etc." ID="ID_479266946" CREATED="1573074788296" MODIFIED="1573074827395">
+<node TEXT="png_4441025577440725214.png" ID="ID_1440084930" CREATED="1573076012852" MODIFIED="1573076012852">
+<hook URI="NGOSCHEMA_files/png_4441025577440725214.png" SIZE="0.7643312" NAME="ExternalObject"/>
+</node>
+<node TEXT="couche application" ID="ID_1512730684" CREATED="1573076016573" MODIFIED="1573076020391">
+<node TEXT="django-plugin" ID="ID_539698746" CREATED="1573076020589" MODIFIED="1573076033405"/>
+</node>
+<node TEXT="couche domaine" ID="ID_152542095" CREATED="1573076035940" MODIFIED="1573076039067">
+<node TEXT="python-package" ID="ID_1978815327" CREATED="1573076039363" MODIFIED="1573076048392"/>
+</node>
+<node TEXT="couche infrastructure" ID="ID_800958311" CREATED="1573076049233" MODIFIED="1573076053898">
+<node TEXT="django-app" ID="ID_1497537136" CREATED="1573076054131" MODIFIED="1573076056888"/>
+</node>
+</node>
+<node TEXT="services" ID="ID_1815724652" CREATED="1573076921537" MODIFIED="1573076923590">
+<node TEXT="Quand  un  processus  ou  une  transformation  significative  du  domaine  n&#x2019;est  pas  la responsabilit&#xe9;  naturelle  d&#x2019;une  Entit&#xe9;  ou  d&#x2019;un  Objet-Valeur,  vous  pouvez  ajouter  une op&#xe9;ration  au  mod&#xe8;le  sous  la  forme  d&#x2019;une  interface  autonome  d&#xe9;clar&#xe9;e  en  tant  que Service. D&#xe9;finissez l&#x2019;interface dans des termes du langage du  mod&#xe8;le et assurez-vous que  le  nom  de  l&#x2019;op&#xe9;ration  fait  partie  du  Langage  omnipr&#xe9;sent." ID="ID_548223734" CREATED="1573076924576" MODIFIED="1573076945940"/>
+<node ID="ID_1073990692" CREATED="1573076947076" MODIFIED="1573076948931"><richcontent TYPE="NODE">
+
+<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Faites&#160;&#160;en&#160;&#160;sorte&#160;&#160;que&#160;&#160;le Service n&#8217;ait pas d&#8217;&#233;tat.
+    </p>
+  </body>
+</html>
+</richcontent>
+<font BOLD="true"/>
+</node>
+</node>
+<node TEXT="fabriques" ID="ID_247130188" CREATED="1573077962226" MODIFIED="1573077965265">
+<node TEXT="class methods" ID="ID_1555652375" CREATED="1573077965491" MODIFIED="1573077968784"/>
+</node>
+<node TEXT="entrepot" ID="ID_593090333" CREATED="1573078215170" MODIFIED="1573078218678">
+<node TEXT="handler" ID="ID_1771011503" CREATED="1573078218913" MODIFIED="1573078224882"/>
+</node>
+<node TEXT="lire  les sp&#xe9;cifications  fonctionnelles  et  de  chercher  les  noms  et  les  verbes.  Les  noms  sont convertis  en  classes,  tandis  que  les  verbes  deviennent  des  m&#xe9;thodes.  C&#x2019;est  une simplification,  et  cela  m&#xe8;ne  &#xe0;  un  mod&#xe8;le  superficiel." ID="ID_1507647297" CREATED="1573078348211" MODIFIED="1573078360913"/>
 </node>
 </node>
 </map>
