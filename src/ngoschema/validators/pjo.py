@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import datetime
 import pathlib
 import logging
+import itertools
 from builtins import str
 from decimal import Decimal
 
@@ -21,32 +22,31 @@ from past.builtins import basestring
 from python_jsonschema_objects import validators
 from python_jsonschema_objects.literals import MakeLiteral
 from python_jsonschema_objects.validators import ValidationError
-from python_jsonschema_objects.validators import converter_registry
-from python_jsonschema_objects.validators import formatter_registry
+from python_jsonschema_objects.validators import ValidatorRegistry
 from python_jsonschema_objects.validators import registry
 from python_jsonschema_objects.validators import type_registry
 from python_jsonschema_objects.pattern_properties import ExtensibleValidator as pjo_ExtensibleValidator
 
-from ngoschema import utils
+from ngoschema import utils, settings
 
 logger = logging.getLogger(__name__)
+
+converter_registry = ValidatorRegistry()
+
+formatter_registry = ValidatorRegistry()
+
+
+#additional types
+import datetime
+import pathlib
+import arrow
+from past.builtins import basestring
 
 string_types = (basestring, str)
 datetime_types = (datetime.datetime, arrow.Arrow)
 
-NGO_TYPE_MAPPING = (
-    ("importable", string_types),
-    ("path", string_types + (pathlib.Path, )),
-    ("date", string_types + datetime_types + (datetime.date, )),
-    ("time", string_types + datetime_types + (datetime.time, )),
-    ("datetime", string_types + datetime_types),
-)
-
-validators.set_user_type_mapping(NGO_TYPE_MAPPING)
-
 # validators
 ############
-
 
 @registry.register()
 def minimum(param, value, type_data):
@@ -207,18 +207,6 @@ def convert_enum(param, value, details):
     return value
 
 
-date_fts = [
-    "YYYY-MM-DD", "YYYY/MM/DD", "YYYY.MM.DD", "YYYY-MM", "YYYY/MM", "YYYY.MM"
-]
-alt_date_fts = [
-    "DD-MM-YYYY",
-    "DD/MM/YYYY",
-    "DD.MM.YYYY",
-    "MM-YYYY",
-    "MM/YYYY",
-    "MM.YYYY",
-]
-
 
 @converter_registry.register(name="date")
 def convert_date_type(param, value, detail):
@@ -231,13 +219,13 @@ def convert_date_type(param, value, detail):
             a = arrow.utcnow()
             return a.date()
         try:
-            a = arrow.get(value, date_fts)
+            a = arrow.get(value, settings.DATE_FORMATS)
             if a.time() == datetime.time(0, 0):
                 return a.date()
         except Exception:
             pass
         try:
-            a = arrow.get(value, alt_date_fts)
+            a = arrow.get(value, settings.ALT_DATE_FORMATS)
             if a.time() == datetime.time(0, 0):
                 return a.date()
         except Exception:
@@ -290,8 +278,8 @@ def convert_datetime_type(param, value, _):
     except Exception:
         pass
     try:
-        a_d = arrow.get(value, alt_date_fts)
-        a_t = arrow.get(value, alt_time_fts)
+        a_d = arrow.get(value, settings.ALT_DATE_FORMATS)
+        a_t = arrow.get(value, settings.ALT_DATE_FORMATS)
         dt = datetime.datetime.combine(a_d.date(), a_t.time())
         return arrow.get(dt).datetime
     except Exception:
@@ -319,55 +307,22 @@ def format_path(param, value, details):
 @formatter_registry.register(name="date")
 def format_date(param, value, details):
     if "format" in details:
-        frmt = details["format"]
-        return value.strftime(frmt)
+        fmt = details["format"]
+        return value.strftime(fmt)
     return value.isoformat()
 
 
 @formatter_registry.register(name="time")
 def format_time(param, value, details):
     if "format" in details:
-        frmt = details["format"]
-        return value.strftime(frmt)
+        fmt = details["format"]
+        return value.strftime(fmt)
     return value.isoformat()
 
 
 @formatter_registry.register(name="datetime")
 def format_arrow(param, value, details):
     if "format" in details:
-        frmt = details["format"]
-        return value.format(frmt)
+        fmt = details["format"]
+        return value.format(fmt)
     return str(value)
-
-#TODO to remove
-class ExtensibleValidator(pjo_ExtensibleValidator):
-    """better handling of additional properties as objects """
-
-    def instantiate(self, name, val):
-
-        for p in self._pattern_types:
-            if p.pattern.search(name):
-                logger.debug(
-                    "Found patternProperties match: %s %s" % (
-                        p.pattern.pattern, name
-                    ))
-                return self._make_type(p.schema_type, val)
-
-        if self._additional_type is True:
-
-            valtype = [k for k, t
-                       in (validators.SCHEMA_TYPE_MAPPING
-                          +validators.USER_TYPE_MAPPING)
-                       if t is not None and isinstance(val, t)]
-            valtype = valtype[0]
-            # CRN: add treatment for objects
-            if valtype == 'object':
-                return dict(val)
-            return MakeLiteral(name, valtype, val)
-
-        elif isinstance(self._additional_type, type):
-            return self._make_type(self._additional_type, val)
-
-        raise validators.ValidationError(
-            "additionalProperties not permitted "
-            "and no patternProperties specified")

@@ -4,8 +4,15 @@ __author__ = """Cedric ROMAN"""
 __email__ = "roman@numengo.com"
 __version__ = "__version__ = '0.2.2'"
 
+# load settings
 from simple_settings import LazySettings
 settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
+
+# add additional types
+import itertools
+from python_jsonschema_objects import validators
+validators.SCHEMA_TYPE_MAPPING = tuple(itertools.chain(validators.SCHEMA_TYPE_MAPPING, settings.EXTRA_SCHEMA_TYPE_MAPPING))
+
 
 from .schemas_loader import load_module_schemas, load_schema, load_schema_file, get_schema_store_list
 load_module_schemas('ngoschema')

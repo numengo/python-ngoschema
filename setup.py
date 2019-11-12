@@ -37,7 +37,7 @@ def get_version(package):
 
 name = 'ngoschema'
 package = 'ngoschema'
-description = 'definition of classes with json-schema, object management and code-generation'
+description = 'automatic class-based binding to JSON schemas and toolkit for Domain-Driven Design.'
 url = 'https://github.com/numengo/python-ngoschema'
 author = 'Cédric ROMAN',
 author_email = 'roman@numengo.com',
@@ -71,7 +71,7 @@ install_requires = [
     'python-gettext',
     'click',
     'jsonschema',
-    'git+https://github.com/RomanCedric/python-jsonschema-objects@myfork',
+    'python-jsonschema-objects==0.0.18',
     'ngofile',
     'attrs',
     'dpath',

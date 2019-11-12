@@ -21,7 +21,7 @@ from ngoschema.inspect.inspect_objects import FunctionInspector
 from .resolver import get_resolver
 #from .schemas_loader import load_module_schemas
 from ngoschema.schemas_loader import load_schema_file
-from .validators import DefaultValidator
+from .validators.jsonschema import DefaultValidator
 
 logger = logging.getLogger(__name__)
 

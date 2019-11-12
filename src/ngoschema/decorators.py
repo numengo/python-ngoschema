@@ -123,7 +123,7 @@ def assert_arg(arg, schema):
     :param schema: json-schema for the type
     :type schema: dict
     """
-    from .validators import convert_validate
+    from .validators.jsonschema import convert_validate
 
     def to_decorate(wrapped):
         # find argument in signature

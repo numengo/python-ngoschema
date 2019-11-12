@@ -175,10 +175,10 @@ def get_document_registry():
 class DocumentRegistry(Mapping):
     def __init__(self):
         from ..repositories import JsonFileRepository
-        self._fp_registry = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
-        self._url_registry = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
-        self._chained = ChainMap(self._fp_registry._registry,
-                                 self._url_registry._registry)
+        self._fp_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
+        self._url_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
+        self._chained = ChainMap(self._fp_catalog._catalog,
+                                 self._url_catalog._catalog)
 
     def __getitem__(self, key):
         return self._chained[key]
@@ -197,10 +197,10 @@ class DocumentRegistry(Mapping):
         :param fp: path of document to register
         """
         fp.resolve()
-        if str(fp) not in self._fp_registry._registry:
+        if str(fp) not in self._fp_catalog._catalog:
             # no need for lazy loading as deserialize will load it anyway            doc =
-            self._fp_registry.register(Document(filepath=fp))
-        doc = self._fp_registry.get_instance(str(fp))
+            self._fp_catalog.register(Document(filepath=fp))
+        doc = self._fp_catalog.get_instance(str(fp))
         return doc
 
     @assert_arg(1, {"type": "string", "format": "uri-reference"})
@@ -213,9 +213,9 @@ class DocumentRegistry(Mapping):
         :param deserializers: list of deserializers to try to use if `deserialize`=True
         :param deserializers_opts: dictionary of options for deserializers
         """
-        if str(url) not in self._url_registry:
-            self._url_registry.add(Document(url=url))
-        doc = self._url_registry[str(url)]
+        if str(url) not in self._url_catalog:
+            self._url_catalog.add(Document(url=url))
+        doc = self._url_catalog[str(url)]
         return doc
 
     @assert_arg(1, SCH_PATH_DIR)

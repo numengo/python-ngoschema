@@ -12,14 +12,14 @@ from __future__ import unicode_literals
 import weakref
 import sys
 
-import python_jsonschema_objects.literals as pjo_literals
 from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from .relationship import  Relationship
-from ngoschema.decorators import classproperty
-from ngoschema.mixins import HasCache, HasLogger
+from ..decorators import classproperty
+from ..mixins import HasCache, HasLogger
+from ..literals import LiteralValue
 
 
-class ForeignKey(pjo_literals.LiteralValue, Relationship, HasCache, HasLogger):
+class ForeignKey(LiteralValue, Relationship, HasLogger):
     _keys = None
     _foreignClass = None
     _ref = None
@@ -133,7 +133,7 @@ class CnameForeignKey(ForeignKey):
 
     def validate(self):
         if self._value:
-            pjo_literals.LiteralValue.validate(self)
+            LiteralValue.validate(self)
         # literal value is validated, now let s see if it corresponds to reference
         if self._ref and self._ref():
             ref = self._ref()

@@ -26,7 +26,7 @@ from jsonschema.exceptions import RefResolutionError
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import extend
 from python_jsonschema_objects import ValidationError
-from python_jsonschema_objects.validators import converter_registry, registry
+from python_jsonschema_objects.validators import registry
 
 from ..utils import is_importable
 from ngoschema.schemas_loader import _load_schema
@@ -206,6 +206,7 @@ DefaultValidator = NgoDraft05Validator
 
 
 def convert_validate(value, schema):
+    from .pjo import converter_registry
     ret = value
     type_ = "enum" if "enum" in schema else schema.get("type", "object")
 

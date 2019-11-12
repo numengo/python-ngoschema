@@ -30,8 +30,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
     def __init__(self, ary, _parent=None):
         # convert to array is necessary
-        if not utils.is_sequence(ary) or isinstance(ary, ArrayWrapper):
-            ary = [ary]
+        if not utils.is_sequence(ary):
+            ary = utils.to_list(ary)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
         HasCache.__init__(self,
                           context=_parent,
@@ -64,7 +64,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
     def append(self, value):
         self.data.append(value)
-        self._dirty = True
+        self.mark_or_revalidate()
 
     def __eq__(self, other):
         if not utils.is_sequence(other):
@@ -169,6 +169,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 val.do_validate()
                 typed_elems.append(val)
 
+        # CRN: overwrite data with typed elem to avoid recreation next validation
+        self.data = typed_elems
         self._typed = typed_elems
         self.set_clean()
         return self._typed
@@ -269,6 +271,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             '__itemtype__': item_constraint,
             '__propinfo__': addl_constraints
         }
+        strict = addl_constraints.pop("strict", False)
+        props["_strict_"] = strict
+        props.update(addl_constraints)
+
         validator = type(str(name), (ArrayWrapper,), props)
 
         return validator

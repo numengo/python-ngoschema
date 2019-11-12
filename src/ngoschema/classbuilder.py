@@ -11,7 +11,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
-import collections
 import inflection
 import copy
 import datetime
@@ -19,6 +18,7 @@ import inspect
 import pathlib
 import re
 
+from collections import OrderedDict, ChainMap
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
 import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
@@ -28,15 +28,17 @@ from future.utils import text_to_native_str as native_str
 
 from .protocol_base import ProtocolBase, make_property
 from . import utils
-from .resolver import get_resolver, resolve_doc, resolve_uri
+from .resolver import get_resolver, resolve_doc, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
 from .mixins import HasCache
+from . import settings
 
 logger = logging.getLogger(__name__)
 
 # default builder global variable
 _default_builder = None
 
+LITERALS_TYPE = dict(settings.LITERALS_TYPE_CLASS_MAPPING)
 
 def get_builder(resolver=None):
     """retrieves the default class builder
@@ -51,6 +53,18 @@ def get_builder(resolver=None):
         if resolver:
             _default_builder.resolver = resolver
     return _default_builder
+
+
+def _clean_def_name(name):
+    return inflection.camelize(name.split(':')[-1])
+
+
+def _clean_prop_name(name):
+    return re.sub(r"[^a-zA-z0-9\-_]+", "", name.split(':')[-1]).replace('-', '_')
+
+
+def _clean_ns_name(name):
+    return name.replace('-', '_')
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
@@ -83,61 +97,55 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
     @property
     def _namespaces(self):
-        ns = {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0]
-                for k in self.resolved.keys()}
-        for k, v in list(ns.items()):
-            try:
-                sch = resolve_uri(v)
-                if 'nsPrefix' in sch:
-                    ns[sch['nsPrefix']] = v
-                    if k != sch['nsPrefix']:
-                       del ns[k]
-            except Exception as er:
-                pass
-        return ns
+        ns = set([k.split('#')[0] for k in self.resolved.keys()])
+        return {ClassBuilder._get_ns_default_name(uri): uri for uri in ns}
+
+    @staticmethod
+    def _get_ns_default_name(ns):
+        from . import settings
+        # if main domain, make a default canonical name from path
+        if ns.startswith(settings.MS_DOMAIN):
+            ns = ns[len(settings.MS_DOMAIN):]
+            ns = '.'.join(ns.split('/'))
+        # other domain: take last part of path
+        else:
+            ns = ns.split('/')[-1]
+        return _clean_ns_name(ns)
 
     @property
     def namespaces(self):
-        return collections.ChainMap(self._usernamespace, self._namespaces)
+        return ChainMap(self._usernamespace, self._namespaces, self.available_namespaces)
 
     def get_ref_cname(self, ref):
-        ns = ref.split('#')[0]
-        if ns in self.namespaces.values():
-            ns_name = {v: k for k, v in self.namespaces.items()}[ns]
+        if '#' in ref:
+            ns, frag = ref.split('#')
+            ns_name = self.namespaces.get(ns) or ClassBuilder._get_ns_default_name(ns)
+            cname = frag.replace('/definitions/', '.').replace('/properties/', '.')
+            return f'{ns_name}.{cname}'
         else:
-            ns_name = ns.split('/')[-1]
-        if '#' not in ref:
-            return ns_name
-        frag = ref.split('#')[-1]
-        cname = ns_name + frag.replace('/definitions/', '.').replace('/properties/', '.')
-        return cname
+            return self.namespaces.get(ref) or ClassBuilder._get_ns_default_name(ref)
 
-
-    def get_cname_ref(self, cname):
-        if '.' in cname:
-            ns_name, ns_cname = cname.split('.', 1)
-            ns_uri = self.namespaces.get(ns_name)
-            defs, name = ns_cname.rsplit('.', 1)
-            uri_frag = '/definitions/'.join(defs)
-            uri, sch = self.resolver.resolve(uri_frag)
-            if name in sch.get('definitions'):
-                return f'{uri}/definitions/{name}'
-            if name in sch.get('properties'):
-                return f'{uri}/properties/{name}'
-        else:
-            return self.namespaces.get(cname)
-
+    def get_cname_ref(self, cname, ns_name=None, strict=False):
+        cn = cname
+        if ns_name is None:
+            ns_name = cname.split('.')[0]
+            cn = cn.split('.', 1)[-1]
+            cn = cn if cn != ns_name else ''
+        ns_uri = self.namespaces.get(ns_name) or domain_uri(ns_name)
+        if not cn:
+            return ns_uri
+        return ns_uri + '#' + ''.join([('/definitions/' if n[0].isupper() else '/properties/') + n
+                                        for n in cn.split('.')])
 
     def namespace_cnames(self, ns_name):
         ns = self.namespaces.get(ns_name)
-        in_ns = [k.split(ns)[-1] for k in self.resolved.keys() if k.startswith(ns)]
-        in_ns = [f'{ns}.' + '.'.join(k.split('/definitions/')).replace('#', ns_name) for k in in_ns if '/properties' not in k]
-        return in_ns
+        in_ns = [k for k in self.resolved.keys() if k.startswith(ns)]
+        return [self.get_ref_cname(e, ns_name) for e in in_ns]
 
     @property
     def available_namespaces(self):
         from .schemas_loader import get_schema_store_list
-        return {inflection.underscore(k.split('#')[0].split('/')[-1]): k.split('#')[0] for k in get_schema_store_list()}
+        return {ClassBuilder._get_ns_default_name(k): k for k in get_schema_store_list()}
 
     def load_namespace(self, ns_name):
         ns = self.available_namespaces.get(ns_name)
@@ -146,16 +154,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         return self.resolve_or_construct(ns)
 
     def load(self, cname):
-        ns_name = cname.split('.')[0]
-        ns_uri = self.available_namespaces.get(ns_name)
-        if not ns_uri:
-            raise ValueError('"%s" is not available in loaded documents %s.' % (ns_name, self.available_namespaces))
-        uri = ns_uri
-        if '.' in cname: # load symbol
-            defs = cname.split('.', 1)[-1]
-            def_path = '#' + ''.join([f'/definitions/{d}' for d in defs.split('.')])
-            uri = ns_uri + def_path
-        return self.resolve_or_construct(uri)
+        try:
+            ns = cname.split('.')[0]
+            uri = self.get_cname_ref(cname)
+            return self.resolve_or_construct(uri)
+        except Exception as er:
+            raise ValueError('impossible to load "%s": %s' % (cname, er))
 
     def resolve_cname(self, cname):
         ns_name, defs = cname.split('.', 1)
@@ -182,147 +186,65 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 resolver.pop_scope()
         return self.resolved[uri]
 
-    def _build_pseudo_literal(self, nm, clsdata, *parents):
+    def _build_literal(self, nm, clsdata, *parents):
+        from .literals import LiteralValue
         from .models.foreign_key import ForeignKey, CnameForeignKey
 
-        def __repr_pseudo__(self):
-            return '<%s<%s> id=%s validated=%s "%s">' % (
-                self.__class__.__name__,
-                self._value.__class__.__name__,
-                id(self),
-                self._validated,
-                str(self)
-            )
-
-        def __format_pseudo__(self, format_spec):
-            return self._value.__format__(format_spec)
-
-        def __init_pseudo__(self, *args, _parent=None):
-            HasCache.__init__(self, context=_parent, inputs=self.propinfo('dependencies'))
-            pjo_literals.LiteralValue.__init__(self, *args)
-
-        def __getattr_pseudo__(self, name):
-            """
-            Special __getattr__ method to be able to use subclass methods
-            directly on literal
-            """
-            if hasattr(self.__subclass__, name):
-                if isinstance(self._value, self.__subclass__):
-                    return getattr(self._value, name)
-            elif hasattr(self.__class__, name):
-                return object.__getattribute__(self, name)
-            else:
-                return pjo_literals.LiteralValue.__getattribute__(self, name)
-
-        def enum(self):
-            info = self.propinfo('__literal__')
-            return info.get('enum')
-
-        def validate_pseudo(self):
-            from .utils.jinja2 import TemplatedString
-            if '_pattern' in self.__dict__:
-                try:
-                    self._value = TemplatedString(self._pattern)(
-                        this=self._context,
-                        **self._input_values)
-                except Exception as er:
-                    #logger.info('evaluating pattern "%s" in literal: %s', self._pattern, er)
-                    self._value = self._pattern
-            pjo_literals.LiteralValue.validate(self)
-            # type importable: store imported as protected member
-            if self.propinfo('__literal__').get('type') == 'importable' and not hasattr(self, '_imported'):
-                self._imported = utils.import_from_string(self._value)
-
-        cls_schema = clsdata
         propinfo = {
-            '__literal__': cls_schema,
-            '__default__': cls_schema.get('default')
+            '__literal__': clsdata,
+            '__default__': clsdata.get('default')
         }
 
-        if 'foreignKey' in cls_schema:
+        if 'foreignKey' in clsdata:
             # we merge the schema in propinfo to access it directly
             self.resolver.push_scope(nm.rsplit('#', 1)[0])
-            uri, sch = self.resolver.resolve(cls_schema['foreignKey']['$schema'])
+            uri, sch = self.resolver.resolve(clsdata['foreignKey']['$schema'])
             self.resolver.pop_scope()
-            clsFK = CnameForeignKey if cls_schema['foreignKey'].get('key', 'canonicalName') == 'canonicalName' \
+            clsFK = CnameForeignKey if clsdata['foreignKey'].get('key', 'canonicalName') == 'canonicalName' \
                 else ForeignKey
-            cls_schema['foreignKey']['$schema'] = uri
+            clsdata['foreignKey']['$schema'] = uri
             propinfo.update(sch) # merge the schema in propinfo to access it directly
-            propinfo.update(cls_schema) # update with possibly overriding class
+            propinfo.update(clsdata) # update with possibly overriding class
             return type(
-                native_str(nm),
-                (clsFK, ),
+                str(nm),
+                tuple((clsFK, )),
                 {
                     '__propinfo__': propinfo,
-                    '__repr__': __repr_pseudo__,
-                    '__format__': __format_pseudo__,
-                    'validate': validate_pseudo,
-                    'enum': property(enum)
+                    '__subclass__': str,
                 },
             )
 
         return type(
-            native_str(nm),
-            (pjo_literals.LiteralValue, HasCache),
+            str(nm),
+            tuple((LiteralValue,)),
             {
-                '__init__': __init_pseudo__,
                 '__propinfo__': propinfo,
                 '__subclass__': parents[0],
-                '__repr__': __repr_pseudo__,
-                '__format__': __format_pseudo__,
-                '__getattr__': __getattr_pseudo__,
-                'validate': validate_pseudo,
             },
         )
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+        if 'nsPrefix' in clsdata:
+            self.set_namespace(clsdata['nsPrefix'], uri)
         if '$ref' in clsdata:
             ref_uri = utils.resolve_ref_uri(uri, clsdata['$ref'])
             self.resolved[uri] = cls = self.resolve_or_construct(ref_uri)
             return cls
+        if "enum" in clsdata:
+            clsdata.setdefault("type", "string")
         typ = clsdata.get('type')
 
-        if typ not in (
-            'string', 'importable', 'path', 'date', 'time', 'datetime',
-            'integer', 'number', 'boolean', 'null'
-        ) and not set(clsdata.keys()).intersection(['foreignKey', 'enum']):
+        if typ not in LITERALS_TYPE.keys() and 'foreignKey' not in clsdata:
             return pjo_classbuilder.ClassBuilder._construct(
                     self, uri, clsdata, parent, **kw)
 
-        if typ == 'integer':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, int)
-        elif typ == 'number':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, float)
-        elif typ == 'boolean':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, bool)
-        elif typ == 'string' or 'enum' in clsdata:
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, str)
-        elif typ == 'importable':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, str)
-        elif typ == 'path':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, pathlib.Path)
-        elif typ == 'datetime':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, datetime.datetime)
-        elif typ == 'date':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, datetime.date)
-        elif typ == 'time':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, datetime.time)
-        elif typ == 'null':
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, None)
+        sub_cls = LITERALS_TYPE.get(typ)
         if 'foreignKey' in clsdata:
-            from .models import ForeignKey
-            self.resolved[uri] = self._build_pseudo_literal(
-                uri, clsdata, ForeignKey)
+            self.resolved[uri] = self._build_literal(
+                uri, clsdata, sub_cls)
+        elif sub_cls:
+            self.resolved[uri] = self._build_literal(
+                uri, clsdata, sub_cls)
 
         return self.resolved[uri]
 
@@ -349,8 +271,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         class_attrs = kw.get('class_attrs', {})
 
         # complete object attribute list with class attributes to use prop  attribute setter
-
-        #__object_attr_list__ = set(pjo_classbuilder.ProtocolBase.__object_attr_list__)
         __object_attr_list__ = set(ProtocolBase.__object_attr_list__)
         for p in ProtocolBase.__mro__:
             __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
@@ -378,7 +298,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                          if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
             defaults.update(getattr(p, '__has_default__', {}))
 
-        properties = collections.OrderedDict(cls_schema.get('properties', {}))
+        properties = OrderedDict(cls_schema.get('properties', {}))
 
         # as any typeref has been removed from parent but add its properties to __object_attr_list__ and name translation
         for e in e_parents:
@@ -386,7 +306,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 def add_prop_and_extends(uri):
                     uri = pjo_util.resolve_ref_uri(current_scope, uri)
                     _, sch = self.resolver.resolve(uri)
-                    sch_prop = sch.get('properties', {})                    #__object_attr_list__.update(sch_prop.keys())
+                    sch_prop = sch.get('properties', {})
                     properties.update(sch_prop)
                     for ext in sch.get('extends', []):
                         add_prop_and_extends(ext)
@@ -394,20 +314,19 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
 
         # name translation
-        name_translation = collections.OrderedDict()
+        name_translation = OrderedDict()
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
-
-            translated = re.sub(r"[^a-zA-z0-9\-_]+", "", prop.split(':')[-1]).replace('-', '_')
-            name_translation[prop] = translated
+            name_translation[prop] = _clean_prop_name(prop)
 
         # flattening
-        name_translation_flatten = collections.OrderedDict()
+        name_translation_flatten = ChainMap()
         for p in parents:
-            name_translation_flatten.update(getattr(p, '__prop_names_flatten__',
-                                             getattr(p, '__prop_names__', {})))
-        name_translation_flatten.update(name_translation)
+            name_translation_flatten = ChainMap(getattr(p, '__prop_names_flatten__', getattr(p, '__prop_names__', {})),
+                                                *name_translation_flatten.maps)
+        name_translation_flatten = ChainMap(name_translation, *name_translation_flatten.maps)
+
         name_translated = {v: k for k, v in name_translation_flatten.items() if v != k}
 
         # prepare set of inherited required, read_only, not_serialized attributes
@@ -542,13 +461,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 detail['classbuilder'] = self
                 if 'items' in detail and utils.is_mapping(detail['items']):
                     if '$ref' in detail['items']:
+                        constraints = copy.copy(detail)
+                        constraints["strict"] = kw.get("_strict")
                         uri = pjo_util.resolve_ref_uri(current_scope,
                                                        detail['items']['$ref'])
                         typ = self.construct(uri, detail['items'])
                         detail['items']['_type'] = typ
                         propdata = {
                             'type': 'array',
-                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typ),
+                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                         }
                     else:
                         try:
@@ -567,16 +488,20 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                         'items']['oneOf'])
                                 ])
                             else:
-                                typ = self._construct(prop_uri, detail['items'])
+                                typ = self._construct(prop_uri+'/items', detail['items'])
+                            constraints = copy.copy(detail)
+                            constraints["strict"] = kw.get("_strict")
                             propdata = {
                                 'type': 'array',
-                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **detail),
+                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                             }
                         except NotImplementedError:
-                            typ = copy.deepcopy(detail['items'])
+                            typ = detail["items"]
+                            constraints = copy.copy(detail)
+                            constraints["strict"] = kw.get("_strict")
                             propdata = {
                                 'type': 'array',
-                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **detail),
+                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                             }
 
                     props[prop] = make_property(
@@ -676,4 +601,3 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         logger.info('CREATED %s', '.'.join(dp[1:]))
 
         return cls
-

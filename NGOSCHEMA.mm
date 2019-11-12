@@ -3248,6 +3248,7 @@
 </node>
 <node TEXT="https://www.fomfus.com/articles/how-to-use-email-as-username-for-django-authentication-removing-the-username" ID="ID_802941031" CREATED="1572115490839" MODIFIED="1572115490839" LINK="https://www.fomfus.com/articles/how-to-use-email-as-username-for-django-authentication-removing-the-username"/>
 <node TEXT="https://github.com/awesto/django-shop" ID="ID_415521100" CREATED="1572179816450" MODIFIED="1572179816450" LINK="https://github.com/awesto/django-shop"/>
+<node TEXT="https://github.com/jaredly/django-appsettings" ID="ID_1845016906" CREATED="1573115926099" MODIFIED="1573115926099" LINK="https://github.com/jaredly/django-appsettings"/>
 </node>
 <node TEXT="cookiecutters" ID="ID_1740701141" CREATED="1571628285823" MODIFIED="1571628289939">
 <node TEXT="https://github.com/pydanny/cookiecutter-django" ID="ID_78594804" CREATED="1571628291008" MODIFIED="1571628291008" LINK="https://github.com/pydanny/cookiecutter-django">
@@ -3411,6 +3412,14 @@
 <node TEXT="handler" ID="ID_1771011503" CREATED="1573078218913" MODIFIED="1573078224882"/>
 </node>
 <node TEXT="lire  les sp&#xe9;cifications  fonctionnelles  et  de  chercher  les  noms  et  les  verbes.  Les  noms  sont convertis  en  classes,  tandis  que  les  verbes  deviennent  des  m&#xe9;thodes.  C&#x2019;est  une simplification,  et  cela  m&#xe8;ne  &#xe0;  un  mod&#xe8;le  superficiel." ID="ID_1507647297" CREATED="1573078348211" MODIFIED="1573078360913"/>
+<node TEXT="Event Storming" ID="ID_292685679" CREATED="1573235672594" MODIFIED="1573235677283">
+<node TEXT="input" ID="ID_1932108035" CREATED="1573235677902" MODIFIED="1573235682234"/>
+<node TEXT="command" ID="ID_343792762" CREATED="1573235682555" MODIFIED="1573235684559"/>
+<node TEXT="event" ID="ID_886069686" CREATED="1573235684760" MODIFIED="1573235685811"/>
+<node TEXT="aggregate" ID="ID_1682559730" CREATED="1573235685995" MODIFIED="1573235688300"/>
+<node TEXT="process manager" ID="ID_1044397520" CREATED="1573235689290" MODIFIED="1573235692619"/>
+</node>
+<node TEXT="https://breadcrumbscollector.tech/category/event-sourcing/" ID="ID_515827893" CREATED="1573370676269" MODIFIED="1573370676269" LINK="https://breadcrumbscollector.tech/category/event-sourcing/"/>
 </node>
 </node>
 </map>

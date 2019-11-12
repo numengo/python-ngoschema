@@ -71,7 +71,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if self._class and not isinstance(instance, self._class):
             raise Exception("%r is not an instance of %r" % (instance, self._class))
         if self._fkeys:
-            if len(self._fkeys)>1:
+            if len(self._fkeys) > 1:
                 return tuple([instance._get_prop_value(k) for k in self._fkeys])
             else:
                 return instance._get_prop_value(self._fkeys[0])

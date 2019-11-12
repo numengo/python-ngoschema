@@ -44,11 +44,56 @@ LOGGING = {
 # resolver
 URI_ID = '$id'
 CURRENT_DRAFT = 'draft-05'
-MS_DOMAIN = 'http://numengo.org'
-MS_URI = f'{MS_DOMAIN}/ngoschema/{CURRENT_DRAFT}'
+MS_DOMAIN = 'http://numengo.org/'
+MS_URI = f'{MS_DOMAIN}ngoschema/{CURRENT_DRAFT}'
 
 # utils.str_utils
 PPRINT_MAX_EL = 10
 PPRINT_MAX_STRL = 80
 
 DEFAULT_CDATA_KEY = '#text'
+
+# additional types
+import decimal
+import datetime
+import pathlib
+import arrow
+from past.builtins import basestring
+
+string_types = (basestring, str)
+datetime_types = (datetime.datetime, arrow.Arrow)
+
+LITERALS_TYPE_CLASS_MAPPING = (
+    ("integer", int),
+    ("number", decimal.Decimal),
+    ("boolean", bool),
+    ("string", str),
+    ("importable", str),
+    ("path", pathlib.Path),
+    ("datetime", datetime.datetime),
+    ("date", datetime.date),
+    ("time", datetime.time),
+    ("null", None),
+)
+
+EXTRA_SCHEMA_TYPE_MAPPING = (
+    ("importable", string_types),
+    ("path", string_types + (pathlib.Path, )),
+    ("date", string_types + datetime_types + (datetime.date, )),
+    ("time", string_types + datetime_types + (datetime.time, )),
+    ("datetime", string_types + datetime_types),
+)
+
+# format options
+DATE_FORMATS = [
+    "YYYY-MM-DD", "YYYY/MM/DD", "YYYY.MM.DD", "YYYY-MM", "YYYY/MM", "YYYY.MM"
+]
+
+ALT_DATE_FORMATS = [
+    "DD-MM-YYYY",
+    "DD/MM/YYYY",
+    "DD.MM.YYYY",
+    "MM-YYYY",
+    "MM/YYYY",
+    "MM.YYYY",
+]

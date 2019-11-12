@@ -225,6 +225,26 @@
         }
       },
       "additionalProperties": false
+    },
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time", "type"],
+      "properties": {
+          "id": {
+              "type": "string",
+              "format": "uuid"
+          },
+          "time": {
+              "type": "datetime"
+          },
+          "type": {
+              "type": "string"
+          },
+          "data": {
+              "type": "string"
+          }
+      }
     }
   },
   "properties": {

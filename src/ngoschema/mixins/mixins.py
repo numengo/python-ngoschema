@@ -276,11 +276,7 @@ class HasCache:
 
     @property
     def _output_props(self):
-        return {} if not self._context else {
-            k: self.__prop(k)
-            for k in self._outputs
-            if self.__prop(k)
-        }
+        return {k: self.__prop(k) for k in self._outputs if self.__prop(k)}
 
     def __prop_value(self, key):
         val = self._context._get_prop_value(key)
@@ -288,10 +284,7 @@ class HasCache:
 
     @property
     def _input_values(self):
-        return {} if not self._context else {
-            k: self.__prop_value(k)
-            for k in self._inputs
-        }
+        return {k: self.__prop_value(k) for k in self._inputs}
 
     def is_dirty(self):
         return self._dirty or (self._cache != self._input_values)

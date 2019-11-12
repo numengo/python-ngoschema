@@ -27,7 +27,7 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
     _dispatch = pprint.PrettyPrinter._dispatch.copy()
 
     def __init__(self, max_el=None, max_str_len=None, **kwargs):
-        from .. import settings
+        from ngoschema import settings
         self._maxEl = max_el or settings.PPRINT_MAX_EL
         self._maxStrLen = max_str_len or settings.PPRINT_MAX_STRL
         self._maxCollLen = self._maxEl * self._maxStrLen
