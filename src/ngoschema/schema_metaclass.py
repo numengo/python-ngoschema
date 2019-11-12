@@ -28,7 +28,17 @@ logger = logging.getLogger(__name__)
 
 class SchemaMetaclass(type):
     """
-    Metaclass used for classes with schema
+    Metaclass used for classes with schema.
+
+    It processes the following class attributes:
+    __schema__ : id of schema to look up on loaded module schemas or online
+    __assert_args__: automatically convert/validate methods arguments based on their documented typed
+    __add_logging__: adds logging around each method call
+    __attr_by_name__: allows to look for attributes by their name
+    __lazy_loading__: boolean to activate lazy loading
+    __propagate__: boolean to propage settings to children objects
+    __strict__: stricly validate
+    __log_level__: default class logger log level
     """
 
     def __new__(cls, clsname, bases, attrs):
@@ -47,8 +57,6 @@ class SchemaMetaclass(type):
         resolver = builder.resolver
         if attrs.get("__schema__"):
             schema_uri, schema = resolver.resolve(attrs["__schema__"])
-        elif attrs.get("__schema_path__"):
-            schema_uri, schema = load_schema_file(attrs["__schema_path__"])
         if schema:
             # validate schema with its meta-schema
             metaschema = DefaultValidator.META_SCHEMA
@@ -107,8 +115,12 @@ class SchemaMetaclass(type):
 
             attrs[k] = fn
 
+        uri = schema_uri or clsname
+        # remove existing definition
+        if uri in builder.resolved:
+            cls = builder.resolved.pop(uri)
         cls = builder.construct(
-            schema_uri or clsname, schema, parent=bases, class_attrs=dict(attrs))
+            uri, schema, parent=bases, class_attrs=dict(attrs))
 
         builder._imported[id(cls), clsname] = cls
 
