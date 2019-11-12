@@ -64,24 +64,25 @@ Description
 
 I'm Cédric ROMAN.
 
-``ngoschema`` aims at building classes based on a `JSON schema
+``ngoschema`` aims at automate the building of classes based on a `JSON schema
 <https://spacetelescope.github.io/understanding-json-schema/index.html>`_.
 
-User can declare its attributes in a schema (along with their type, default
+User can declare all class attributes in a schema (along with their type, default
 value) and the class will be built with accessors to check and validate data.
 
 User can add methods and override setters/getters, but the library provides a
 boiler plate to automatically create the class, nicely instrumented (with loggers,
-exception handling, type checking, data validation, etc...).
+exception handling, type checking, data validation, serialization, etc...).
 
-Objects created are come with managers to load/save them into files.
+The classbuilder allows to easily load definitions based on a canonical name and a namespace.
 
-Serialization tools are provided that can be used to do code generation.
+Instance of these classes can be iterated and behave as standard collections.
+
+``ngoschema`` aims at being a toolkit for Domain-Driven Design and Model-Driven Architecture.
 
 The library is build on top of `python-jsonschema-object
 <https://github.com/cwacek/python-jsonschema-objects>`_, with a lot of hacking,
-which allows to create classes
-from a JSON-schema.
+which allows to create classe from a JSON-schema.
 
 Both projects use the library `python-jsonchema
 <http://python-jsonschema.readthedocs.io/en/latest/validate/>`_, a python
@@ -93,13 +94,17 @@ Installation
 ============
 
 ::
-
     pip install ngoschema
 
 Documentation
 =============
 
 https://python-ngoschema.readthedocs.io/
+
+Settings are managed using
+`simple-settings <https://raw.githubusercontent.com/drgarcia1986/simple-settings>`__
+and can be overriden with configuration files (cfg, yaml, json) or with environment variables
+prefixed with NGOSCHEMA_.
 
 Development
 ===========

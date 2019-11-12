@@ -120,7 +120,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         if '#' in ref:
             ns, frag = ref.split('#')
             ns_name = self.namespaces.get(ns) or ClassBuilder._get_ns_default_name(ns)
-            cname = frag.replace('/definitions/', '.').replace('/properties/', '.')
+            cname = frag.replace('/definitions/', '.').replace('/properties/', '.').strip('.')
             return f'{ns_name}.{cname}'
         else:
             return self.namespaces.get(ref) or ClassBuilder._get_ns_default_name(ref)

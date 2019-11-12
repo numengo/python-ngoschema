@@ -64,14 +64,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     
     Protocol shared by all instances created by the class builder. It extends the 
     ProtocolBase object available in python-jsonschema-objects and add some features:
-    
-    * metamodel has a richer vocabulary, and class definition supports inheritance, and 
-    database persistence
-    
-    * hybrid classes: classes have a json schema defining all its members, but have some 
-    business implementation done in python and where default setters/getters can be 
-    overriden. 
-    
+
     * string literal value with patterns: a string literal value can be defined as a 
     formatted string which can depend on other properties.
     
@@ -83,8 +76,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     * methods are automatically decorated to add logging possibility, exception handling
     and argument validation/conversion to the proper type (type can be given as a schema
     through a decorator or simply by documenting the docstring with a schema)
-        
-    * all instances created are registered and can then be queried using Query
     
     * default values can be configured in the config files
     """
@@ -257,7 +248,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 break
         return rep + ' '.join(elts) + '}>'
 
-
     def __repr__(self):
         from . import settings
         rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not self._dirty)
@@ -279,7 +269,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 elts.append('...')
                 break
         return rep + ' '.join(elts) + '}>'
-
 
     def __format__(self, format_spec):
         props = {self.__prop_translated_flatten__.get(k, k): v.__format__(format_spec)
@@ -465,29 +454,16 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             # run its setter. We get it from the class definition and call
             # it directly. XXX Heinous.
             prop = getattr(self.__class__, name)
+            prop.__set__(self, val)
+        else:
+            # This is an additional property of some kind
             try:
-                prop.__set__(self, val)
-            except Exception as er:
-                raise six.reraise(
-                    pjo_validators.ValidationError,
-                    pjo_validators.ValidationError(
-                        "Error setting property '{0}' in {1}: {2} ".format(name,
-                                                                           self.__class__.__name__,
-                                                                           er)),
-                    sys.exc_info()[2])
-            return
-
-
-        # This is an additional property of some kind
-        try:
-            val = self.__extensible__.instantiate(name, val)
-        except Exception as e:
-            raise six.reraise(
-                pjo_validators.ValidationError,
-                pjo_validators.ValidationError(
-                    "Attempted to set unknown property '{0}' in {1}: {2} ".format(name, self.__class__.__name__, e)),
-                sys.exc_info()[2])
-        self._extended_properties[name] = val
+                val = self.__extensible__.instantiate(name, val)
+            except Exception as e:
+                raise pjo_validators.ValidationError(
+                    "Attempted to set unknown property '{0}': {1} ".format(name, e)
+                )
+            self._extended_properties[name] = val
 
     def _get_prop(self, name):
         """

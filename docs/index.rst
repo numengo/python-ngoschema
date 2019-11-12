@@ -8,8 +8,8 @@ Contents
    readme
    installation
    introduction
-   usage
    schemas
+   usage
    reference/index
    contributing
    authors

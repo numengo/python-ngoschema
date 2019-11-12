@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParent, HasCache):
     """ A wrapper for array-like structures.
 
-    This implements all of the array like behavior that one would want,
-    with a dirty-tracking mechanism to avoid constant validation costs.
+    Inherits from python_jsonschema_objects.ArrayWrapper and adds parent relationships,
+    cache invalidation and better representation.
     """
     __propinfo__ = {}
 
