@@ -111,3 +111,6 @@ output/
 boilerplate/
 python-nameless
 *.pyperf
+
+NGOSCHEMA.mm
+NGOSCHEMA_files
