@@ -2,14 +2,30 @@ from python_jsonschema_objects import literals as pjo_literals
 
 from . import utils
 from .mixins import HasCache
-
+from .validators import converter_registry
 
 class LiteralValue(pjo_literals.LiteralValue, HasCache):
     __subclass__ = None
 
-    def __init__(self, *args, _parent=None):
+    def __init__(self, value, typ=None, _parent=None):
         HasCache.__init__(self, context=_parent, inputs=self.propinfo('dependencies'))
-        pjo_literals.LiteralValue.__init__(self, *args)
+
+        if isinstance(value, LiteralValue):
+            self._value = value._value
+        else:
+            self._value = value
+
+        if self._value is None and self.default() is not None:
+            self._value = self.default()
+
+        if converter_registry.registry:
+            info = self.propinfo('__literal__')
+            type_ = 'enum' if 'enum' in info else info.get('type', 'string')
+            converter = converter_registry(type_)
+            if converter:
+                self._value = converter(self, self._value, info)
+
+        self.validate()
 
     def __repr__(self):
         return '<%s<%s> id=%s validated=%s "%s">' % (
