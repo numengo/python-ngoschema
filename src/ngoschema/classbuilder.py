@@ -64,7 +64,7 @@ def _clean_prop_name(name):
 
 
 def _clean_ns_name(name):
-    return name.replace('-', '_')
+    return name.lower().replace('-', '_')
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
@@ -106,24 +106,37 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # if main domain, make a default canonical name from path
         if ns.startswith(settings.MS_DOMAIN):
             ns = ns[len(settings.MS_DOMAIN):]
-            ns = '.'.join(ns.split('/'))
+            ns = '.'.join([_clean_ns_name(n) for n in ns.split('/')])
         # other domain: take last part of path
         else:
-            ns = ns.split('/')[-1]
-        return _clean_ns_name(ns)
+            ns = _clean_ns_name(ns.split('/')[-1])
+        return ns
 
     @property
     def namespaces(self):
         return ChainMap(self._usernamespace, self._namespaces, self.available_namespaces)
 
-    def get_ref_cname(self, ref):
-        if '#' in ref:
-            ns, frag = ref.split('#')
-            ns_name = self.namespaces.get(ns) or ClassBuilder._get_ns_default_name(ns)
-            cname = frag.replace('/definitions/', '.').replace('/properties/', '.').strip('.')
-            return f'{ns_name}.{cname}'
+    def get_ref_cname(self, ref, **ns):
+        ns_ = {k: uri for k, uri in ChainMap(ns, self._usernamespace, self._namespaces).items()}
+        ns_names = sorted([k for k, uri in ns_.items() if ref.startswith(uri)],
+                          key=lambda x: len(x[1]))
+        if ns_names:
+            ns_name = ns_names[0]
+            ns = ns_[ns_name]
         else:
-            return self.namespaces.get(ref) or ClassBuilder._get_ns_default_name(ref)
+            ns = ref.split('#')[0]
+            ns_name = self._get_ns_default_name(ns)
+        cname = [ns_name]
+        ref = ref.replace(ns, '').strip('#')
+        clean_name = str
+        for r in ref.split('/'):
+            if not r or r == 'definitions':
+                continue
+            if r == 'properties':
+                clean_name = _clean_prop_name
+                continue
+            cname.append(clean_name(r))
+        return '.'.join(cname)
 
     def get_cname_ref(self, cname, ns_name=None, strict=False):
         cn = cname
@@ -134,8 +147,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         ns_uri = self.namespaces.get(ns_name) or domain_uri(ns_name)
         if not cn:
             return ns_uri
-        return ns_uri + '#' + ''.join([('/definitions/' if n[0].isupper() else '/properties/') + n
-                                        for n in cn.split('.')])
+        cns = cn.split('.')
+        return ns_uri + '#' + ''.join([('/definitions/' if i < (len(cns)-1) or len(cns) == 1 else '/properties/') + n
+                                       for i, n in enumerate(cns)])
 
     def namespace_cnames(self, ns_name):
         ns = self.namespaces.get(ns_name)
@@ -255,14 +269,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # currently building as "under construction"
         self.under_construction.add(nm)
         current_scope = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, nm).rsplit("#", 1)[0]
-        #current_scope = self.resolver.resolution_scope
 
         # necessary to build type
         clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
         # if we build a namespace, we need # for subsequent definitions/properties
         nm_orig = nm
         if '#' not in nm:
-            nm += '#'
+            nm = domain_uri(nm) + '#'
 
         props = dict()
         defaults = dict()
@@ -584,7 +597,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__lazy_loading__'] = kw.get('_lazyLoading') or class_attrs.get('__lazy_loading__', False)
         props['__strict__'] = bool(required) or kw.get('_strict') or class_attrs.get('__strict__', False)
         props['__log_level__'] = kw.get('_logLevel') or class_attrs.get('__log_level__', 'INFO')
-        #props['__instances__'] = weakref.WeakValueDictionary()
 
         cls = type(clsname, tuple(parents), props)
         cls.__doc__ = clsdata.get('description')
@@ -596,8 +608,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # set default from config file
         cls.set_configfiles_defaults()
 
-        dp = nm.split('definitions/')
-        dp = [_.strip('/') for _ in dp]
-        logger.info('CREATED %s', '.'.join(dp[1:]))
+        logger.info('CREATED %s', self.get_ref_cname(nm))
 
         return cls

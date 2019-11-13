@@ -7,10 +7,9 @@ from ..protocol_base import ProtocolBase
 
 
 GenericObject = get_builder().construct(
-    'http://numengo.org/draft-05/generic-object#/definitions/GenericObject',
+    'GenericObject',
     {
         'type': 'object',
         'description': 'generic extensible object',
         'additionalProperties': True
-    },
-    parent=(ProtocolBase, ))
+    })

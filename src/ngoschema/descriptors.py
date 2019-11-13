@@ -60,7 +60,8 @@ class AttributeDescriptor(object):
             if prop is not None:
                 # only forces validation for literals
                 # only forces validation if pattern
-                force = not getattr(info["type"], "isLiteralClass", False) and not obj._lazyLoading
+                #force = not getattr(info["type"], "isLiteralClass", False) and not obj._lazyLoading
+                force = False
                 prop.do_validate(force)
                 return prop
         except Exception as er:
@@ -181,6 +182,8 @@ class AttributeDescriptor(object):
                     # if there are variables, touch it in order to have it evaluated last minute
                     if vars:
                         validator.touch()
+                else:
+                    validator.do_validate()
                 val = validator
 
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):

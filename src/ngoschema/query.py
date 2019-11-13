@@ -1,6 +1,6 @@
 # *- coding: utf-8 -*-
 """
-Base class for loading objects from files
+Utilities for objects queries
 
 author: Cédric ROMAN (roman@numengo.com)
 licence: GPL3
@@ -174,13 +174,18 @@ class Filter(object):
             return True
         return False
 
+
 def search_object(obj, path, *attrs, **attrs_value):
     """wrapper around dpath.util with filters on attributes presence and value"""
-    import dpath.util
+    import dpath.util, dpath.path
     afilter = Filter(*attrs, **attrs_value) if attrs or attrs_value else None
-    for p, e in dpath.util.search(obj, path, yielded=True):
-        if afilter and afilter(e):
-            yield p, e
+    separator = '/'
+    globlist = dpath.util.__safe_path__(path, separator)
+    for path in dpath.util._inner_search(obj, globlist, '/', dirs=True):
+        val = get_descendant(obj, [p[0] for p in path])
+        if afilter and afilter(val):
+            yield (separator.join(map(str, dpath.path.paths_only(path))), val)
+
 
 class Query(object):
 

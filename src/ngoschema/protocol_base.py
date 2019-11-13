@@ -47,7 +47,10 @@ def get_descendant(obj, key_list, load_lazy=False):
     try:
         child = getattr(obj, k0)
     except Exception as er:
-        child = None
+        try:
+            child = obj[k0]
+        except Exception as er:
+            child = None
     return get_descendant(child, key_list[1:], load_lazy) \
             if child and len(key_list)>1 else child
 
@@ -181,7 +184,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 else:
                     setattr(self, k, copy.copy(v))
 
-        if 'name' in props:
+        if props.get('name'):
             if isinstance(self, mixins.HasCanonicalName):
                 mixins.HasCanonicalName.set_name(self, props['name'])
             elif isinstance(self, mixins.HasName):
@@ -209,6 +212,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     setattr(self, k, prop)
                 if self.__strict__:
                     self.do_validate(force=True)
+                self.set_clean()
             except Exception as er:
                 self.logger.error('problem initializing %s.', self, exc_info=True)
                 raise
@@ -506,6 +510,29 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 else:
                     raise AttributeError("no type specified for property '%s'"% name)
 
+    def search_non_rec(self, path, *attrs, **attrs_value):
+        from .query import search_object
+        res = next(search_object(self, path, *attrs, **attrs_value))
+        if res:
+            p, e = res
+            yield p, e
+            # only next siblings and remaining next cousins, etc...
+            p_cur, cur = p, e
+            while cur and '/' in p_cur:
+                if cur is self:
+                    yield
+                p_par = p_cur.rsplit('/', 1)[0]
+                par = get_descendant(self, p_par.split('/'))
+                if utils.is_sequence(par):
+                    next_siblings = list(range(par.index(cur)+1, len(par)))
+                else:
+                    next_siblings = {k for i, k in enumerate(par.keys()) if i > list(par.keys()).index(cur)}
+                for s in next_siblings:
+                    for ps, pe in par[s].search_non_rec(path, *attrs, **attrs_value):
+                        yield ps, pe
+                p_cur, cur = p_par, cur._parent
+
+
     def search(self, path, *attrs, **attrs_value):
         from .query import search_object
-        return search_object(dict(self), path, *attrs, **attrs_value)
+        return search_object(self, path, *attrs, **attrs_value)

@@ -302,10 +302,9 @@ class HasCache:
     def do_validate(self, force=False):
         """validate only if property is dirty or if `force` is True """
         # validate inputs
-        for k, p  in self._input_props.items():
-            p.do_validate(force)
-
         if self._dirty or force:
+            for k, p in self._input_props.items():
+                p.do_validate(force)
             from ..wrapper_types import ArrayWrapper
             if not isinstance(self, ArrayWrapper):
                 self.set_clean()

@@ -11,10 +11,12 @@ from __future__ import unicode_literals
 import logging
 import inspect
 import sys
-from pprint import pformat
-
+import functools
+import weakref
 import six
 import wrapt
+
+from pprint import pformat
 from pyrsistent import pmap
 from python_jsonschema_objects.validators import ValidationError
 
@@ -283,6 +285,7 @@ def assert_prop(*args2check):
 
     return to_decorate
 
+
 class ClassPropertyDescriptor(object):
 
     def __init__(self, fget, fset=None):
@@ -306,11 +309,13 @@ class ClassPropertyDescriptor(object):
         self.fset = func
         return self
 
+
 def classproperty(func):
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
+
 
 class memoized_property(object):
     """A read-only @property that is only evaluated once."""
@@ -332,3 +337,21 @@ class memoized_property(object):
     @classmethod
     def reset(cls, obj, name):
         obj.__dict__.pop(name, None)
+
+
+def memoized_method(*lru_args, **lru_kwargs):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped_func(self, *args, **kwargs):
+            # We're storing the wrapped method inside the instance. If we had
+            # a strong reference to self the instance would never die.
+            self_weak = weakref.ref(self)
+            @functools.wraps(func)
+            @functools.lru_cache(*lru_args, **lru_kwargs)
+            def cached_method(*args, **kwargs):
+                return func(self_weak(), *args, **kwargs)
+            # can t use setattr as it conflicts with __setattr__ of protocol base
+            object.__setattr__(self, func.__name__, cached_method)
+            return cached_method(*args, **kwargs)
+        return wrapped_func
+    return decorator
