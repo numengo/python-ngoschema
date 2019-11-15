@@ -87,6 +87,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     _validator = None
     __prop_names__ = dict()
     __prop_translated__ = dict()
+    __schema__ = 'http://numengo.org/ngoschema#/definitions/ProtocolBase'
 
     def __new__(cls,
                 *args,
@@ -103,8 +104,16 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             props.update(resolve_uri(utils.resolve_ref_uri(base_uri, props.pop('$ref'))))
 
         if '$schema' in props:
+            builder = get_builder()
+            # handle case $schema is given as a canonical name
+            if '/' not in props['$schema']:
+                ns_cls = cls.__schema__.split('#')
+                ns_name = {uri: name for name, uri in builder.namespaces}.get(ns_cls)
+                cn = props['$schema']
+                ref = builder.get_cname_ref(cn, **{ns_name: ns_cls})
+                props['$schema'] = ref
             if props['$schema'] != cls.__schema__:
-                cls = get_builder().resolve_or_construct(props['$schema'])
+                cls = builder.resolve_or_construct(props['$schema'])
 
         cls.init_class_logger()
 
@@ -211,7 +220,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 for k, prop in props.items():
                     setattr(self, k, prop)
                 if self.__strict__:
-                    self.do_validate(force=True)
+                    self.do_validate()
                 self.set_clean()
             except Exception as er:
                 self.logger.error('problem initializing %s.', self, exc_info=True)
@@ -509,6 +518,40 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self._properties[name] = prop
                 else:
                     raise AttributeError("no type specified for property '%s'"% name)
+
+    def missing_property_names(self):
+        propname = lambda x: self.__prop_names_flatten__[x]
+        missing = []
+        for x in self.__required__:
+
+            # Allow the null type
+            propinfo = self.propinfo(propname(x))
+            null_type = False
+            if "type" in propinfo:
+                type_info = propinfo["type"]
+                null_type = (
+                    type_info == "null"
+                    or isinstance(type_info, (list, tuple))
+                    and "null" in type_info
+                )
+            elif "oneOf" in propinfo:
+                for o in propinfo["oneOf"]:
+                    type_info = o.get("type")
+                    if (
+                        type_info
+                        and type_info == "null"
+                        or isinstance(type_info, (list, tuple))
+                        and "null" in type_info
+                    ):
+                        null_type = True
+                        break
+
+            if (propname(x) not in self._properties and null_type) or (
+                self._properties[propname(x)] is None and not null_type
+            ):
+                missing.append(x)
+
+        return missing
 
     def search_non_rec(self, path, *attrs, **attrs_value):
         from .query import search_object

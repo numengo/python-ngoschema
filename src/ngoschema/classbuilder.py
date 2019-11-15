@@ -30,6 +30,7 @@ from .protocol_base import ProtocolBase, make_property
 from . import utils
 from .resolver import get_resolver, resolve_doc, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
+from .decorators import memoized_method
 from .mixins import HasCache
 from . import settings
 
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 _default_builder = None
 
 LITERALS_TYPE = dict(settings.LITERALS_TYPE_CLASS_MAPPING)
+
 
 def get_builder(resolver=None):
     """retrieves the default class builder
@@ -138,20 +140,35 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             cname.append(clean_name(r))
         return '.'.join(cname)
 
-    def get_cname_ref(self, cname, ns_name=None, strict=False):
-        cn = cname
-        if ns_name is None:
-            ns_name = cname.split('.')[0]
-            cn = cn.split('.', 1)[-1]
-            cn = cn if cn != ns_name else ''
-        ns_uri = self.namespaces.get(ns_name) or domain_uri(ns_name)
-        if not cn:
+    def get_cname_ref(self, cname, **ns):
+        ns_ = {k: uri for k, uri in ChainMap(ns, self._usernamespace, self._namespaces).items()}
+        for name, uri in ns_.items():
+            if cname.startswith(name) and (cname == name or cname[len(name)] == '.'):
+                ns_uri = ns_[name]
+                cname = cname[len(name)+1:]
+                break
+        else:
+            # retrieve local namespace if any
+            ns_uri = ns_.get('')
+            # or build a domain name from the first part of its canonical name
+            ns_uri = ns_uri or domain_uri(self._get_ns_default_name(cname.split('.')[0]))
+            # set a default domain uri
+        if '#' not in ns_uri:
+            ns_uri += '#'
+        if not cname:
             return ns_uri
-        cns = cn.split('.')
-        return ns_uri + '#' + ''.join([('/definitions/' if i < (len(cns)-1) or len(cns) == 1 else '/properties/') + n
-                                       for i, n in enumerate(cns)])
+        cns = cname.split('.')
+        tags = ['definitions'] * (len(cns)-1) + ['definitions' if cns[-1][0].isupper() else 'properties']
+        return ns_uri + ''.join([f'/{t}/{c}' for t, c in zip(tags, cns)])
 
-    def namespace_cnames(self, ns_name):
+    @memoized_method()
+    def namespace_name(self, uri):
+        uri = uri.split('#')[0]
+        for n, u in self.namespaces.items():
+            if u == uri:
+                return n
+
+    def namespace_def_cnames(self, ns_name):
         ns = self.namespaces.get(ns_name)
         in_ns = [k for k in self.resolved.keys() if k.startswith(ns)]
         return [self.get_ref_cname(e, ns_name) for e in in_ns]
@@ -170,7 +187,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def load(self, cname):
         try:
             ns = cname.split('.')[0]
-            uri = self.get_cname_ref(cname)
+            uri = self.get_cname_ref(cname, **self.namespaces)
             return self.resolve_or_construct(uri)
         except Exception as er:
             raise ValueError('impossible to load "%s": %s' % (cname, er))
@@ -183,7 +200,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         uri = f'{ns}#/' + '/'.join(['definitions/' + d for d in defs.split('.')])
         cls = self.resolved.get(uri)
         if not cls:
-            raise ValueError('"%s" could not be resolved in namespace definitions: %s.' % (cname, self.namespace_cnames(ns_name)))
+            raise ValueError('"%s" could not be resolved in namespace definitions: %s.' % (cname, self.namespace_def_cnames(ns_name)))
         return cls
 
     def resolve_or_construct(self, uri, **kwargs):
@@ -265,17 +282,37 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def _build_object(self, nm, clsdata, parents, **kw):
         logger.debug(pjo_util.lazy_format("Building object {0}", nm))
 
+        if '/' not in nm:
+            ref = nm
+            nm = self.get_cname_ref(ref)
+
+        current_scope = nm.rsplit("#", 1)[0]
+        ns_name = self.namespace_name(current_scope) or self._get_ns_default_name(current_scope)
+        ns = {ns_name: current_scope}
+
         # To support circular references, we tag objects that we're
         # currently building as "under construction"
         self.under_construction.add(nm)
-        current_scope = pjo_util.resolve_ref_uri(self.resolver.resolution_scope, nm).rsplit("#", 1)[0]
+
+        parents_scope = set([current_scope])
+
+        def scoped_uri(uri):
+            return pjo_util.resolve_ref_uri(current_scope, uri)
+
+        def resolve_in_scope(ref):
+            errors = []
+            for p in parents_scope:
+                try:
+                    uri = pjo_util.resolve_ref_uri(p, ref)
+                    return uri, resolve_uri(uri)
+                except Exception as er:
+                    errors.append(er)
+                    pass
+            else:
+                raise ReferenceError('impossible to resolve %s in %s' % (ref, parents_scope))
 
         # necessary to build type
         clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
-        # if we build a namespace, we need # for subsequent definitions/properties
-        nm_orig = nm
-        if '#' not in nm:
-            nm = domain_uri(nm) + '#'
 
         props = dict()
         defaults = dict()
@@ -294,7 +331,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__schema__'] = nm
 
         # parent classes
-        extends = [pjo_util.resolve_ref_uri(current_scope, ext) for ext in cls_schema.get('extends', [])]
+        extends = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
+
+        def add_extend_recursively_to_scope(extends):
+            for e in extends:
+                uri, ext = resolve_in_scope(e)
+                parents_scope.add(uri.rsplit("#", 1)[0])
+                add_extend_recursively_to_scope(ext.get('extends', []))
+
+        add_extend_recursively_to_scope(extends)
 
         e_parents = [self.resolve_or_construct(e) for e in extends]
         # remove typerefs and remove duplicates
@@ -306,6 +351,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # add parent attributes to class attribute list
         for p in reversed(parents):
+            if hasattr(p, '__schema__'):
+                parents_scope.add(p.__schema__.rsplit("#", 1)[0])
             __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
             __object_attr_list__.update([a for a, v in p.__dict__.items()
                                          if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
@@ -317,8 +364,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for e in e_parents:
             if isinstance(e, pjo_classbuilder.TypeRef):
                 def add_prop_and_extends(uri):
-                    uri = pjo_util.resolve_ref_uri(current_scope, uri)
-                    _, sch = self.resolver.resolve(uri)
+                    _, sch = resolve_in_scope(uri)
                     sch_prop = sch.get('properties', {})
                     properties.update(sch_prop)
                     for ext in sch.get('extends', []):
@@ -430,7 +476,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             elif 'type' not in detail and '$ref' in detail:
                 ref = detail['$ref']
-                uri = pjo_util.resolve_ref_uri(current_scope, ref)
+                uri, _ = resolve_in_scope(ref)
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
                                          ref, nm, prop))
@@ -476,8 +522,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     if '$ref' in detail['items']:
                         constraints = copy.copy(detail)
                         constraints["strict"] = kw.get("_strict")
-                        uri = pjo_util.resolve_ref_uri(current_scope,
-                                                       detail['items']['$ref'])
+                        uri, _ = resolve_in_scope(detail['items']['$ref'])
                         typ = self.construct(uri, detail['items'])
                         detail['items']['_type'] = typ
                         propdata = {
@@ -492,10 +537,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                                    item_detail)
                                     if '$ref' not in item_detail else
                                     self.construct(
-                                        pjo_util.resolve_ref_uri(
-                                            current_scope,
-                                            item_detail['$ref'],
-                                        ),
+                                        resolve_in_scope(item_detail['$ref'])[0],
                                         item_detail,
                                     ) for i, item_detail in enumerate(detail[
                                         'items']['oneOf'])
@@ -587,9 +629,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__dependencies__'] = dependencies
         props['__read_only__'] = read_only
         props['__not_serialized__'] = not_serialized
+        props['__extends__'] = extends
 
         # default value on children force its resolution at each init
         # seems the best place to treat this special case
+        props['__schema__'] = kw.get('$schema') or class_attrs.get('__schema__', nm)
         props['__add_logging__'] = kw.get('_addLogging') or class_attrs.get('__add_logging__', False)
         props['__attr_by_name__'] = kw.get('_attrByName') or class_attrs.get('__attr_by_name__', False)
         props['__validate_lazy__'] = kw.get('_validateLazy') or class_attrs.get('__validate_lazy__', False)
@@ -603,7 +647,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
         cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))
 
-        self.under_construction.remove(nm_orig)
+        if nm not in self.resolved:
+            self.under_construction.remove(nm)
 
         # set default from config file
         cls.set_configfiles_defaults()
@@ -611,3 +656,4 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         logger.info('CREATED %s', self.get_ref_cname(nm))
 
         return cls
+

@@ -452,6 +452,23 @@ def to_none_single_list(x):
         if len(xl) > 1:
             return xl
 
+def reduce_coll(coll):
+    """function to reduce a collection
+    delete empty elements
+    make unique item lists as single element
+    """
+    def do_reduce(coll, key, level):
+        v = coll[key]
+        if is_mapping(v):
+            if not any(v.values()):
+                coll[key] = to_none_single_list(v.keys())
+        if is_sequence(v):
+            coll[key] = to_none_single_list(v)
+        if not coll[key]:
+            del coll[key]
+
+    return apply_through_collection(coll, do_reduce)
+
 
 def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs):
     """

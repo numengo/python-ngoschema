@@ -78,7 +78,7 @@ class AttributeDescriptor(object):
             return
         if info['RO_active'] and prop in obj.__read_only__:
             # in case default has not been set yet
-            if not (prop in obj.__has_default_flatten__ and obj._properties.get(prop) is None):
+            if not (prop in obj.__has_default__ and obj._properties.get(prop) is None):
                 raise AttributeError("'%s' is read only" % prop)
 
         infotype = info["type"]

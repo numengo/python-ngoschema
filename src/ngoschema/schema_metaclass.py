@@ -77,10 +77,9 @@ class SchemaMetaclass(type):
             builder = get_builder(resolver)
             # building inner definitions
             for nm, defn in iteritems(schema.get("definitions", {})):
-                uri = pjo_util.resolve_ref_uri(schema_uri,
-                                               "#/definitions/" + nm)
+                uri = schema_uri + "/definitions/" + nm
                 from ngoschema import ProtocolBase
-                builder.construct(uri, defn, (ProtocolBase, ), attrs.get(nm, {}))
+                builder.construct(uri, defn)
         else:
             schema["type"] = "object"
 

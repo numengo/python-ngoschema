@@ -4,6 +4,7 @@ from . import utils
 from .mixins import HasCache
 from .validators import converter_registry
 
+
 class LiteralValue(pjo_literals.LiteralValue, HasCache):
     __subclass__ = None
 
