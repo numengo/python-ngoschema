@@ -11,7 +11,6 @@ from __future__ import unicode_literals
 
 import logging
 
-import python_jsonschema_objects.util as pjo_util
 from jsonschema.compat import iteritems
 
 from . import decorators
@@ -19,8 +18,6 @@ from . import utils
 from .classbuilder import get_builder
 from ngoschema.inspect.inspect_objects import FunctionInspector
 from .resolver import get_resolver
-#from .schemas_loader import load_module_schemas
-from ngoschema.schemas_loader import load_schema_file
 from .validators.jsonschema import DefaultValidator
 
 logger = logging.getLogger(__name__)

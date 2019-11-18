@@ -12,7 +12,7 @@ from python_jsonschema_objects import util
 from python_jsonschema_objects.validators import registry, ValidationError
 import python_jsonschema_objects.wrapper_types as pjo_wrapper_types
 
-from ngoschema.resolver import resolve_uri
+from ngoschema.resolver import resolve_uri, qualify_ref
 from .mixins import HasCache, HasParent, HandleRelativeCname
 from ngoschema.utils.json import ProtocolJSONEncoder
 from . import utils
@@ -249,9 +249,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                     for i, item_detail in enumerate(item_constraint['oneOf']):
                         if '$ref' in item_detail:
                             subtype = klassbuilder.construct(
-                                util.resolve_ref_uri(
-                                    klassbuilder.resolver.resolution_scope,
-                                    item_detail['$ref']),
+                                qualify_ref(item_detail['$ref'],
+                                            klassbuilder.resolver.resolution_scope),
                                 item_detail)
                         else:
                             subtype = klassbuilder.construct(

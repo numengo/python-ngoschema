@@ -14,7 +14,9 @@ from python_jsonschema_objects import validators
 validators.SCHEMA_TYPE_MAPPING = tuple(itertools.chain(validators.SCHEMA_TYPE_MAPPING, settings.EXTRA_SCHEMA_TYPE_MAPPING))
 
 
-from .schemas_loader import load_module_schemas, load_schema, load_schema_file, get_schema_store_list
+from .schemas_loader import load_schema, load_schema_file, get_schema_store_list
+from .utils import load_module_schemas
+
 load_module_schemas('ngoschema')
 
 from .exceptions import InvalidOperationException, SchemaError, ValidationError
@@ -44,9 +46,9 @@ __all__ = [
     'load_module_transforms',
     'objects_module_loader',
     'load_module_objects',
+    'load_module_schemas',
     'load_schema',
     'load_schema_file',
-    'load_module_schemas',
     'get_schema_store_list',
     # builder and protocol
     'get_resolver',

@@ -75,6 +75,9 @@
       "extends": [
         "#/definitions/ProtocolBase"
       ],
+      "required": [
+        "primaryKeys"
+      ],
       "properties": {
         "primaryKeys": {
           "type": "array",
@@ -229,21 +232,24 @@
     "Event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["time", "type"],
+      "required": [
+        "time",
+        "type"
+      ],
       "properties": {
-          "id": {
-              "type": "string",
-              "format": "uuid"
-          },
-          "time": {
-              "type": "datetime"
-          },
-          "type": {
-              "type": "string"
-          },
-          "data": {
-              "type": "string"
-          }
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "time": {
+          "type": "datetime"
+        },
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
       }
     }
   },
@@ -395,13 +401,26 @@
         {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/simpleTypes"
+            "anyOf": [
+              {
+                "$ref": "#/definitions/simpleTypes"
+              },
+              {
+                "$ref": "#/definitions/complexTypes"
+              },
+              {
+                "$ref": "#/definitions/ForeignKey"
+              }
+            ]
           },
           "minItems": 1,
           "uniqueItems": true
         },
         {
           "$ref": "#/definitions/complexTypes"
+        },
+        {
+          "$ref": "#/definitions/ForeignKey"
         }
       ]
     },

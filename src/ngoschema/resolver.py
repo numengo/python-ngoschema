@@ -122,6 +122,14 @@ def resolve_uri(uri_id, doc=None, remote=False):
     return resolve_fragment(doc, frag)
 
 
+def qualify_ref(ref, base):
+    if ref[0] == "#":
+        # Local ref
+        return base.rsplit("#", 1)[0] + ref
+    else:
+        return ref
+
+
 def relative_url(target, base):
     base = urlparse(base)
     target = urlparse(target)

@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 
 from ngoschema.inspect.inspect_objects import ClassInspector
 from ngoschema.inspect.inspect_objects import FunctionInspector
-from ngoschema.schemas_loader import load_module_schemas
+from ngoschema import load_module_schemas
 
 
 def test_FunctionInspector():

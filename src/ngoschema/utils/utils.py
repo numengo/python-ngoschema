@@ -149,7 +149,7 @@ class GenericModuleFileLoader(Registry):
                 excludes=[],
                 recursive=False,
                 serializers=[]):
-        from .document import get_document_registry
+        from ..models.document import get_document_registry
         all_paths = list(sum(self._registry.values(), []))
         for d in all_paths:
             get_document_registry().\
@@ -161,7 +161,7 @@ class GenericModuleFileLoader(Registry):
 
     def find_one(self, name):
         """
-        find first name/pattern in loader's pathlist
+        find first name/pattern in loader's pathlist (module as "{module}/")
 
         :param name: path or pattern
         :rtype: path

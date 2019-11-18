@@ -28,7 +28,7 @@ from python_jsonschema_objects import \
 from . import utils
 from . import mixins
 from .mixins import HasLogger
-from .resolver import resolve_uri
+from .resolver import resolve_uri, qualify_ref
 from .validators.jsonschema import DefaultValidator
 from .utils.json import ProtocolJSONEncoder
 from .decorators import classproperty, memoized_property
@@ -101,7 +101,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         base_uri = cls.__schema__
 
         if '$ref' in props:
-            props.update(resolve_uri(utils.resolve_ref_uri(base_uri, props.pop('$ref'))))
+            props.update(resolve_uri(qualify_ref(props.pop('$ref'), base_uri)))
 
         if '$schema' in props:
             builder = get_builder()
@@ -206,7 +206,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 def replace_ref(coll, key, level):
                     if key != '$ref' or level > 2:
                         return
-                    coll.update(resolve_uri(utils.resolve_ref_uri(base_uri, coll.pop('$ref'))))
+                    coll.update(resolve_uri(qualify_ref(coll.pop('$ref'), base_uri)))
                 utils.apply_through_collection(self._lazy_data, replace_ref, recursive=True)
                 for k, v in self._lazy_data.items():
                     if utils.is_mapping(v) and 'name' in v:

@@ -13,14 +13,11 @@ from __future__ import unicode_literals
 import logging
 import inflection
 import copy
-import datetime
 import inspect
-import pathlib
 import re
 
 from collections import OrderedDict, ChainMap
 import python_jsonschema_objects.classbuilder as pjo_classbuilder
-import python_jsonschema_objects.literals as pjo_literals
 import python_jsonschema_objects.pattern_properties as pjo_pattern_properties
 import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
@@ -28,10 +25,9 @@ from future.utils import text_to_native_str as native_str
 
 from .protocol_base import ProtocolBase, make_property
 from . import utils
-from .resolver import get_resolver, resolve_doc, resolve_uri, domain_uri
+from .resolver import get_resolver, qualify_ref, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
 from .decorators import memoized_method
-from .mixins import HasCache
 from . import settings
 
 logger = logging.getLogger(__name__)
@@ -67,6 +63,14 @@ def _clean_prop_name(name):
 
 def _clean_ns_name(name):
     return name.lower().replace('-', '_')
+
+
+def _clean_uri(uri):
+    frag = None
+    if '#' in uri:
+        uri, frag = uri.split('#')
+    uri = uri.lower().replace('_', '-')
+    return uri if frag is None else uri + '#' + frag
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
@@ -258,7 +262,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         if 'nsPrefix' in clsdata:
             self.set_namespace(clsdata['nsPrefix'], uri)
         if '$ref' in clsdata:
-            ref_uri = utils.resolve_ref_uri(uri, clsdata['$ref'])
+            ref_uri = qualify_ref(clsdata['$ref'], uri)
             self.resolved[uri] = cls = self.resolve_or_construct(ref_uri)
             return cls
         if "enum" in clsdata:
@@ -297,13 +301,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         parents_scope = set([current_scope])
 
         def scoped_uri(uri):
-            return pjo_util.resolve_ref_uri(current_scope, uri)
+            return qualify_ref(uri, current_scope)
 
         def resolve_in_scope(ref):
             errors = []
             for p in parents_scope:
                 try:
-                    uri = pjo_util.resolve_ref_uri(p, ref)
+                    uri = qualify_ref(ref, p)
                     return uri, resolve_uri(uri)
                 except Exception as er:
                     errors.append(er)
