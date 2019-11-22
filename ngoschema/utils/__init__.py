@@ -18,6 +18,7 @@ __all__ = [
     'load_module_transforms',
     'objects_module_loader',
     'load_module_objects',
+    'register_module',
     # utils
     'CaseInsensitiveDict',
     'UriDict',

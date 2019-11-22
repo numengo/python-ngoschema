@@ -395,7 +395,7 @@ class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         self.logger.info("DUMP template '%s' file %s", self.template, self.document.filepath)
         self.logger.debug("data:\n%r ", data)
 
-        stream = self._jinja.get_template(self.template).render(data)
+        stream = self._jinja.get_template(str(self.template)).render(data)
         return six.text_type(stream)
 
 

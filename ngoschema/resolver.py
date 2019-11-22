@@ -33,9 +33,9 @@ logger = logging.getLogger(__name__)
 
 def domain_uri(name, domain=None):
     from . import settings
-    from .classbuilder import _clean_ns_name
+    from .classbuilder import clean_ns_name
     domain = domain or settings.MS_DOMAIN
-    return "%s%s" % (domain, _clean_ns_name(name))
+    return "%s%s" % (domain, clean_ns_name(name))
 
 
 _uri_doc_store = UriDict()

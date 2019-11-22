@@ -57,3 +57,9 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
             logger.error(
                 "Impossible to load file %s.\n%s", ms, er, exc_info=True)
     return schemas_store
+
+def register_module(module):
+    load_module_schemas(module)
+    load_module_templates(module)
+    load_module_transforms(module)
+    load_module_objects(module)

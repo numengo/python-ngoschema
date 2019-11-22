@@ -68,3 +68,13 @@ class NamedEntity(with_metaclass(SchemaMetaclass, HasCanonicalName, Entity)):
     #    cn = str(value) if value else None
     #    self._cname = cn
     #    self._set_prop_value('canonicalName', cn)
+
+
+class EntityWithMetadata(with_metaclass(SchemaMetaclass, NamedEntity)):
+    """
+    Class to deal with metadata and parents/children relationships
+    """
+    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/EntityWithMetadata"
+
+    def __init__(self, *args, **kwargs):
+        NamedEntity.__init__(self, *args, **kwargs)

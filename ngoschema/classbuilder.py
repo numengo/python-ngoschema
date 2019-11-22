@@ -37,7 +37,6 @@ _default_builder = None
 
 LITERALS_TYPE = dict(settings.LITERALS_TYPE_CLASS_MAPPING)
 
-
 def get_builder(resolver=None):
     """retrieves the default class builder
 
@@ -53,19 +52,19 @@ def get_builder(resolver=None):
     return _default_builder
 
 
-def _clean_def_name(name):
+def clean_def_name(name):
     return inflection.camelize(name.split(':')[-1])
 
 
-def _clean_prop_name(name):
+def clean_prop_name(name):
     return re.sub(r"[^a-zA-z0-9\-_]+", "", name.split(':')[-1]).replace('-', '_')
 
 
-def _clean_ns_name(name):
+def clean_ns_name(name):
     return name.lower().replace('-', '_')
 
 
-def _clean_uri(uri):
+def clean_uri(uri):
     frag = None
     if '#' in uri:
         uri, frag = uri.split('#')
@@ -97,6 +96,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         pjo_classbuilder.ClassBuilder.__init__(self, resolver)
         self._imported = {}
         self._usernamespace = {}
+        self._django_ns = domain_uri('django')
 
     def set_namespace(self, ns, uri):
         self._usernamespace[ns] = uri
@@ -112,10 +112,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # if main domain, make a default canonical name from path
         if ns.startswith(settings.MS_DOMAIN):
             ns = ns[len(settings.MS_DOMAIN):]
-            ns = '.'.join([_clean_ns_name(n) for n in ns.split('/')])
+            ns = '.'.join([clean_ns_name(n) for n in ns.split('/')])
         # other domain: take last part of path
         else:
-            ns = _clean_ns_name(ns.split('/')[-1])
+            ns = clean_ns_name(ns.split('/')[-1])
         return ns
 
     @property
@@ -139,7 +139,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if not r or r == 'definitions':
                 continue
             if r == 'properties':
-                clean_name = _clean_prop_name
+                clean_name = clean_prop_name
                 continue
             cname.append(clean_name(r))
         return '.'.join(cname)
@@ -154,8 +154,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         else:
             # retrieve local namespace if any
             ns_uri = ns_.get('')
+            ns = '.'.join(filter(lambda x: x[0].islower(), cname.split('.'))) or clean_ns_name(cname.split('.')[0])
             # or build a domain name from the first part of its canonical name
-            ns_uri = ns_uri or domain_uri(self._get_ns_default_name(cname.split('.')[0]))
+            ns_uri = ns_uri or domain_uri(self._get_ns_default_name(ns))
             # set a default domain uri
         if '#' not in ns_uri:
             ns_uri += '#'
@@ -334,8 +335,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         cls_schema = clsdata
         props['__schema__'] = nm
 
-        # parent classes
-        extends = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
+        # parent classes (remove any django definition as it would trigger metaclass conflicts)
+        extends = [scoped_uri(ext) for ext in cls_schema.get('extends', []) if not ext.startswith(self._django_ns)]
 
         def add_extend_recursively_to_scope(extends):
             for e in extends:
@@ -381,7 +382,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for prop, detail in properties.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
-            name_translation[prop] = _clean_prop_name(prop)
+            name_translation[prop] = clean_prop_name(prop)
 
         # flattening
         name_translation_flatten = ChainMap()

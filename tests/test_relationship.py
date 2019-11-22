@@ -1,10 +1,11 @@
-from ngoschema.models.metadata import Metadata
+from ngoschema.models import EntityWithMetadata
+
 
 def test_fkey_relationship():
 
-    A = Metadata(name="A")
-    B = Metadata(name="B")
-    C = Metadata(name="C")
+    A = EntityWithMetadata(name="A")
+    B = EntityWithMetadata(name="B")
+    C = EntityWithMetadata(name="C")
 
     assert str(A.canonicalName) == 'A', str(A.canonicalName)
     assert str(B.canonicalName) == 'B', str(B.canonicalName)

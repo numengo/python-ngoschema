@@ -45,7 +45,11 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "default": []
+      "default": [],
+      "str_delimiter": {
+        "type": "string",
+        "default": ","
+      }
     },
     "complexTypes": {
       "enum": [
@@ -80,10 +84,7 @@
       ],
       "properties": {
         "primaryKeys": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/definitions/stringArray"
         }
       }
     },
@@ -118,10 +119,7 @@
           "type": "string"
         },
         "fkeys": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/definitions/stringArray"
         },
         "cardinality": {
           "enum": [
@@ -174,19 +172,19 @@
         "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
       ],
       "properties": {
-        "personFK": {
+        "person": {
           "type": "integer"
         },
-        "eventFK": {
+        "event": {
           "type": "integer"
         },
-        "placeFK": {
+        "place": {
           "type": "integer"
         }
       },
       "additionalProperties": false
     },
-    "Metadata": {
+    "EntityWithMetadata": {
       "type": "object",
       "extends": [
         "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
@@ -214,7 +212,7 @@
     "Category": {
       "type": "object",
       "extends": [
-        "http://numengo.org/ngoschema/draft-05#/definitions/Metadata"
+        "http://numengo.org/ngoschema/draft-05#/definitions/EntityWithMetadata"
       ],
       "properties": {
         "slug": {

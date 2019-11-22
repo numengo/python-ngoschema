@@ -43,7 +43,7 @@ default_context:
     linter:                    'flake8'
     package_name:              'ngoschema'
     project_name:              'NgoSchema'
-    project_short_description: 'definition of classes with json-schema, object management and code-generation'
+    short_description: 'definition of classes with json-schema, object management and code-generation'
     python_envs:               'py27, py35, py36, pypy'
     release_date:              'today'
     repo_name:                 'python-ngoschema'

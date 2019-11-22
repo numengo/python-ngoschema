@@ -34,7 +34,7 @@
       "additionalProperties": false,
       "isAbstract": true,
       "extends": [
-        "http://numengo.org/draft-04/schema#/definitions/Metadata"
+        "http://numengo.org/draft-04/schema#/definitions/EntityWithMetadata"
       ],
       "properties": {
         "tooltip": {

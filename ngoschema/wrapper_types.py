@@ -31,7 +31,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def __init__(self, ary, _parent=None):
         # convert to array is necessary
         if not utils.is_sequence(ary):
-            ary = utils.to_list(ary)
+            if utils.is_string(ary):
+                ary = [a.trim() for a in ary.split(self.propinfo('str_delimiter'))]
+            else:
+                ary = utils.to_list(ary)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
         HasCache.__init__(self,
                           context=_parent,
