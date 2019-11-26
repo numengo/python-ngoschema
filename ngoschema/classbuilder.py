@@ -64,6 +64,17 @@ def clean_ns_name(name):
     return name.lower().replace('-', '_')
 
 
+def get_default_ns_name(ns):
+    from . import settings
+    # if main domain, make a default canonical name from path
+    if ns.startswith(settings.MS_DOMAIN):
+        ns = ns[len(settings.MS_DOMAIN):]
+        ns = '.'.join([clean_ns_name(n) for n in ns.split('/')])
+    # other domain: take last part of path
+    else:
+        ns = clean_ns_name(ns.split('/')[-1])
+    return ns
+
 def clean_uri(uri):
     frag = None
     if '#' in uri:
@@ -104,19 +115,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     @property
     def _namespaces(self):
         ns = set([k.split('#')[0] for k in self.resolved.keys()])
-        return {ClassBuilder._get_ns_default_name(uri): uri for uri in ns}
-
-    @staticmethod
-    def _get_ns_default_name(ns):
-        from . import settings
-        # if main domain, make a default canonical name from path
-        if ns.startswith(settings.MS_DOMAIN):
-            ns = ns[len(settings.MS_DOMAIN):]
-            ns = '.'.join([clean_ns_name(n) for n in ns.split('/')])
-        # other domain: take last part of path
-        else:
-            ns = clean_ns_name(ns.split('/')[-1])
-        return ns
+        return {get_default_ns_name(uri): uri for uri in ns}
 
     @property
     def namespaces(self):
@@ -131,7 +130,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             ns = ns_[ns_name]
         else:
             ns = ref.split('#')[0]
-            ns_name = self._get_ns_default_name(ns)
+            ns_name = get_default_ns_name(ns)
         cname = [ns_name]
         ref = ref.replace(ns, '').strip('#')
         clean_name = str
@@ -156,7 +155,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             ns_uri = ns_.get('')
             ns = '.'.join(filter(lambda x: x[0].islower(), cname.split('.'))) or clean_ns_name(cname.split('.')[0])
             # or build a domain name from the first part of its canonical name
-            ns_uri = ns_uri or domain_uri(self._get_ns_default_name(ns))
+            ns_uri = ns_uri or domain_uri(get_default_ns_name(ns))
             # set a default domain uri
         if '#' not in ns_uri:
             ns_uri += '#'
@@ -181,7 +180,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     @property
     def available_namespaces(self):
         from .schemas_loader import get_schema_store_list
-        return {ClassBuilder._get_ns_default_name(k): k for k in get_schema_store_list()}
+        return {get_default_ns_name(k): k for k in get_schema_store_list()}
 
     def load_namespace(self, ns_name):
         ns = self.available_namespaces.get(ns_name)
@@ -292,7 +291,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             nm = self.get_cname_ref(ref)
 
         current_scope = nm.rsplit("#", 1)[0]
-        ns_name = self.namespace_name(current_scope) or self._get_ns_default_name(current_scope)
+        ns_name = self.namespace_name(current_scope) or get_default_ns_name(current_scope)
         ns = {ns_name: current_scope}
 
         # To support circular references, we tag objects that we're
@@ -317,7 +316,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 raise ReferenceError('impossible to resolve %s in %s' % (ref, parents_scope))
 
         # necessary to build type
-        clsname = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
+        cls_name = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
 
         props = dict()
         defaults = dict()
@@ -408,9 +407,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # looking for default values, getters and setters overriding inherited properties
         from_parents = set(name_translation_flatten.values()).difference(name_translation.values())
         for pn in from_parents:
-            defv = class_attrs.get(pn)
+            # get default value from class attributes or schema
+            defv = class_attrs.get(pn) or cls_schema.get(pn)
             getter = class_attrs.get('get_' + pn)
             setter = class_attrs.get('set_' + pn)
+            if defv:
+                defaults[pn] = defv
             if defv or getter or setter:
                 logger.warning("redefining property '%s' to use new default value, getter or setter from class code." % pn)
                 for p in parents:
@@ -609,7 +611,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # add class attrs after removing defaults
         __object_attr_list__.update([a for a, v in class_attrs.items()
-                                     if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
+                                     if not a.startswith('_')]) # and not (utils.is_method(v) or utils.is_function(v))])
         props['__object_attr_list__'] = __object_attr_list__
 
         # we set class attributes as properties now, and they will be
@@ -647,7 +649,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__strict__'] = bool(required) or kw.get('_strict') or class_attrs.get('__strict__', False)
         props['__log_level__'] = kw.get('_logLevel') or class_attrs.get('__log_level__', 'INFO')
 
-        cls = type(clsname, tuple(parents), props)
+        cls = type(cls_name, tuple(parents), props)
         cls.__doc__ = clsdata.get('description')
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
         cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))

@@ -50,6 +50,8 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
 
     if schemas_store is None:
         schemas_store = get_uri_doc_store()
+    if not schema_folder.exists():
+        return schemas_store
     for ms in list_files(schema_folder, "**.json", recursive=True):
         try:
             load_schema_file(ms, schemas_store)

@@ -86,3 +86,11 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
+
+def set_json_defaults(kwargs=None):
+    kwargs = kwargs or{}
+    kwargs.setdefault('indent', 2)
+    kwargs.setdefault('ensure_ascii', False)
+    kwargs.setdefault('separators', None)
+    kwargs.setdefault('default', None)
+    return kwargs

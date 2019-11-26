@@ -67,16 +67,14 @@ setup_requires = [
 install_requires = [
     'pathlib',
     'future',
-    'python-gettext',
     'click',
     'jsonschema',
-    'python-jsonschema-objects==0.0.18',
+    'python-jsonschema-objects',
     'ngofile',
     'attrs',
     'dpath',
     'pyrsistent',
     'simple-settings[yaml]',
-    'configparser2',
     'appdirs',
     'wrapt',
     'jinja2',
@@ -86,8 +84,8 @@ install_requires = [
     'requests',
     'ruamel.yaml',
     'python-magic-bin',
-    'openapi-core',
-    'xmldict'
+    'xmldict',
+    'redis',
 ]
 
 post_install_requires = [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]
@@ -102,7 +100,8 @@ class PostInstallCommand(install):
 
     def run(self):
         if post_install_requires:
-            cmd = ['pip', 'install', '-q'] + post_install_requires
+            cmd = ['pip', 'install'] + post_install_requires
+            print(cmd)
             subprocess.check_call(cmd)
         install.run(self)
 
@@ -165,6 +164,7 @@ setup(
     ],
     cmdclass={
         'install': PostInstallCommand,
+        #'develop': PostInstallCommand, # not working with no-deps
     },
 )
 

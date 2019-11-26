@@ -32,7 +32,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         # convert to array is necessary
         if not utils.is_sequence(ary):
             if utils.is_string(ary):
-                ary = [a.trim() for a in ary.split(self.propinfo('str_delimiter'))]
+                ary = [a.strip() for a in ary.split(self.propinfo('str_delimiter') or ',')]
             else:
                 ary = utils.to_list(ary)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)

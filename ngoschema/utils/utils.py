@@ -42,27 +42,23 @@ class _KeyModifierMapping(MutableMapping):
         """method to override"""
         return value
 
-    @classmethod
-    def _k(cls, value):
-        return value.lower() if is_string(value) else value
-
     def __init__(self, *args, **kwargs):
         self._dict = {}
         temp_dict = dict(*args, **kwargs)
         for key, value in temp_dict.items():
-            self._dict[self.__class__._k(key)] = value
+            self._dict[self.__class__.key_modifier(key)] = value
 
     def __getitem__(self, key):
-        return self._dict[self.__class__._k(key)]
+        return self._dict[self.__class__.key_modifier(key)]
 
     def __setitem__(self, key, value):
-        self._dict[self.__class__._k(key)] = value
+        self._dict[self.__class__.key_modifier(key)] = value
 
     def __delitem__(self, key):
-        del self._dict[self.__class__._k(key)]
+        del self._dict[self.__class__.key_modifier(key)]
 
     def __contains__(self, key):
-        return self.__class__._k(key) in self._dict
+        return self.__class__.key_modifier(key) in self._dict
 
     def __iter__(self):
         return iter(self._dict)

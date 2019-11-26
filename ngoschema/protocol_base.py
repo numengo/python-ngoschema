@@ -223,7 +223,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self.do_validate()
                 self.set_clean()
             except Exception as er:
-                self.logger.error('problem initializing %s.', self, exc_info=True)
+                self.logger.error('problem initializing "%s" in  %s.', k, self, exc_info=True)
                 raise
 
         self.post_init_hook(*args, **props)

@@ -102,7 +102,7 @@ filters_registry = GenericClassRegistry()
 @filters_registry.register()
 def camelize(string, uppercase_first_letter=True):
     __doc__ = inflection.camelize.__doc__
-    return inflection.camelize(string, uppercase_first_letter)
+    return inflection.camelize(str(string), uppercase_first_letter)
 
 
 @filters_registry.register()
