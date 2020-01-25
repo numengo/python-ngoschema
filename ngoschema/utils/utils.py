@@ -16,13 +16,14 @@ import inspect
 import itertools
 import logging
 import pathlib
+import datetime
 import re
 import subprocess
 import sys
 from builtins import str
 from contextlib import contextmanager
 import threading
-import  weakref
+import weakref
 from urllib.parse import urlsplit
 
 import six
@@ -404,6 +405,8 @@ def is_sequence(value):
         return True
     if isinstance(value, collections.deque):
         return True
+    if isinstance(value, weakref.WeakSet):
+        return True
     return False
 
 
@@ -447,6 +450,69 @@ def to_none_single_list(x):
             return xl[0]
         if len(xl) > 1:
             return xl
+
+
+def infer_json_schema(instance):
+    def default_json_schema(value):
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
+            return value.isoformat()
+        if isinstance(value, datetime.timedelta):
+            return value.total_seconds()
+        if is_importable(value):
+            try:
+                return fullname(value)
+            except Exception as er:
+                return
+        if is_sequence(value):
+            return [default_json_schema(v) for v in list(value)]
+        if is_mapping(value):
+            return {k: default_json_schema(v) for k, v in value.items()}
+    if instance is None:
+        sch = {'type': 'string'} # default
+    elif is_sequence(instance):
+        sch = {'type': 'array'}
+        stype = set([type(v) for v in list(instance)])
+        if len(stype) == 1:
+            sch['items'] = infer_json_schema(list(instance)[0])
+    else:
+        dft = default_json_schema(instance)
+        if isinstance(instance, str):
+            typ = 'string'
+        elif isinstance(instance, int):
+            typ = 'integer'
+        elif isinstance(instance, float):
+            typ = 'number'
+        elif isinstance(instance, bool):
+            typ = 'boolean'
+        elif isinstance(instance, dict):
+            typ = 'object'
+        elif isinstance(instance, datetime.datetime):
+            typ = 'datetime'
+        elif isinstance(instance, datetime.date):
+            typ = 'date'
+        elif isinstance(instance, datetime.time):
+            typ = 'time'
+        elif isinstance(instance, datetime.timedelta):
+            typ = 'integer'
+        elif isinstance(instance, re._pattern_type):
+            return {
+                'type': 'string',
+                'pattern': instance.pattern,
+            }
+        elif is_importable(instance):
+            typ = 'importable'
+        elif inspect.isdatadescriptor(instance):
+            typ = 'string' # no way to ckeck...
+            dft = None
+        else:
+            assert False, instance
+        sch = {'type': typ}
+        if dft is not None:
+            sch['default'] = dft
+    return sch
+
 
 def reduce_coll(coll):
     """function to reduce a collection

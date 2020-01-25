@@ -26,7 +26,7 @@ from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
 from ngoschema.exceptions import InvalidValue
 from ngoschema.utils import import_from_string
-from ngoschema.utils import is_string
+from ngoschema.utils import is_string, is_class, is_function, is_callable, is_imported, infer_json_schema
 
 logger = logging.getLogger(__name__)
 
@@ -141,10 +141,12 @@ def visit_FunctionDef(node):
         dec = getattr(_module, name, None)
         if not dec:
             dec = name
-        else:
+        elif is_function(dec):
             dec = FunctionInspector(dec)
             for a, p in zip(args, dec.parameters):
                 p.default = a
+        elif is_class(dec):
+            dec = ClassInspector(dec)
         decorators.append(dec)
     return _short_desc, _long_desc, _returns, _params, _keywords, _varargs, decorators
 
@@ -260,10 +262,13 @@ class ClassInspector(object):
         self.module = _module
         self.moduleName = _module.__name__
 
-        ms = inspect.getmembers(klass, inspect.ismethod)
+        #ms = inspect.getmembers(klass, inspect.ismethod)
         ds = inspect.getmembers(klass, inspect.isdatadescriptor)
         self.properties = {n: d for n, d in ds if isinstance(d, property)}
         self.attributes = {n: d for n, d in ds if not isinstance(d, property)}
+
+        ds2 = inspect.getmembers(klass, lambda x: not is_callable(x))
+        self.attributes = {n: d for n, d in ds2 if not n.startswith('__')}
 
         def _visit_FunctionDef_class(node):
             sd, ld, rt, ps, kw, va, decs = visit_FunctionDef(node)
@@ -333,6 +338,23 @@ class ClassInspector(object):
             and not n.startswith("_")
         }
 
+    def to_json_schema(self, **ns):
+        from ..classbuilder import get_builder
+        uri = get_builder().get_cname_ref(f'{self.moduleName}.{self.name}', **ns)
+        schema = {
+            '$id': uri,
+            'type': 'object',
+            'description': self.doc,
+            'title': self.name
+        }
+        extends = [get_builder().get_cname_ref(f'{m.moduleName}.{m.name}', **ns) for m in self.mro]
+        if extends:
+            schema['extends'] = extends
+        props = {k: infer_json_schema(v) for k, v in self.attributes.items()}
+        if props:
+            schema['properties'] = props
+        return schema
+
 
 def gcs(*instances):
     mros = (type(ins).mro() for ins in instances)
@@ -361,3 +383,22 @@ def inspect_file(file_):
             and ast_name(d.targets[0])[0].isupper()
         ],
     )
+
+
+def module_to_json_schema(module, **ns):
+    m = module if is_imported(module) else import_from_string(module)
+    defs = {}
+    schema = {
+        'type': 'object',
+        'description': (m.__doc__ or '').strip(),
+        'title': m.__name__,
+        'definitions': defs
+    }
+    for name, kls in inspect.getmembers(m, inspect.isclass):
+        try:
+            defs[name] = ClassInspector(kls).to_json_schema(**ns)
+        except Exception as er:
+            pass
+    for name, mod in inspect.getmembers(m, lambda x: inspect.ismodule(x) and any([x.__name__.startswith(n) for n in ns.keys()])):
+        defs[name] = module_to_json_schema(mod, **ns)
+    return schema

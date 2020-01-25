@@ -33,10 +33,13 @@ def resolve_ref_schema(ref):
     from ngoschema.resolver import get_resolver
     return get_resolver().resolve(ref)[1]
 
+
 _jinja2_globals['resolve_ref_schema'] = resolve_ref_schema
+
 
 def extend_jinja2_globals(**globals):
     _jinja2_globals.update(**globals)
+
 
 def default_jinja2_env():
     """

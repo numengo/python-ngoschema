@@ -54,6 +54,8 @@ class SchemaMetaclass(type):
         resolver = builder.resolver
         if attrs.get("__schema__"):
             schema_uri, schema = resolver.resolve(attrs["__schema__"])
+            if '#' not in schema_uri:
+                schema_uri += '#'
         if schema:
             # validate schema with its meta-schema
             metaschema = DefaultValidator.META_SCHEMA

@@ -45,6 +45,7 @@ __all__ = [
     'is_collection',
     'to_list',
     'to_set',
+    'infer_json_schema',
     'apply_through_collection',
     'filter_collection',
     'nested_dict_iter',

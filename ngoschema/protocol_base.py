@@ -364,7 +364,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # safe proof to name translation and inheritance
         propid = cls.__prop_translated_flatten__.get(propname, propname)
         for c in cls.__pbase_mro__:
-            if propid in c.__prop_names__:
+            if propid in getattr(c, '__prop_names__', {}):
                 return c.__propinfo__[propid]
             elif c is not cls and propid in getattr(c, '__prop_names_flatten__', {}):
                 return c.propinfo(propid)

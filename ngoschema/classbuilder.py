@@ -61,19 +61,20 @@ def clean_prop_name(name):
 
 
 def clean_ns_name(name):
-    return name.lower().replace('-', '_')
+    return inflection.underscore(name).replace('-', '_')
 
 
-def get_default_ns_name(ns):
+def get_default_ns_name(ns_uri):
     from . import settings
     # if main domain, make a default canonical name from path
-    if ns.startswith(settings.MS_DOMAIN):
-        ns = ns[len(settings.MS_DOMAIN):]
+    if ns_uri.startswith(settings.MS_DOMAIN):
+        ns = ns_uri[len(settings.MS_DOMAIN):]
         ns = '.'.join([clean_ns_name(n) for n in ns.split('/')])
     # other domain: take last part of path
     else:
-        ns = clean_ns_name(ns.split('/')[-1])
+        ns = clean_ns_name(ns_uri.split('/')[-1])
     return ns
+
 
 def clean_uri(uri):
     frag = None
@@ -153,10 +154,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         else:
             # retrieve local namespace if any
             ns_uri = ns_.get('')
-            ns = '.'.join(filter(lambda x: x[0].islower(), cname.split('.'))) or clean_ns_name(cname.split('.')[0])
+            _ns = '.'.join(filter(lambda x: x[0].islower(), cname.split('.'))) or clean_ns_name(cname.split('.')[0])
             # or build a domain name from the first part of its canonical name
-            ns_uri = ns_uri or domain_uri(get_default_ns_name(ns))
+            ns_uri = ns_uri or domain_uri(get_default_ns_name(_ns))
             # set a default domain uri
+            cname = cname.split('.', 1)[-1]
         if '#' not in ns_uri:
             ns_uri += '#'
         if not cname:
@@ -335,7 +337,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__schema__'] = nm
 
         # parent classes (remove any django definition as it would trigger metaclass conflicts)
-        extends = [scoped_uri(ext) for ext in cls_schema.get('extends', []) if not ext.startswith(self._django_ns)]
+        extends_all = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
+        extends = [ext for ext in extends_all if not ext.startswith(self._django_ns)]
+        extends_only_props = [ext for ext in extends_all if ext not in extends]
 
         def add_extend_recursively_to_scope(extends):
             for e in extends:
@@ -343,9 +347,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 parents_scope.add(uri.rsplit("#", 1)[0])
                 add_extend_recursively_to_scope(ext.get('extends', []))
 
-        add_extend_recursively_to_scope(extends)
+        add_extend_recursively_to_scope(extends_all)
 
         e_parents = [self.resolve_or_construct(e) for e in extends]
+        e_parents_only_props = [self.resolve_or_construct(e) for e in extends_only_props]
         # remove typerefs and remove duplicates
         e_parents_sorted = tuple(e for e in e_parents
                         if not isinstance(e, pjo_classbuilder.TypeRef)
@@ -362,7 +367,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                          if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
             defaults.update(getattr(p, '__has_default__', {}))
 
-        properties = OrderedDict(cls_schema.get('properties', {}))
+        propinfo = OrderedDict(cls_schema.get('properties', {}))
 
         # as any typeref has been removed from parent but add its properties to __object_attr_list__ and name translation
         for e in e_parents:
@@ -370,25 +375,33 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 def add_prop_and_extends(uri):
                     _, sch = resolve_in_scope(uri)
                     sch_prop = sch.get('properties', {})
-                    properties.update(sch_prop)
+                    propinfo.update(sch_prop)
                     for ext in sch.get('extends', []):
                         add_prop_and_extends(ext)
                 add_prop_and_extends(e._ref_uri)
 
+        # add properties from parents only sharing props
+        for e in e_parents_only_props:
+            propinfo.update(e.__propinfo_flatten__)
 
         # name translation
         name_translation = OrderedDict()
-        for prop, detail in properties.items():
+        for prop, detail in propinfo.items():
             logger.debug(
                 pjo_util.lazy_format("Handling property {0}.{1}", nm, prop))
             name_translation[prop] = clean_prop_name(prop)
 
         # flattening
         name_translation_flatten = ChainMap()
-        for p in parents:
+        propinfo_flatten = ChainMap()
+        for p in parents + tuple(e_parents_only_props):
             name_translation_flatten = ChainMap(getattr(p, '__prop_names_flatten__', getattr(p, '__prop_names__', {})),
                                                 *name_translation_flatten.maps)
+            propinfo_flatten = ChainMap(getattr(p, '__propinfo_flatten__', getattr(p, '__propinfo__', {})),
+                                                *propinfo_flatten.maps)
+
         name_translation_flatten = ChainMap(name_translation, *name_translation_flatten.maps)
+        propinfo_flatten = ChainMap(propinfo, *propinfo_flatten.maps)
 
         name_translated = {v: k for k, v in name_translation_flatten.items() if v != k}
 
@@ -426,12 +439,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                         [defv, getter, setter]):
                             if v and k not in class_attrs:
                                 class_attrs[k] = v
-                        properties[name_translation_flatten[pn]] = pi.copy()
+                        propinfo[name_translation_flatten[pn]] = pi.copy()
                         break
                 else:
                     raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
 
-        for prop, detail in properties.items():
+        for prop, detail in propinfo.items():
             prop_uri = f'{nm}/properties/{prop}'
             prop = name_translation_flatten[prop]
 
@@ -479,7 +492,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=typ.__doc__,
                 )
-                properties[name_translated.get(prop, prop)]['_type'] = typ
+                propinfo[name_translated.get(prop, prop)]['_type'] = typ
 
             elif 'type' not in detail and '$ref' in detail:
                 ref = detail['$ref']
@@ -503,9 +516,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 elif issubclass(typ, ArrayWrapper):
                     defaults[prop] = []
 
-                alias = name_translated.get(prop, prop) if prop not in properties else prop
-                properties[alias]['$ref'] = uri
-                properties[alias]['_type'] = typ
+                alias = name_translated.get(prop, prop) if prop not in propinfo else prop
+                propinfo[alias]['$ref'] = uri
+                propinfo[alias]['_type'] = typ
                 if prop in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
                         defaults[prop] = {}
@@ -588,14 +601,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
                 props[prop] = make_property(
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
-                properties[name_translated.get(prop, prop)]['_type'] = typ
+                propinfo[name_translated.get(prop, prop)]['_type'] = typ
 
-        # build inner definitions and add the class as members
-        for definition, detail in clsdata.get('definitions', {}).items():
-            def_uri = f'{nm}/definitions/{definition}'
-            cls = self.resolved[def_uri] = self._build_object(def_uri, detail,
-                                                         (ProtocolBase,))
-            properties[definition] = cls
+        # build inner definitions
+        inner_defs = {}
+        for def_name, detail in clsdata.get('definitions', {}).items():
+            def_uri = f'{nm}/definitions/{def_name}'
+            inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,))
 
         """
         If this object itself has a 'oneOf' designation, then
@@ -623,7 +635,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__prop_translated_flatten__'] = name_translated
         props['__has_default__'] = defaults
 
-        props['__propinfo__'] = properties
+        props['__propinfo__'] = propinfo
+        props['__propinfo_flatten__'] = propinfo_flatten
 
         invalid_requires = [req for req in required if req not in name_translation_flatten]
         if len(invalid_requires) > 0:
@@ -653,6 +666,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         cls.__doc__ = clsdata.get('description')
         cls.__pbase_mro__ = tuple(c for c in cls.__mro__ if issubclass(c, pjo_classbuilder.ProtocolBase))
         cls.__ngo_pbase_mro__ = tuple(c for c in cls.__pbase_mro__ if issubclass(c, ProtocolBase))
+        # adds inner classes as members
+        for k, v in inner_defs.items():
+            setattr(cls, k, v)
 
         if nm not in self.resolved:
             self.under_construction.remove(nm)
