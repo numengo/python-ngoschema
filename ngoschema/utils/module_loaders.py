@@ -57,7 +57,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
             load_schema_file(ms, schemas_store)
         except Exception as er:
             logger.error(
-                "Impossible to load file %s.\n%s", ms, er, exc_info=True)
+                "Impossible to load file %s.\n%s", ms, er)
     return schemas_store
 
 def register_module(module):

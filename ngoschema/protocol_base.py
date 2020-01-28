@@ -153,6 +153,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         self._validateLazy = props.pop('_validateLazy', None) or cls.__validate_lazy__
         self._attrByName = props.pop('_attrByName', None) or cls.__attr_by_name__
         self._propagate = props.pop('_propagate', None) or cls.__propagate__
+        self._strict = props.pop('_strict', None) or cls.__strict__
         parent = props.pop('_parent', None)
         # to avoid calling the setter if None
         if parent:
@@ -161,7 +162,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             '_lazyLoading':  self._lazyLoading,
             '_validateLazy': self._validateLazy,
             '_attrByName':  self._attrByName,
-            '_propagate': self._propagate
+            '_propagate': self._propagate,
+            '_strict': self._strict
         } if self._propagate else {}
 
         mixins.HasCache.__init__(self,
@@ -219,7 +221,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             try:
                 for k, prop in props.items():
                     setattr(self, k, prop)
-                if self.__strict__:
+                if self._strict:
                     self.do_validate()
                 self.set_clean()
             except Exception as er:
@@ -306,6 +308,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return enc.encode(self)
 
     _def_enc = ProtocolJSONEncoder()
+
     def for_json(self):
         """removes None or empty or defaults of non required members """
         return {k: v for k, v in self._def_enc.default(self).items()
@@ -384,9 +387,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             return self._get_prop(name)
 
         # check inner properties to get proper getter
-        for c in self.pbase_mro():
-            if name in c.__object_attr_list__:
-                return object.__getattribute__(self, name)
+        if name in self.__object_attr_list_flatten__:
+            return object.__getattribute__(self, name)
+        #for c in self.pbase_mro():
+        #    if name in c.__object_attr_list__:
+        #        return object.__getattribute__(self, name)
 
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
@@ -446,9 +451,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         if name.startswith("_"):
             return collections.MutableMapping.__setattr__(self, name, val)
         # check inner properties to get proper setter
-        for c in self.pbase_mro():
-            if name in c.__object_attr_list__:
-                return object.__setattr__(self, name, val)
+        if name in self.__object_attr_list_flatten__:
+            return object.__setattr__(self, name, val)
+        #for c in self.pbase_mro():
+        #    if name in c.__object_attr_list__:
+        #        return object.__setattr__(self, name, val)
 
         name = self.__prop_names_flatten__.get(name, name)
         if self._attrByName:
@@ -471,7 +478,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         else:
             # This is an additional property of some kind
             try:
-                val = self.__extensible__.instantiate(name, val)
+                casted = val.for_json() if getattr(val, 'for_json', None) else val
+                val = self.__extensible__.instantiate(name, casted)
             except Exception as e:
                 raise pjo_validators.ValidationError(
                     "Attempted to set unknown property '{0}': {1} ".format(name, e)

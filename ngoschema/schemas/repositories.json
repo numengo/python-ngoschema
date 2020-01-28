@@ -1,6 +1,6 @@
 {
     "$schema": "http://numengo.org/ngoschema/draft-05",
-    "$id": "http://numengo.org/ngoschema/repository",
+    "$id": "http://numengo.org/ngoschema/repositories",
     "type": "object",
     "definitions": {
         "Repository": {

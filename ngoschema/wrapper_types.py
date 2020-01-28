@@ -28,7 +28,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     """
     __propinfo__ = {}
 
-    def __init__(self, ary, _parent=None):
+    def __init__(self, ary, _parent=None, _strict=None):
         # convert to array is necessary
         if not utils.is_sequence(ary):
             if utils.is_string(ary):
@@ -36,6 +36,8 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             else:
                 ary = utils.to_list(ary)
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
+        if _strict is not None:
+            self._strict_ = _strict
         HasCache.__init__(self,
                           context=_parent,
                           inputs=self.propinfo('dependencies'))
@@ -273,7 +275,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             '__itemtype__': item_constraint,
             '__propinfo__': addl_constraints
         }
-        strict = addl_constraints.pop("strict", False)
+        strict = addl_constraints.pop("strict", None) or False
         props["_strict_"] = strict
         props.update(addl_constraints)
 

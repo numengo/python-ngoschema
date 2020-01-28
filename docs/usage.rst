@@ -25,7 +25,7 @@ User can register json files as schemas in his module using ``load_module_schema
 
 A proper JSON-schema document should have a property ``$id`` set to `an absolute URI (it s domain/namespace) <https://json-schema.org/understanding-json-schema/structuring.html#the-id-property>`_.
 
-To add a schema to a class, user needs to have the class use the ``SchemaMetaClass`` and can build a class refering to a
+To add a schema to a class, user needs to have the class use the ``SchemaMetaclass`` and can build a class refering to a
 domain/namespace which will be looked first in the available modules schemas, and eventually on-line.
 Some schemas from `json-schema.org <https://json-schema.org/>`_ are included in the schemas directory of the module.
 
@@ -58,7 +58,7 @@ initialization method.
 User can't define additional public properties, but is free to do anything with protected or private properties.
 
 
-``SchemaMetaClass`` will build the class doing a lot of magic:
+``SchemaMetaclass`` will build the class doing a lot of magic:
 * it adds a logger that can be accessed with self.logger
 * it adds proper logging and exception handling to all methods
 * it add type conversion/checking and data validation to methods according to their

@@ -83,10 +83,11 @@ def clean_uri(uri):
     uri = uri.lower().replace('_', '-')
     return uri if frag is None else uri + '#' + frag
 
+count =0
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
-    A modified ClassBuilder to build a class with SchemaMetaClass, to create
+    A modified ClassBuilder to build a class with SchemaMetaclass, to create
     properties according to schema, and associating with detected getter/setter
     or default values
 
@@ -270,7 +271,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         if "enum" in clsdata:
             clsdata.setdefault("type", "string")
         typ = clsdata.get('type')
-
+        if typ == 'array':
+            typ = self.construct(f'{uri}/items', clsdata['items'])
+            self.resolved[uri] = obj = ArrayWrapper.create(uri, item_constraint=typ, **kw)
+            return obj
         if typ not in LITERALS_TYPE.keys() and 'foreignKey' not in clsdata:
             return pjo_classbuilder.ClassBuilder._construct(
                     self, uri, clsdata, parent, **kw)
@@ -326,31 +330,30 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         class_attrs = kw.get('class_attrs', {})
 
-        # complete object attribute list with class attributes to use prop  attribute setter
-        __object_attr_list__ = set(ProtocolBase.__object_attr_list__)
+        # complete object attribute list with class attributes to use prop attribute setter
+        object_attr_list = set()
+
+        # first add all attributes from ProtocolBase and its parents
         for p in ProtocolBase.__mro__:
-            __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
-            __object_attr_list__.update([a for a, v in p.__dict__.items()
-                                         if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
+            object_attr_list.update(getattr(p, '__object_attr_list__', []))
+            object_attr_list.update([a for a, v in p.__dict__.items()
+                                     if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
 
         cls_schema = clsdata
         props['__schema__'] = nm
 
         # parent classes (remove any django definition as it would trigger metaclass conflicts)
-        extends_all = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
-        extends = [ext for ext in extends_all if not ext.startswith(self._django_ns)]
-        extends_only_props = [ext for ext in extends_all if ext not in extends]
+        extends = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
 
-        def add_extend_recursively_to_scope(extends):
-            for e in extends:
+        def add_extend_recursively_to_scope(exts):
+            for e in exts:
                 uri, ext = resolve_in_scope(e)
                 parents_scope.add(uri.rsplit("#", 1)[0])
                 add_extend_recursively_to_scope(ext.get('extends', []))
 
-        add_extend_recursively_to_scope(extends_all)
+        add_extend_recursively_to_scope(extends)
 
         e_parents = [self.resolve_or_construct(e) for e in extends]
-        e_parents_only_props = [self.resolve_or_construct(e) for e in extends_only_props]
         # remove typerefs and remove duplicates
         e_parents_sorted = tuple(e for e in e_parents
                         if not isinstance(e, pjo_classbuilder.TypeRef)
@@ -362,14 +365,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for p in reversed(parents):
             if hasattr(p, '__schema__'):
                 parents_scope.add(p.__schema__.rsplit("#", 1)[0])
-            __object_attr_list__.update(getattr(p, '__object_attr_list__', []))
-            __object_attr_list__.update([a for a, v in p.__dict__.items()
-                                         if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
+            #object_attr_list.update(getattr(p, '__object_attr_list__', []))
+            #object_attr_list.update([a for a, v in p.__dict__.items()
+            #                             if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
             defaults.update(getattr(p, '__has_default__', {}))
 
         propinfo = OrderedDict(cls_schema.get('properties', {}))
 
-        # as any typeref has been removed from parent but add its properties to __object_attr_list__ and name translation
+        # as any typeref has been removed from parent but add its properties to object_attr_list and name translation
         for e in e_parents:
             if isinstance(e, pjo_classbuilder.TypeRef):
                 def add_prop_and_extends(uri):
@@ -380,10 +383,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         add_prop_and_extends(ext)
                 add_prop_and_extends(e._ref_uri)
 
-        # add properties from parents only sharing props
-        for e in e_parents_only_props:
-            propinfo.update(e.__propinfo_flatten__)
-
         # name translation
         name_translation = OrderedDict()
         for prop, detail in propinfo.items():
@@ -392,14 +391,22 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             name_translation[prop] = clean_prop_name(prop)
 
         # flattening
+        object_attr_list_flatten = ChainMap()
         name_translation_flatten = ChainMap()
         propinfo_flatten = ChainMap()
-        for p in parents + tuple(e_parents_only_props):
-            name_translation_flatten = ChainMap(getattr(p, '__prop_names_flatten__', getattr(p, '__prop_names__', {})),
+
+        for p in parents:
+            object_attr_list_flatten = ChainMap(getattr(p, '__object_attr_list_flatten__',
+                                                        getattr(p, '__object_attr_list__', {})),
+                                                *object_attr_list_flatten.maps)
+            name_translation_flatten = ChainMap(getattr(p, '__prop_names_flatten__',
+                                                        getattr(p, '__prop_names__', {})),
                                                 *name_translation_flatten.maps)
-            propinfo_flatten = ChainMap(getattr(p, '__propinfo_flatten__', getattr(p, '__propinfo__', {})),
+            propinfo_flatten = ChainMap(getattr(p, '__propinfo_flatten__',
+                                                    getattr(p, '__propinfo__', {})),
                                                 *propinfo_flatten.maps)
 
+        object_attr_list_flatten = ChainMap(object_attr_list, *object_attr_list_flatten.maps)
         name_translation_flatten = ChainMap(name_translation, *name_translation_flatten.maps)
         propinfo_flatten = ChainMap(propinfo, *propinfo_flatten.maps)
 
@@ -481,7 +488,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('dependencies') is not None:
                 dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
 
-            if detail.get('type', None) == 'object':
+            if detail.get('type') == 'object':
                 typ = self.resolved[prop_uri] = self.construct(prop_uri, detail,
                                                     (ProtocolBase,))
 
@@ -495,15 +502,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 propinfo[name_translated.get(prop, prop)]['_type'] = typ
 
             elif 'type' not in detail and '$ref' in detail:
-                ref = detail['$ref']
-                uri, _ = resolve_in_scope(ref)
+                ref, _ = resolve_in_scope(detail['$ref'])
                 logger.debug(
-                    pjo_util.lazy_format("Resolving reference {0} for {1}.{2}",
-                                         ref, nm, prop))
-                if uri in self.resolved:
-                    typ = self.resolved[uri]
-                else:
-                    typ = self.construct(uri, detail, (ProtocolBase,))
+                    pjo_util.lazy_format("Resolving reference {0} for {1}.{2}", ref, nm, prop))
+                #uri, sch_ref = resolve_in_scope(ref)
+                #if uri in self.resolved:
+                #    typ = self.resolved[uri]
+                #else:
+                #    global count
+                #    count = count + 1
+                #    typ = self.construct(uri, sch_ref, (ProtocolBase,))
+
+                typ = self.resolve_or_construct(ref)
 
                 props[prop] = make_property(
                     prop, {'type': typ},
@@ -516,9 +526,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 elif issubclass(typ, ArrayWrapper):
                     defaults[prop] = []
 
-                alias = name_translated.get(prop, prop) if prop not in propinfo else prop
-                propinfo[alias]['$ref'] = uri
-                propinfo[alias]['_type'] = typ
+                #alias = name_translated.get(prop, prop) if prop not in propinfo else prop
+                #propinfo[alias] = {'$ref': uri
+                #propinfo[alias]['_type'] = typ
                 if prop in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
                         defaults[prop] = {}
@@ -535,9 +545,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=desc)
 
-            elif 'type' in detail and detail['type'] == 'array':
+            elif detail.get('type') == 'array':
                 # for resolution in create in wrapper_types
                 detail['classbuilder'] = self
+                defaults.setdefault(prop, [])
+
                 if 'items' in detail and utils.is_mapping(detail['items']):
                     if '$ref' in detail['items']:
                         constraints = copy.copy(detail)
@@ -586,14 +598,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         fset=setter,
                         desc=typ.__doc__)
                 elif 'items' in detail:
-                    typs = []
+                    #typs = []
                     for i, elem in enumerate(detail['items']):
                         uri = '{0}/{1}>'.format(prop_uri, i)
                         typ = self.construct(uri, elem)
-                        typs.append(typ)
+                        #typs.append(typ)
 
                     props[prop] = make_property(
-                        prop, {'type': typs}, fget=getter, fset=setter, desc=detail.get('description'))
+                        prop, {'type': 'array', '_type': typ}, fget=getter, fset=setter, desc=detail.get('description'))
 
             else:
                 desc = detail['description'] if 'description' in detail else ''
@@ -603,11 +615,15 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
                 propinfo[name_translated.get(prop, prop)]['_type'] = typ
 
+                if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
+                    defaults[prop] = typ.default()
+
+
         # build inner definitions
         inner_defs = {}
         for def_name, detail in clsdata.get('definitions', {}).items():
             def_uri = f'{nm}/definitions/{def_name}'
-            inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,))
+            inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,), **kw)
 
         """
         If this object itself has a 'oneOf' designation, then
@@ -622,9 +638,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             nm, cls_schema, self)
 
         # add class attrs after removing defaults
-        __object_attr_list__.update([a for a, v in class_attrs.items()
-                                     if not a.startswith('_')]) # and not (utils.is_method(v) or utils.is_function(v))])
-        props['__object_attr_list__'] = __object_attr_list__
+        object_attr_list.update([a for a, v in class_attrs.items()
+                                 if not a.startswith('_')]) # and not (utils.is_method(v) or utils.is_function(v))])
+        props['__object_attr_list__'] = object_attr_list
+        props['__object_attr_list_flatten__'] = object_attr_list_flatten
 
         # we set class attributes as properties now, and they will be
         # overwritten if they are default values
@@ -633,6 +650,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__prop_names__'] = name_translation
         props['__prop_names_flatten__'] = name_translation_flatten
         props['__prop_translated_flatten__'] = name_translated
+
         props['__has_default__'] = defaults
 
         props['__propinfo__'] = propinfo

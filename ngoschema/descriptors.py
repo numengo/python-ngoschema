@@ -8,6 +8,7 @@ from python_jsonschema_objects import \
 from . import utils
 from .protocol_base import ProtocolBase
 from .mixins import HasParent
+from .wrapper_types import ArrayWrapper
 
 
 class AttributeDescriptor(object):
@@ -62,7 +63,7 @@ class AttributeDescriptor(object):
                 # only forces validation if pattern
                 #force = not getattr(info["type"], "isLiteralClass", False) and not obj._lazyLoading
                 force = False
-                prop.do_validate(force)
+                prop.do_validate(force=obj._strict)
                 return prop
         except Exception as er:
             obj.logger.error("problem validating attribute %s: %s", propname, er, exc_info=True)
@@ -126,7 +127,7 @@ class AttributeDescriptor(object):
                         errors.append("Failed to coerce to '{0}': {1}".format(
                             typ, e))
                     else:
-                        validator.do_validate()
+                        validator.do_validate(force=obj._strict)
                         ok = True
                         break
                 elif pjo_util.safe_issubclass(typ, ProtocolBase):
@@ -144,7 +145,7 @@ class AttributeDescriptor(object):
                     else:
                         if isinstance(val, HasParent):
                             val._parent = obj
-                        val.do_validate()
+                        val.do_validate(force=obj._strict)
                         ok = True
                         break
                 elif pjo_util.safe_issubclass(typ,
@@ -155,7 +156,7 @@ class AttributeDescriptor(object):
                         errors.append(
                             "Failed to coerce to '%s': %s" % (typ, e))
                     else:
-                        val.do_validate()
+                        val.do_validate(force=obj._strict)
                         ok = True
                         break
 
@@ -168,7 +169,11 @@ class AttributeDescriptor(object):
             val = info["validator"](val, _parent=obj)
             # only validate if no lazy loading
             if not obj._lazyLoading:
-                val.do_validate()
+                val.do_validate(force=obj._strict)
+
+        elif issubclass(infotype, ArrayWrapper):
+        #elif getattr(infotype, 'type', None) == 'array':
+            val = infotype(val, _parent=obj, _strict=obj._strict)
 
         elif getattr(infotype, "isLiteralClass", False):
             if not isinstance(val, infotype):
@@ -183,7 +188,7 @@ class AttributeDescriptor(object):
                     if vars:
                         validator.touch()
                 else:
-                    validator.do_validate()
+                    validator.do_validate(force=obj._strict)
                 val = validator
 
         elif pjo_util.safe_issubclass(infotype, ProtocolBase):
@@ -194,7 +199,7 @@ class AttributeDescriptor(object):
                                    **pjo_util.coerce_for_expansion(val or {}))
                 else:
                     val = infotype(val)
-            val.do_validate()
+            val.do_validate(force=obj._strict)
 
         elif isinstance(infotype, pjo_classbuilder.TypeProxy):
             val = infotype(val, _parent=obj)
@@ -207,7 +212,7 @@ class AttributeDescriptor(object):
                                    **pjo_util.coerce_for_expansion(val))
                 else:
                     val = infotype(val)
-            val.do_validate()
+            val.do_validate(force=obj._strict)
 
         elif infotype is None:
             # This is the null value

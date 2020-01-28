@@ -45,11 +45,12 @@ logger = logging.getLogger(__name__)
 
 repository_registry = GenericClassRegistry()
 
+
 class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Class to store read/write operations of objects
     """
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Repository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Repository"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
@@ -177,7 +178,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 
 class FilterRepositoryMixin(object):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/FilterRepositoryMixin"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/FilterRepositoryMixin"
 
     def filter_data(self, data):
         only = self.only.for_json() if self.only else ()
@@ -187,7 +188,7 @@ class FilterRepositoryMixin(object):
 
 
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/MemoryRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/MemoryRepository"
 
     def commit(self):
         raise InvalidOperationException('commit is not possible with MemoryRepository')
@@ -198,7 +199,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterReposit
 
 
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/FileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/FileRepository"
 
     def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
@@ -270,7 +271,7 @@ def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
 
 @repository_registry.register()
 class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/JsonFileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/JsonFileRepository"
 
     def __init__(self, **kwargs):
         FileRepository.__init__(self, **kwargs)
@@ -296,7 +297,7 @@ def load_json_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/YamlFileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/YamlFileRepository"
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
@@ -319,7 +320,7 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/XmlFileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/XmlFileRepository"
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):
         FileRepository.__init__(self, **kwargs)
@@ -331,14 +332,18 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
         # this default post processor makes all non attribute be list
         _prefix = str(self.attr_prefix)
+
         def default_postprocessor(path, key, value):
             return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, to_list(value))
 
         self._postprocessor = postprocessor or default_postprocessor
 
     def deserialize_data(self):
-        force_list = ('xs:include', 'xs:import', 'xs:element', 'xs:unique', 'xs:simpleType', 'xs:attributeGroup', 'xs:group', 'xs:complexType', 'xs:restriction',
-                      'include', 'import', 'element', 'unique', 'simpleType', 'attributeGroup', 'group', 'complexType', 'restriction')
+        force_list = ('xs:include', 'xs:import', 'xs:element', 'xs:unique', 'xs:simpleType', 'xs:attributeGroup',
+                      'xs:group', 'xs:complexType', 'xs:restriction',
+                      'include', 'import', 'element', 'unique', 'simpleType', 'attributeGroup', 'group',
+                      'complexType', 'restriction')
+
         parsed = self.document._deserialize(xmltodict.parse,
                                           attr_prefix=str(self.attr_prefix),
                                           cdata_key=str(self.cdata_key),
@@ -371,7 +376,7 @@ def load_xml_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2FileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2FileRepository"
 
     def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
         """
@@ -401,7 +406,7 @@ class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
 @repository_registry.register()
 class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2MacroFileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroFileRepository"
 
     def serialize_data(self, data):
         macro_args = self.macroArgs.for_json()
@@ -422,7 +427,7 @@ class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileReposi
 
 @repository_registry.register()
 class Jinja2MacroTemplatedPathFileRepository(with_metaclass(SchemaMetaclass, Jinja2MacroFileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repository#/definitions/Jinja2MacroTemplatedPathFileRepository"
+    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroTemplatedPathFileRepository"
 
     def serialize_data(self, data):
         self.logger.info('SERIALIZE Jinja2MacroFileRepository')

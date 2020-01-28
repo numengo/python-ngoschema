@@ -56,7 +56,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                 if raw in ns:
                     continue
                 prop = getattr(obj, trans)
-                if prop is None:
+                if prop is None or obj._properties.get(trans) is None:
                     continue
                 if self.no_defaults and raw not in reqs:
                     defv = defvs.get(trans)

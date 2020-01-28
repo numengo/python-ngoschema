@@ -63,19 +63,12 @@
     "ProtocolBase": {
       "type": "object",
       "additionalProperties": false,
-      "properties": {
-        "$id": {
-          "type": "string"
-        },
-        "$schema": {
-          "format": "uri-reference",
-          "type": "string"
-        }
-      }
+      "description": "Protocol shared by all instances"
     },
     "Entity": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Protocol for persistent entities with primary keys",
       "extends": [
         "#/definitions/ProtocolBase"
       ],
@@ -451,6 +444,9 @@
     },
     "not": {
       "$ref": "#"
+    },
+    "metaclass": {
+      "type": "string"
     },
     "primaryKeys": {
       "$ref": "#/definitions/stringArray"

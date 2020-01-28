@@ -12,12 +12,15 @@ import json
 import collections
 import pathlib
 import pkgutil
+import logging
 from builtins import str
 
 import inflection
 import six
 
 from jsonschema.exceptions import SchemaError
+
+logger = logging.getLogger(__name__)
 
 def get_schema_store_list():
     from .resolver import get_uri_doc_store
@@ -55,7 +58,10 @@ def load_schema(schema, schemas_store=None):
             "Impossible to load schema because `id (or `$id) and `title fields"
             "are missing.\n%s" % schema)
     if schemas_store is not None:
-        schemas_store[uri] = schema
+        if uri not in schemas_store:
+            schemas_store[uri] = schema
+        elif schema != schemas_store[uri]:
+            raise ValueError("A different schema '%s' is already registered in schema store." % uri)
     # add to main registry
     register_doc_with_uri_id(schema, uri)
     return uri, schema

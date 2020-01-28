@@ -268,7 +268,7 @@ def convert_datetime_type(param, value, _):
     if isinstance(value, arrow.Arrow):
         return value.datetime
     if isinstance(value, datetime.datetime):
-        return arrow.get(value)
+        return arrow.get(value).datetime
     if isinstance(value, string_types):
         if value in ('now'):
             a = arrow.utcnow()

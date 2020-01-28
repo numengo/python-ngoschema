@@ -59,6 +59,8 @@ class SchemaMetaclass(type):
         if schema:
             # validate schema with its meta-schema
             metaschema = DefaultValidator.META_SCHEMA
+            if schema.get("metaclass", "SchemaMetaclass") != "SchemaMetaclass":
+                raise ValueError("class should be built with metaclass '%s'." % schema.get('metaclass'))
             if schema.get("$schema"):
                 ms_uri, metaschema = resolver.resolve(schema["$schema"])
             meta_validator = DefaultValidator(metaschema, resolver=resolver)
