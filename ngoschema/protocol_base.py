@@ -204,6 +204,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         if self._lazyLoading:
             self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
             if self._attrByName:
+                # replace refs / mandatory for loading ngomf nested schemas
                 base_uri = self.__schema__
                 def replace_ref(coll, key, level):
                     if key != '$ref' or level > 2:
@@ -220,7 +221,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         else:
             try:
                 for k, prop in props.items():
-                    setattr(self, k, prop)
+                    k2 = self.__prop_translated_flatten__.get(k, k)
+                    setattr(self, k2, prop)
                 if self._strict:
                     self.do_validate()
                 self.set_clean()
@@ -310,9 +312,10 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     _def_enc = ProtocolJSONEncoder()
 
     def for_json(self):
-        """removes None or empty or defaults of non required members """
-        return {k: v for k, v in self._def_enc.default(self).items()
-                if (v or utils.is_literal(v)) and v != self.__has_default__.get(k) and k not in self.__required__}
+        # _for_json is invalidated in HasCache.touch
+        if self._for_json is None:
+            self._for_json = self._def_enc.default(self)
+        return self._for_json
 
     @classmethod
     def jsonschema(cls):
@@ -328,12 +331,13 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     @classmethod
     def issubclass(cls, klass):
-        """subclass specific method"""
+        """ Subclass specific method. """
         return pjo_util.safe_issubclass(cls, klass)
 
     _cls_fullname = None
     @classproperty
     def cls_fullname(cls):
+        """ Returns class qualified name. """
         if cls._cls_fullname is None:
             cls._cls_fullname = utils.fullname(cls)
             if cls._cls_fullname.startswith('<abc.'):
@@ -360,18 +364,15 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     @classmethod
     def pbase_mro(cls, ngo_base=False):
+        """ Returns MRO of only ProtocolBase classes (may only be ngoschema.ProtocolBase). """
         return cls.__ngo_pbase_mro__ if ngo_base else cls.__pbase_mro__
 
     @classmethod
     def propinfo(cls, propname):
+        """ Returns class attribute schema. """
         # safe proof to name translation and inheritance
-        propid = cls.__prop_translated_flatten__.get(propname, propname)
-        for c in cls.__pbase_mro__:
-            if propid in getattr(c, '__prop_names__', {}):
-                return c.__propinfo__[propid]
-            elif c is not cls and propid in getattr(c, '__prop_names_flatten__', {}):
-                return c.propinfo(propid)
-        return {}
+        prop_id = cls.__prop_translated_flatten__.get(propname, propname)
+        return cls.__propinfo_flatten__.get(prop_id, {})
 
     def __getattr__(self, name):
         """
@@ -389,9 +390,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # check inner properties to get proper getter
         if name in self.__object_attr_list_flatten__:
             return object.__getattribute__(self, name)
-        #for c in self.pbase_mro():
-        #    if name in c.__object_attr_list__:
-        #        return object.__getattribute__(self, name)
 
         prop, index = self._key2attr.get(name, (None, None))
         if prop:
@@ -417,6 +415,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                              name, self.__class__.__name__))
 
     def get(self, key, default=None):
+        """overrides get method to properly handle default behaviour"""
         #  collections.Mapping.get is bugged in our case if prop are None, default is not returned
         #return collections.Mapping.get(self, key, default)
         try:
@@ -453,9 +452,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # check inner properties to get proper setter
         if name in self.__object_attr_list_flatten__:
             return object.__setattr__(self, name, val)
-        #for c in self.pbase_mro():
-        #    if name in c.__object_attr_list__:
-        #        return object.__setattr__(self, name, val)
 
         name = self.__prop_names_flatten__.get(name, name)
         if self._attrByName:
@@ -478,7 +474,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         else:
             # This is an additional property of some kind
             try:
-                casted = val.for_json() if getattr(val, 'for_json', None) else val
+                casted = val.for_json() if hasattr(val, 'for_json') else val
                 val = self.__extensible__.instantiate(name, casted)
             except Exception as e:
                 raise pjo_validators.ValidationError(
@@ -528,6 +524,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     raise AttributeError("no type specified for property '%s'"% name)
 
     def missing_property_names(self):
+        # overrides original method to deal with inheritance
         propname = lambda x: self.__prop_names_flatten__[x]
         missing = []
         for x in self.__required__:
@@ -582,7 +579,6 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     for ps, pe in par[s].search_non_rec(path, *attrs, **attrs_value):
                         yield ps, pe
                 p_cur, cur = p_par, cur._parent
-
 
     def search(self, path, *attrs, **attrs_value):
         from .query import search_object

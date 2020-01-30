@@ -27,6 +27,7 @@ from .protocol_base import ProtocolBase, make_property
 from . import utils
 from .resolver import get_resolver, qualify_ref, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
+from .literals import make_literal
 from .decorators import memoized_method
 from . import settings
 
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 _default_builder = None
 
 LITERALS_TYPE = dict(settings.LITERALS_TYPE_CLASS_MAPPING)
+
 
 def get_builder(resolver=None):
     """retrieves the default class builder
@@ -224,9 +226,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 resolver.pop_scope()
         return self.resolved[uri]
 
-    def _build_literal(self, nm, clsdata, *parents):
+    def _build_literal(self, nm, clsdata):
         from .literals import LiteralValue
         from .models.foreign_key import ForeignKey, CnameForeignKey
+
+        typ = clsdata.get('type')
+        sub_cls = LITERALS_TYPE.get(typ)
 
         propinfo = {
             '__literal__': clsdata,
@@ -243,23 +248,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             clsdata['foreignKey']['$schema'] = uri
             propinfo.update(sch) # merge the schema in propinfo to access it directly
             propinfo.update(clsdata) # update with possibly overriding class
-            return type(
-                str(nm),
-                tuple((clsFK, )),
-                {
-                    '__propinfo__': propinfo,
-                    '__subclass__': str,
-                },
-            )
 
-        return type(
-            str(nm),
-            tuple((LiteralValue,)),
-            {
-                '__propinfo__': propinfo,
-                '__subclass__': parents[0],
-            },
-        )
+            return make_literal(str(nm), sub_cls, (clsFK, ), **clsdata)
+
+        return make_literal(str(nm), sub_cls, (LiteralValue, ), **clsdata)
 
     def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
         if 'nsPrefix' in clsdata:
@@ -270,22 +262,21 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             return cls
         if "enum" in clsdata:
             clsdata.setdefault("type", "string")
+
         typ = clsdata.get('type')
+
         if typ == 'array':
             typ = self.construct(f'{uri}/items', clsdata['items'])
             self.resolved[uri] = obj = ArrayWrapper.create(uri, item_constraint=typ, **kw)
             return obj
+
         if typ not in LITERALS_TYPE.keys() and 'foreignKey' not in clsdata:
             return pjo_classbuilder.ClassBuilder._construct(
                     self, uri, clsdata, parent, **kw)
 
         sub_cls = LITERALS_TYPE.get(typ)
-        if 'foreignKey' in clsdata:
-            self.resolved[uri] = self._build_literal(
-                uri, clsdata, sub_cls)
-        elif sub_cls:
-            self.resolved[uri] = self._build_literal(
-                uri, clsdata, sub_cls)
+        if sub_cls:
+            self.resolved[uri] = self._build_literal(uri, clsdata)
 
         return self.resolved[uri]
 
@@ -428,7 +419,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         from_parents = set(name_translation_flatten.values()).difference(name_translation.values())
         for pn in from_parents:
             # get default value from class attributes or schema
-            defv = class_attrs.get(pn) or cls_schema.get(pn)
+            defv = class_attrs.get(pn) # or cls_schema.get(pn)  # schema should not define properties
             getter = class_attrs.get('get_' + pn)
             setter = class_attrs.get('set_' + pn)
             if defv:
@@ -456,7 +447,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             prop = name_translation_flatten[prop]
 
             # look for getter/setter/defaultvalue first in class definition
-            defv = class_attrs.get(prop)
+            defv = class_attrs.get(prop) # or cls_schema.get(prop)  # schema should not define properties
             if defv is not None and (
                 inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
                 raise AttributeError(
@@ -523,7 +514,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop] = typ.default()
-                elif issubclass(typ, ArrayWrapper):
+                elif issubclass(typ, ArrayWrapper) and 'default' not in detail:
                     defaults[prop] = []
 
                 #alias = name_translated.get(prop, prop) if prop not in propinfo else prop

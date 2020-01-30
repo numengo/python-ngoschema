@@ -231,3 +231,31 @@ class DictSerializer(Serializer):
         # {'foo': 5, 'bar': 2.2}
     """
     default_getter = operator.itemgetter
+
+
+class ProtocolSerializerBase(SerializerBase):
+    objectClass = None
+
+
+class ProtocolSerializerMeta(SerializerMeta):
+
+    def __new__(cls, name, bases, attrs):
+        # Fields declared directly on the class.
+        direct_fields = {}
+
+        # Take all the Fields from the attributes.
+        for attr_name, field in attrs.items():
+            if isinstance(field, Field):
+                direct_fields[attr_name] = field
+        for k in direct_fields.keys():
+            del attrs[k]
+
+        real_cls = super(SerializerMeta, cls).__new__(cls, name, bases, attrs)
+
+        field_map, compiled_read_fields, compiled_write_fields = \
+            cls._get_fields(direct_fields, real_cls)
+
+        real_cls._field_map = field_map
+        real_cls._compiled_read_fields = tuple(compiled_read_fields)
+        real_cls._compiled_write_fields = tuple(compiled_write_fields)
+        return real_cls

@@ -20,7 +20,7 @@ class Relationship:
 
     @classmethod
     def _propinfo(cls, name, default=None):
-        return cls.__propinfo__.get(name, default)
+        return cls.__propinfo__.get('__literal__', {}).get(name, default)
 
     @classproperty
     def foreignSchema(cls):

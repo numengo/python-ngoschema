@@ -17,7 +17,7 @@ from ngoschema.models.document import Document
 from ngoschema.models.document import get_document_registry
 from ngoschema.resolver import _uri_doc_store
 
-dirpath = "/Users/cedric/Devel/python/python-ngomf/src/ngomf/models/Ngo"
+dirpath = "/Users/cedric/Devel/python/python-ngomf/ngomf/models/Ngo"
 
 def test_DocumentRegistry2():
     s = time.time()

@@ -5,4 +5,5 @@ __all__ = [
     'converter_registry',
     'type_registry',
     'formatter_registry',
+    'validator_registry',
 ]

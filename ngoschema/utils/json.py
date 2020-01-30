@@ -12,6 +12,8 @@ import collections
 import json
 
 import six
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from python_jsonschema_objects import util as pjo_util
 
 
@@ -21,28 +23,28 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                  no_defaults=True,
                  remove_refs=True,
                  attr_prefix='',
-                 cdata_key=None,
                  **kwargs):
         from .. import settings
         self.no_defaults = no_defaults
         self.remove_refs = remove_refs
         self.attr_prefix = attr_prefix
-        self.cdata_key = cdata_key or settings.DEFAULT_CDATA_KEY
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
         from python_jsonschema_objects import classbuilder
         from python_jsonschema_objects import wrapper_types
+        from ..models.entity import Entity
+        from ..validators.pjo import format_date, format_datetime, format_time, format_path
 
         if isinstance(obj, classbuilder.LiteralValue):
-            return obj._value
+            return obj.for_json()
         if isinstance(obj, wrapper_types.ArrayWrapper):
             if not self.remove_refs:
                 return [self.default(item) for item in obj]
             ret = []
             for item in obj:
-                if isinstance(item, classbuilder.ProtocolBase) and '$id' in item:
-                    ret.append({'$ref': item.get('$id')})
+                if isinstance(item, Entity) and item.identity_keys:
+                    ret.append(item.identity_keys)
                 else:
                     ret.append(self.default(item))
             return ret
@@ -52,39 +54,64 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
             defvs = getattr(obj, '__has_default__', {})
             props = collections.OrderedDict()
             to_put_first = []
+
+            # declared properties
             for raw, trans in six.iteritems(obj.__prop_names_flatten__):
                 if raw in ns:
                     continue
-                prop = getattr(obj, trans)
-                if prop is None or obj._properties.get(trans) is None:
-                    continue
-                if self.no_defaults and raw not in reqs:
-                    defv = defvs.get(trans)
-                    if getattr(prop, '_pattern', '') == defv or prop == defv:
-                        continue
+
+                prop = getattr(obj, trans, None)
+
+                # property name is the raw one, prefixed for literal attributes
                 pname = raw
                 if getattr(prop, "isLiteralClass", False):
-                    pname = f'{self.attr_prefix}{raw}' # raw or trans???
-                if self.remove_refs and isinstance(prop, classbuilder.ProtocolBase):
-                    props[pname] = {'$ref': prop.get('$id')} if '$id' in prop else self.default(prop)
-                else:
-                    if raw == self.cdata_key:
-                        props[pname] = str(prop)
-                    else:
-                        props[pname] = self.default(prop)
+                    pname = f'{self.attr_prefix}{raw}'
                 # put translated properties first
                 if raw != trans:
                     to_put_first.append(pname)
 
+                if prop is None:
+                    if raw in reqs:
+                        props[pname] = None
+                    continue
+
+                # remove defaults
+                if raw in defvs and self.no_defaults and raw not in reqs:
+                    defv = defvs.get(trans)
+                    if getattr(prop, '_pattern', '') == defv or prop == defv:
+                        continue
+
+                if self.remove_refs and isinstance(prop, Entity) and prop.identity_keys:
+                    props[pname] = prop.identity_keys
+                else:
+                    props[pname] = self.default(prop)
+
+            # extended properties
             for raw, prop in six.iteritems(obj._extended_properties):
-                if prop is not None:
-                    props[raw] = self.default(prop)
+                # property name is the raw one, prefixed for literal attributes
+                pname = raw
+                if getattr(prop, "isLiteralClass", False):
+                    pname = f'{self.attr_prefix}{raw}'
+                props[pname] = self.default(prop)
+
             # place special names first
             for k in to_put_first:
-                props.move_to_end(k, last=False)
+                if k in props:
+                    props.move_to_end(k, last=False)
+
             return props
-        else:
-            return json.JSONEncoder.default(self, obj)
+
+        # additional types
+        if isinstance(obj, date):
+            return format_date(obj)
+        if isinstance(obj, datetime):
+            return format_datetime(obj)
+        if isinstance(obj, time):
+            return format_time(obj)
+        if isinstance(obj, Path):
+            return format_path(obj)
+
+        return json.JSONEncoder.default(self, obj)
 
 
 def set_json_defaults(kwargs=None):
@@ -94,3 +121,4 @@ def set_json_defaults(kwargs=None):
     kwargs.setdefault('separators', None)
     kwargs.setdefault('default', None)
     return kwargs
+

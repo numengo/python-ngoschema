@@ -212,7 +212,7 @@ def convert_validate(value, schema):
 
     converter = converter_registry(type_)
     if converter is not None:
-        ret = converter(None, value, schema)
+        ret = converter(value, schema)
 
     if type_ == "array":
         assert isinstance(ret, (list, tuple))

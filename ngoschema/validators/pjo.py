@@ -31,6 +31,8 @@ from ngoschema import utils, settings
 
 logger = logging.getLogger(__name__)
 
+validator_registry = registry
+
 converter_registry = ValidatorRegistry()
 
 formatter_registry = ValidatorRegistry()
@@ -152,7 +154,7 @@ def check_importable_type(param, value, _):
 # converters
 ############
 @converter_registry.register(name="boolean")
-def convert_boolean(param, value, detail):
+def convert_boolean(value, type_data):
     if utils.is_string(value):
         if value.lower() in BOOLEAN_FALSE_STR_LIST:
             return False
@@ -164,8 +166,9 @@ def convert_boolean(param, value, detail):
         pass
     return value
 
+
 @converter_registry.register(name="integer")
-def convert_integer(param, value, detail):
+def convert_integer(value, type_data):
     try:
         return int(value)
     except:
@@ -174,7 +177,7 @@ def convert_integer(param, value, detail):
 
 
 @converter_registry.register(name="number")
-def convert_number(param, value, detail):
+def convert_number(value, type_data):
     try:
         return int(value)
     except:
@@ -186,30 +189,29 @@ def convert_number(param, value, detail):
 
 
 @converter_registry.register(name="importable")
-def convert_importable(param, value, detail):
+def convert_importable(value, type_data):
     if not utils.is_string(value) and utils.is_imported(value):
         return utils.fullname(value)
     return value
 
 
 @converter_registry.register(name="array")
-def convert_array(param, value, detail):
+def convert_array(value, type_data):
     if utils.is_sequence(value):
         return value
     return list(value)
 
 
 @converter_registry.register(name="enum")
-def convert_enum(param, value, details):
-    if isinstance(value, int) and "enum" in details:
-        if (value - 1) < len(details["enum"]):
-            return details["enum"][value - 1]
+def convert_enum(value, type_data):
+    if isinstance(value, int) and "enum" in type_data:
+        if (value - 1) < len(type_data["enum"]):
+            return type_data["enum"][value - 1]
     return value
 
 
-
 @converter_registry.register(name="date")
-def convert_date_type(param, value, detail):
+def convert_date_type(value, type_data):
     if isinstance(value, datetime_types):
         return value.date()
     if isinstance(value, datetime.date):
@@ -244,7 +246,7 @@ alt_time_fts = [
 
 
 @converter_registry.register(name="time")
-def convert_time_type(param, value, _):
+def convert_time_type(value, type_data):
     if isinstance(value, datetime.time):
         return value
     if isinstance(value, datetime_types) and value.date() == datetime.date(
@@ -264,7 +266,7 @@ def convert_time_type(param, value, _):
 
 
 @converter_registry.register(name="datetime")
-def convert_datetime_type(param, value, _):
+def convert_datetime_type(value, type_data):
     if isinstance(value, arrow.Arrow):
         return value.datetime
     if isinstance(value, datetime.datetime):
@@ -288,7 +290,7 @@ def convert_datetime_type(param, value, _):
 
 
 @converter_registry.register(name="path")
-def convert_path_type(param, value, _):
+def convert_path_type(value, type_data):
     if isinstance(value, pathlib.Path):
         return value
     if isinstance(value, string_types):
@@ -300,29 +302,29 @@ def convert_path_type(param, value, _):
 ############
 
 @formatter_registry.register(name="path")
-def format_path(param, value, details):
+def format_path(value, type_data=None):
     return str(value)
 
 
 @formatter_registry.register(name="date")
-def format_date(param, value, details):
-    if "format" in details:
-        fmt = details["format"]
+def format_date(value, type_data=None):
+    if "format" in type_data:
+        fmt = type_data["format"]
         return value.strftime(fmt)
     return value.isoformat()
 
 
 @formatter_registry.register(name="time")
-def format_time(param, value, details):
-    if "format" in details:
-        fmt = details["format"]
+def format_time(value, type_data=None):
+    if "format" in type_data:
+        fmt = type_data["format"]
         return value.strftime(fmt)
     return value.isoformat()
 
 
 @formatter_registry.register(name="datetime")
-def format_arrow(param, value, details):
-    if "format" in details:
-        fmt = details["format"]
+def format_datetime(value, type_data=None):
+    if "format" in type_data:
+        fmt = type_data["format"]
         return value.format(fmt)
     return str(value)

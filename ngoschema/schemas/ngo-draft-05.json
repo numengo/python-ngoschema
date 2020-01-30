@@ -63,7 +63,16 @@
     "ProtocolBase": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Protocol shared by all instances"
+      "description": "Protocol shared by all instances",
+      "properties": {
+        "$id": {
+          "type": "string"
+        },
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        }
+      }
     },
     "Entity": {
       "type": "object",
@@ -71,9 +80,6 @@
       "description": "Protocol for persistent entities with primary keys",
       "extends": [
         "#/definitions/ProtocolBase"
-      ],
-      "required": [
-        "primaryKeys"
       ],
       "properties": {
         "primaryKeys": {

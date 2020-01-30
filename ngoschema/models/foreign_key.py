@@ -121,6 +121,7 @@ class ForeignKey(LiteralValue, Relationship, HasLogger):
 
     ref = property(resolve, _set_ref)
 
+
 class CnameForeignKey(ForeignKey):
 
     @classproperty

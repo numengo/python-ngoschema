@@ -237,6 +237,7 @@ class HandleRelativeCname:
 
 class HasCache:
     _context = None
+    _for_json = None
     _cache = None
     _inputs = set()
     _outputs = set()
@@ -279,8 +280,7 @@ class HasCache:
         return {k: self.__prop(k) for k in self._outputs if self.__prop(k)}
 
     def __prop_value(self, key):
-        val = self._context._get_prop_value(key)
-        return val.for_json() if isinstance(val, LiteralValue) else val
+        return self._context._get_prop_value(key)
 
     @property
     def _input_values(self):
@@ -295,6 +295,7 @@ class HasCache:
 
     def touch(self, recursive=False):
         self._dirty = True
+        self._for_json = None
         if recursive:
             for k, p in self._output_props.items():
                 p.touch()
