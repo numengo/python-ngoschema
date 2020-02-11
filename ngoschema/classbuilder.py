@@ -401,7 +401,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         name_translation_flatten = ChainMap(name_translation, *name_translation_flatten.maps)
         propinfo_flatten = ChainMap(propinfo, *propinfo_flatten.maps)
 
-        name_translated = {v: k for k, v in name_translation_flatten.items() if v != k}
+        translation_name = {v: k for k, v in name_translation_flatten.items() if v != k}
 
         # prepare set of inherited required, read_only, not_serialized attributes
         required = set.union(
@@ -423,7 +423,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             getter = class_attrs.get('get_' + pn)
             setter = class_attrs.get('set_' + pn)
             if defv:
-                defaults[pn] = defv
+                defaults[translation_name.get(pn, pn)] = defv
             if defv or getter or setter:
                 logger.warning("redefining property '%s' to use new default value, getter or setter from class code." % pn)
                 for p in parents:
@@ -442,9 +442,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 else:
                     raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
 
-        for prop, detail in propinfo.items():
-            prop_uri = f'{nm}/properties/{prop}'
-            prop = name_translation_flatten[prop]
+        for prop_id, detail in propinfo.items():
+            prop_uri = f'{nm}/properties/{prop_id}'
+            prop = name_translation_flatten[prop_id]
 
             # look for getter/setter/defaultvalue first in class definition
             defv = class_attrs.get(prop) # or cls_schema.get(prop)  # schema should not define properties
@@ -467,16 +467,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
-            if prop in required and 'default' not in detail and detail.get('type') == 'object':
+            if prop_id in required and 'default' not in detail and detail.get('type') == 'object':
                     detail['default'] = {}
 
             if detail.get('default') is None and detail.get('type') == 'array':
                 detail['default'] = []
 
             if detail.get('default') is not None:
-                defaults[prop] = detail.get('default')
+                # use prop_id to have untranslated name and be less ambiguous
+                defaults[prop_id] = detail.get('default')
 
             if detail.get('dependencies') is not None:
+                # use prop_id to have untranslated name and be less ambiguous
                 dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
 
             if detail.get('type') == 'object':
@@ -490,7 +492,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fset=setter,
                     desc=typ.__doc__,
                 )
-                propinfo[name_translated.get(prop, prop)]['_type'] = typ
+                propinfo[prop_id]['_type'] = typ
 
             elif 'type' not in detail and '$ref' in detail:
                 ref, _ = resolve_in_scope(detail['$ref'])
@@ -513,16 +515,16 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     desc=typ.__doc__)
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
-                    defaults[prop] = typ.default()
+                    defaults[prop_id] = typ.default()
                 elif issubclass(typ, ArrayWrapper) and 'default' not in detail:
-                    defaults[prop] = []
+                    defaults[prop_id] = []
 
-                #alias = name_translated.get(prop, prop) if prop not in propinfo else prop
+                #alias = translation_name.get(prop, prop) if prop not in propinfo else prop
                 #propinfo[alias] = {'$ref': uri
                 #propinfo[alias]['_type'] = typ
-                if prop in required and 'default' not in detail:
+                if prop_id in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
-                        defaults[prop] = {}
+                        defaults[prop_id] = {}
 
             elif 'oneOf' in detail:
                 potential = self.resolve_classes(detail['oneOf'])
@@ -539,7 +541,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             elif detail.get('type') == 'array':
                 # for resolution in create in wrapper_types
                 detail['classbuilder'] = self
-                defaults.setdefault(prop, [])
+                defaults.setdefault(prop_id, [])
 
                 if 'items' in detail and utils.is_mapping(detail['items']):
                     if '$ref' in detail['items']:
@@ -604,10 +606,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
                 props[prop] = make_property(
                     prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
-                propinfo[name_translated.get(prop, prop)]['_type'] = typ
+                propinfo[prop_id]['_type'] = typ
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
-                    defaults[prop] = typ.default()
+                    defaults[prop_id] = typ.default()
 
 
         # build inner definitions
@@ -640,7 +642,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props['__prop_names__'] = name_translation
         props['__prop_names_flatten__'] = name_translation_flatten
-        props['__prop_translated_flatten__'] = name_translated
+        props['__prop_translated_flatten__'] = translation_name
 
         props['__has_default__'] = defaults
 

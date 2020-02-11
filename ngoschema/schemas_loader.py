@@ -58,10 +58,9 @@ def load_schema(schema, schemas_store=None):
             "Impossible to load schema because `id (or `$id) and `title fields"
             "are missing.\n%s" % schema)
     if schemas_store is not None:
-        if uri not in schemas_store:
-            schemas_store[uri] = schema
-        elif schema != schemas_store[uri]:
-            raise ValueError("A different schema '%s' is already registered in schema store." % uri)
+        if schema != schemas_store.get(uri, schema):
+            logger.info("Overwriting a different schema '%s' is already registered in schema store." % uri)
+        schemas_store[uri] = schema
     # add to main registry
     register_doc_with_uri_id(schema, uri)
     return uri, schema

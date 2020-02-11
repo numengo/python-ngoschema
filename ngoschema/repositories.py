@@ -361,9 +361,12 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         return xmltodict.unparse(
             {self._tag: data},
             pretty=bool(self.pretty),
+            indent=str(self.indent),
+            newl=str(self.newl),
             attr_prefix=str(self.attr_prefix),
             cdata_key=str(self.cdata_key),
-            short_empty_elements=bool(self.short_empty_elements))
+            short_empty_elements=bool(self.short_empty_elements)
+        )
 
 
 @assert_arg(0, SCH_PATH_FILE)

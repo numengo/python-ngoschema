@@ -71,6 +71,12 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         self.data.append(value)
         self.mark_or_revalidate()
 
+    def pop(self, index=-1):
+        ret = self.typed_elems[index]
+        self.data.pop(index)
+        self.mark_or_revalidate()
+        return ret
+
     def __eq__(self, other):
         if not utils.is_sequence(other):
             return False

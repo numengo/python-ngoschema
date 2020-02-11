@@ -107,8 +107,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             builder = get_builder()
             # handle case $schema is given as a canonical name
             if '/' not in props['$schema']:
-                ns_cls = cls.__schema__.split('#')
-                ns_name = {uri: name for name, uri in builder.namespaces}.get(ns_cls)
+                ns_cls, _ = cls.__schema__.split('#')
+                ns_name = {uri: name for name, uri in builder.namespaces.items()}.get(ns_cls)
                 cn = props['$schema']
                 ref = builder.get_cname_ref(cn, **{ns_name: ns_cls})
                 props['$schema'] = ref
@@ -189,11 +189,12 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
         for k, v in self.__has_default__.items():
-            if k not in props:
+            k2 = self.__prop_translated_flatten__.get(k, k)
+            if k2 not in props:
                 if self._lazyLoading:
-                    self._lazy_data.setdefault(k, copy.copy(v))
+                    self._lazy_data.setdefault(k2, copy.copy(v))
                 else:
-                    setattr(self, k, copy.copy(v))
+                    setattr(self, k2, copy.copy(v))
 
         if props.get('name'):
             if isinstance(self, mixins.HasCanonicalName):

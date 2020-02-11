@@ -77,7 +77,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
 
                 # remove defaults
                 if raw in defvs and self.no_defaults and raw not in reqs:
-                    defv = defvs.get(trans)
+                    defv = defvs.get(raw)
                     if getattr(prop, '_pattern', '') == defv or prop == defv:
                         continue
 
@@ -85,6 +85,10 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                     props[pname] = prop.identity_keys
                 else:
                     props[pname] = self.default(prop)
+
+            # lazy data
+            for pname in obj._lazy_data.keys():
+                props[pname] = obj._get_prop_value(pname)
 
             # extended properties
             for raw, prop in six.iteritems(obj._extended_properties):

@@ -119,6 +119,14 @@
                 "short_empty_elements": {
                     "type": "boolean",
                     "default": true
+                },
+                "indent": {
+                    "type": "string",
+                    "default": "\t"
+                },
+                "newl": {
+                    "type": "string",
+                    "default": "\n"
                 }
             }
         },

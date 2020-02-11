@@ -121,7 +121,7 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
         val = self._value
         if '_pattern' in self.__dict__:
             try:
-                val = TemplatedString(self._pattern)(
+                self._value = val = TemplatedString(self._pattern)(
                     this=self._context,
                     **self._input_values)
             except Exception as er:
