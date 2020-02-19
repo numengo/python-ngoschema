@@ -58,13 +58,13 @@ class ForeignKey(LiteralValue, Relationship, HasLogger):
             return
         if isinstance(value, self.foreignClass):
             self._set_ref(value)
-            self._value = str(value._get_prop_value(self.key))
+            self._value = value._get_prop_value(self.key)
         elif isinstance(value, ForeignKey):
             self._set_ref(value._ref() if value._ref else None)
             self._value = value._value
             self._dirty = value._dirty
         else:
-            self._value = str(value)
+            self._value = value.for_json() if hasattr(value, 'for_json') else value
 
     def resolve(self):
         if self._ref:

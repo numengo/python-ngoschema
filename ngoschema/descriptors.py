@@ -30,7 +30,7 @@ class AttributeDescriptor(object):
 
         propname = self.prop
         info = self.info
-        obj.logger.debug(utils.lazy_format("GET {!s}.{!s}", obj.short_repr, propname))
+        obj.logger.debug(utils.lazy_format("GET {0}.{1}", obj.short_repr, propname))
 
         # load lazy data
         if propname in obj._lazy_data:
@@ -40,7 +40,7 @@ class AttributeDescriptor(object):
                 setattr(obj, propname, v)
             except Exception as er:
                 obj._lazy_data[propname] = v
-                obj.logger.error(utils.lazy_format("GET {!s}.{!s} lazy loading failed with data {!s})",
+                obj.logger.error(utils.lazy_format("GET {0}.{1} lazy loading failed with data {2})",
                                               obj.short_repr,
                                               propname, v, to_format=[2]),
                                   exc_info=True)
@@ -55,7 +55,7 @@ class AttributeDescriptor(object):
                 prop = obj._properties[propname]
             except Exception as er:
                 info['RO_active'] = True
-                obj.logger.error( "GET {!s}.{!s}.", obj, propname, er, exc_info=True)
+                obj.logger.error("GET %s.%s %s", obj, propname, er, exc_info=True)
                 raise
         try:
             if prop is not None:
@@ -73,7 +73,7 @@ class AttributeDescriptor(object):
         prop = self.prop
         info = self.info
         obj.logger.debug(
-            utils.lazy_format("SET {!s}.{!s}={!s}", obj.short_repr, prop, val, to_format=[2]))
+            utils.lazy_format("SET {0}.{1}={2}", obj.short_repr, prop, val, to_format=[2]))
         if val is None and prop not in obj.__required__:
             obj._properties[prop] = None
             return
@@ -236,7 +236,7 @@ class AttributeDescriptor(object):
 
     def __delete__(self, obj):
         prop = self.prop
-        obj.logger.debug(utils.lazy_format("DEL {!s}.{!s}", obj.short_repr, prop))
+        obj.logger.debug(utils.lazy_format("DEL {0}.{1}", obj.short_repr, prop))
         if prop in obj.__required__:
             raise AttributeError("'%s' is required" % prop)
         else:

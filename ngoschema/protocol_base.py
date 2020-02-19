@@ -21,7 +21,7 @@ import copy
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
     util as pjo_util, \
-    literals as pjo_literals, \
+    literals as pjo_literals
 
 from python_jsonschema_objects.validators import ValidationError
 
@@ -33,6 +33,8 @@ from .validators.jsonschema import DefaultValidator
 from .utils.json import ProtocolJSONEncoder
 from .decorators import classproperty, memoized_property
 from .utils import lazy_format
+from .wrapper_types import ArrayWrapper
+from .literals import LiteralValue
 
 
 def get_descendant(obj, key_list, load_lazy=False):
@@ -232,7 +234,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self.do_validate()
                 self.set_clean()
             except Exception as er:
-                self.logger.error('Problem initializing %s.: %s ', self, er)
+                self.logger.error("INIT %s: %s", self, er)
                 raise
 
         self.post_init_hook(*args, **props)
@@ -332,7 +334,25 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             if self._lazy_data and self._validateLazy:
                 pass
         else:
-            pjo_classbuilder.ProtocolBase.validate(self)
+            missing = self.missing_property_names()
+            if len(missing) > 0:
+                raise ValidationError("'{0}' are required attributes for {1}".format(missing, self.__class__.__name__))
+
+            for prop, val in self._properties.items():
+                if val is None:
+                    continue
+
+                if isinstance(val, (ProtocolBase, ArrayWrapper, LiteralValue)):
+                    val.validate()
+                elif getattr(val, "isLiteralClass", None) is True:
+                    val.validate()
+                else:
+                    # This object is of the wrong type, but just try setting it
+                    # The property setter will enforce its correctness
+                    # and handily coerce its type at the same time
+                    setattr(self, prop, val)
+
+            return True
 
     @classmethod
     def issubclass(cls, klass):
