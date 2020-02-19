@@ -274,6 +274,9 @@ def import_from_string(value):
     """
     Imports a symbol from a string
     """
+    if '/' in value:
+        from ..classbuilder import get_builder
+        return get_builder().resolve_or_construct(value)
     poss = [m.start() for m in re.finditer(r"\.", "%s." % value)]
     # going backwards
     for pos in reversed(poss):
@@ -380,7 +383,11 @@ def is_importable(value):
     """
     if is_string(value):
         try:
-            value = import_from_string(value)
+            if '/' in value:
+                from ..classbuilder import get_builder
+                value = get_builder().resolve_or_construct(value)
+            else:
+                value = import_from_string(value)
             return True
         except Exception as er:
             return False

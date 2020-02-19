@@ -5,19 +5,6 @@ from ngoschema import utils, get_builder, SchemaMetaclass, ProtocolBase
 from ngoschema.utils import GenericClassRegistry
 
 
-def _process_cls(value):
-    if not value:
-        return None
-    value = str(value)
-    if utils.is_importable(value):
-        return utils.import_from_string(value)
-    else:
-        try:
-            return get_builder().resolve_or_construct(value)
-        except Exception as er:
-            raise ValueError("impossible to import or resolve '%s'" % value)
-
-
 class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Class to do simple model to model transformation
@@ -26,8 +13,8 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
-        self._from_cls = _process_cls(self.from_)
-        self._to_cls = _process_cls(self.to_)
+        self._from_cls = self.from_._imported if self.from_ else None
+        self._to_cls = self.to_._imported if self.to_ else None
 
     @abstractmethod
     def __call__(self, src, *args):

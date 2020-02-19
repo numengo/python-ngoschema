@@ -9,12 +9,10 @@
           "additionalProperties": false,
           "properties": {
             "to_": {
-               "format": "uri-reference",
-                "type": "string"
+                "type": "importable"
             },
             "from_": {
-                "format": "uri-reference",
-                "type": "string"
+                "type": "importable"
             }
           }
       }

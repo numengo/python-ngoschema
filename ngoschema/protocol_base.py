@@ -21,9 +21,9 @@ import copy
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
     util as pjo_util, \
-    wrapper_types as pjo_wrapper_types, \
     literals as pjo_literals, \
-    validators as pjo_validators
+
+from python_jsonschema_objects.validators import ValidationError
 
 from . import utils
 from . import mixins
@@ -224,11 +224,15 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 for k, prop in props.items():
                     k2 = self.__prop_translated_flatten__.get(k, k)
                     setattr(self, k2, prop)
+                # call getters on all required not defined in props
+                for k in self.__required__:
+                    if k not in props:
+                        getattr(self, k)
                 if self._strict:
                     self.do_validate()
                 self.set_clean()
             except Exception as er:
-                self.logger.error('problem initializing "%s" in  %s.', k, self, exc_info=True)
+                self.logger.error('Problem initializing %s.: %s ', self, er)
                 raise
 
         self.post_init_hook(*args, **props)
@@ -312,11 +316,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     _def_enc = ProtocolJSONEncoder()
 
-    def for_json(self):
+    def for_json(self, **opts):
         # _for_json is invalidated in HasCache.touch
-        if self._for_json is None:
-            self._for_json = self._def_enc.default(self)
-        return self._for_json
+        if not opts:
+            return self._def_enc.default(self)
+        return ProtocolJSONEncoder(**opts).default(self)
 
     @classmethod
     def jsonschema(cls):
@@ -471,16 +475,21 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             # run its setter. We get it from the class definition and call
             # it directly. XXX Heinous.
             prop = getattr(self.__class__, name)
-            prop.__set__(self, val)
+            try:
+                prop.__set__(self, val)
+            except (TypeError, ValidationError) as er:
+                raise six.reraise(ValidationError,
+                                  ValidationError("Problem setting property '{0}': {1} ".format(name, er)),
+                                  sys.exc_info()[2])
         else:
             # This is an additional property of some kind
             try:
                 casted = val.for_json() if hasattr(val, 'for_json') else val
                 val = self.__extensible__.instantiate(name, casted)
-            except Exception as e:
-                raise pjo_validators.ValidationError(
-                    "Attempted to set unknown property '{0}': {1} ".format(name, e)
-                )
+            except (TypeError, ValidationError) as er:
+                raise six.reraise(ValidationError,
+                                  ValidationError("Attempt to set unknown property '{0}': {1} ".format(name, er)),
+                                  sys.exc_info()[2])
             self._extended_properties[name] = val
 
     def _get_prop(self, name):
@@ -489,7 +498,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         if self._lazyLoading and name in self._lazy_data:
             setattr(self, name, self._lazy_data.pop(name))
-        if name in self.__prop_names_flatten__.values():
+        name = self.__prop_names_flatten__.get(name, name)
+        if name in self._properties:
             return self._properties.get(name)
         return self._extended_properties.get(name)
 

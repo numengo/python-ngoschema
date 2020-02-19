@@ -23,11 +23,13 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                  no_defaults=True,
                  remove_refs=True,
                  attr_prefix='',
+                 excludes=None,
                  **kwargs):
         from .. import settings
         self.no_defaults = no_defaults
         self.remove_refs = remove_refs
         self.attr_prefix = attr_prefix
+        self.excludes = excludes or []
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
@@ -57,7 +59,11 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
 
             # declared properties
             for raw, trans in six.iteritems(obj.__prop_names_flatten__):
+                # excluded at schema level
                 if raw in ns:
+                    continue
+                # excluded at encoder lever
+                if set([raw, trans]).intersection(self.excludes):
                     continue
 
                 prop = getattr(obj, trans, None)

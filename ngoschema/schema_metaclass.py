@@ -16,6 +16,7 @@ from jsonschema.compat import iteritems
 from . import decorators
 from . import utils
 from .classbuilder import get_builder
+from .literals import LiteralValue
 from ngoschema.inspect.inspect_objects import FunctionInspector
 from .resolver import get_resolver
 from .validators.jsonschema import DefaultValidator
@@ -87,6 +88,9 @@ class SchemaMetaclass(type):
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, etc...
         for k, fn in attrs.items():
+            # add declared fields to schema
+            if utils.is_class(fn) and issubclass(fn, LiteralValue):
+                schema.setdefault(k, fn.__propinfo__['__literal__'])
             if not (utils.is_method(fn) or utils.is_function(fn)):
                 continue
             add_logging = attrs.get("__add_logging__", False)

@@ -32,6 +32,7 @@ from .schema_metaclass import SchemaMetaclass
 from .protocol_base import ProtocolBase
 from .repositories import *
 from .query import Query, Filter
+from .literals import LiteralValue, TextField, ImportableField, IntegerField
 
 __all__ = [
     'settings',
@@ -56,6 +57,11 @@ __all__ = [
     'with_metaclass',
     'SchemaMetaclass',
     'ProtocolBase',
+    # literals
+    'LiteralValue',
+    'TextField',
+    'ImportableField',
+    'IntegerField',
     # query
     'Query',
     'Filter',

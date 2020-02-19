@@ -31,11 +31,12 @@ from .utils import is_string, is_sequence
 
 logger = logging.getLogger(__name__)
 
+
 def domain_uri(name, domain=None):
     from . import settings
-    from .classbuilder import clean_ns_name
+    from .classbuilder import clean_ns_uri
     domain = domain or settings.MS_DOMAIN
-    return "%s%s" % (domain, clean_ns_name(name))
+    return "%s%s" % (domain, clean_ns_uri(name))
 
 
 _uri_doc_store = UriDict()

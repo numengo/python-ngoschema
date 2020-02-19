@@ -145,10 +145,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                             val = typ(_parent=self._parent,
                                       **self._parent._childConf,
                                       **util.coerce_for_expansion(elem))
-                    except Exception as e:
-                        self._parent.logger.error('problem instanciating array item [%i]', i, exc_info=True)
-                        raise ValidationError("'{0}' is not a valid value for '{1}': {2}"
-                                              .format(elem, typ, e))
+                    except (TypeError, ValidationError) as er:
+                        raise six.reraise(ValidationError,
+                                          ValidationError("Problem setting array item [%i]: %s " % (i, er)),
+                                          sys.exc_info()[2])
                 else:
                     val = elem
                     val._parent = self._parent
@@ -174,9 +174,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                         val = typ.ref_class(**self._parent._childConf,
                                   **util.coerce_for_expansion(elem),
                                   _parent=self._parent)
-                except TypeError as e:
-                    six.reraise(ValidationError,
-                                ValidationError("'%s' is not a valid value for '%s'" % (elem, typ)))
+                except (TypeError, ValidationError) as er:
+                    raise six.reraise(ValidationError,
+                                      ValidationError("Problem setting array item [%i]: %s " % (i, er)),
+                                      sys.exc_info()[2])
                 val.do_validate()
                 typed_elems.append(val)
 

@@ -89,13 +89,13 @@ class HasParent:
         for c in self._children:
             c._touch_children()
 
-    def get_root(self):
+    def _get_root(self):
         cur = self
         while cur._parent:
             cur = cur._parent
         return cur
 
-    def get_path(self):
+    def _get_path(self):
         cur = self
         path = []
         while cur:
@@ -127,9 +127,9 @@ class HasParent:
             cur = par
         return path
 
-    def get_relative_path(self, src):
-        dst_p = self.get_path()
-        src_p = src.get_path()
+    def _get_relative_path(self, src):
+        dst_p = self._get_path()
+        src_p = src._get_path()
         # find common root - take common elements and the go back to the root array if element is in an array
         common = [i for i, j in zip(dst_p, src_p) if i == j]
         lc = len(common)
@@ -141,12 +141,11 @@ class HasParent:
 
     @memoized_property
     def handler(self):
-        return self.get_root()._handler
+        return self._get_root()._handler
 
     @memoized_property
     def session(self):
         return self.handler._session
-
 
     _children = property(_get_children)
 
@@ -237,7 +236,6 @@ class HandleRelativeCname:
 
 class HasCache:
     _context = None
-    _for_json = None
     _cache = None
     _inputs = set()
     _outputs = set()
@@ -295,7 +293,6 @@ class HasCache:
 
     def touch(self, recursive=False):
         self._dirty = True
-        self._for_json = None
         if recursive:
             for k, p in self._output_props.items():
                 p.touch()

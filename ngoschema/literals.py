@@ -6,7 +6,7 @@ from . import utils
 from .mixins import HasCache
 from .validators import validator_registry, converter_registry, formatter_registry
 from .decorators import memoized_property
-from .validators import pjo
+
 
 def make_literal(name, subclass, base, **schema):
     converter = None
@@ -129,10 +129,31 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
                 val = self._pattern
 
         # replace the more expensive call to pjo_literals.LiteralValue.validate
-        #pjo_literals.LiteralValue.validate(self)
         if self._validator:
             self._validator(val)
 
         # type importable: store imported as protected member
         if self._is_importable and not hasattr(self, '_imported'):
             self._imported = utils.import_from_string(self._value)
+
+# EXPERIMENTAL: attempt
+class TextField(object):
+    def __new__(self, *args, **kwargs):
+        schema = {'type': 'string'}
+        schema.update(**kwargs)
+        return make_literal('TextField', str, (LiteralValue, ), **schema)
+
+
+class ImportableField(object):
+    def __new__(self, *args, **kwargs):
+        schema = {'type': 'importable'}
+        schema.update(**kwargs)
+        return make_literal('ImportableField', str, (LiteralValue, ), **schema)
+
+
+class IntegerField(object):
+    def __new__(self, *args, **kwargs):
+        schema = {'type': 'string'}
+        schema.update(**kwargs)
+        return make_literal('IntegerField', str, (LiteralValue, ), **schema)
+

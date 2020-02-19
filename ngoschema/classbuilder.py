@@ -28,6 +28,7 @@ from . import utils
 from .resolver import get_resolver, qualify_ref, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
 from .literals import make_literal
+from .validators.pjo import convert_to_literal
 from .decorators import memoized_method
 from . import settings
 
@@ -64,6 +65,10 @@ def clean_prop_name(name):
 
 def clean_ns_name(name):
     return inflection.underscore(name).replace('-', '_')
+
+
+def clean_ns_uri(name):
+    return clean_ns_name(name).replace('_', '-')
 
 
 def get_default_ns_name(ns_uri):
@@ -295,7 +300,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # currently building as "under construction"
         self.under_construction.add(nm)
 
-        parents_scope = set([current_scope])
+        parents_scope = [current_scope]
 
         def scoped_uri(uri):
             return qualify_ref(uri, current_scope)
@@ -339,7 +344,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         def add_extend_recursively_to_scope(exts):
             for e in exts:
                 uri, ext = resolve_in_scope(e)
-                parents_scope.add(uri.rsplit("#", 1)[0])
+                scope = uri.rsplit("#", 1)[0]
+                if scope not in parents_scope:
+                    parents_scope.append(scope)
                 add_extend_recursively_to_scope(ext.get('extends', []))
 
         add_extend_recursively_to_scope(extends)
@@ -355,10 +362,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # add parent attributes to class attribute list
         for p in reversed(parents):
             if hasattr(p, '__schema__'):
-                parents_scope.add(p.__schema__.rsplit("#", 1)[0])
-            #object_attr_list.update(getattr(p, '__object_attr_list__', []))
-            #object_attr_list.update([a for a, v in p.__dict__.items()
-            #                             if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
+                scope = p.__schema__.rsplit("#", 1)[0]
+                if scope not in parents_scope:
+                    parents_scope.append(scope)
+            # add non protected attributes of parents not protocol based to object_attr_list
+            if not issubclass(p, ProtocolBase):
+                object_attr_list.update([a for a in p.__dict__ if not a.startswith('_')])
             defaults.update(getattr(p, '__has_default__', {}))
 
         propinfo = OrderedDict(cls_schema.get('properties', {}))
@@ -415,39 +424,45 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         read_only.update(cls_schema.get('readOnly', []))
         not_serialized.update(cls_schema.get('notSerialized', []))
 
-        # looking for default values, getters and setters overriding inherited properties
-        from_parents = set(name_translation_flatten.values()).difference(name_translation.values())
-        for pn in from_parents:
-            # get default value from class attributes or schema
-            defv = class_attrs.get(pn) # or cls_schema.get(pn)  # schema should not define properties
-            getter = class_attrs.get('get_' + pn)
-            setter = class_attrs.get('set_' + pn)
-            if defv:
-                defaults[translation_name.get(pn, pn)] = defv
-            if defv or getter or setter:
-                logger.warning("redefining property '%s' to use new default value, getter or setter from class code." % pn)
-                for p in parents:
-                    pi = p.propinfo(pn) if issubclass(p, ProtocolBase) else None
-                    if pi:
-                        getter = getattr(p, 'get_' + pn, None)
-                        setter = getattr(p, 'set_' + pn, None)
-                        defv = getattr(p, '__has_default__', {}).get(pn)
-                        # add a copy of default value, setter, getter of parents into class if not already existing
-                        for k, v in zip([pn, 'get_' + pn,  'set_' + pn],
-                                        [defv, getter, setter]):
-                            if v and k not in class_attrs:
-                                class_attrs[k] = v
-                        propinfo[name_translation_flatten[pn]] = pi.copy()
-                        break
-                else:
-                    raise AttributeError("Impossible to find inherited property '%s' in schema" % pn)
+        # inherited properties / looking for redefined getters/setters/default value in local definition
+        for prop, trans in name_translation_flatten.items():
+            if prop not in name_translation: # to keep props declared in parents
+                defv = class_attrs.get(trans) or cls_schema.get(prop)
+                getter = class_attrs.get('get_' + trans)
+                setter = class_attrs.get('set_' + trans)
+                if getter or setter or defv:
+                    for p in parents:
+                        # if a getter/setter/default is redefined, get a copy from the property
+                        if issubclass(p, ProtocolBase):
+                            pi = p.propinfo(prop).copy()
+                            if pi:
+                                if '$ref' in pi:
+                                    ref, pi = resolve_in_scope(pi['$ref'])
+                                    pi = pi.copy()
+                                if defv:
+                                    pi['default'] = convert_to_literal(defv, pi)
+                                propinfo.setdefault(prop, pi)
+                                break
+                    else:
+                        raise AttributeError("Impossible to find inherited property '%s' in schema" % prop)
 
+        # locally properties / looking for inherited getters/setters/default value and copy in local class attributes
+        for prop, trans in name_translation.items():
+            for p in parents:
+                getter = getattr(p, 'get_' + trans, None)
+                if getter is not None:
+                    class_attrs.setdefault('get_' + trans, getter)
+                setter = getattr(p, 'set_' + trans, None)
+                if setter is not None:
+                    class_attrs.setdefault('set_' + trans, setter)
+
+        # process all properties (default values, getter, setter, and type construction
         for prop_id, detail in propinfo.items():
             prop_uri = f'{nm}/properties/{prop_id}'
             prop = name_translation_flatten[prop_id]
 
             # look for getter/setter/defaultvalue first in class definition
-            defv = class_attrs.get(prop) # or cls_schema.get(prop)  # schema should not define properties
+            defv = class_attrs.get(prop)
             if defv is not None and (
                 inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
                 raise AttributeError(
@@ -467,10 +482,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
-            if prop_id in required and 'default' not in detail and detail.get('type') == 'object':
-                    detail['default'] = {}
+            if getter and 'default' in detail:
+                del detail['default']
 
-            if detail.get('default') is None and detail.get('type') == 'array':
+            if getter is None and prop_id in required and 'default' not in detail and detail.get('type') == 'object':
+                detail['default'] = {}
+
+            if getter is None and detail.get('default') is None and detail.get('type') == 'array':
                 detail['default'] = []
 
             if detail.get('default') is not None:
@@ -498,13 +516,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 ref, _ = resolve_in_scope(detail['$ref'])
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}", ref, nm, prop))
-                #uri, sch_ref = resolve_in_scope(ref)
-                #if uri in self.resolved:
-                #    typ = self.resolved[uri]
-                #else:
-                #    global count
-                #    count = count + 1
-                #    typ = self.construct(uri, sch_ref, (ProtocolBase,))
 
                 typ = self.resolve_or_construct(ref)
 
@@ -513,15 +524,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     fget=getter,
                     fset=setter,
                     desc=typ.__doc__)
+                propinfo[prop_id]['_type'] = typ
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop_id] = typ.default()
                 elif issubclass(typ, ArrayWrapper) and 'default' not in detail:
                     defaults[prop_id] = []
 
-                #alias = translation_name.get(prop, prop) if prop not in propinfo else prop
-                #propinfo[alias] = {'$ref': uri
-                #propinfo[alias]['_type'] = typ
                 if prop_id in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
                         defaults[prop_id] = {}
@@ -540,66 +549,71 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             elif detail.get('type') == 'array':
                 # for resolution in create in wrapper_types
-                detail['classbuilder'] = self
-                defaults.setdefault(prop_id, [])
-
-                if 'items' in detail and utils.is_mapping(detail['items']):
-                    if '$ref' in detail['items']:
-                        constraints = copy.copy(detail)
-                        constraints["strict"] = kw.get("_strict")
-                        uri, _ = resolve_in_scope(detail['items']['$ref'])
-                        typ = self.construct(uri, detail['items'])
-                        detail['items']['_type'] = typ
+                constraints = copy.copy(detail)
+                constraints['classbuilder'] = self
+                if 'items' in detail:
+                    if utils.is_mapping(detail['items']):
+                        if '$ref' in detail['items']:
+                            constraints["strict"] = kw.get("_strict")
+                            uri, _ = resolve_in_scope(detail['items']['$ref'])
+                            typ = self.construct(uri, detail['items'])
+                            detail['items']['_type'] = typ
+                            propdata = {
+                                'type': 'array',
+                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                            }
+                        else:
+                            try:
+                                if 'oneOf' in detail['items']:
+                                    typ = pjo_classbuilder.TypeProxy([
+                                        self.construct(uri + '_%s' % i,
+                                                       item_detail)
+                                        if '$ref' not in item_detail else
+                                        self.construct(
+                                            resolve_in_scope(item_detail['$ref'])[0],
+                                            item_detail,
+                                        ) for i, item_detail in enumerate(detail[
+                                            'items']['oneOf'])
+                                    ])
+                                else:
+                                    typ = self._construct(prop_uri+'/items', detail['items'])
+                                constraints = copy.copy(detail)
+                                constraints["strict"] = kw.get("_strict")
+                                propdata = {
+                                    'type': 'array',
+                                    'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                                }
+                            except NotImplementedError:
+                                typ = detail["items"]
+                                constraints = copy.copy(detail)
+                                constraints["strict"] = kw.get("_strict")
+                                propdata = {
+                                    'type': 'array',
+                                    'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                                }
+                    elif utils.is_sequence(detail['items']):
+                        typs = []
+                        for i, elem in enumerate(detail['items']):
+                            uri = '{0}/{1}>'.format(prop_uri, i)
+                            typ = self.construct(uri, elem)
+                            typs.append(typ)
                         propdata = {
                             'type': 'array',
-                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typs, **constraints),
                         }
-                    else:
-                        try:
-                            if 'oneOf' in detail['items']:
-                                typ = pjo_classbuilder.TypeProxy([
-                                    self.construct(uri + '_%s' % i,
-                                                   item_detail)
-                                    if '$ref' not in item_detail else
-                                    self.construct(
-                                        resolve_in_scope(item_detail['$ref'])[0],
-                                        item_detail,
-                                    ) for i, item_detail in enumerate(detail[
-                                        'items']['oneOf'])
-                                ])
-                            else:
-                                typ = self._construct(prop_uri+'/items', detail['items'])
-                            constraints = copy.copy(detail)
-                            constraints["strict"] = kw.get("_strict")
-                            propdata = {
-                                'type': 'array',
-                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                            }
-                        except NotImplementedError:
-                            typ = detail["items"]
-                            constraints = copy.copy(detail)
-                            constraints["strict"] = kw.get("_strict")
-                            propdata = {
-                                'type': 'array',
-                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                            }
+                else:
+                    typ = self._construct(prop_uri + '/items', {'type': 'string'})
+                    propdata = {
+                        'type': 'array',
+                        'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                    }
 
-                    props[prop] = make_property(
-                        prop,
-                        propdata,
-                        fget=getter,
-                        fset=setter,
-                        desc=typ.__doc__)
-                elif 'items' in detail:
-                    #typs = []
-                    for i, elem in enumerate(detail['items']):
-                        uri = '{0}/{1}>'.format(prop_uri, i)
-                        typ = self.construct(uri, elem)
-                        #typs.append(typ)
-
-                    props[prop] = make_property(
-                        prop, {'type': 'array', '_type': typ}, fget=getter, fset=setter, desc=detail.get('description'))
-
+                props[prop] = make_property(
+                    prop,
+                    propdata,
+                    fget=getter,
+                    fset=setter,
+                    desc=typ.__doc__)
             else:
                 desc = detail['description'] if 'description' in detail else ''
                 typ = self.construct(prop_uri, detail)
@@ -610,7 +624,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop_id] = typ.default()
-
 
         # build inner definitions
         inner_defs = {}
@@ -681,7 +694,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for k, v in inner_defs.items():
             setattr(cls, k, v)
 
-        if nm not in self.resolved:
+        if nm in self.under_construction:
             self.under_construction.remove(nm)
 
         # set default from config file

@@ -150,7 +150,6 @@ def check_importable_type(param, value, _):
     if not is_importable(value):
         raise ValidationError("{0} is not a importable string".format(value))
 
-
 # converters
 ############
 @converter_registry.register(name="boolean")
@@ -191,6 +190,8 @@ def convert_number(value, type_data):
 @converter_registry.register(name="importable")
 def convert_importable(value, type_data):
     if not utils.is_string(value) and utils.is_imported(value):
+        if hasattr(value, '__schema__'):
+            return value.__schema__
         return utils.fullname(value)
     return value
 
@@ -205,8 +206,9 @@ def convert_array(value, type_data):
 @converter_registry.register(name="enum")
 def convert_enum(value, type_data):
     if isinstance(value, int) and "enum" in type_data:
-        if (value - 1) < len(type_data["enum"]):
-            return type_data["enum"][value - 1]
+        if type_data.get('type') != 'integer':
+            if (value - 1) < len(type_data["enum"]):
+                return type_data["enum"][value - 1]
     return value
 
 
@@ -328,3 +330,26 @@ def format_datetime(value, type_data=None):
         fmt = type_data["format"]
         return value.format(fmt)
     return str(value)
+
+
+@formatter_registry.register(name="importable")
+def format_importable(value, type_data=None):
+    return utils.fullname(value) if utils.is_imported(value) else str(value)
+
+
+def convert_to_literal(value, type_data=None):
+    if type_data:
+        typ = type_data.get('type', 'string')
+        check = type_registry(typ)
+        check(0, value, type_data)
+        convert = converter_registry(typ)
+        return convert(value, type_data) if convert else value
+    else:
+        for typ, check in type_registry.registry.items():
+            try:
+                check(0, value, {})
+                convert = converter_registry(typ)
+                return convert(value, {})
+            except Exception as er:
+                pass
+        return str(value)
