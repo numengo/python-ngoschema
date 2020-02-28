@@ -50,17 +50,17 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Class to store read/write operations of objects
     """
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Repository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Repository"
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
         self._catalog = Registry()
         self._class = self.objectClass._imported if self.objectClass is not None else None
-        self._fkeys = None
-        if self.fkeys is not None:
-            self._fkeys = self.fkeys.for_json()
+        self._pkeys = None
+        if self.primaryKeys is not None and self.primaryKeys:
+            self._pkeys = self.primaryKeys.for_json()
         elif issubclass(self._class, Entity):
-            self._fkeys = tuple(self._class.primaryKeys)
+            self._pkeys = tuple(self._class._primaryKeys)
         self._session = None
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
 
@@ -71,11 +71,11 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def _identity_key(self, instance):
         if self._class and not isinstance(instance, self._class):
             raise Exception("%r is not an instance of %r" % (instance, self._class))
-        if self._fkeys:
-            if len(self._fkeys) > 1:
-                return tuple([instance._get_prop_value(k) for k in self._fkeys])
+        if self._pkeys:
+            if len(self._pkeys) == 1:
+                return instance._get_prop_value(self._pkeys[0])
             else:
-                return instance._get_prop_value(self._fkeys[0])
+                return tuple([instance._get_prop_value(k) for k in self._pkeys])
         return id(instance)
 
     def register(self, instance):
@@ -178,7 +178,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 
 class FilterRepositoryMixin(object):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/FilterRepositoryMixin"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/FilterRepositoryMixin"
 
     def filter_data(self, data):
         only = self.only.for_json() if self.only else ()
@@ -188,7 +188,7 @@ class FilterRepositoryMixin(object):
 
 
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/MemoryRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/MemoryRepository"
 
     def commit(self):
         raise InvalidOperationException('commit is not possible with MemoryRepository')
@@ -199,7 +199,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterReposit
 
 
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/FileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/FileRepository"
 
     def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
@@ -271,7 +271,7 @@ def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
 
 @repository_registry.register()
 class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/JsonFileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/JsonFileRepository"
 
     def __init__(self, **kwargs):
         FileRepository.__init__(self, **kwargs)
@@ -297,7 +297,7 @@ def load_json_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/YamlFileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/YamlFileRepository"
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
@@ -320,7 +320,7 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/XmlFileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/XmlFileRepository"
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):
         FileRepository.__init__(self, **kwargs)
@@ -379,7 +379,7 @@ def load_xml_from_file(fp, session=None, **kwargs):
 
 @repository_registry.register()
 class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2FileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2FileRepository"
 
     def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
         """
@@ -409,7 +409,7 @@ class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
 @repository_registry.register()
 class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroFileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroFileRepository"
 
     def serialize_data(self, data):
         macro_args = self.macroArgs.for_json()
@@ -430,7 +430,7 @@ class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileReposi
 
 @repository_registry.register()
 class Jinja2MacroTemplatedPathFileRepository(with_metaclass(SchemaMetaclass, Jinja2MacroFileRepository)):
-    __schema__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroTemplatedPathFileRepository"
+    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroTemplatedPathFileRepository"
 
     def serialize_data(self, data):
         self.logger.info('SERIALIZE Jinja2MacroFileRepository')

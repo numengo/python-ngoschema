@@ -97,6 +97,7 @@ def isPathExisting(param, value, type_data):
 
 # type checkers
 ################
+
 BOOLEAN_TRUE_STR_LIST = ['true']
 BOOLEAN_FALSE_STR_LIST = ['false']
 @type_registry.register(name='boolean')
@@ -111,15 +112,19 @@ def check_boolean_type(param, value, _):
 
 @type_registry.register(name="string")
 def check_string_type(param, value, _):
+    from ..literals import LiteralValue
     if not isinstance(value, string_types):
+        #if not (isinstance(value, LiteralValue) and value.__subclass__ in string_types):
         raise ValidationError("{0} is not a string".format(value))
 
 
 @type_registry.register(name="number")
 def check_number_type(param, value, _):
-    if not isinstance(value, six.integer_types + (float, Decimal)):
-        raise ValidationError(
-            "{0} is neither an integer nor a float".format(value))
+    from ..literals import LiteralValue
+    number_types = six.integer_types + (float, Decimal)
+    if not isinstance(value, number_types):
+        #if not (isinstance(value, LiteralValue) and value.__subclass__ in number_types):
+        raise ValidationError("{0} is neither an integer nor a float".format(value))
 
 
 @type_registry.register(name="path")
@@ -190,8 +195,8 @@ def convert_number(value, type_data):
 @converter_registry.register(name="importable")
 def convert_importable(value, type_data):
     if not utils.is_string(value) and utils.is_imported(value):
-        if hasattr(value, '__schema__'):
-            return value.__schema__
+        if hasattr(value, '__schema_uri__'):
+            return value.__schema_uri__
         return utils.fullname(value)
     return value
 

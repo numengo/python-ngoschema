@@ -90,7 +90,6 @@ def clean_uri(uri):
     uri = uri.lower().replace('_', '-')
     return uri if frag is None else uri + '#' + frag
 
-count =0
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
@@ -114,9 +113,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
     def __init__(self, resolver):
         pjo_classbuilder.ClassBuilder.__init__(self, resolver)
-        self._imported = {}
+        #self._imported = {}
         self._usernamespace = {}
-        self._django_ns = domain_uri('django')
 
     def set_namespace(self, ns, uri):
         self._usernamespace[ns] = uri
@@ -132,8 +130,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
     def get_ref_cname(self, ref, **ns):
         ns_ = {k: uri for k, uri in ChainMap(ns, self._usernamespace, self._namespaces).items()}
-        ns_names = sorted([k for k, uri in ns_.items() if ref.startswith(uri)],
-                          key=lambda x: len(x[1]))
+        ns_names = [k for k, uri in sorted(ns_.items(), key=lambda x: len(x[1]), reverse=True)
+                    if ref.startswith(uri)]
         if ns_names:
             ns_name = ns_names[0]
             ns = ns_[ns_name]
@@ -154,7 +152,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
     def get_cname_ref(self, cname, **ns):
         ns_ = {k: uri for k, uri in ChainMap(ns, self._usernamespace, self._namespaces).items()}
-        for name, uri in ns_.items():
+        # iterate on namespace sorted from the longest to get the most qualified
+        for name, uri in sorted(ns_.items(), key=lambda x: len(x[0]), reverse=True):
             if cname.startswith(name) and (cname == name or cname[len(name)] == '.'):
                 ns_uri = ns_[name]
                 cname = cname[len(name)+1:]
@@ -162,11 +161,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         else:
             # retrieve local namespace if any
             ns_uri = ns_.get('')
-            _ns = '.'.join(filter(lambda x: x[0].islower(), cname.split('.'))) or clean_ns_name(cname.split('.')[0])
             # or build a domain name from the first part of its canonical name
-            ns_uri = ns_uri or domain_uri(get_default_ns_name(_ns))
-            # set a default domain uri
-            cname = cname.split('.', 1)[-1]
+            ns_uri = ns_uri or domain_uri(clean_ns_uri(cname.split('.')[0]))
         if '#' not in ns_uri:
             ns_uri += '#'
         if not cname:
@@ -288,9 +284,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     def _build_object(self, nm, clsdata, parents, **kw):
         logger.debug(pjo_util.lazy_format("Building object {0}", nm))
 
+        class_attrs = kw.get('class_attrs', {})
+
         if '/' not in nm:
-            ref = nm
-            nm = self.get_cname_ref(ref)
+            module = class_attrs.get('__module__')
+            if module:
+                nm = self.get_cname_ref(f'{module}.{nm}')
 
         current_scope = nm.rsplit("#", 1)[0]
         ns_name = self.namespace_name(current_scope) or get_default_ns_name(current_scope)
@@ -299,6 +298,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # To support circular references, we tag objects that we're
         # currently building as "under construction"
         self.under_construction.add(nm)
+
+        # build inner definitions
+        inner_defs = {}
+        for def_name, detail in clsdata.get('definitions', {}).items():
+            def_uri = f'{nm}/definitions/{def_name}'
+            inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,), **kw)
 
         parents_scope = [current_scope]
 
@@ -318,13 +323,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 raise ReferenceError('impossible to resolve %s in %s' % (ref, parents_scope))
 
         # necessary to build type
-        cls_name = inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
+        cls_name = kw.get('class_name') or inflection.camelize(native_str(nm.split("/")[-1]).replace('-', '_'))
 
         props = dict()
         defaults = dict()
         dependencies = dict()
-
-        class_attrs = kw.get('class_attrs', {})
 
         # complete object attribute list with class attributes to use prop attribute setter
         object_attr_list = set()
@@ -336,7 +339,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                      if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
 
         cls_schema = clsdata
-        props['__schema__'] = nm
+        props['__schema_uri__'] = nm
+        props['__schema__'] = cls_schema
 
         # parent classes (remove any django definition as it would trigger metaclass conflicts)
         extends = [scoped_uri(ext) for ext in cls_schema.get('extends', [])]
@@ -357,12 +361,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         if not isinstance(e, pjo_classbuilder.TypeRef)
                         and not any(issubclass(_, e) for _ in e_parents if e is not _)
                         and not any(issubclass(p, e) for p in parents))
-        parents = e_parents_sorted + tuple(p for p in parents if not any(issubclass(e, p) for e in e_parents_sorted))
+        parents = tuple(p for p in parents if not any(issubclass(e, p) for e in e_parents_sorted)) + e_parents_sorted
 
         # add parent attributes to class attribute list
         for p in reversed(parents):
-            if hasattr(p, '__schema__'):
-                scope = p.__schema__.rsplit("#", 1)[0]
+            if hasattr(p, '__schema_uri__'):
+                scope = p.__schema_uri__.rsplit("#", 1)[0]
                 if scope not in parents_scope:
                     parents_scope.append(scope)
             # add non protected attributes of parents not protocol based to object_attr_list
@@ -428,6 +432,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for prop, trans in name_translation_flatten.items():
             if prop not in name_translation: # to keep props declared in parents
                 defv = class_attrs.get(trans) or cls_schema.get(prop)
+                # if a value is defined at class level, then it s read-only and should not be set/overwritten by setters
+                if defv:
+                    read_only.add(prop)
                 getter = class_attrs.get('get_' + trans)
                 setter = class_attrs.get('set_' + trans)
                 if getter or setter or defv:
@@ -625,12 +632,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop_id] = typ.default()
 
-        # build inner definitions
-        inner_defs = {}
-        for def_name, detail in clsdata.get('definitions', {}).items():
-            def_uri = f'{nm}/definitions/{def_name}'
-            inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,), **kw)
-
         """
         If this object itself has a 'oneOf' designation, then
         make the validation 'type' the list of potential objects.
@@ -677,7 +678,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         # default value on children force its resolution at each init
         # seems the best place to treat this special case
-        props['__schema__'] = kw.get('$schema') or class_attrs.get('__schema__', nm)
+        props['__schema_uri__'] = kw.get('$schema') or class_attrs.get('__schema_uri__', nm)
         props['__add_logging__'] = kw.get('_addLogging') or class_attrs.get('__add_logging__', False)
         props['__attr_by_name__'] = kw.get('_attrByName') or class_attrs.get('__attr_by_name__', False)
         props['__validate_lazy__'] = kw.get('_validateLazy') or class_attrs.get('__validate_lazy__', False)

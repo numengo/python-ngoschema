@@ -288,7 +288,7 @@ def import_from_string(value):
                     continue
                 ret = getattr(ret, a, None)
                 if not ret:
-                    raise ValueError(
+                    raise InvalidValue(
                         "%s is not an importable object" % value)
             return ret
         except Exception as er:
@@ -460,7 +460,11 @@ def to_none_single_list(x):
 
 
 def infer_json_schema(instance):
+    if hasattr(instance, '_proxy____cast'):
+        instance = instance._proxy____cast()
     def default_json_schema(value):
+        if hasattr(value, '_proxy____cast'):
+            value = value._proxy____cast()
         if isinstance(value, (str, int, float, bool)):
             return value
         if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
@@ -514,7 +518,8 @@ def infer_json_schema(instance):
             typ = 'string' # no way to ckeck...
             dft = None
         else:
-            assert False, instance
+            return {'type': 'object', 'additionalProperties': True}
+            #assert False, instance
         sch = {'type': typ}
         if dft is not None:
             sch['default'] = dft

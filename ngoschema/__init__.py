@@ -33,6 +33,7 @@ from .protocol_base import ProtocolBase
 from .repositories import *
 from .query import Query, Filter
 from .literals import LiteralValue, TextField, ImportableField, IntegerField
+from .wrapper_types import ArrayWrapper
 
 __all__ = [
     'settings',
@@ -62,6 +63,8 @@ __all__ = [
     'TextField',
     'ImportableField',
     'IntegerField',
+    # arrays
+    'ArrayWrapper',
     # query
     'Query',
     'Filter',

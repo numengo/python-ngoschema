@@ -36,7 +36,7 @@ def domain_uri(name, domain=None):
     from . import settings
     from .classbuilder import clean_ns_uri
     domain = domain or settings.MS_DOMAIN
-    return "%s%s" % (domain, clean_ns_uri(name))
+    return "%s%s#" % (domain, clean_ns_uri(name))
 
 
 _uri_doc_store = UriDict()

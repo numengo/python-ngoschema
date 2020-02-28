@@ -125,7 +125,12 @@ def visit_FunctionDef(node):
                                                'arg') else node.args.kwarg
     _varargs = node.args.vararg.arg if hasattr(node.args.vararg,
                                                'arg') else node.args.vararg
-    _defaults = [ast.literal_eval(d) for d in node.args.defaults]
+    _defaults = []
+    for d in node.args.defaults:
+        try:
+            _defaults.append(ast.literal_eval(d))
+        except Exception as er:
+            _defaults.append(None)
     for d, p in zip(reversed(_defaults), reversed(_params)):
         p.default = d
 
@@ -347,6 +352,8 @@ class ClassInspector(object):
             'description': self.doc,
             'title': self.name
         }
+        if self.doc is None:
+            del schema['description']
         extends = [get_builder().get_cname_ref(f'{m.moduleName}.{m.name}', **ns) for m in self.mro]
         if extends:
             schema['extends'] = extends

@@ -37,7 +37,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    __schema__ = r'http://numengo.org/ngoschema/document#/definitions/Document'
+    __schema_uri__ = r'http://numengo.org/ngoschema/document#/definitions/Document'
     __add_logging__ = False
     __assert_args__ = False
     __attr_by_name__ = False
@@ -158,6 +158,26 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     content = property(get_content)
 
+    _sha1 = None
+    @property
+    def sha1(self):
+        if not self._sha1:
+            import hashlib
+            sha = hashlib.sha1()
+            if self.filepath:
+                with open(str(self.filepath), 'rb') as source:
+                    block = source.read(2 ** 16)
+                    while len(block) != 0:
+                        sha.update(block)
+                        block = source.read(2 ** 16)
+            elif self.url:
+                response = urlopen(str(self.url))
+                block = response.read(2 ** 16)
+                while len(block) != 0:
+                    sha.update(block)
+                    block = response.read(2 ** 16)
+            self._sha1 = sha.hexdigest()
+        return self._sha1
 
 _default_document_registry = None
 
@@ -175,8 +195,8 @@ def get_document_registry():
 class DocumentRegistry(Mapping):
     def __init__(self):
         from ..repositories import JsonFileRepository
-        self._fp_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['filepath'])
-        self._url_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', fkeys=['uri'])
+        self._fp_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', primaryKeys=['filepath'])
+        self._url_catalog = JsonFileRepository(objectClass='ngoschema.models.document.Document', primaryKeys=['uri'])
         self._chained = ChainMap(self._fp_catalog._catalog,
                                  self._url_catalog._catalog)
 

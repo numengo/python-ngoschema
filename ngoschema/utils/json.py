@@ -18,24 +18,32 @@ from python_jsonschema_objects import util as pjo_util
 
 
 class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
+    no_defaults = True
+    remove_refs = True
+    attr_prefix = ''
+    excludes = []
+    only = []
 
     def __init__(self,
-                 no_defaults=True,
-                 remove_refs=True,
-                 attr_prefix='',
+                 no_defaults=None,
+                 remove_refs=None,
+                 attr_prefix=None,
                  excludes=None,
+                 only=None,
                  **kwargs):
         from .. import settings
-        self.no_defaults = no_defaults
-        self.remove_refs = remove_refs
-        self.attr_prefix = attr_prefix
-        self.excludes = excludes or []
+        self.no_defaults = no_defaults or self.no_defaults
+        self.remove_refs = remove_refs or self.remove_refs
+        self.attr_prefix = attr_prefix or self.attr_prefix
+        self.excludes = excludes or self.excludes
+        self.only = only or self.only
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
         from python_jsonschema_objects import classbuilder
         from python_jsonschema_objects import wrapper_types
         from ..models.entity import Entity
+        from ..literals import LiteralValue
         from ..validators.pjo import format_date, format_datetime, format_time, format_path
 
         if isinstance(obj, classbuilder.LiteralValue):
@@ -58,19 +66,21 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
             to_put_first = []
 
             # declared properties
-            for raw, trans in six.iteritems(obj.__prop_names_flatten__):
+            for raw, trans in obj.__prop_names_flatten__.items():
                 # excluded at schema level
                 if raw in ns:
                     continue
                 # excluded at encoder lever
                 if set([raw, trans]).intersection(self.excludes):
                     continue
+                if self.only and not set([raw, trans]).intersection(self.only):
+                    continue
 
                 prop = getattr(obj, trans, None)
 
                 # property name is the raw one, prefixed for literal attributes
                 pname = raw
-                if getattr(prop, "isLiteralClass", False):
+                if  isinstance(prop, LiteralValue):
                     pname = f'{self.attr_prefix}{raw}'
                 # put translated properties first
                 if raw != trans:

@@ -29,7 +29,7 @@ class SchemaMetaclass(type):
     Metaclass used for classes with schema.
 
     It processes the following class attributes:
-    __schema__ : id of schema to look up on loaded module schemas or online
+    __schema_uri__ : id of schema to look up on loaded module schemas or online
     __assert_args__: automatically convert/validate methods arguments based on their documented typed
     __add_logging__: adds logging around each method call
     __attr_by_name__: allows to look for attributes by their name
@@ -53,8 +53,8 @@ class SchemaMetaclass(type):
         schema_uri = None
         builder = get_builder(get_resolver())
         resolver = builder.resolver
-        if attrs.get("__schema__"):
-            schema_uri, schema = resolver.resolve(attrs["__schema__"])
+        if attrs.get("__schema_uri__"):
+            schema_uri, schema = resolver.resolve(attrs["__schema_uri__"])
             if '#' not in schema_uri:
                 schema_uri += '#'
         if schema:
@@ -124,8 +124,6 @@ class SchemaMetaclass(type):
         if uri in builder.resolved:
             cls = builder.resolved.pop(uri)
         cls = builder.construct(
-            uri, schema, parent=bases, class_attrs=dict(attrs))
-
-        builder._imported[id(cls), clsname] = cls
+            uri, schema, parent=bases, class_name=clsname, class_attrs=dict(attrs))
 
         return cls

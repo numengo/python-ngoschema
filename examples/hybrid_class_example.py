@@ -54,7 +54,7 @@ def external_schema_class():
     """create a class from a schema stored in a file or available online"""
 
     class B(with_metaclass(SchemaMetaclass, ProtocolBase)):
-        """An external schema can be referred using the __schema__ class argument
+        """An external schema can be referred using the __schema_uri__ class argument
         The resolver will look for the schema in schemas loaded using
         load_module_schemas.
         In this case, load_module_schemas is called when importing ngoschema, and all
@@ -65,7 +65,7 @@ def external_schema_class():
         through its id which was registered among all other schemas and metaschemas.
         Other schema loaders are available to load a json-schema, a file or a directory.
         """
-        __schema__ = r'http://numengo.org/ngoschema/draft-05/document#/definitions/Document'
+        __schema_uri__ = r'http://numengo.org/ngoschema/draft-05/document#/definitions/Document'
 
     # schema has an attribute author
     b1 = B(author="Sam")

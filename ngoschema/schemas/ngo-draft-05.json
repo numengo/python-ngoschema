@@ -62,7 +62,6 @@
     },
     "ProtocolBase": {
       "type": "object",
-      "additionalProperties": false,
       "description": "Protocol shared by all instances",
       "properties": {
         "$id": {

@@ -11,7 +11,7 @@
                 "objectClass": {
                     "type": "importable"
                 },
-                "fkeys": {
+                "primaryKeys": {
                     "type": "array",
                     "items": {
                         "type": "string"

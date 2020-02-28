@@ -26,7 +26,7 @@ class Entity(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
+    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
 
     _keys = None
     @property
@@ -43,7 +43,7 @@ class NamedEntity(with_metaclass(SchemaMetaclass, HasCanonicalName, Entity)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
+    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
 
     def __init__(self, *args, **kwargs):
         #HasCanonicalName.__init__(self)
@@ -51,7 +51,7 @@ class NamedEntity(with_metaclass(SchemaMetaclass, HasCanonicalName, Entity)):
 
     @classproperty
     def _primaryKeys(cls):
-        return cls.propinfo('primaryKeys') or ['canonicalName']
+        return cls.__schema__.get('primaryKeys') or ['canonicalName']
 
     def set_name(self, value):
         HasCanonicalName.set_name(self, value)
@@ -70,7 +70,7 @@ class EntityWithMetadata(with_metaclass(SchemaMetaclass, NamedEntity)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema__ = "http://numengo.org/ngoschema/draft-05#/definitions/EntityWithMetadata"
+    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/EntityWithMetadata"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)

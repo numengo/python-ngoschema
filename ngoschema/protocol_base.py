@@ -89,7 +89,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     _validator = None
     __prop_names__ = dict()
     __prop_translated__ = dict()
-    __schema__ = 'http://numengo.org/ngoschema#/definitions/ProtocolBase'
+    __schema_uri__ = 'http://numengo.org/ngoschema#/definitions/ProtocolBase'
 
     def __new__(cls,
                 *args,
@@ -100,7 +100,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         from .resolver import get_resolver
         from .classbuilder import get_builder
 
-        base_uri = cls.__schema__
+        base_uri = cls.__schema_uri__
 
         if '$ref' in props:
             props.update(resolve_uri(qualify_ref(props.pop('$ref'), base_uri)))
@@ -109,12 +109,12 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             builder = get_builder()
             # handle case $schema is given as a canonical name
             if '/' not in props['$schema']:
-                ns_cls, _ = cls.__schema__.split('#')
+                ns_cls, _ = cls.__schema_uri__.split('#')
                 ns_name = {uri: name for name, uri in builder.namespaces.items()}.get(ns_cls)
                 cn = props['$schema']
                 ref = builder.get_cname_ref(cn, **{ns_name: ns_cls})
                 props['$schema'] = ref
-            if props['$schema'] != cls.__schema__:
+            if props['$schema'] != cls.__schema_uri__:
                 cls = builder.resolve_or_construct(props['$schema'])
 
         cls.init_class_logger()
@@ -122,7 +122,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # option to validate arguments at init even if lazy loading
         if cls.__lazy_loading__ and cls.__validate_lazy__ and cls._validator is None:
             cls._validator = DefaultValidator(
-                cls.__schema__, resolver=get_resolver())
+                cls.__schema_uri__, resolver=get_resolver())
             cls._validator._setDefaults = True
 
         new = super(ProtocolBase, cls).__new__
@@ -208,7 +208,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
             if self._attrByName:
                 # replace refs / mandatory for loading ngomf nested schemas
-                base_uri = self.__schema__
+                base_uri = self.__schema_uri__
                 def replace_ref(coll, key, level):
                     if key != '$ref' or level > 2:
                         return
@@ -327,7 +327,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     @classmethod
     def jsonschema(cls):
         from .resolver import get_resolver
-        return get_resolver().resolve(cls.__schema__)[1]
+        return get_resolver().resolve(cls.__schema_uri__)[1]
 
     def validate(self):
         if self._lazyLoading:
