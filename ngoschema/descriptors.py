@@ -231,6 +231,8 @@ class AttributeDescriptor(object):
                 # notifies dependencies content has changed but set state to clean
                 val.touch(recursive=True)
                 val.set_clean()
+            #val.touch(recursive=True)
+            #val.set_clean()
 
         obj._properties[prop] = val
 

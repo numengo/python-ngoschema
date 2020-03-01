@@ -38,9 +38,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         pjo_wrapper_types.ArrayWrapper.__init__(self, ary)
         if _strict is not None:
             self._strict_ = _strict
-        HasCache.__init__(self,
-                          context=_parent,
-                          inputs=self.propinfo('dependencies'))
+        HasCache.__init__(self)
         self._parent = _parent
 
     @classmethod

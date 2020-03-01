@@ -147,10 +147,10 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         cls = self.__class__
         #props.pop('$schema', None)
 
-        self._lazy_data = dict()
-        self._extended_properties = dict()
-        self._properties = dict()
-        self._key2attr = dict()
+        self._lazy_data = {}
+        self._extended_properties = {}
+        self._properties = {}
+        self._key2attr = {}
         self._lazyLoading = props.pop('_lazyLoading', None) or cls.__lazy_loading__
         self._validateLazy = props.pop('_validateLazy', None) or cls.__validate_lazy__
         self._attrByName = props.pop('_attrByName', None) or cls.__attr_by_name__
@@ -167,10 +167,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             '_propagate': self._propagate,
             '_strict': self._strict
         } if self._propagate else {}
-
         mixins.HasCache.__init__(self,
                                  context=parent,
-                                 inputs=self.__dependencies__)
+                                 inputs=self._inputs())
 
         for prop in self.__prop_names_flatten__.values():
             self._properties.setdefault(prop, None)
@@ -274,7 +273,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     def __repr__(self):
         from . import settings
-        rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not self._dirty)
+        rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not getattr(self, '_dirty', True))
         elts = []
         for k in self.keys():
             prop = self._get_prop(k)
@@ -614,3 +613,20 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def search(self, path, *attrs, **attrs_value):
         from .query import search_object
         return search_object(self, path, *attrs, **attrs_value)
+
+    @classmethod
+    def _prop_inputs(cls, name):
+        return set(cls.__dependencies__.get(name, []))
+
+    @classmethod
+    def _prop_outputs(cls, name):
+        return set([k for k, v in cls.__dependencies__.items() if name in v])
+
+    @classmethod
+    def _outputs(cls):
+        return set(cls.__read_only__)
+
+    @classmethod
+    def _inputs(cls):
+        # inputs are the properties not readonly and not referred in dependency tree
+        return set(cls.__prop_names_flatten__).difference(cls.__read_only__)

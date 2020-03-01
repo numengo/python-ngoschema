@@ -78,7 +78,10 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
                     content = f.read()
         elif self.url:
             response = urlopen(str(self.url))
-            content = response.read().decode(encoding)
+            if not self.binary:
+                content = response.read().decode(encoding)
+            else:
+                content = response.read()
         if content is None:
             raise IOError("Impossible to load %s." % self.identifier)
         self._contentRaw = content
@@ -157,6 +160,10 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return self._content or self._contentRaw
 
     content = property(get_content)
+
+    @property
+    def filename(self):
+        return self.filepath.name if self.filepath else self.url.split('/')[-1]
 
     _sha1 = None
     @property

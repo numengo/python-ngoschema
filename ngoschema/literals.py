@@ -58,8 +58,8 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     _formatter = None
     _validator = None
 
-    def __init__(self, value, _parent=None):
-        HasCache.__init__(self, context=_parent, inputs=self.propinfo('dependencies'))
+    def __init__(self, value):
+        HasCache.__init__(self)
 
         if isinstance(value, LiteralValue):
             val = value._value

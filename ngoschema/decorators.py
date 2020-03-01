@@ -286,6 +286,13 @@ def assert_prop(*args2check):
     return to_decorate
 
 
+def depend_on_prop(myarg1):
+    @wrapt.decorator
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+    return wrapper
+
+
 class ClassPropertyDescriptor(object):
 
     def __init__(self, fget, fset=None):

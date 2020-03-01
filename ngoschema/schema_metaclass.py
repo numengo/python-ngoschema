@@ -86,7 +86,7 @@ class SchemaMetaclass(type):
             schema["type"] = "object"
 
         # add some magic on methods defined in class
-        # exception handling, argument conversion/validation, etc...
+        # exception handling, argument conversion/validation, dependencies, etc...
         for k, fn in attrs.items():
             # add declared fields to schema
             if utils.is_class(fn) and issubclass(fn, LiteralValue):

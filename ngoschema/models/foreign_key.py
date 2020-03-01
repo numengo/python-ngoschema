@@ -50,7 +50,7 @@ class ForeignKey(LiteralValue, Relationship, HasLogger):
         # todo: handle relative cnames/refs
         deps = self.propinfo('dependencies') or set()
         deps.add(self.key)
-        HasCache.__init__(self, context=_parent, inputs=deps)
+        HasCache.__init__(self)
         self._value = None
         self._ref = None
         self._dirty = False

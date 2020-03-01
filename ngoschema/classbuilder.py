@@ -23,13 +23,14 @@ import python_jsonschema_objects.util as pjo_util
 import python_jsonschema_objects.validators as pjo_validators
 from future.utils import text_to_native_str as native_str
 
+from .inspect import FunctionInspector
 from .protocol_base import ProtocolBase, make_property
 from . import utils
 from .resolver import get_resolver, qualify_ref, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
 from .literals import make_literal
 from .validators.pjo import convert_to_literal
-from .decorators import memoized_method
+from .decorators import memoized_method, depend_on_prop
 from . import settings
 
 logger = logging.getLogger(__name__)
@@ -327,7 +328,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         props = dict()
         defaults = dict()
-        dependencies = dict()
+        dependencies = dict(class_attrs.get('__dependencies__', {}))
 
         # complete object attribute list with class attributes to use prop attribute setter
         object_attr_list = set()
@@ -373,6 +374,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if not issubclass(p, ProtocolBase):
                 object_attr_list.update([a for a in p.__dict__ if not a.startswith('_')])
             defaults.update(getattr(p, '__has_default__', {}))
+            dependencies.update(getattr(p, '__dependencies__', {}))
 
         propinfo = OrderedDict(cls_schema.get('properties', {}))
 
@@ -454,14 +456,24 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         raise AttributeError("Impossible to find inherited property '%s' in schema" % prop)
 
         # locally properties / looking for inherited getters/setters/default value and copy in local class attributes
-        for prop, trans in name_translation.items():
+        for prop, trans in name_translation_flatten.items():
             for p in parents:
+                # check if it s prop already handled in parent
+                if prop in getattr(p, '__prop_names_flatten__', {}):
+                    continue
                 getter = getattr(p, 'get_' + trans, None)
                 if getter is not None:
                     class_attrs.setdefault('get_' + trans, getter)
                 setter = getattr(p, 'set_' + trans, None)
                 if setter is not None:
                     class_attrs.setdefault('set_' + trans, setter)
+
+        def inspect_accessor_dependencies(prop, f):
+            fi = FunctionInspector(f)
+            for d in fi.decorators:
+                if d.name == 'depend_on_prop':
+                    dependencies.setdefault(prop, [])
+                    dependencies[prop] += [d.parameters[0].default]
 
         # process all properties (default values, getter, setter, and type construction
         for prop_id, detail in propinfo.items():
@@ -474,23 +486,32 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
                 raise AttributeError(
                     "Impossible to get an initial value from attribute '%s' as defined in class code." % prop)
+
             getter = class_attrs.get('get_' + prop)
-            if getter and not (inspect.isfunction(getter) or inspect.ismethod(getter)):
-                raise AttributeError(
-                    "Impossible to use getter of attribute '%s' as defined in class code." % prop)
+            if getter:
+                if not (utils.is_method(getter) or utils.is_function(getter)):
+                    raise AttributeError("Impossible to use getter of attribute '%s' as defined in class code." % prop)
+                inspect_accessor_dependencies(prop, getter)
+
             setter = class_attrs.get('set_' + prop)
-            if setter and not (inspect.isfunction(setter) or inspect.ismethod(setter)):
-                raise AttributeError(
-                    "Impossible to use setter of attribute '%s' as defined in class code." % prop)
+            if setter:
+                if not (utils.is_method(setter) or utils.is_function(setter)):
+                    raise AttributeError("Impossible to use setter of attribute '%s' as defined in class code." % prop)
+                inspect_accessor_dependencies(prop, setter)
 
             if defv is not None:
                 detail['default'] = defv
+                # if a default value is defined locally, we mark it as required so it s always initialized
+                required.add(prop_id)
 
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
             if getter and 'default' in detail:
-                del detail['default']
+                #del detail['default']
+                # if a getter is defined, we remove the default set at component level and mark it as required
+                defaults.pop(prop_id, None)
+                required.add(prop_id)
 
             if getter is None and prop_id in required and 'default' not in detail and detail.get('type') == 'object':
                 detail['default'] = {}
@@ -501,10 +522,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if detail.get('default') is not None:
                 # use prop_id to have untranslated name and be less ambiguous
                 defaults[prop_id] = detail.get('default')
-
-            if detail.get('dependencies') is not None:
-                # use prop_id to have untranslated name and be less ambiguous
-                dependencies[prop] = utils.to_list(detail['dependencies'].get('additionalProperties', []))
 
             if detail.get('type') == 'object':
                 typ = self.resolved[prop_uri] = self.construct(prop_uri, detail,
@@ -657,6 +674,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__prop_names__'] = name_translation
         props['__prop_names_flatten__'] = name_translation_flatten
         props['__prop_translated_flatten__'] = translation_name
+        props['__prop_allowed__'] = set(name_translation_flatten).union(name_translation_flatten.values())
 
         props['__has_default__'] = defaults
 

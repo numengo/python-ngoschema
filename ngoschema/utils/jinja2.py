@@ -16,6 +16,7 @@ from builtins import str
 import inflection
 import jinja2
 import jinja2.parser
+from slugify import slugify as _slugify
 
 from .module_loaders import templates_module_loader
 from .utils import GenericClassRegistry
@@ -166,6 +167,11 @@ def transliterate(string):
 def underscore(word):
     __doc__ = inflection.underscore.__doc__
     return inflection.underscore(str(word))
+
+
+@filters_registry.register()
+def slugify(string):
+    return _slugify(string)
 
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):

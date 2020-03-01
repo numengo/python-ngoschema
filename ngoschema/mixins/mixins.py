@@ -240,26 +240,28 @@ class HasCache:
     _inputs = set()
     _outputs = set()
 
-    def __init__(self, context=None, inputs=None, outputs=None):
-        self._context = context
-        self._inputs = inputs or set()
-        self._outputs = outputs or set()
+    def __init__(self):
         self._dirty = True
 
-    def _set_context(self, context):
+    def _set_context_info(self, context, inputs=None, outputs=None):
         self._context = context
+        self._inputs = set(inputs or [])
+        self._outputs = set(outputs or [])
 
-    def _set_inputs(self, *inputs):
-        self._inputs = set(inputs)
-
-    def _add_inputs(self, *inputs):
-        self._inputs.update(inputs)
-
-    def _set_outputs(self, *outputs):
-        self._outputs = set(outputs)
-
-    def _add_outputs(self, *outputs):
-        self._outputs.update(outputs)
+    #def _set_context(self, context):
+    #    self._context = context
+    #
+    #def _set_inputs(self, *inputs):
+    #    self._inputs = set(inputs)
+    #
+    #def _add_inputs(self, *inputs):
+    #    self._inputs.update(inputs)
+    #
+    #def _set_outputs(self, *outputs):
+    #    self._outputs = set(outputs)
+    #
+    #def _add_outputs(self, *outputs):
+    #    self._outputs.update(outputs)
 
     def __prop(self, key):
         cur = self._context
@@ -278,7 +280,7 @@ class HasCache:
         return {k: self.__prop(k) for k in self._outputs if self.__prop(k)}
 
     def __prop_value(self, key):
-        return self._context._get_prop_value(key)
+        return self._context._get_prop_value(key) if self._context else None
 
     @property
     def _input_values(self):
