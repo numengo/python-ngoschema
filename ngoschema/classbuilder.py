@@ -114,7 +114,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
     """
     def __init__(self, resolver):
         pjo_classbuilder.ClassBuilder.__init__(self, resolver)
-        #self._imported = {}
         self._usernamespace = {}
 
     def set_namespace(self, ns, uri):
@@ -292,7 +291,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if module:
                 nm = self.get_cname_ref(f'{module}.{nm}')
 
-        current_scope = nm.rsplit("#", 1)[0]
+        current_scope = nm.rsplit("#", 1)[0] if '#' in nm else ''
         ns_name = self.namespace_name(current_scope) or get_default_ns_name(current_scope)
         ns = {ns_name: current_scope}
 
@@ -303,7 +302,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # build inner definitions
         inner_defs = {}
         for def_name, detail in clsdata.get('definitions', {}).items():
-            def_uri = f'{nm}/definitions/{def_name}'
+            def_uri = f'{current_scope}#/definitions/{def_name}'
             inner_defs[def_name] = self.resolved[def_uri] = self._build_object(def_uri, detail, (ProtocolBase,), **kw)
 
         parents_scope = [current_scope]
@@ -316,7 +315,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             for p in parents_scope:
                 try:
                     uri = qualify_ref(ref, p)
-                    return uri, resolve_uri(uri)
+                    # if no namespace, use existing document
+                    return uri, resolve_uri(uri, None if p else clsdata)
                 except Exception as er:
                     errors.append(er)
                     pass
@@ -337,7 +337,8 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         for p in ProtocolBase.__mro__:
             object_attr_list.update(getattr(p, '__object_attr_list__', []))
             object_attr_list.update([a for a, v in p.__dict__.items()
-                                     if not a.startswith('_') and not (utils.is_method(v) or utils.is_function(v))])
+                                     if not a.startswith('_')\
+                                     and not (utils.is_method(v) or utils.is_function(v))])
 
         cls_schema = clsdata
         props['__schema_uri__'] = nm
@@ -431,36 +432,37 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         not_serialized.update(cls_schema.get('notSerialized', []))
 
         # inherited properties / looking for redefined getters/setters/default value in local definition
+        #[pp for p in [(p, f'set_{p}', f'get_{p}') for p in name_translation_flatten.values()] for pp in p]
+
         for prop, trans in name_translation_flatten.items():
-            if prop not in name_translation: # to keep props declared in parents
-                defv = class_attrs.get(trans) or cls_schema.get(prop)
-                # if a value is defined at class level, then it s read-only and should not be set/overwritten by setters
-                if defv:
-                    read_only.add(prop)
-                getter = class_attrs.get('get_' + trans)
-                setter = class_attrs.get('set_' + trans)
-                if getter or setter or defv:
-                    for p in parents:
-                        # if a getter/setter/default is redefined, get a copy from the property
-                        if issubclass(p, ProtocolBase):
-                            pi = p.propinfo(prop).copy()
-                            if pi:
-                                if '$ref' in pi:
-                                    ref, pi = resolve_in_scope(pi['$ref'])
-                                    pi = pi.copy()
-                                if defv:
-                                    pi['default'] = convert_to_literal(defv, pi)
-                                propinfo.setdefault(prop, pi)
-                                break
-                    else:
-                        raise AttributeError("Impossible to find inherited property '%s' in schema" % prop)
+            defv = class_attrs.get(trans) or cls_schema.get(prop)
+            # if a value is defined at class level, then it s read-only and should not be set/overwritten by setters
+            getter = class_attrs.get('get_' + trans)
+            setter = class_attrs.get('set_' + trans)
+            if getter or setter or defv:
+                for p in parents:
+                    # if a getter/setter/default is redefined, get a copy from the property
+                    if trans in getattr(p, '__propinfo_flatten__', {}):
+                        pi = p.propinfo(prop).copy()
+                        if pi:
+                            if '$ref' in pi:
+                                ref, pi = resolve_in_scope(pi['$ref'])
+                                pi = pi.copy()
+                            if defv:
+                                pi['default'] = convert_to_literal(defv, pi)
+                            propinfo.setdefault(prop, pi)
+                            break
+                #else:
+                #    raise AttributeError("Impossible to find inherited property '%s' in schema" % prop)
 
         # locally properties / looking for inherited getters/setters/default value and copy in local class attributes
         for prop, trans in name_translation_flatten.items():
             for p in parents:
-                # check if it s prop already handled in parent
-                if prop in getattr(p, '__prop_names_flatten__', {}):
+                if issubclass(p, ProtocolBase):
                     continue
+                # check if it s prop already handled in parent
+                #if prop in getattr(p, '__prop_names_flatten__', {}):
+                #    continue
                 getter = getattr(p, 'get_' + trans, None)
                 if getter is not None:
                     class_attrs.setdefault('get_' + trans, getter)
@@ -502,7 +504,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             if defv is not None:
                 detail['default'] = defv
                 # if a default value is defined locally, we mark it as required so it s always initialized
-                required.add(prop_id)
+                defaults[prop] = defv
+                #required.add(prop_id)
+                read_only.add(prop_id)
 
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
@@ -583,8 +587,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                             typ = self.construct(uri, detail['items'])
                             detail['items']['_type'] = typ
                             propdata = {
-                                'type': 'array',
-                                'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                                'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                             }
                         else:
                             try:
@@ -604,16 +607,14 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                 constraints = copy.copy(detail)
                                 constraints["strict"] = kw.get("_strict")
                                 propdata = {
-                                    'type': 'array',
-                                    'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                                    'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                                 }
                             except NotImplementedError:
                                 typ = detail["items"]
                                 constraints = copy.copy(detail)
                                 constraints["strict"] = kw.get("_strict")
                                 propdata = {
-                                    'type': 'array',
-                                    'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                                    'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                                 }
                     elif utils.is_sequence(detail['items']):
                         typs = []
@@ -622,14 +623,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                             typ = self.construct(uri, elem)
                             typs.append(typ)
                         propdata = {
-                            'type': 'array',
-                            'validator': ArrayWrapper.create(prop_uri, item_constraint=typs, **constraints),
+                            'type': ArrayWrapper.create(prop_uri, item_constraint=typs, **constraints),
                         }
                 else:
                     typ = self._construct(prop_uri + '/items', {'type': 'string'})
                     propdata = {
-                        'type': 'array',
-                        'validator': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
+                        'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
                     }
 
                 props[prop] = make_property(

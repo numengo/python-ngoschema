@@ -32,7 +32,7 @@ class Entity(with_metaclass(SchemaMetaclass, ProtocolBase)):
     @property
     def identity_keys(self):
         if self._keys is None:
-            self._keys = {(k if k != '$id' else '$ref'): self.get(k) for k in self.primaryKeys if self.get(k)}
+            self._keys = {(str(k) if k != '$id' else '$ref'): getattr(self, str(k)).for_json() for k in self.primaryKeys}
         return self._keys
 
     def __init__(self, *args, **kwargs):

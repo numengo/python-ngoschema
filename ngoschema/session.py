@@ -67,7 +67,7 @@ class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
             try:
                 return handler.resolve_cname(cname)
             except Exception as er:
-                pass
+                raise
         raise Exception("impossible to resolve '%s'" % cname)
 
     def query(self, *attrs, order_by=False, **attrs_value):

@@ -10,7 +10,9 @@ from __future__ import unicode_literals
 
 import logging
 import weakref
-from python_jsonschema_objects.classbuilder import LiteralValue
+import re
+from python_jsonschema_objects.literals import LiteralValue
+from python_jsonschema_objects.wrapper_types import ArrayWrapper
 
 from ..decorators import memoized_property
 from .. import utils
@@ -33,11 +35,13 @@ class HasLogger:
         cls.__log_level__ = level
         cls.logger.setLevel(level)
 
-class HasName:
 
+class HasName:
     _name = None
+
     def set_name(self, value):
         self._name = str(value) if value else None
+
 
 class HasParent:
 
@@ -206,7 +210,7 @@ class RootRelativeCname:
 
     def resolve_relative_cname(self, value):
         val =  str(value)
-        return '%s.%s' % (self._cname, val[1:]) if val[0]=='#' else val
+        return '%s.%s' % (self._cname, val[1:]) if val[0] == '#' else val
 
     def get_relative_cname(self, child):
         base = '%s.' % self._cname
@@ -235,89 +239,93 @@ class HandleRelativeCname:
 
 
 class HasCache:
+    #_dirty = True
     _context = None
-    _cache = None
-    _inputs = set()
-    _outputs = set()
+    _prop_name = None
+    _inputs_cached = {}
+    _validated_data = None
+    _expr_inputs = []
+    _expr_pattern = None
 
-    def __init__(self):
-        self._dirty = True
-
-    def _set_context_info(self, context, inputs=None, outputs=None):
+    def _set_context_info(self, context, prop_raw):
         self._context = context
-        self._inputs = set(inputs or [])
-        self._outputs = set(outputs or [])
+        self._prop_name = prop_raw
 
-    #def _set_context(self, context):
-    #    self._context = context
-    #
-    #def _set_inputs(self, *inputs):
-    #    self._inputs = set(inputs)
-    #
-    #def _add_inputs(self, *inputs):
-    #    self._inputs.update(inputs)
-    #
-    #def _set_outputs(self, *outputs):
-    #    self._outputs = set(outputs)
-    #
-    #def _add_outputs(self, *outputs):
-    #    self._outputs.update(outputs)
+    def register_expr(self, expr):
+        from ngoschema.utils.jinja2 import get_variables
+        self._expr_inputs = get_variables(expr)
+        self._expr_pattern = expr
 
-    def __prop(self, key):
-        cur = self._context
-        return getattr(cur, key, None)
+    def has_expr(self):
+        return self._expr_pattern is not None
 
-    @property
-    def _input_props(self):
-        return {} if not self._context else {
-            k: self.__prop(k)
-            for k in self._inputs
-            if self.__prop(k)
-        }
+    def eval_expr(self, **inputs):
+        from ..utils.jinja2 import TemplatedString
+        try:
+            return TemplatedString(self._expr_pattern)(this=self._context, **inputs)
+        except Exception as er:
+            # inputs might not all be defined. input data are not cached
+            pass
+
+    def _inputs(self):
+        if self._prop_name:
+            return self._context.__dependencies__.get(self._prop_name, []) + self._expr_inputs
+        return [] + self._expr_inputs
 
     @property
-    def _output_props(self):
-        return {k: self.__prop(k) for k in self._outputs if self.__prop(k)}
+    def _outputs(self):
+        if self._prop_name:
+            return [k for k, v in self._context.__dependencies__.items() if self._prop_name in v]
+        return []
 
-    def __prop_value(self, key):
-        return self._context._get_prop_value(key) if self._context else None
 
-    @property
-    def _input_values(self):
-        return {k: self.__prop_value(k) for k in self._inputs}
+    #@property
+    #def validated_data(self):
+    #    from ngoschema import LiteralValue, ArrayWrapper, ProtocolBase
+    #    if not self._validated_data:
+    #        if self.validate():
+    #            if isinstance(self, LiteralValue):
+    #                self._validated_data = self._value
+    #            if isinstance(self, ArrayWrapper):
+    #                self._validated_data = [el.validated_data() for el in self.typed_elems]
+    #            if isinstance(self, ProtocolBase):
+    #                self._validated_data = {k: p.validated_data() for k, p in self._properties.items() if p}
+    #    return self._validated_data
+
+    def _inputs_data(self):
+        ret = {}
+        for input in self._inputs():
+            ret[input] = utils.get_descendant(self._context, input)
+        return ret
+
+    def validate(self):
+        if self.is_dirty():
+            inputs = self._inputs_data()
+            data = None
+            if isinstance(self, LiteralValue):
+                data = self._value
+            elif isinstance(self, ArrayWrapper):
+                data = self.data
+            if self.has_expr():
+                data = self.eval_expr(**inputs) or data
+            self._validate(data)
+            self._inputs_cached = inputs
+        return True
+
+    def _validate(self, data):
+        """to be overloaded"""
 
     def is_dirty(self):
-        return self._dirty or (self._cache != self._input_values)
+        return self._validated_data is None or self._inputs_data() != self._inputs_cached
 
-    def set_clean(self, recursive=False):
-        self._dirty = False
-        self._cache = self._input_values
-
-    def touch(self, recursive=False):
-        self._dirty = True
-        if recursive:
-            for k, p in self._output_props.items():
-                p.touch()
-
-    def do_validate(self, force=False):
-        """validate only if property is dirty or if `force` is True """
-        # validate inputs
-        if self._dirty or force:
-            for k, p in self._input_props.items():
-                p.do_validate(force)
-            from ..wrapper_types import ArrayWrapper
-            if not isinstance(self, ArrayWrapper):
-                self.set_clean()
-            self.validate()
-            self.set_clean()
-
-    # add a _validated property for compatiblity with Literals
-    def get_validated(self):
-        return not self._dirty
-
-    def set_validated(self, value):
-        if value:
-            self.set_clean()
-        else:
-            self.touch()
-    _validated = property(get_validated, set_validated)
+    def touch(self):
+        if self._validated_data:
+            self._validated_data = None
+            # touch outputs
+            for output in self._outputs:
+                o = self._context.get_descendant(output)
+                if o:
+                    o.touch()
+            # touch parent
+            if self._parent:
+                self._parent.touch()

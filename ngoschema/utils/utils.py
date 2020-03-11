@@ -369,6 +369,10 @@ def is_function(value, with_callable=True):
     return inspect.isfunction(value)
 
 
+def is_property(value):
+    return type(value) is property
+
+
 def is_imported(value):
     """
     Test if a symbol is importable/imported
@@ -612,6 +616,7 @@ def nested_dict_iter(nested, separator='.'):
         else:
             yield key, value
 
+
 def logging_call(popenargs,
                  logger=None,
                  stdout_log_level=logging.DEBUG,
@@ -657,6 +662,7 @@ def casted_as(instance, cls):
     instance.__class__ = cls
     yield instance
     instance.__class__ = instance_cls
+
 
 class Bracket:
     _context = None
@@ -747,6 +753,7 @@ class Bracket:
         p = context.find(f_call, context)
         brs = Bracket.find_brackets(context)
 
+
 def threadsafe_counter(init_value=1):
     """Return a threadsafe counter function.
     credit: sqlachemy """
@@ -762,3 +769,31 @@ def threadsafe_counter(init_value=1):
             lock.release()
 
     return _next
+
+
+def split_path(path):
+    """ return a path as a list of attributes and key, index"""
+    paths = []
+    for part in path.split('.'):
+        for key in part.split('['):
+            key = key.strip('[]')
+            paths.append(int(key) if is_integer(key) else key)
+    return paths
+
+
+def get_descendant(obj, key_list):
+    """
+    Get descendant in an object/dictionary by providing the path as a list of keys
+    :param obj: object to iterate
+    :param key_list: list of keys
+    """
+    if is_string(key_list):
+        key_list = split_path(key_list)
+    k0 = key_list[0]
+
+    try:
+        child = obj[k0]
+    except Exception as er:
+        child = None
+    return get_descendant(child, key_list[1:]) \
+        if child and len(key_list) > 1 else child

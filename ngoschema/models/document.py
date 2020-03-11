@@ -148,10 +148,14 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             if num < 1024.0:
                 return "%3.1f %s" % (num, x)
             num /= 1024.0
+        return num
 
     def get_mimetype(self):
-        import magic
-        magic.Magic(mime=True).from_file(str(self.filepath))
+        val = self._get_prop_value('mimetype')
+        if not val:
+            import magic
+            val = magic.Magic(mime=True).from_file(str(self.filepath))
+        return val
 
     def get_uri(self):
         return self.filepath.as_uri() if self.filepath else None

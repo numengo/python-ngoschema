@@ -362,3 +362,4 @@ def memoized_method(*lru_args, **lru_kwargs):
             return cached_method(*args, **kwargs)
         return wrapped_func
     return decorator
+

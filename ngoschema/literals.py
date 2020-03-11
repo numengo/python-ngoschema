@@ -9,21 +9,23 @@ from .decorators import memoized_property
 
 
 def make_literal(name, subclass, base, **schema):
-    converter = None
-    formatter = None
     validators_ = []
 
     type_ = 'enum' if 'enum' in schema else schema.get('type', 'string')
     converter_func = converter_registry(type_)
-    if converter_func:
-        def converter(value_):
+
+    def converter(value_):
+        if converter_func:
             return converter_func(value_, schema)
+        return value_
 
     type_ = schema.get('type', 'string')
     formatter_func = formatter_registry(type_)
-    if formatter_func:
-        def formatter(value_):
+
+    def formatter(value_):
+        if formatter_func:
             return formatter_func(value_, schema)
+        return value_
 
     for param, param_val in sorted(schema.items(), key=lambda x: x[0].lower() != "type"):
         validator_func = validator_registry(param)
@@ -54,33 +56,24 @@ def make_literal(name, subclass, base, **schema):
 
 class LiteralValue(pjo_literals.LiteralValue, HasCache):
     __subclass__ = None
-    _converter = None
-    _formatter = None
-    _validator = None
+    _typed = None
 
-    def __init__(self, value):
-        HasCache.__init__(self)
+    def __init__(self, value=None):
+        if value is None and self.default() is not None:
+            value = self.default()
 
-        if isinstance(value, LiteralValue):
-            val = value._value
-        else:
-            val = value
+        if value and utils.is_string(value) and utils.is_pattern(value):
+            self.register_expr(value)
 
-        if val is None and self.default() is not None:
-            val = self.default()
-
-        if self._converter:
-            val = self._converter(val)
-
-        self._value = val
+        self._value = value
         self.validate()
 
+
     def __repr__(self):
-        return '<%s<%s> id=%s validated=%s "%s">' % (
+        return '<%s<%s> id=%s "%s">' % (
             self.__class__.__name__,
             self._value.__class__.__name__,
             id(self),
-            self._validated,
             str(self)
         )
 
@@ -112,29 +105,18 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     def enum(self):
         return self.__propinfo__['__literal__'].get('enum')
 
-    @memoized_property
-    def _is_importable(self):
-        return self.__propinfo__['__literal__'].get('type') == 'importable'
-
     def validate(self):
-        from .utils.jinja2 import TemplatedString
-        val = self._value
-        if '_pattern' in self.__dict__:
-            try:
-                self._value = val = TemplatedString(self._pattern)(
-                    this=self._context,
-                    **self._input_values)
-            except Exception as er:
-                # logger.info('evaluating pattern "%s" in literal: %s', self._pattern, er)
-                val = self._pattern
+        return HasCache.validate(self)
+
+    def _validate(self, data):
+        self._typed = self._converter(data)
 
         # replace the more expensive call to pjo_literals.LiteralValue.validate
-        if self._validator:
-            self._validator(val)
+        self._validator(self._typed)
 
-        # type importable: store imported as protected member
-        if self._is_importable and not hasattr(self, '_imported'):
-            self._imported = utils.import_from_string(self._value)
+        self._validated_data = self._formatter(self._typed)
+        return True
+
 
 # EXPERIMENTAL: attempt
 class TextField(object):

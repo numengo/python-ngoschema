@@ -15,7 +15,8 @@ import re
 from python_jsonschema_objects.literals import LiteralValue
 
 from . import utils
-from .protocol_base import get_descendant, ProtocolBase
+from .protocol_base import ProtocolBase
+from ngoschema.utils import get_descendant
 
 _operators = [
     # operator library
@@ -134,7 +135,7 @@ class Filter(object):
         test = not self.anyOf
         for k, v2 in self.attrs_value.items():
             ks, ops, ops_negate = self.attrs_ops[k]
-            o = get_descendant(obj, ks, self.anyOf)
+            o = get_descendant(obj, ks)
             if o is None:
                 # breaking the look we never go in the for/ELSE statement where
                 # an object is potentially yielded
@@ -143,7 +144,7 @@ class Filter(object):
             elif ops and utils.is_mapping(o):
                 # check if it s not a child
                 for op in ops:
-                    o2 = get_descendant(o, op, self.anyOf)
+                    o2 = get_descendant(o, op)
                     if o2:
                         o = o2
                         ks.append(ops.pop(0))
@@ -162,7 +163,7 @@ class Filter(object):
 
         for k in self.attrs:
             ks = k.split('__')
-            test2 = get_descendant(obj, ks, self.loadLazy) is not None
+            test2 = get_descendant(obj, ks) is not None
             test = (test or test2) if self.anyOf else (test and test2)
             if self.anyOf:
                 if test2:

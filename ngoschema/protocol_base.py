@@ -18,6 +18,7 @@ import six
 import collections
 import copy
 
+from ngoschema.utils import get_descendant
 from python_jsonschema_objects import \
     classbuilder as pjo_classbuilder, \
     util as pjo_util, \
@@ -35,26 +36,6 @@ from .decorators import classproperty, memoized_property
 from .utils import lazy_format
 from .wrapper_types import ArrayWrapper
 from .literals import LiteralValue
-
-
-def get_descendant(obj, key_list, load_lazy=False):
-    """
-    Get descendant in an object/dictionary by providing the path as a list of keys
-    :param obj: object to iterate
-    :param key_list: list of keys
-    :param load_lazy: in case of lazy loaded object, force loading
-    """
-    k0 = key_list[0]
-
-    try:
-        child = getattr(obj, k0)
-    except Exception as er:
-        try:
-            child = obj[k0]
-        except Exception as er:
-            child = None
-    return get_descendant(child, key_list[1:], load_lazy) \
-            if child and len(key_list)>1 else child
 
 
 def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
@@ -167,9 +148,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             '_propagate': self._propagate,
             '_strict': self._strict
         } if self._propagate else {}
-        mixins.HasCache.__init__(self,
-                                 context=parent,
-                                 inputs=self._inputs())
+        mixins.HasCache.__init__(self)
 
         for prop in self.__prop_names_flatten__.values():
             self._properties.setdefault(prop, None)
@@ -190,12 +169,16 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
         for k, v in self.__has_default__.items():
-            k2 = self.__prop_translated_flatten__.get(k, k)
-            if k2 not in props:
-                if self._lazyLoading:
-                    self._lazy_data.setdefault(k2, copy.copy(v))
+            trans = self.__prop_names_flatten__.get(k, k)
+            if trans not in props:
+                # no lazy loading for read only as it implies to reset RO status later
+                if self._lazyLoading and k and k not in self.__read_only__:
+                    self._lazy_data.setdefault(trans, copy.copy(v))
                 else:
-                    setattr(self, k2, copy.copy(v))
+                    pr = getattr(cls, trans)
+                    pr._RO_active = False
+                    setattr(self, trans, copy.copy(v))
+                    pr._RO_active = True
 
         if props.get('name'):
             if isinstance(self, mixins.HasCanonicalName):
@@ -223,15 +206,15 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         else:
             try:
                 for k, prop in props.items():
-                    k2 = self.__prop_translated_flatten__.get(k, k)
-                    setattr(self, k2, prop)
+                    trans = self.__prop_names_flatten__.get(k, k)
+                    setattr(self, trans, prop)
                 # call getters on all required not defined in props
-                for k in self.__required__:
-                    if k not in props:
-                        getattr(self, k)
+                for raw in self.__required__:
+                    trans = self.__prop_names_flatten__.get(k, k)
+                    if trans not in props:
+                        getattr(self, trans)
                 if self._strict:
-                    self.do_validate()
-                self.set_clean()
+                    self.validate()
             except Exception as er:
                 self.logger.error("INIT %s: %s", self, er)
                 raise
@@ -249,46 +232,37 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def __str__(self):
         from . import settings
         rep = "<%s {" % (self.cls_fullname)
+        data = self._validated_data or {}
         elts = []
-        for k in self.keys():
-            prop = self._get_prop(k)
-            if prop is None:
-                continue
-            if hasattr(prop, 'isLiteralClass'):
-                s = str(prop._value)
-                if utils.is_string(prop._value):
-                    s = '"%s"' % s
-                    if len(s) >= settings.PPRINT_MAX_STRL:
-                        s = s[:settings.PPRINT_MAX_STRL] + '..."'
-                elts.append("%s=%s" % (k, s))
-            elif len(prop):
-                if utils.is_mapping(prop):
-                    elts.append("%s={%i}" % (k, len(prop)))
-                if utils.is_sequence(prop):
-                    elts.append("%s=[%i]" % (k, len(prop)))
-            if len(elts) == settings.PPRINT_MAX_EL:
+        for i, (k, v) in enumerate(data.items()):
+            if utils.is_mapping(v):
+                elts.append("%s={%i}" % (k, len(v)))
+            elif utils.is_sequence(v):
+                elts.append("%s=[%i]" % (k, len(v)))
+            else:
+                if utils.is_string(v) and len(v) >= settings.PPRINT_MAX_STRL:
+                    v = v[:settings.PPRINT_MAX_STRL] + '..."'
+                elts.append("%s=%s" % (k, v))
+            if i >= settings.PPRINT_MAX_EL:
                 elts.append('...')
                 break
         return rep + ' '.join(elts) + '}>'
 
     def __repr__(self):
         from . import settings
-        rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), not getattr(self, '_dirty', True))
+        rep = "<%s id=%s validated=%s {" % (self.cls_fullname, id(self), self._validated_data is not None)
+        data = self._validated_data or {}
         elts = []
-        for k in self.keys():
-            prop = self._get_prop(k)
-            if prop is None:
-                continue
-            if hasattr(prop, 'isLiteralClass'):
-                s = str(prop._value)
-                if utils.is_string(prop._value):
-                    s = '"%s"' % s
-                    if len(s) >= settings.PPRINT_MAX_STRL:
-                        s = s[:settings.PPRINT_MAX_STRL] + '..."'
-                elts.append("%s=%s" % (k, s))
-            elif len(prop):
-                elts.append("%s=%s" % (k, prop))
-            if len(elts) == settings.PPRINT_MAX_EL:
+        for i, (k, v) in enumerate(data.items()):
+            if utils.is_mapping(v):
+                elts.append("%s={%i}" % (k, len(v)))
+            elif utils.is_sequence(v):
+                elts.append("%s=[%i]" % (k, len(v)))
+            else:
+                if utils.is_string(v) and len(v) >= settings.PPRINT_MAX_STRL:
+                    v = v[:settings.PPRINT_MAX_STRL] + '..."'
+                elts.append("%s=%s" % (k, v))
+            if i >= settings.PPRINT_MAX_EL:
                 elts.append('...')
                 break
         return rep + ' '.join(elts) + '}>'
@@ -329,29 +303,27 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return get_resolver().resolve(cls.__schema_uri__)[1]
 
     def validate(self):
+        return mixins.HasCache.validate(self)
+
+    def _validate(self, _):
         if self._lazyLoading:
             if self._lazy_data and self._validateLazy:
                 pass
-        else:
+        elif self.is_dirty():
             missing = self.missing_property_names()
             if len(missing) > 0:
                 raise ValidationError("'{0}' are required attributes for {1}".format(missing, self.__class__.__name__))
 
-            for prop, val in self._properties.items():
-                if val is None:
-                    continue
-
-                if isinstance(val, (ProtocolBase, ArrayWrapper, LiteralValue)):
-                    val.validate()
-                elif getattr(val, "isLiteralClass", None) is True:
-                    val.validate()
-                else:
-                    # This object is of the wrong type, but just try setting it
-                    # The property setter will enforce its correctness
-                    # and handily coerce its type at the same time
-                    setattr(self, prop, val)
-
-            return True
+            if all([prop.validate() for prop in self._properties.values() if prop is not None]):
+                self._validated_data = {
+                    self.__prop_translated_flatten__.get(trans, trans): prop._validated_data
+                    for trans, prop in self._properties.items() if prop is not None
+                }
+                self._inputs_cached = self._inputs_data()
+            else:
+                errors = [trans for trans, prop in self._properties.items() if prop and prop.is_dirty()]
+                self.logger.info('errors validating %s', errors)
+        return True
 
     @classmethod
     def issubclass(cls, klass):
@@ -404,6 +376,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         as optimally as possible. attributes can be looked up base on their name, or by
         their canonical name, using a correspondence map done with _set_key2attr
         """
+        name = self.__prop_names_flatten__.get(name, name)
+
         # private and protected attributes at accessed directly
         if name.startswith("_"):
             return collections.MutableMapping.__getattribute__(self, name)
@@ -458,11 +432,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def __getitem__(self, key):
         """access property as in a dict and returns json if not composed of objects """
         try:
-            key = self.__prop_names_flatten__.get(key, key)
-            ret = getattr(self, key)
-            if isinstance(ret, pjo_literals.LiteralValue):
-                return ret._value
-            return ret
+            return getattr(self, key)
         except AttributeError as er:
             raise KeyError(key, str(er))
         except Exception as er:
@@ -542,13 +512,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             prop = self._get_prop(name)
             if prop:
                 prop.__init__(value)
-                prop.do_validate()
             elif name in self.__prop_names_flatten__:
                 pinfo = self.propinfo(name)
                 typ = pinfo.get('_type') if pinfo else None
                 if typ and issubclass(typ, pjo_literals.LiteralValue):
                     prop = typ(value)
-                    prop.do_validate()
                     self._properties[name] = prop
                 else:
                     raise AttributeError("no type specified for property '%s'"% name)
@@ -613,20 +581,3 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     def search(self, path, *attrs, **attrs_value):
         from .query import search_object
         return search_object(self, path, *attrs, **attrs_value)
-
-    @classmethod
-    def _prop_inputs(cls, name):
-        return set(cls.__dependencies__.get(name, []))
-
-    @classmethod
-    def _prop_outputs(cls, name):
-        return set([k for k, v in cls.__dependencies__.items() if name in v])
-
-    @classmethod
-    def _outputs(cls):
-        return set(cls.__read_only__)
-
-    @classmethod
-    def _inputs(cls):
-        # inputs are the properties not readonly and not referred in dependency tree
-        return set(cls.__prop_names_flatten__).difference(cls.__read_only__)

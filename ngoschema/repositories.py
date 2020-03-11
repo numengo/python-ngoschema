@@ -55,12 +55,11 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
         self._catalog = Registry()
-        self._class = self.objectClass._imported if self.objectClass is not None else None
         self._pkeys = None
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = self.primaryKeys.for_json()
-        elif issubclass(self._class, Entity):
-            self._pkeys = tuple(self._class._primaryKeys)
+        elif issubclass(self.objectClass, Entity):
+            self._pkeys = tuple(self.objectClass._primaryKeys)
         self._session = None
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
 
@@ -69,8 +68,8 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         return self._session
 
     def _identity_key(self, instance):
-        if self._class and not isinstance(instance, self._class):
-            raise Exception("%r is not an instance of %r" % (instance, self._class))
+        if self.objectClass and not isinstance(instance, self.objectClass):
+            raise Exception("%r is not an instance of %r" % (instance, self.objectClass))
         if self._pkeys:
             if len(self._pkeys) == 1:
                 return instance._get_prop_value(self._pkeys[0])
@@ -167,12 +166,12 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def load(self):
         data = self.pre_load()
         if self.many:
-            objs = [self._class(**d) if self._class else d for d in data]
+            objs = [self.objectClass(**d) if self.objectClass else d for d in data]
             for obj in objs:
                 self.register(obj)
             return objs
         else:
-            obj = self._class(**data) if self._class else data
+            obj = self.objectClass(**data) if self.objectClass else data
             self.register(obj)
             return obj
 
@@ -327,8 +326,8 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             remove_refs=self.remove_refs)
         self._tag = tag
-        if not tag and self._class:
-            self._tag = self._class.__name__
+        if not tag and self.objectClass:
+            self._tag = self.objectClass.__name__
 
         # this default post processor makes all non attribute be list
         _prefix = str(self.attr_prefix)

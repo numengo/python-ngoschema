@@ -19,6 +19,7 @@ from python_jsonschema_objects import util as pjo_util
 
 class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
     no_defaults = True
+    no_read_only = True
     remove_refs = True
     attr_prefix = ''
     excludes = []
@@ -26,6 +27,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
 
     def __init__(self,
                  no_defaults=None,
+                 no_read_only=None,
                  remove_refs=None,
                  attr_prefix=None,
                  excludes=None,
@@ -33,6 +35,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                  **kwargs):
         from .. import settings
         self.no_defaults = no_defaults or self.no_defaults
+        self.no_read_only = no_read_only or self.no_read_only
         self.remove_refs = remove_refs or self.remove_refs
         self.attr_prefix = attr_prefix or self.attr_prefix
         self.excludes = excludes or self.excludes
@@ -61,9 +64,15 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
         if isinstance(obj, classbuilder.ProtocolBase):
             ns = getattr(obj, '__not_serialized__', [])
             reqs = getattr(obj, '__required__', [])
+            ro = getattr(obj, '__read_only__', {})
             defvs = getattr(obj, '__has_default__', {})
             props = collections.OrderedDict()
             to_put_first = []
+
+            # load lazy data
+            for pname in list(obj._lazy_data):
+                getattr(obj, pname)
+                #props[pname] = obj._get_prop_value(pname)
 
             # declared properties
             for raw, trans in obj.__prop_names_flatten__.items():
@@ -76,11 +85,11 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                 if self.only and not set([raw, trans]).intersection(self.only):
                     continue
 
-                prop = getattr(obj, trans, None)
+                prop = obj._properties[trans]
 
                 # property name is the raw one, prefixed for literal attributes
                 pname = raw
-                if  isinstance(prop, LiteralValue):
+                if isinstance(prop, LiteralValue):
                     pname = f'{self.attr_prefix}{raw}'
                 # put translated properties first
                 if raw != trans:
@@ -94,17 +103,13 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                 # remove defaults
                 if raw in defvs and self.no_defaults and raw not in reqs:
                     defv = defvs.get(raw)
-                    if getattr(prop, '_pattern', '') == defv or prop == defv:
+                    if prop._expr_pattern == defv or prop == defv:
                         continue
 
                 if self.remove_refs and isinstance(prop, Entity) and prop.identity_keys:
                     props[pname] = prop.identity_keys
                 else:
                     props[pname] = self.default(prop)
-
-            # lazy data
-            for pname in obj._lazy_data.keys():
-                props[pname] = obj._get_prop_value(pname)
 
             # extended properties
             for raw, prop in six.iteritems(obj._extended_properties):

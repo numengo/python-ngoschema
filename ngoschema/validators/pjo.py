@@ -194,18 +194,23 @@ def convert_number(value, type_data):
 
 @converter_registry.register(name="importable")
 def convert_importable(value, type_data):
-    if not utils.is_string(value) and utils.is_imported(value):
-        if hasattr(value, '__schema_uri__'):
-            return value.__schema_uri__
-        return utils.fullname(value)
+    if utils.is_string(value):
+        if '/' in value:
+            from ..classbuilder import get_builder
+            return get_builder().resolve_or_construct(value)
+        else:
+            return utils.import_from_string(value)
     return value
 
 
 @converter_registry.register(name="array")
 def convert_array(value, type_data):
-    if utils.is_sequence(value):
-        return value
-    return list(value)
+    if not utils.is_sequence(value):
+        if utils.is_string(value):
+            return [a.strip() for a in value.split(type_data.get('str_delimiter', ','))]
+        else:
+            return utils.to_list(value)
+    return value
 
 
 @converter_registry.register(name="enum")
@@ -338,8 +343,12 @@ def format_datetime(value, type_data=None):
 
 
 @formatter_registry.register(name="importable")
-def format_importable(value, type_data=None):
-    return utils.fullname(value) if utils.is_imported(value) else str(value)
+def format_importable(value, type_data):
+    if not utils.is_string(value) and utils.is_imported(value):
+        if hasattr(value, '__schema_uri__'):
+            return value.__schema_uri__
+        return utils.fullname(value)
+    return value
 
 
 def convert_to_literal(value, type_data=None):

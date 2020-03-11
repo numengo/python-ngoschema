@@ -13,8 +13,6 @@ class ObjectTransform(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def __init__(self, **kwargs):
         ProtocolBase.__init__(self, **kwargs)
-        self._from_cls = self.from_._imported if self.from_ else None
-        self._to_cls = self.to_._imported if self.to_ else None
 
     @abstractmethod
     def __call__(self, src, *args):
