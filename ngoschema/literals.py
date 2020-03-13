@@ -59,6 +59,9 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     _typed = None
 
     def __init__(self, value=None):
+        if isinstance(value, pjo_literals.LiteralValue):
+            value = value._value
+
         if value is None and self.default() is not None:
             value = self.default()
 
@@ -67,7 +70,6 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
 
         self._value = value
         self.validate()
-
 
     def __repr__(self):
         return '<%s<%s> id=%s "%s">' % (
@@ -96,10 +98,11 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
             return pjo_literals.LiteralValue.__getattribute__(self, name)
 
     def for_json(self):
+        if self._validated_data is not None:
+            return self._validated_data
         if self._formatter:
-            return self._formatter(self._value)
-        else:
-            return self._value
+            return self._formatter(self._typed or self._value)
+        return self._typed or self._value
 
     @memoized_property
     def enum(self):
@@ -116,6 +119,26 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
 
         self._validated_data = self._formatter(self._typed)
         return True
+
+    def __eq__(self, other):
+        return self._typed == other
+
+    def __hash__(self):
+        return hash(self._typed)
+
+    def __lt__(self, other):
+        return self._typed < other
+
+    def __int__(self):
+        return int(self._typed)
+
+    def __float__(self):
+        return float(self._typed)
+
+    def __bool__(self):
+        return bool(self._typed)
+
+    __nonzero__ = __bool__
 
 
 # EXPERIMENTAL: attempt

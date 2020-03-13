@@ -24,7 +24,7 @@ NamedClass = get_builder().construct('#', schema, (ProtocolBase, ))
 a = NamedClass()
 assert a.name == '<anonymous>'
 a.name = 'a'
-assert a.name == 'a'
+assert a.name == 'a', a.name
 b = NamedClass(name='b')
 assert b.canonicalName == 'b', b.canonicalName
 b.parent = a

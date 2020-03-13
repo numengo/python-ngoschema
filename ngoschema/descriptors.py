@@ -42,16 +42,16 @@ class AttributeDescriptor(object):
             setattr(obj, trans, obj._lazy_data[trans])
             prop._RO_active = True
 
-        if prop and prop.is_dirty():
-            if self.fget:
-                try:
-                    self._RO_active = False
-                    self.__set__(obj, self.fget(obj))
-                    prop = obj._properties[trans]
-                except Exception as er:
-                    self._RO_active = True
-                    obj.logger.error("GET %s.%s %s", obj, trans, er, exc_info=True)
-                    raise
+        if (prop is None or prop.is_dirty()) and self.fget:
+            try:
+                self._RO_active = False
+                self.__set__(obj, self.fget(obj))
+                prop = obj._properties[trans]
+            except Exception as er:
+                self._RO_active = True
+                obj.logger.error("GET %s.%s %s", obj, trans, er, exc_info=True)
+                raise
+        if prop or prop.is_dirty():
             prop.validate()
 
         if isinstance(prop, LiteralValue) and not isinstance(prop, ForeignKey):
@@ -90,32 +90,29 @@ class AttributeDescriptor(object):
                     if utils.is_mapping(v2) and 'name' in v2:
                         obj._key2attr[v2['name']] = (trans, i)
 
-        def build_typed_item(typ, prop, value):
+        def build_typed_item(typ, value):
             if isinstance(typ, pjo_classbuilder.TypeRef):
                 typ = typ.ref_class
             if pjo_util.safe_issubclass(typ, ProtocolBase):
                 if isinstance(value, typ):
                     if typ.validate(value):
+                        value._parent = obj
                         return value
                 return typ(**pjo_util.coerce_for_expansion(value), **obj._childConf, _parent=obj)
             if pjo_util.safe_issubclass(typ, LiteralValue):
-                if prop is None:
-                    prop = typ(value)
-                else:
-                    prop.__init__(value)
-                return prop
+                return typ(value)
             else:
                 return typ(value, _parent=obj)
 
         old_value = prop._validated_data if prop else None
         typed = None
         if not utils.is_sequence(ptype):
-            typed = build_typed_item(ptype, prop, val)
+            typed = build_typed_item(ptype, val)
         else:
             errors = []
             for typ in ptype:
                 try:
-                    typed = build_typed_item(ptype, prop, val)
+                    typed = build_typed_item(ptype, val)
                     break
                 except Exception as er:
                     errors.append(er)

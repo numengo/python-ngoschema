@@ -25,7 +25,7 @@ from ngoschema import utils
 from ..protocol_base import ProtocolBase
 from ..decorators import SCH_PATH_DIR
 from ..decorators import SCH_PATH_FILE
-from ..decorators import assert_arg
+from ..decorators import assert_arg, depend_on_prop
 from ..query import Query
 from ..schema_metaclass import SchemaMetaclass
 from ..resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
@@ -133,15 +133,19 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     def contentRaw(self):
         return self._contentRaw
 
+    @depend_on_prop('filepath')
     def get_dateCreated(self):
-        return arrow.get(self.filepath.stat().st_ctime)
+        return arrow.get(self.filepath.stat().st_ctime) if self.filepath else None
 
+    @depend_on_prop('filepath')
     def get_dateModified(self):
-        return arrow.get(self.filepath.stat().st_mtime)
+        return arrow.get(self.filepath.stat().st_mtime) if self.filepath else None
 
+    @depend_on_prop('filepath')
     def get_contentSize(self):
         return self.filepath.stat().st_size if self.filepath else None
 
+    @depend_on_prop('contentSize')
     def get_contentSizeHuman(self):
         num = int(self.contentSize)
         for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
@@ -150,6 +154,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             num /= 1024.0
         return num
 
+    @depend_on_prop('filepath')
     def get_mimetype(self):
         val = self._get_prop_value('mimetype')
         if not val:
@@ -157,8 +162,9 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             val = magic.Magic(mime=True).from_file(str(self.filepath))
         return val
 
+    @depend_on_prop('filepath')
     def get_uri(self):
-        return self.filepath.as_uri() if self.filepath else None
+        return self.filepath.resolve().as_uri() if self.filepath else None
 
     def get_content(self):
         return self._content or self._contentRaw

@@ -293,6 +293,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     def for_json(self, **opts):
         # _for_json is invalidated in HasCache.touch
+        self.validate()
         if not opts:
             return self._def_enc.default(self)
         return ProtocolJSONEncoder(**opts).default(self)
@@ -310,18 +311,26 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             if self._lazy_data and self._validateLazy:
                 pass
         elif self.is_dirty():
+            # validate all properties and retrieve errors
+            errors = [trans for trans, prop in self._properties.items() if prop and not prop.validate()]
+            # properties not yet defined but with getters
+            for trans, prop in self._properties.items():
+                if prop is None and getattr(getattr(self.__class__, trans), 'fget', None):
+                    try:
+                        getattr(self, trans)
+                    except Exception as er:
+                        errors.append(trans)
+
             missing = self.missing_property_names()
             if len(missing) > 0:
                 raise ValidationError("'{0}' are required attributes for {1}".format(missing, self.__class__.__name__))
 
-            if all([prop.validate() for prop in self._properties.values() if prop is not None]):
-                self._validated_data = {
+            self._validated_data = {
                     self.__prop_translated_flatten__.get(trans, trans): prop._validated_data
                     for trans, prop in self._properties.items() if prop is not None
-                }
-                self._inputs_cached = self._inputs_data()
-            else:
-                errors = [trans for trans, prop in self._properties.items() if prop and prop.is_dirty()]
+            }
+            self._inputs_cached = self._inputs_data()
+            if errors:
                 self.logger.info('errors validating %s', errors)
         return True
 
