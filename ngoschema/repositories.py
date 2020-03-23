@@ -30,7 +30,7 @@ except ImportError:
 import json
 from ruamel import yaml
 from ruamel.yaml import YAML
-import xmltodict
+from ngoschema.utils import xmltodict
 
 from .exceptions import InvalidOperationException
 from .query import Query
@@ -263,7 +263,7 @@ def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
     handler_cls = handler_cls or JsonFileRepository
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
-    logger.info("LOAD %s from '%s'", handler.objectClass, fp)
+    logger.info("DUMP %s from '%s'", handler.objectClass, fp)
     handler.register(obj)
     handler.commit()
 

@@ -76,8 +76,8 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
             else:
                 with open(str(self.filepath), mode='rb') as f:
                     content = f.read()
-        elif self.url:
-            response = urlopen(str(self.url))
+        elif self.uri:
+            response = urlopen(str(self.uri))
             if not self.binary:
                 content = response.read().decode(encoding)
             else:
@@ -124,6 +124,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
         try:
             self._content = load_function(self._contentRaw, **kwargs)
         except Exception as er:
+            raise
             raise Exception('impossible to deserialize %s: %s' % (self.identifier, er))
         if self._id:
             register_doc_with_uri_id(self._content, self._id)
@@ -135,15 +136,15 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     @depend_on_prop('filepath')
     def get_dateCreated(self):
-        return arrow.get(self.filepath.stat().st_ctime) if self.filepath else None
+        return arrow.get(self.filepath.stat().st_ctime) if self.filepath and self.filepath.exists() else None
 
     @depend_on_prop('filepath')
     def get_dateModified(self):
-        return arrow.get(self.filepath.stat().st_mtime) if self.filepath else None
+        return arrow.get(self.filepath.stat().st_mtime) if self.filepath and self.filepath.exists() else None
 
     @depend_on_prop('filepath')
     def get_contentSize(self):
-        return self.filepath.stat().st_size if self.filepath else None
+        return self.filepath.stat().st_size if self.filepath and self.filepath.exists() else None
 
     @depend_on_prop('contentSize')
     def get_contentSizeHuman(self):

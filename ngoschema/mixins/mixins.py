@@ -319,13 +319,22 @@ class HasCache:
         return self._validated_data is None or self._inputs_data() != self._inputs_cached
 
     def touch(self):
-        if self._validated_data:
+        if self._validated_data is not None:
             self._validated_data = None
             # touch outputs
             for output in self._outputs:
-                o = self._context.get_descendant(output)
+                parts = utils.split_path(output)
+                par = self
+                if len(parts)>1:
+                    par = utils.get_descendant(o, parts[:-1])
+                last = parts[-1]
+                if utils.is_string(last):
+                    getattr(par, last) # to set maybe missing prop
+                    o = par._properties[last] if last in par._properties else None
+                else:
+                    o = par[last]
                 if o:
                     o.touch()
             # touch parent
-            if self._parent:
+            if getattr(self, '_parent', False):
                 self._parent.touch()

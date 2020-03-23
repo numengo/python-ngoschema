@@ -358,9 +358,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         add_extend_recursively_to_scope(extends)
 
         e_parents = [self.resolve_or_construct(e) for e in extends]
+        e_parents = [e.ref_class if isinstance(e, pjo_classbuilder.TypeRef) else e for e in e_parents]
         # remove typerefs and remove duplicates
         e_parents_sorted = tuple(e for e in e_parents
-                        if not isinstance(e, pjo_classbuilder.TypeRef)
+                        if e is not None
                         and not any(issubclass(_, e) for _ in e_parents if e is not _)
                         and not any(issubclass(p, e) for p in parents))
         parents = tuple(p for p in parents if not any(issubclass(e, p) for e in e_parents_sorted)) + e_parents_sorted
@@ -404,7 +405,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         for p in parents:
             object_attr_list_flatten = ChainMap(getattr(p, '__object_attr_list_flatten__',
-                                                        getattr(p, '__object_attr_list__', {})),
+                                                        getattr(p, '__object_attr_list__',
+                                                                # add non protocolbased non private attributes
+                                                                set([a for a in p.__dict__ if not a.startswith('__')]))),
                                                 *object_attr_list_flatten.maps)
             name_translation_flatten = ChainMap(getattr(p, '__prop_names_flatten__',
                                                         getattr(p, '__prop_names__', {})),
@@ -439,6 +442,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             # if a value is defined at class level, then it s read-only and should not be set/overwritten by setters
             getter = class_attrs.get('get_' + trans)
             setter = class_attrs.get('set_' + trans)
+
             if getter or setter or defv:
                 for p in parents:
                     # if a getter/setter/default is redefined, get a copy from the property
@@ -503,19 +507,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
             if defv is not None:
                 detail['default'] = defv
-                # if a default value is defined locally, we mark it as required so it s always initialized
+                # properties defined at the class level or in definition should be readonly
+                read_only.add(prop)
                 defaults[prop] = defv
-                #required.add(prop_id)
-                read_only.add(prop_id)
 
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
-            if getter and 'default' in detail:
-                #del detail['default']
-                # if a getter is defined, we remove the default set at component level and mark it as required
-                defaults.pop(prop_id, None)
-                required.add(prop_id)
+            #if getter and 'default' in detail:
+            #    #del detail['default']
+            #    # if a getter is defined, we remove the default set at component level and mark it as required
+            #    #defaults.pop(prop_id, None)
+            #    #required.add(prop_id)
 
             if getter is None and prop_id in required and 'default' not in detail and detail.get('type') == 'object':
                 detail['default'] = {}
@@ -531,28 +534,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 typ = self.resolved[prop_uri] = self.construct(prop_uri, detail,
                                                     (ProtocolBase,))
 
-                props[prop] = make_property(
-                    prop,
-                    {'type': typ},
-                    fget=getter,
-                    fset=setter,
-                    desc=typ.__doc__,
-                )
-                propinfo[prop_id]['_type'] = typ
-
             elif 'type' not in detail and '$ref' in detail:
                 ref, _ = resolve_in_scope(detail['$ref'])
                 logger.debug(
                     pjo_util.lazy_format("Resolving reference {0} for {1}.{2}", ref, nm, prop))
 
                 typ = self.resolve_or_construct(ref)
-
-                props[prop] = make_property(
-                    prop, {'type': typ},
-                    fget=getter,
-                    fset=setter,
-                    desc=typ.__doc__)
-                propinfo[prop_id]['_type'] = typ
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop_id] = typ.default()
@@ -564,16 +551,10 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         defaults[prop_id] = {}
 
             elif 'oneOf' in detail:
-                potential = self.resolve_classes(detail['oneOf'])
+                typ = self.resolve_classes(detail['oneOf'])
                 logger.debug(
                     pjo_util.lazy_format("Designating {0} as oneOf {1}", prop,
-                                         potential))
-                desc = detail['description'] if 'description' in detail else ''
-                props[prop] = make_property(
-                    prop, {'type': potential},
-                    fget=getter,
-                    fset=setter,
-                    desc=desc)
+                                         typ))
 
             elif detail.get('type') == 'array':
                 # for resolution in create in wrapper_types
@@ -584,15 +565,11 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                         if '$ref' in detail['items']:
                             constraints["strict"] = kw.get("_strict")
                             uri, _ = resolve_in_scope(detail['items']['$ref'])
-                            typ = self.construct(uri, detail['items'])
-                            detail['items']['_type'] = typ
-                            propdata = {
-                                'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                            }
+                            item_typ = self.construct(uri, detail['items'])
                         else:
                             try:
                                 if 'oneOf' in detail['items']:
-                                    typ = pjo_classbuilder.TypeProxy([
+                                    item_typ = pjo_classbuilder.TypeProxy([
                                         self.construct(uri + '_%s' % i,
                                                        item_detail)
                                         if '$ref' not in item_detail else
@@ -603,50 +580,29 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                             'items']['oneOf'])
                                     ])
                                 else:
-                                    typ = self._construct(prop_uri+'/items', detail['items'])
+                                    item_typ = self._construct(prop_uri+'/items', detail['items'])
                                 constraints = copy.copy(detail)
                                 constraints["strict"] = kw.get("_strict")
-                                propdata = {
-                                    'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                                }
                             except NotImplementedError:
-                                typ = detail["items"]
+                                item_typ = detail["items"]
                                 constraints = copy.copy(detail)
                                 constraints["strict"] = kw.get("_strict")
-                                propdata = {
-                                    'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                                }
                     elif utils.is_sequence(detail['items']):
-                        typs = []
+                        item_typ = []
                         for i, elem in enumerate(detail['items']):
                             uri = '{0}/{1}>'.format(prop_uri, i)
-                            typ = self.construct(uri, elem)
-                            typs.append(typ)
-                        propdata = {
-                            'type': ArrayWrapper.create(prop_uri, item_constraint=typs, **constraints),
-                        }
+                            item_typ.append(self.construct(uri, elem))
                 else:
-                    typ = self._construct(prop_uri + '/items', {'type': 'string'})
-                    propdata = {
-                        'type': ArrayWrapper.create(prop_uri, item_constraint=typ, **constraints),
-                    }
-
-                props[prop] = make_property(
-                    prop,
-                    propdata,
-                    fget=getter,
-                    fset=setter,
-                    desc=typ.__doc__)
+                    item_typ = self._construct(prop_uri + '/items', {'type': 'string'})
+                typ = ArrayWrapper.create(prop_uri, item_constraint=item_typ, **constraints)
             else:
                 desc = detail['description'] if 'description' in detail else ''
                 typ = self.construct(prop_uri, detail)
 
-                props[prop] = make_property(
-                    prop, {'type': typ}, fget=getter, fset=setter, desc=desc)
-                propinfo[prop_id]['_type'] = typ
-
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
                     defaults[prop_id] = typ.default()
+
+            props[prop] = make_property(prop, typ, fget=getter, fset=setter)
 
         """
         If this object itself has a 'oneOf' designation, then
@@ -693,15 +649,22 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         props['__not_serialized__'] = not_serialized
         props['__extends__'] = extends
 
-        # default value on children force its resolution at each init
-        # seems the best place to treat this special case
+
+        # get parent classes options
+        parents_add_logging = any([getattr(p, '__add_logging__', False) for p in parents])
+        parents_attr_by_name = any([getattr(p, '__attr_by_name__', False) for p in parents])
+        parents_validate_lazy = any([getattr(p, '__validate_lazy__', False) for p in parents])
+        parents_propagate = any([getattr(p, '__propagate__', False) for p in parents])
+        parents_lazy_loading = any([getattr(p, '__lazy_loading__', False) for p in parents])
+        parents_strict = any([getattr(p, '__strict__', False) for p in parents])
+
         props['__schema_uri__'] = kw.get('$schema') or class_attrs.get('__schema_uri__', nm)
-        props['__add_logging__'] = kw.get('_addLogging') or class_attrs.get('__add_logging__', False)
-        props['__attr_by_name__'] = kw.get('_attrByName') or class_attrs.get('__attr_by_name__', False)
-        props['__validate_lazy__'] = kw.get('_validateLazy') or class_attrs.get('__validate_lazy__', False)
-        props['__propagate__'] = kw.get('_propagate') or class_attrs.get('__propagate__', False)
-        props['__lazy_loading__'] = kw.get('_lazyLoading') or class_attrs.get('__lazy_loading__', False)
-        props['__strict__'] = bool(required) or kw.get('_strict') or class_attrs.get('__strict__', False)
+        props['__add_logging__'] = kw.get('_add_logging') or class_attrs.get('__add_logging__', parents_add_logging)
+        props['__attr_by_name__'] = kw.get('_attr_by_name') or class_attrs.get('__attr_by_name__', parents_attr_by_name)
+        props['__validate_lazy__'] = kw.get('_validate_lazy') or class_attrs.get('__validate_lazy__', parents_validate_lazy)
+        props['__propagate__'] = kw.get('_propagate') or class_attrs.get('__propagate__', parents_propagate)
+        props['__lazy_loading__'] = kw.get('_lazy_loading') or class_attrs.get('__lazy_loading__', parents_lazy_loading)
+        props['__strict__'] = bool(required) or kw.get('_strict') or class_attrs.get('__strict__', parents_strict)
         props['__log_level__'] = kw.get('_logLevel') or class_attrs.get('__log_level__', 'INFO')
 
         cls = type(cls_name, tuple(parents), props)

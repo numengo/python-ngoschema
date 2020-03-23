@@ -96,6 +96,10 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         enc = ProtocolJSONEncoder(**opts)
         return enc.encode(self)
 
+    def mark_or_revalidate(self):
+        self.touch()
+        pjo_wrapper_types.ArrayWrapper.mark_or_revalidate(self)
+
     def is_dirty(self):
         return HasCache.is_dirty(self) or self.strict or self._dirty
 
@@ -105,7 +109,9 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
         self.validate_length()
         self.validate_uniqueness()
 
-        if all([item.validate() for item in self._typed if item]):
+        are_validated = [item.validate() for item in self._typed if item]
+
+        if all(are_validated):
             self._validated_data = [item._validated_data for item in self._typed]
         else:
             errors = [i for i, item in enumerate(self._typed) if item and item.is_dirty()]
@@ -157,6 +163,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                 typed_elems.append(val)
             elif util.safe_issubclass(typ, classbuilder.ProtocolBase):
                 try:
+                    elem = elem or {}
                     val = typ(_parent=self._parent,
                               **self._parent._childConf,
                               **util.coerce_for_expansion(elem))

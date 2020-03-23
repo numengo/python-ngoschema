@@ -38,11 +38,9 @@ from .wrapper_types import ArrayWrapper
 from .literals import LiteralValue
 
 
-def make_property(prop, info, fget=None, fset=None, fdel=None, desc=""):
-    from . import descriptors
-
-    prop = descriptors.AttributeDescriptor(prop, info, fget=fget, fset=fset, fdel=fdel, desc=desc)
-    return prop
+def make_property(prop_name, prop_type, fget=None, fset=None, fdel=None):
+    from .descriptors import AttributeDescriptor
+    return AttributeDescriptor(prop_name, prop_type, fget=fget, fset=fset, fdel=fdel)
 
 
 class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilder.ProtocolBase):
@@ -71,6 +69,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
     __prop_names__ = dict()
     __prop_translated__ = dict()
     __schema_uri__ = 'http://numengo.org/ngoschema#/definitions/ProtocolBase'
+    _RO_active = True
 
     def __new__(cls,
                 *args,
@@ -132,26 +131,27 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         self._extended_properties = {}
         self._properties = {}
         self._key2attr = {}
-        self._lazyLoading = props.pop('_lazyLoading', None) or cls.__lazy_loading__
-        self._validateLazy = props.pop('_validateLazy', None) or cls.__validate_lazy__
-        self._attrByName = props.pop('_attrByName', None) or cls.__attr_by_name__
+        self._lazy_loading = props.pop('_lazy_loading', None) or cls.__lazy_loading__
+        self._validate_lazy = props.pop('_validate_lazy', None) or cls.__validate_lazy__
+        self._attr_by_name = props.pop('_attr_by_name', None) or cls.__attr_by_name__
         self._propagate = props.pop('_propagate', None) or cls.__propagate__
         self._strict = props.pop('_strict', None) or cls.__strict__
+
+        for prop in self.__prop_names_flatten__.values():
+            self._properties.setdefault(prop, None)
+
         parent = props.pop('_parent', None)
         # to avoid calling the setter if None
         if parent:
             self._parent = parent
         self._childConf = {
-            '_lazyLoading':  self._lazyLoading,
-            '_validateLazy': self._validateLazy,
-            '_attrByName':  self._attrByName,
+            '_lazy_loading':  self._lazy_loading,
+            '_validate_lazy': self._validate_lazy,
+            '_attr_by_name':  self._attr_by_name,
             '_propagate': self._propagate,
             '_strict': self._strict
         } if self._propagate else {}
         mixins.HasCache.__init__(self)
-
-        for prop in self.__prop_names_flatten__.values():
-            self._properties.setdefault(prop, None)
 
         self.pre_init_hook(*args, **props)
 
@@ -168,17 +168,18 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
+        self.deactivate_read_only()
         for k, v in self.__has_default__.items():
             trans = self.__prop_names_flatten__.get(k, k)
             if trans not in props:
                 # no lazy loading for read only as it implies to reset RO status later
-                if self._lazyLoading and k and k not in self.__read_only__:
+                if self._lazy_loading and k and k not in self.__read_only__:
                     self._lazy_data.setdefault(trans, copy.copy(v))
                 else:
                     pr = getattr(cls, trans)
-                    pr._RO_active = False
-                    setattr(self, trans, copy.copy(v))
-                    pr._RO_active = True
+                    if not pr.fget:
+                        setattr(self, trans, copy.copy(v))
+        self.activate_read_only()
 
         if props.get('name'):
             if isinstance(self, mixins.HasCanonicalName):
@@ -186,9 +187,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             elif isinstance(self, mixins.HasName):
                 mixins.HasName.set_name(self, props['name'])
 
-        if self._lazyLoading:
+        if self._lazy_loading:
             self._lazy_data.update({self.__prop_names_flatten__.get(k, k): v for k, v in props.items()})
-            if self._attrByName:
+            for k in set(self._lazy_data.keys()).difference(self.__prop_allowed__):
+                setattr(self, k, self._lazy_data.pop(k))
+            if self._attr_by_name:
                 # replace refs / mandatory for loading ngomf nested schemas
                 base_uri = self.__schema_uri__
                 def replace_ref(coll, key, level):
@@ -210,7 +213,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     setattr(self, trans, prop)
                 # call getters on all required not defined in props
                 for raw in self.__required__:
-                    trans = self.__prop_names_flatten__.get(k, k)
+                    trans = self.__prop_names_flatten__.get(raw, raw)
                     if trans not in props:
                         getattr(self, trans)
                 if self._strict:
@@ -220,6 +223,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 raise
 
         self.post_init_hook(*args, **props)
+        self._lazy_loading = False
 
     def __hash__(self):
         """hash function to store objects references"""
@@ -285,7 +289,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         return True
 
     def serialize(self, **opts):
-        self.validate()
+        self.validate(excludes=opts.get('excludes'), only=opts.get('only'), validate_lazy=True)
         enc = ProtocolJSONEncoder(**opts)
         return enc.encode(self)
 
@@ -293,7 +297,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
 
     def for_json(self, **opts):
         # _for_json is invalidated in HasCache.touch
-        self.validate()
+        self.validate(excludes=opts.get('excludes'), only=opts.get('only'), validate_lazy=True)
         if not opts:
             return self._def_enc.default(self)
         return ProtocolJSONEncoder(**opts).default(self)
@@ -303,24 +307,55 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         from .resolver import get_resolver
         return get_resolver().resolve(cls.__schema_uri__)[1]
 
-    def validate(self):
-        return mixins.HasCache.validate(self)
+    def activate_read_only(self):
+        self._RO_active = True
 
-    def _validate(self, _):
-        if self._lazyLoading:
-            if self._lazy_data and self._validateLazy:
-                pass
-        elif self.is_dirty():
-            # validate all properties and retrieve errors
-            errors = [trans for trans, prop in self._properties.items() if prop and not prop.validate()]
-            # properties not yet defined but with getters
+    def deactivate_read_only(self):
+        self._RO_active = False
+
+    #_excludes_cached = []
+    #_only_cached = []
+    _opts_cached = {}
+
+    def validate(self, excludes=None, only=None, validate_lazy=None):
+        opts = {'validate_lazy': validate_lazy or self._validate_lazy}
+        if excludes is not None:
+            opts['excludes'] = excludes
+        if only is not None:
+            opts['only'] = only
+
+        if self.is_dirty() or opts != self._opts_cached:
+
+            def is_included(trans):
+                raw = self.__prop_translated_flatten__.get(trans, trans)
+                ret = False
+                ret |= raw in self.__required__
+                if validate_lazy:
+                    ret |= trans in self._lazy_data
+                if excludes is not None:
+                    if raw in excludes:
+                        return False
+                if only is not None:
+                    return raw in only
+                return ret
+
+            # validate all included properties already set and retrieve errors
+            errors = [trans for trans, prop in self._properties.items()
+                      if prop and not prop.validate()]
+            # load lazy data and getter defined missing props
             for trans, prop in self._properties.items():
-                if prop is None and getattr(getattr(self.__class__, trans), 'fget', None):
+                if prop is None and is_included(trans):
                     try:
                         getattr(self, trans)
                     except Exception as er:
                         errors.append(trans)
+                        raise
+            if errors:
+                self.logger.info('errors validating %s', errors)
+                self._validated_data = None
+                return False
 
+            # now look for missing required properties
             missing = self.missing_property_names()
             if len(missing) > 0:
                 raise ValidationError("'{0}' are required attributes for {1}".format(missing, self.__class__.__name__))
@@ -329,9 +364,13 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self.__prop_translated_flatten__.get(trans, trans): prop._validated_data
                     for trans, prop in self._properties.items() if prop is not None
             }
+
+            # add additional properties (not validated)
+            self._validated_data.update(self._extended_properties)
+
+            self._opts_cached = opts
             self._inputs_cached = self._inputs_data()
-            if errors:
-                self.logger.info('errors validating %s', errors)
+
         return True
 
     @classmethod
@@ -433,6 +472,17 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         except KeyError as er:
             return default
 
+    def __iter__(self):
+        return itertools.chain(
+            self._extended_properties.keys(),
+            list(self._lazy_data.keys()) + list(k for k, v in self._properties.items() if v is not None),
+        )
+
+    def __len__(self):
+        return len(self._extended_properties) \
+               + len([v for v in self._properties.values() if v is not None]) \
+               + len(self._lazy_data)
+
     def __contains__(self, key):
         # add test for existence in lazy_data and that prop is not None
         key = self.__prop_names_flatten__.get(key, key)
@@ -457,7 +507,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             return object.__setattr__(self, name, val)
 
         name = self.__prop_names_flatten__.get(name, name)
-        if self._attrByName:
+        if self._attr_by_name:
             prop, index = self._key2attr.get(name, (None, None))
             if prop:
                 if index is None:
@@ -479,6 +529,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 raise six.reraise(ValidationError,
                                   ValidationError("Problem setting property '{0}': {1} ".format(name, er)),
                                   sys.exc_info()[2])
+            except Exception as er:
+                self.logger.info(er, exc_info=True)
+                raise
         else:
             # This is an additional property of some kind
             try:
@@ -494,7 +547,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Accessor to property dealing with lazy_data, standard properties and potential extended properties
         """
-        if self._lazyLoading and name in self._lazy_data:
+        if name in self._lazy_data:
             setattr(self, name, self._lazy_data.pop(name))
         name = self.__prop_names_flatten__.get(name, name)
         if name in self._properties:
@@ -505,7 +558,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Accessor to property value (as for json)
         """
-        if self._lazyLoading and name in self._lazy_data:
+        if self._lazy_loading and name in self._lazy_data:
             val = self._lazy_data[name]
             return val.for_json() if hasattr(val, 'for_json') else val
         prop = self._get_prop(name)
@@ -515,20 +568,21 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         """
         Set a property shortcutting the setter. To be used in setters
         """
-        if self._lazyLoading:
+        if self._lazy_loading:
             self._lazy_data[name] = value
         else:
             prop = self._get_prop(name)
             if prop:
                 prop.__init__(value)
             elif name in self.__prop_names_flatten__:
-                pinfo = self.propinfo(name)
-                typ = pinfo.get('_type') if pinfo else None
-                if typ and issubclass(typ, pjo_literals.LiteralValue):
-                    prop = typ(value)
-                    self._properties[name] = prop
-                else:
-                    raise AttributeError("no type specified for property '%s'"% name)
+                prop = getattr(self.__class__, name)
+                typ = prop.prop_type
+                prop = typ(value)
+                self._properties[name] = prop
+                #pinfo = self.propinfo(name)
+                #typ = pinfo.get('_type') if pinfo else None
+            else:
+                self.__extensible__.instantiate(name, value)
 
     def missing_property_names(self):
         # overrides original method to deal with inheritance

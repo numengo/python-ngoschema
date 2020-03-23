@@ -29,14 +29,14 @@ def test_DocumentRegistry2():
     print('list_files', time.time() - s, len(ls))
     s = time.time()
     os = [
-        Document(filepath=f, _lazyLoading=False) for f in list_files(
+        Document(filepath=f, _lazy_loading=False) for f in list_files(
             dirpath,
             recursive=True)
     ]
     print('list_files no lazy', time.time() - s, len(os))
     s = time.time()
     os = [
-        Document(filepath=f, _lazyLoading=True, _validateLazy=False)
+        Document(filepath=f, _lazy_loading=True, _validate_lazy=False)
         for f in list_files(
             dirpath,
             recursive=True)
@@ -44,7 +44,7 @@ def test_DocumentRegistry2():
     print('list_files lazy no validation', time.time() - s, len(os))
     s = time.time()
     os = [
-        Document(filepath=f, _lazyLoading=True) for f in list_files(
+        Document(filepath=f, _lazy_loading=True) for f in list_files(
             dirpath,
             recursive=True)
     ]
