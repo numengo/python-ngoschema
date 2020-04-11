@@ -84,8 +84,8 @@ def parse_docstring(docstring):
     :param docstring: docstring to parse
     :returns: a dictionary of form
               {
-                  "shortDescription": ...,
-                  "longDescription": ...,
+                  "short_description": ...,
+                  "long_description": ...,
                   "params": { name: {"type", ..., "doc": ...}},
                   "returns": ...
               }
@@ -135,8 +135,8 @@ def parse_docstring(docstring):
 
     return {
         "doc": docstring,
-        "shortDescription": short_description,
-        "longDescription": long_description,
+        "short_description": short_description,
+        "long_description": long_description,
         "params": params,
         "returns": returns,
     }
@@ -192,10 +192,10 @@ def parse_type_string(typestring):
         '"text"': '"string"',
         '"dict"': '"object"',
         '"choice"': '"enum"',
-        '"uri"-"reference"': '"uri-reference"',
-        '"uri"-"template"': '"uri-template"',
-        '"date"-"time"': '"date-time"',
-        '"json"-"pointer"': '"json-pointer"',
+        '"uri-reference"': '"uri-reference"',
+        '"uri-template"': '"uri-template"',
+        '"date-time"': '"date-time"',
+        '"json-pointer"': '"json-pointer"',
         '"pathlib.Path"': '"path"',
         '"True"': "True",
         '"true"': "True",

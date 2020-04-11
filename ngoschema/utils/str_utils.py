@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 import re
 import json
+import pathlib
 from builtins import str
 import pprint
 import collections
@@ -188,3 +189,7 @@ def rreplace(s, old, new, occurrence=1):
     li = s.rsplit(old, occurrence)
     return new.join(li)
 
+
+def file_link_format(fpath):
+    fpath = pathlib.Path(fpath.resolve())
+    return f'file://{fpath}'

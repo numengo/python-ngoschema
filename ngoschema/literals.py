@@ -58,7 +58,7 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     __subclass__ = None
     _typed = None
 
-    def __init__(self, value=None):
+    def __init__(self, value=None, **opts):
         if isinstance(value, pjo_literals.LiteralValue):
             value = value._value
 
@@ -69,7 +69,7 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
             self.register_expr(value)
 
         self._value = value
-        self.validate()
+        self.validate(**opts)
 
     def __repr__(self):
         return '<%s<%s> id=%s "%s">' % (
@@ -108,16 +108,21 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     def enum(self):
         return self.__propinfo__['__literal__'].get('enum')
 
-    def validate(self):
-        return HasCache.validate(self)
+    def validate(self, **opts):
+        raw_literals = opts.get('raw_literals', False)
+        if self.is_dirty():
+            inputs = self._inputs_data()
+            data = self._value
+            if not raw_literals:
+                if self.has_expr():
+                    data = self.eval_expr(**inputs) or data
 
-    def _validate(self, data):
-        self._typed = self._converter(data)
+            self._typed = self._converter(data)
+            # replace the more expensive call to pjo_literals.LiteralValue.validate
+            self._validator(self._typed)
+            self._validated_data = self._formatter(self._typed)
 
-        # replace the more expensive call to pjo_literals.LiteralValue.validate
-        self._validator(self._typed)
-
-        self._validated_data = self._formatter(self._typed)
+            self._inputs_cached = inputs
         return True
 
     def __eq__(self, other):
@@ -136,7 +141,7 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
         return float(self._typed)
 
     def __bool__(self):
-        return bool(self._typed)
+        return bool(self._value)
 
     __nonzero__ = __bool__
 

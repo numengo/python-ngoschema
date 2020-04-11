@@ -28,11 +28,15 @@ class Entity(with_metaclass(SchemaMetaclass, ProtocolBase)):
     """
     __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
 
+    @classproperty
+    def _primaryKeys(cls):
+        return cls.__schema__.get('primaryKeys')
+
     _keys = None
     @property
     def identity_keys(self):
         if self._keys is None:
-            self._keys = {(str(k) if k != '$id' else '$ref'): getattr(self, str(k)).for_json() for k in self.primaryKeys}
+            self._keys = {(str(k) if k != '$id' else '$ref'): getattr(self, str(k)) for k in self.primaryKeys}
         return self._keys
 
     def __init__(self, *args, **kwargs):

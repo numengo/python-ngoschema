@@ -23,6 +23,7 @@ _sessions = weakref.WeakValueDictionary()
 
 _new_sessionid = utils.threadsafe_counter()
 
+
 def _state_session(state):
     """Given an :class:`.InstanceState`, return the :class:`.Session`
         associated, if any.

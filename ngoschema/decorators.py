@@ -114,7 +114,8 @@ SCH_DATETIME = pmap({"type": "datetime"})
 
 logger = logging.getLogger(__name__)
 
-def assert_arg(arg, schema):
+
+def assert_arg(arg, schema=None, **schema_parts):
     """
     Decorator to add a schema to validate a given argument against a json-schema.
     If the decorated function has a keyword argument `assert_args`, it is used as
@@ -125,6 +126,7 @@ def assert_arg(arg, schema):
     :param schema: json-schema for the type
     :type schema: dict
     """
+    schema = schema or schema_parts
     from .validators.jsonschema import convert_validate
 
     def to_decorate(wrapped):
@@ -362,4 +364,3 @@ def memoized_method(*lru_args, **lru_kwargs):
             return cached_method(*args, **kwargs)
         return wrapped_func
     return decorator
-

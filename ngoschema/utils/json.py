@@ -18,28 +18,22 @@ from python_jsonschema_objects import util as pjo_util
 
 
 class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
-    no_defaults = True
-    no_read_only = True
-    remove_refs = True
-    attr_prefix = ''
-    excludes = []
-    only = []
 
     def __init__(self,
-                 no_defaults=None,
-                 no_read_only=None,
-                 remove_refs=None,
-                 attr_prefix=None,
-                 excludes=None,
-                 only=None,
+                 no_defaults=True,
+                 no_read_only=True,
+                 remove_refs=True,
+                 attr_prefix='',
+                 excludes=[],
+                 only=[],
                  **kwargs):
         from .. import settings
-        self.no_defaults = no_defaults or self.no_defaults
-        self.no_read_only = no_read_only or self.no_read_only
-        self.remove_refs = remove_refs or self.remove_refs
-        self.attr_prefix = attr_prefix or self.attr_prefix
-        self.excludes = excludes or self.excludes
-        self.only = only or self.only
+        self.no_defaults = no_defaults
+        self.no_read_only = no_read_only
+        self.remove_refs = remove_refs
+        self.attr_prefix = attr_prefix
+        self.excludes = excludes
+        self.only = only
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
@@ -47,8 +41,11 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
         from python_jsonschema_objects import wrapper_types
         from ..models.entity import Entity
         from ..literals import LiteralValue
+        from ..utils import is_string, is_literal
         from ..validators.pjo import format_date, format_datetime, format_time, format_path
 
+        if is_literal(obj):
+            return obj
         if isinstance(obj, classbuilder.LiteralValue):
             return obj.for_json()
         if isinstance(obj, wrapper_types.ArrayWrapper):
@@ -69,23 +66,18 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
             props = collections.OrderedDict()
             to_put_first = []
 
-            # load lazy data
-            for pname in list(obj._lazy_data):
-                getattr(obj, pname)
-                #props[pname] = obj._get_prop_value(pname)
-
             # declared properties
-            for raw, trans in obj.__prop_names_flatten__.items():
+            for (raw, trans), prop in zip(obj.__prop_names_ordered__.items(), obj._properties.values()):
                 # excluded at schema level
                 if raw in ns:
+                    continue
+                if self.no_read_only and raw in ro:
                     continue
                 # excluded at encoder lever
                 if set([raw, trans]).intersection(self.excludes):
                     continue
                 if self.only and not set([raw, trans]).intersection(self.only):
                     continue
-
-                prop = obj._properties[trans]
 
                 # property name is the raw one, prefixed for literal attributes
                 pname = raw
@@ -112,7 +104,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                     props[pname] = self.default(prop)
 
             # extended properties
-            for raw, prop in six.iteritems(obj._extended_properties):
+            for raw, prop in obj._extended_properties.items():
                 # property name is the raw one, prefixed for literal attributes
                 pname = raw
                 if getattr(prop, "isLiteralClass", False):
@@ -140,7 +132,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
 
 
 def set_json_defaults(kwargs=None):
-    kwargs = kwargs or{}
+    kwargs = kwargs or {}
     kwargs.setdefault('indent', 2)
     kwargs.setdefault('ensure_ascii', False)
     kwargs.setdefault('separators', None)

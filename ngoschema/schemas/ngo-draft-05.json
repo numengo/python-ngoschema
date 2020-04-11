@@ -459,6 +459,10 @@
     "notSerialized": {
       "$ref": "#/definitions/stringArray"
     },
+    "wraps": {
+      "type": "importable",
+      "$comment": "for creating APIs and store objects defined in importable components"
+    },
     "extends": {
       "type": "array",
       "items": {

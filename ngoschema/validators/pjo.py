@@ -112,43 +112,43 @@ def check_boolean_type(param, value, _):
 
 @type_registry.register(name="string")
 def check_string_type(param, value, _):
-    from ..literals import LiteralValue
     if not isinstance(value, string_types):
-        #if not (isinstance(value, LiteralValue) and value.__subclass__ in string_types):
         raise ValidationError("{0} is not a string".format(value))
 
 
 @type_registry.register(name="number")
 def check_number_type(param, value, _):
-    from ..literals import LiteralValue
     number_types = six.integer_types + (float, Decimal)
     if not isinstance(value, number_types):
-        #if not (isinstance(value, LiteralValue) and value.__subclass__ in number_types):
         raise ValidationError("{0} is neither an integer nor a float".format(value))
 
 
 @type_registry.register(name="path")
 def check_path_type(param, value, _):
     if not isinstance(value, pathlib.Path):
-        raise ValidationError("{0} is not a path".format(value))
+        if not utils.is_string(value):
+            raise ValidationError("{0} is not a path".format(value))
 
 
 @type_registry.register(name="date")
 def check_date_type(param, value, _):
     if not isinstance(value, datetime.date):
-        raise ValidationError("{0} is not a date".format(value))
+        if not utils.is_string(value):
+            raise ValidationError("{0} is not a date".format(value))
 
 
 @type_registry.register(name="time")
 def check_time_type(param, value, _):
     if not isinstance(value, datetime.time):
-        raise ValidationError("{0} is not a time".format(value))
+        if not utils.is_string(value):
+            raise ValidationError("{0} is not a time".format(value))
 
 
 @type_registry.register(name="datetime")
 def check_datetime_type(param, value, _):
     if not isinstance(value, datetime.datetime):
-        raise ValidationError("{0} is not a datetime".format(value))
+        if not utils.is_string(value):
+            raise ValidationError("{0} is not a datetime".format(value))
 
 @type_registry.register(name="importable")
 def check_importable_type(param, value, _):

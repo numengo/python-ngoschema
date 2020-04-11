@@ -105,11 +105,11 @@ class SchemaMetaclass(type):
             if assert_args and fn.__doc__:
                 fi = FunctionInspector(fn)
                 for pos, p in enumerate(fi.parameters):
-                    if p.type:
+                    if p.schema:
                         logger.debug(
                             "decorate <%s>.%s with argument %i validity check.",
                             clsname, k, pos)
-                        fn = decorators.assert_arg(pos, p.type)(fn)
+                        fn = decorators.assert_arg(pos, p.schema)(fn)
 
             # add exception logging
             if add_logging and not k.startswith("__"):

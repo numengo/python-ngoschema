@@ -7,6 +7,7 @@ from python_jsonschema_objects import \
 
 from . import utils
 from .protocol_base import ProtocolBase
+from .classbuilder import clean_prop_name
 from .mixins import HasParent
 from .literals import LiteralValue
 from .wrapper_types import ArrayWrapper
@@ -15,8 +16,9 @@ from .wrapper_types import ArrayWrapper
 class AttributeDescriptor(object):
     """ Provides property access for constructed class properties """
 
-    def __init__(self, prop_name, prop_type, fget=None, fset=None, fdel=None):
-        self.prop_name = prop_name
+    def __init__(self, prop_raw, prop_type, fget=None, fset=None, fdel=None):
+        self.prop_raw = prop_raw
+        self.prop_trans = clean_prop_name(prop_raw)
         self.prop_type = prop_type
         self.fget = fget
         self.fset = fset
@@ -28,17 +30,18 @@ class AttributeDescriptor(object):
         if obj is None and owner is not None:
             return self
 
-        trans = self.prop_name
+        raw, trans = self.prop_raw, self.prop_trans
+
         obj.logger.debug(utils.lazy_format("GET {0}.{1}", obj.short_repr, trans))
 
         # load lazy data
-        if trans in obj._lazy_data:
-            obj.logger.debug("lazy loading of '%s'", trans)
+        if raw in obj._lazy_data:
+            obj.logger.debug("lazy loading of '%s'", raw)
             obj.deactivate_read_only()
-            setattr(obj, trans, obj._lazy_data[trans])
+            setattr(obj, trans, obj._lazy_data[raw])
             obj.activate_read_only()
 
-        prop = obj._properties[trans]
+        prop = obj._properties[raw]
 
         if (prop is None or prop.is_dirty()) and self.fget:
             try:
@@ -46,14 +49,14 @@ class AttributeDescriptor(object):
                 obj.deactivate_read_only()
                 self.__set__(obj, val)
                 obj.activate_read_only()
-                prop = obj._properties[trans]
+                prop = obj._properties[raw]
             except Exception as er:
                 obj.activate_read_only()
                 obj.logger.error("GET %s.%s %s", obj, trans, er, exc_info=True)
                 raise
 
         if prop and prop.is_dirty():
-            prop.validate()
+            prop.validate(raw_literals=obj._raw_literals)
 
         if isinstance(prop, LiteralValue) and not isinstance(prop, ForeignKey):
             return prop._typed if prop._typed is not None else (
@@ -62,8 +65,7 @@ class AttributeDescriptor(object):
             return prop
 
     def __set__(self, obj, val):
-        trans = self.prop_name
-        raw = obj.__prop_translated_flatten__.get(trans) or trans
+        raw, trans = self.prop_raw, self.prop_trans
 
         obj.logger.debug(
             utils.lazy_format("SET {0}.{1}={2}", obj.short_repr, trans, val, to_format=[2]))
@@ -74,18 +76,13 @@ class AttributeDescriptor(object):
         ptype = self.prop_type
         types = [ptype] if not utils.is_sequence(ptype) else ptype
 
-        prop = obj._properties[trans]
+        prop = obj._properties[raw]
 
         if val is None and prop is None:
             return
 
         if obj._attr_by_name:
-            if utils.is_mapping(val) and 'name' in val:
-                obj._key2attr[val['name']] = (trans, None)
-            if utils.is_sequence(val):
-                for i, v2 in enumerate(val):
-                    if utils.is_mapping(v2) and 'name' in v2:
-                        obj._key2attr[v2['name']] = (trans, i)
+            obj._set_attr_by_name(raw, val)
 
         def build_typed_item(typ, value):
             if isinstance(typ, pjo_classbuilder.TypeRef):
@@ -97,7 +94,7 @@ class AttributeDescriptor(object):
                         return value
                 return typ(**pjo_util.coerce_for_expansion(value or {}), **obj._childConf, _parent=obj)
             if pjo_util.safe_issubclass(typ, LiteralValue):
-                return typ(value)
+                return typ(value, raw_literals=obj._raw_literals)
             else:
                 return typ(value, _parent=obj)
 
@@ -121,7 +118,7 @@ class AttributeDescriptor(object):
 
         typed._set_context_info(obj, raw)
 
-        obj._properties[trans] = typed
+        obj._properties[raw] = typed
 
         if typed._validated_data != old_value:
             obj.touch()
@@ -130,16 +127,16 @@ class AttributeDescriptor(object):
             self.fset(obj, typed)
 
         # remove lazy data
-        if trans in obj._lazy_data:
-            obj._lazy_data.pop(trans)
+        if raw in obj._lazy_data:
+            obj._lazy_data.pop(raw)
 
     def __delete__(self, obj):
-        prop = self.prop_name
-        obj.logger.debug(utils.lazy_format("DEL {0}.{1}", obj.short_repr, prop))
-        if prop in obj.__required__:
-            raise AttributeError("'%s' is required" % prop)
+        raw, trans = self.prop_raw, self.prop_trans
+        obj.logger.debug(utils.lazy_format("DEL {0}.{1}", obj.short_repr, trans))
+        if raw in obj.__required__:
+            raise AttributeError("'%s' is required" % raw)
         else:
             if self.fdel:
                 self.fdel(obj)
-            del obj._properties[prop]
+            del obj._properties[raw]
 

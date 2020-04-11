@@ -67,11 +67,13 @@ class _KeyModifierMapping(MutableMapping):
     def __len__(self):
         return len(self._dict)
 
+
 class CaseInsensitiveDict(_KeyModifierMapping):
 
     @classmethod
     def key_modifier(cls, key):
         return key.lower()
+
 
 class UriDict(_KeyModifierMapping):
 
@@ -102,6 +104,7 @@ class Registry(Mapping):
 
     def unregister(self, key):
         del self._registry[key]
+
 
 class WeakRegistry(Registry):
 
@@ -797,3 +800,24 @@ def get_descendant(obj, key_list):
         child = None
     return get_descendant(child, key_list[1:]) \
         if child and len(key_list) > 1 else child
+
+
+def topological_sort(data):
+    """" sort a dependency tree """
+    # http://rosettacode.org/wiki/Topological_sort#Python
+    from functools import reduce
+    if not data:
+        return {}
+    for k, v in data.items():
+        v.discard(k) # Ignore self dependencies
+    extra_items_in_deps = reduce(set.union, data.values()) - set(data.keys())
+    data.update({item: set() for item in extra_items_in_deps})
+    while True:
+        ordered = set(item for item,dep in data.items() if not dep)
+        if not ordered:
+            break
+        yield ordered
+        #yield ' '.join(sorted(ordered))
+        data = {item: (dep - ordered) for item,dep in data.items()
+                if item not in ordered}
+    assert not data, "A cyclic dependency exists amongst %r" % data

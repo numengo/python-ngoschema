@@ -30,7 +30,7 @@ except ImportError:
 import json
 from ruamel import yaml
 from ruamel.yaml import YAML
-from ngoschema.utils import xmltodict
+from ngoschema.utils import xmltodict, file_link_format
 
 from .exceptions import InvalidOperationException
 from .query import Query
@@ -58,7 +58,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         self._pkeys = None
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = self.primaryKeys.for_json()
-        elif issubclass(self.objectClass, Entity):
+        elif self.objectClass and issubclass(self.objectClass, Entity):
             self._pkeys = tuple(self.objectClass._primaryKeys)
         self._session = None
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
@@ -150,9 +150,11 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
         if not self.many:
             if not len(values)==1:
                 raise Exception('handler is configured for 1 registered objects (%i).' % len(list(values)))
-            return self._encoder.default(values[0])
+            o = values[0]
+            o.validate(validate_lazy=True)
+            return self._encoder.default(o)
         else:
-            return [self._encoder.default(o) for o in values]
+            return [self._encoder.default(o) for o in values if o.validate(validate_lazy=True)]
 
     @abstractmethod
     def commit(self):
@@ -231,18 +233,17 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositor
         doc = self.document
         fpath = doc.filepath
         if not fpath.parent.exists():
-            self.logger.info("creating missing directory '%s'", fpath.parent)
+            self.logger.info("creating missing directory '%s'", file_link_format(fpath.parent))
             os.makedirs(str(fpath.parent))
         if fpath.exists():
             doc.load()
             if stream == doc.contentRaw:
-                self.logger.info("File '%s' already exists with same content. Not overwriting.", fpath)
+                self.logger.info("File '%s' already exists with same content. Not overwriting.", file_link_format(fpath))
                 return
 
-        self.logger.info("DUMP file %s", fpath)
+        self.logger.info("DUMP %s", file_link_format(fpath))
         self.logger.debug("data:\n%r ", stream)
         doc.write(stream)
-
 
 
 @assert_arg(0, SCH_PATH_FILE)
@@ -251,7 +252,7 @@ def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
     handler_cls = handler_cls or JsonFileRepository
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
-    logger.info("LOAD %s from '%s'", handler.objectClass or '<unknown>', fp)
+    logger.info("LOAD %s from %s", handler.objectClass or '<class unknown>', file_link_format(fp))
     handler.load()
     instances = handler.instances
     return instances if handler.many else instances[0]
@@ -263,7 +264,7 @@ def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
     handler_cls = handler_cls or JsonFileRepository
     handler = handler_cls(filepath=fp, **kwargs)
     session.bind_handler(handler)
-    logger.info("DUMP %s from '%s'", handler.objectClass, fp)
+    logger.info("DUMP %s from %s", handler.objectClass, file_link_format(fp))
     handler.register(obj)
     handler.commit()
 
@@ -379,6 +380,7 @@ def load_xml_from_file(fp, session=None, **kwargs):
 @repository_registry.register()
 class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2FileRepository"
+    objectClass = ProtocolBase
 
     def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
         """
@@ -399,7 +401,7 @@ class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         raise Exception("not implemented")
 
     def serialize_data(self, data):
-        self.logger.info("DUMP template '%s' file %s", self.template, self.document.filepath)
+        self.logger.info("SERIALIZE template '%s'", self.template)
         self.logger.debug("data:\n%r ", data)
 
         stream = self._jinja.get_template(str(self.template)).render(data)
@@ -432,7 +434,7 @@ class Jinja2MacroTemplatedPathFileRepository(with_metaclass(SchemaMetaclass, Jin
     __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroTemplatedPathFileRepository"
 
     def serialize_data(self, data):
-        self.logger.info('SERIALIZE Jinja2MacroFileRepository')
+        self.logger.info('SERIALIZE Jinja2MacroTemplatedPathFileRepository')
         try:
             tpath = TemplatedString(self.templatedPath)(**self._context)
         except Exception as er:

@@ -24,7 +24,7 @@ import python_jsonschema_objects.validators as pjo_validators
 from future.utils import text_to_native_str as native_str
 
 from .inspect import FunctionInspector
-from .protocol_base import ProtocolBase, make_property
+from .protocol_base import ProtocolBase
 from . import utils
 from .resolver import get_resolver, qualify_ref, resolve_uri, domain_uri
 from .wrapper_types import ArrayWrapper
@@ -34,6 +34,7 @@ from .decorators import memoized_method, depend_on_prop
 from . import settings
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 # default builder global variable
 _default_builder = None
@@ -60,8 +61,12 @@ def clean_def_name(name):
     return inflection.camelize(name.split(':')[-1])
 
 
+prop_trans_regex = re.compile(r"[^a-zA-z0-9\.\-_]+")
+
+
 def clean_prop_name(name):
-    return re.sub(r"[^a-zA-z0-9\-_]+", "", name.split(':')[-1]).replace('-', '_')
+    return prop_trans_regex.sub("", name.split(':')[-1]).replace('-', '_')
+    #return re.sub(r"[^a-zA-z0-9\-_]+", "", name.split(':')[-1]).replace('-', '_')
 
 
 def clean_ns_name(name):
@@ -90,6 +95,11 @@ def clean_uri(uri):
         uri, frag = uri.split('#')
     uri = uri.lower().replace('_', '-')
     return uri if frag is None else uri + '#' + frag
+
+
+def make_property(prop_raw, prop_type, fget=None, fset=None, fdel=None):
+    from .descriptors import AttributeDescriptor
+    return AttributeDescriptor(prop_raw, prop_type, fget=fget, fset=fset, fdel=fdel)
 
 
 class ClassBuilder(pjo_classbuilder.ClassBuilder):
@@ -403,6 +413,12 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         name_translation_flatten = ChainMap()
         propinfo_flatten = ChainMap()
 
+        def raw_trans_name(name):
+            for k, v in name_translation_flatten.items():
+                if name in [k, v]:
+                    return k, v
+            return name, clean_prop_name(name)
+
         for p in parents:
             object_attr_list_flatten = ChainMap(getattr(p, '__object_attr_list_flatten__',
                                                         getattr(p, '__object_attr_list__',
@@ -420,8 +436,6 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         name_translation_flatten = ChainMap(name_translation, *name_translation_flatten.maps)
         propinfo_flatten = ChainMap(propinfo, *propinfo_flatten.maps)
 
-        translation_name = {v: k for k, v in name_translation_flatten.items() if v != k}
-
         # prepare set of inherited required, read_only, not_serialized attributes
         required = set.union(
             *[getattr(p, '__required__', set()) for p in parents])
@@ -429,38 +443,45 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             *[getattr(p, '__read_only__', set()) for p in parents])
         not_serialized = set.union(
             *[getattr(p, '__not_serialized__', set()) for p in parents])
+        with_getter = set.union(
+            *[getattr(p, '__with_getter__', set()) for p in parents])
+        with_setter = set.union(
+            *[getattr(p, '__with_setter__', set()) for p in parents])
 
         required.update(cls_schema.get('required', []))
         read_only.update(cls_schema.get('readOnly', []))
         not_serialized.update(cls_schema.get('notSerialized', []))
 
-        # inherited properties / looking for redefined getters/setters/default value in local definition
-        #[pp for p in [(p, f'set_{p}', f'get_{p}') for p in name_translation_flatten.values()] for pp in p]
+        reserved = ['title', 'extends', 'properties', 'definitions']
 
-        for prop, trans in name_translation_flatten.items():
-            defv = class_attrs.get(trans) or cls_schema.get(prop)
+        # inherited properties / looking for redefined getters/setters/default value in local definition
+        for raw, trans in name_translation_flatten.items():
+            defv = class_attrs.get(trans) or cls_schema.get(raw)
             # if a value is defined at class level, then it s read-only and should not be set/overwritten by setters
             getter = class_attrs.get('get_' + trans)
             setter = class_attrs.get('set_' + trans)
+
+            if raw in reserved and defv == cls_schema.get(raw):
+                defv = None
 
             if getter or setter or defv:
                 for p in parents:
                     # if a getter/setter/default is redefined, get a copy from the property
                     if trans in getattr(p, '__propinfo_flatten__', {}):
-                        pi = p.propinfo(prop).copy()
+                        pi = p.propinfo(raw).copy()
                         if pi:
                             if '$ref' in pi:
                                 ref, pi = resolve_in_scope(pi['$ref'])
                                 pi = pi.copy()
                             if defv:
                                 pi['default'] = convert_to_literal(defv, pi)
-                            propinfo.setdefault(prop, pi)
+                            propinfo.setdefault(raw, pi)
                             break
                 #else:
                 #    raise AttributeError("Impossible to find inherited property '%s' in schema" % prop)
 
         # locally properties / looking for inherited getters/setters/default value and copy in local class attributes
-        for prop, trans in name_translation_flatten.items():
+        for raw, trans in name_translation_flatten.items():
             for p in parents:
                 if issubclass(p, ProtocolBase):
                     continue
@@ -474,61 +495,59 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 if setter is not None:
                     class_attrs.setdefault('set_' + trans, setter)
 
-        def inspect_accessor_dependencies(prop, f):
+        def inspect_accessor_dependencies(raw, f):
             fi = FunctionInspector(f)
             for d in fi.decorators:
                 if d.name == 'depend_on_prop':
-                    dependencies.setdefault(prop, [])
-                    dependencies[prop] += [d.parameters[0].default]
+                    dependencies.setdefault(raw, [])
+                    dependencies[raw] += [p.value for p in d.parameters]
 
         # process all properties (default values, getter, setter, and type construction
-        for prop_id, detail in propinfo.items():
-            prop_uri = f'{nm}/properties/{prop_id}'
-            prop = name_translation_flatten[prop_id]
+        for raw, detail in propinfo.items():
+            prop_uri = f'{nm}/properties/{raw}'
+            trans = name_translation_flatten[raw]
 
             # look for getter/setter/defaultvalue first in class definition
-            defv = class_attrs.get(prop)
+            defv = class_attrs.get(trans)
             if defv is not None and (
                 inspect.isfunction(defv) or inspect.ismethod(defv) or inspect.isdatadescriptor(defv)):
                 raise AttributeError(
-                    "Impossible to get an initial value from attribute '%s' as defined in class code." % prop)
+                    "Impossible to get an initial value from attribute '%s' as defined in class '%s' code."
+                    % (trans, nm))
 
-            getter = class_attrs.get('get_' + prop)
+            getter = class_attrs.get('get_' + trans)
             if getter:
+                with_getter.add(raw)
                 if not (utils.is_method(getter) or utils.is_function(getter)):
-                    raise AttributeError("Impossible to use getter of attribute '%s' as defined in class code." % prop)
-                inspect_accessor_dependencies(prop, getter)
+                    raise AttributeError("Impossible to use getter of attribute '%s' as defined in class '%s'  code."
+                                         % (trans, nm))
+                inspect_accessor_dependencies(raw, getter)
 
-            setter = class_attrs.get('set_' + prop)
+            setter = class_attrs.get('set_' + trans)
             if setter:
+                with_setter.add(raw)
                 if not (utils.is_method(setter) or utils.is_function(setter)):
-                    raise AttributeError("Impossible to use setter of attribute '%s' as defined in class code." % prop)
-                inspect_accessor_dependencies(prop, setter)
+                    raise AttributeError("Impossible to use setter of attribute '%s' as defined in class '%s'  code."
+                                         % (trans, nm))
+                inspect_accessor_dependencies(raw, setter)
 
-            if defv is not None:
+            if defv is not None and raw not in reserved:
                 detail['default'] = defv
                 # properties defined at the class level or in definition should be readonly
-                read_only.add(prop)
-                defaults[prop] = defv
+                #read_only.add(raw)
+                defaults[raw] = defv
 
             if detail.get('default') is None and detail.get('enum') is not None:
                 detail['default'] = detail['enum'][0]
 
-            #if getter and 'default' in detail:
-            #    #del detail['default']
-            #    # if a getter is defined, we remove the default set at component level and mark it as required
-            #    #defaults.pop(prop_id, None)
-            #    #required.add(prop_id)
-
-            if getter is None and prop_id in required and 'default' not in detail and detail.get('type') == 'object':
+            if getter is None and raw in required and 'default' not in detail and detail.get('type') == 'object':
                 detail['default'] = {}
 
             if getter is None and detail.get('default') is None and detail.get('type') == 'array':
                 detail['default'] = []
 
             if detail.get('default') is not None:
-                # use prop_id to have untranslated name and be less ambiguous
-                defaults[prop_id] = detail.get('default')
+                defaults[raw] = detail.get('default')
 
             if detail.get('type') == 'object':
                 typ = self.resolved[prop_uri] = self.construct(prop_uri, detail,
@@ -542,19 +561,18 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 typ = self.resolve_or_construct(ref)
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
-                    defaults[prop_id] = typ.default()
+                    defaults[raw] = typ.default()
                 elif issubclass(typ, ArrayWrapper) and 'default' not in detail:
-                    defaults[prop_id] = []
+                    defaults[raw] = []
 
-                if prop_id in required and 'default' not in detail:
+                if raw in required and 'default' not in detail:
                     if issubclass(typ, pjo_classbuilder.ProtocolBase):
-                        defaults[prop_id] = {}
+                        defaults[raw] = {}
 
             elif 'oneOf' in detail:
                 typ = self.resolve_classes(detail['oneOf'])
                 logger.debug(
-                    pjo_util.lazy_format("Designating {0} as oneOf {1}", prop,
-                                         typ))
+                    pjo_util.lazy_format("Designating {0} as oneOf {1}", raw, typ))
 
             elif detail.get('type') == 'array':
                 # for resolution in create in wrapper_types
@@ -580,7 +598,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                                             'items']['oneOf'])
                                     ])
                                 else:
-                                    item_typ = self._construct(prop_uri+'/items', detail['items'])
+                                    item_typ = self._construct(f'{prop_uri}/items', detail['items'])
                                 constraints = copy.copy(detail)
                                 constraints["strict"] = kw.get("_strict")
                             except NotImplementedError:
@@ -600,9 +618,9 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                 typ = self.construct(prop_uri, detail)
 
                 if hasattr(typ, 'isLiteralClass') and typ.default() is not None:
-                    defaults[prop_id] = typ.default()
+                    defaults[raw] = typ.default()
 
-            props[prop] = make_property(prop, typ, fget=getter, fset=setter)
+            props[trans] = make_property(raw, typ, fget=getter, fset=setter)
 
         """
         If this object itself has a 'oneOf' designation, then
@@ -613,8 +631,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             # Need a validation to check that it meets one of them
             props['__validation__'] = {'type': klasses}
 
-        props['__extensible__'] = pjo_pattern_properties.ExtensibleValidator(
-            nm, cls_schema, self)
+        props['__extensible__'] = pjo_pattern_properties.ExtensibleValidator(nm, cls_schema, self)
 
         # add class attrs after removing defaults
         object_attr_list.update([a for a, v in class_attrs.items()
@@ -626,9 +643,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         # overwritten if they are default values
         props.update([(k, v) for k, v in class_attrs.items() if k not in props])
 
+        dependencies_raw1 = {raw: set() for raw in name_translation_flatten.keys()}
+        dependencies_raw1.update({k: set([raw_trans_name(v.split('.')[0])[0] for v in vs])
+                                  for k, vs in dependencies.items()})
         props['__prop_names__'] = name_translation
         props['__prop_names_flatten__'] = name_translation_flatten
-        props['__prop_translated_flatten__'] = translation_name
+        props['__prop_names_ordered__'] = OrderedDict((k, v) for m in name_translation_flatten.maps
+                                                      for k, v in m.items())
         props['__prop_allowed__'] = set(name_translation_flatten).union(name_translation_flatten.values())
 
         props['__has_default__'] = defaults
@@ -644,10 +665,13 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
                     nm, invalid_requires))
 
         props['__required__'] = required
-        props['__dependencies__'] = dependencies
         props['__read_only__'] = read_only
         props['__not_serialized__'] = not_serialized
         props['__extends__'] = extends
+        props['__with_getter__'] = with_getter
+        props['__with_setter__'] = with_setter
+        props['__dependencies__'] = dependencies
+        props['__dependencies_raw1__'] = dependencies_raw1
 
 
         # get parent classes options
@@ -684,4 +708,3 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
         logger.info('CREATED %s', self.get_ref_cname(nm))
 
         return cls
-

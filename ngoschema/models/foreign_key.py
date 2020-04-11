@@ -57,11 +57,11 @@ class ForeignKey(LiteralValue, Relationship, HasLogger):
         if value is None:
             return
         if isinstance(value, self.foreignClass):
-            self._set_ref(value)
             self._value = value._get_prop_value(self.key)
+            self._set_ref(value)
         elif isinstance(value, ForeignKey):
-            self._set_ref(value._ref() if value._ref else None)
             self._value = value._value
+            self._set_ref(value._ref() if value._ref else None)
             self._dirty = value._dirty
         else:
             self._value = value.for_json() if hasattr(value, 'for_json') else value
@@ -132,12 +132,15 @@ class CnameForeignKey(ForeignKey):
         # todo: handle relative cnames/refs
         ForeignKey.__init__(self, value)
 
-    def _validate(self, data):
+    def validate(self, **kwargs):
+        if self._value:
+            LiteralValue.validate(self)
+        # literal value is validated, now let s see if it corresponds to reference
         if self._ref and self._ref():
             ref = self._ref()
-            data = ref._cname
-            assert data or self._ref is None
-        return LiteralValue._validate(self, data)
+            self._value = ref._cname
+        assert self._value or self._ref is None
+        return True
 
     def resolve(self):
         if self._ref:

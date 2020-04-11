@@ -15,6 +15,7 @@ import importlib
 import inspect
 import itertools
 import logging
+import builtins
 from builtins import next
 from builtins import object
 from builtins import str
@@ -24,6 +25,7 @@ import six
 
 from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
+from ngoschema import decorators as decorators_mod
 from ngoschema.exceptions import InvalidValue
 from ngoschema.utils import import_from_string
 from ngoschema.utils import is_string, is_class, is_function, is_callable, is_imported, infer_json_schema
@@ -41,44 +43,32 @@ class Argument(object):
     Class for function/method attributes
     """
 
-    def __init__(self, name, doc=None, doctype=None):
+    def __init__(self, name, schema=None, doc=None, doctype=None):
         self.name = name
-        self._has_default = False
-        self._doc = doc
-        self._type = None
+        self.default = None
+        self.value = None
+        self.doc = doc
+        self.schema = schema
         if doctype:
             try:
-                self._type = parse_type_string(doctype)
+                self.schema = parse_type_string(doctype)
             except Exception as er:
-                logger.error(
-                    "impossible to parse valid schema from type doc %s",
-                    doctype)
+                logger.error("impossible to parse valid schema from type doc %s", doctype)
+        assert not is_string(self.schema)
 
     def __repr__(self):
         ret = "<arg %s" % self.name
-        if self._has_default:
+        if self.default is not None:
             ret += "=%s" % self.default
         return ret + ">"
 
-    @property
-    def doc(self):
-        return self._doc
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def default(self):
-        if self._has_default:
-            return self._default
-        return
-
-    @default.setter
-    def default(self, value):
-        self._has_default = True
-        self._default = value
-
+    def to_json_schema(self, **ns):
+        sch = dict(self.type or {'type': 'object'})
+        if self.doc:
+            sch['description'] = self.doc
+        if self.default:
+            sch['default'] = self.default
+        return sch
 
 # global variale used in visit_FunctionDef
 # set by inspectors when inspecting a class/function
@@ -89,71 +79,108 @@ def _id(arg):
     return getattr(arg, "id", None) or getattr(arg, "arg")
 
 
-def ast_name(ast_attr):
-    if isinstance(ast_attr, ast.Attribute):
-        return ast_attr.attr
-    if isinstance(ast_attr, (ast.Name, ast.Call)):
-        return _id(ast_attr)
-    return ast.literal_eval(ast_attr)
+def ast_name(node):
+    if isinstance(node, ast.Call):
+        return ast_name(node.func)
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return getattr(node, "id", None) or getattr(node, "arg", None) or ast.literal_eval(node)
 
 
-def visit_FunctionDef(node):
+def ast_parts(node):
+    parts = []
+    if isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        parts.extend(ast_parts(node.value))
+    if isinstance(node,ast.Name):
+        parts.append(getattr(node, "id", None) or getattr(node, "arg"))
+    return parts
+
+
+def ast_eval(node, module=None):
+    try:
+        return ast.literal_eval(node) if node else node
+    except Exception as er:
+        from ..utils import import_from_string
+        module = module or _module
+        to_import = ast_parts(node) + [module.__name__]
+        to_import = '.'.join(reversed(to_import))
+        return import_from_string(to_import)
+
+
+def visit_function_def(node):
     """ ast node visitor """
     doc = parse_docstring(ast.get_docstring(node))
-    _short_desc = doc["shortDescription"]
-    _long_desc = doc["longDescription"]
+    module = _module
+    short_desc = doc["short_description"]
+    long_desc = doc["long_description"]
 
     doc_params = doc["params"]
-    _returns = doc["returns"]
+    returns = doc["returns"]
+
+    args = node.args.args
+    defs = node.args.defaults
+    kwargs = node.args.kwarg
+    vargs = node.args.vararg
 
     docs = [
-        doc_params[_id(a)].get("doc", None) if _id(a) in doc_params else None
-        for a in node.args.args
+        doc_params[ast_name(a)].get("doc", None) if ast_name(a) in doc_params else None
+        for a in args
     ]
     doctypes = [
-        doc_params[_id(a)]["type"]
-        if _id(a) in doc_params and "type" in doc_params[_id(a)] else None
-        for a in node.args.args
+        doc_params[ast_name(a)]["type"]
+        if ast_name(a) in doc_params and "type" in doc_params[ast_name(a)] else None
+        for a in args
     ]
 
-    _params = [
-        Argument(_id(arg), doc, doctype)
-        for arg, doc, doctype in zip(node.args.args, docs, doctypes)
+    params = [
+        Argument(ast_name(arg), doc=doc, doctype=doctype)
+        for arg, doc, doctype in zip(args, docs, doctypes)
     ]
-
-    _keywords = node.args.kwarg.arg if hasattr(node.args.kwarg,
-                                               'arg') else node.args.kwarg
-    _varargs = node.args.vararg.arg if hasattr(node.args.vararg,
-                                               'arg') else node.args.vararg
-    _defaults = []
-    for d in node.args.defaults:
-        try:
-            _defaults.append(ast.literal_eval(d))
-        except Exception as er:
-            _defaults.append(None)
-    for d, p in zip(reversed(_defaults), reversed(_params)):
+    defaults = [ast_eval(d) for d in defs]
+    for d, p in zip(reversed(defaults), reversed(params)):
         p.default = d
+
+    varargs = Argument(ast_name(vargs)) if vargs else None
+    keywords = Argument(ast_name(kwargs)) if kwargs else None
 
     decorators = []
     for n in node.decorator_list:
-        name = ""
+        name = ast_name(n)
+        d_args_val = []
+        d_kwargs_val = {}
         if isinstance(n, ast.Call):
-            name = ast_name(n.func)
-            args = [ast_name(d) for d in n.args]
-        else:
-            name = ast_name(n)
-            args = []
-        dec = getattr(_module, name, None)
-        if not dec:
-            dec = name
-        elif is_function(dec):
+            d_args_val = [ast_eval(d, module) for d in n.args]
+            d_kwargs_val = {ast_name(kw): ast_eval(kw.value, module) for kw in n.keywords}
+        dec = getattr(module, name, None) or getattr(builtins, name, None)
+        assert dec, 'impossible to find decorator %s' % name
+        if is_function(dec):
             dec = FunctionInspector(dec)
-            for a, p in zip(args, dec.parameters):
-                p.default = a
+            for a, p in zip(d_args_val, dec.parameters):
+                p.value = a
+            if len(dec.parameters) < len(d_args_val):
+                dec.varargs = d_args_val[len(dec.parameters):]
+            if dec.keywords:
+                dec.keywords.value = d_kwargs_val
         elif is_class(dec):
             dec = ClassInspector(dec)
+            if d_args_val or d_kwargs_val:
+                raise Exception('TODO setting value in class from dec args and kwargs values')
         decorators.append(dec)
-    return _short_desc, _long_desc, _returns, _params, _keywords, _varargs, decorators
+        # process assert_arg arguments to complete parameter types
+        if dec.name == 'assert_arg':
+            arg = dec.parameters[0].value
+            arg_schema = dec.varargs if dec.varargs is not None else dec.parameters[1].value
+            if arg_schema:
+                if is_string(arg):
+                    for p in params:
+                        if p.name == arg:
+                            param = p
+                            break
+                else:
+                    param = params[arg]
+                param.type = arg_schema
+    return short_desc, long_desc, returns, params, keywords, varargs, decorators
 
 
 class FunctionInspector(object):
@@ -167,8 +194,8 @@ class FunctionInspector(object):
         """
         self.name = None
         self.doc = None
-        self.shortDescription = None
-        self.longDescription = None
+        self.short_description = None
+        self.long_description = None
         self.returns = None
         self.parameters = []
         self.keywords = None
@@ -202,16 +229,16 @@ class FunctionInspector(object):
             self.name = getattr(function, "__name__", None)
             _module = importlib.import_module(function.__class__.__module__)
         self.module = _module
-        self.moduleName = _module.__name__
-        if self.moduleName in EXCLUDED_MODULES:
+        self.module_name = _module.__name__
+        if self.module_name in EXCLUDED_MODULES:
             return
 
-        def _visit_FunctionDef(node):
+        def _visit_function_def(node):
             if (node.name == self.name
                     and node.lineno == self.function.__code__.co_firstlineno):
-                sd, ld, rt, ps, kw, va, decs = visit_FunctionDef(node)
-                self.shortDescription = sd
-                self.longDescription = ld
+                sd, ld, rt, ps, kw, va, decs = visit_function_def(node)
+                self.short_description = sd
+                self.long_description = ld
                 self.returns = rt
                 self.parameters = ps
                 self.keywords = kw
@@ -219,8 +246,8 @@ class FunctionInspector(object):
                 self.decorators = decs
 
         node_iter = ast.NodeVisitor()
-        node_iter.visit_FunctionDef = _visit_FunctionDef
-        node_iter.visit(ast.parse(inspect.getsource(_module)))
+        node_iter.visit_FunctionDef = _visit_function_def
+        node_iter.visit(ast.parse(inspect.getsource(self.module)))
 
     def __repr__(self):
         return "<FunctionInsp %s>" % repr(self.name)
@@ -231,93 +258,96 @@ class ClassInspector(object):
     Class to inspect a class
     """
 
-    def __init__(self, klass):
+    def __init__(self, cls):
         self.name = None
         self.doc = None
-        self.shortDescription = None
-        self.longDescription = None
+        self.short_description = None
+        self.long_description = None
         self.attributes = {}
-        self.attributesInherited = {}
+        self.attributes_inherited = {}
         self.properties = {}
-        self.propertiesInherited = {}
+        self.properties_inherited = {}
         self.methods = {}
-        self.methodsInherited = {}
+        self.methods_inherited = {}
         self.mro = []
-        self._from_class(klass)
+        self._from_class(cls)
 
-    def _from_class(self, klass):
+    def _from_class(self, cls):
         global _module
-        if is_string(klass):
-            klass = import_from_string(klass)
-        if not inspect.isclass(klass):
-            raise InvalidValue("%r is not a class" % klass)
+        if is_string(cls):
+            cls = import_from_string(cls)
+        if not inspect.isclass(cls):
+            raise InvalidValue("%r is not a class" % cls)
 
-        self.klass = klass
-        self.name = klass.__name__
-        self.doc = klass.__doc__
+        self.cls = cls
+        self.name = cls.__name__
+        self.doc = cls.__doc__
         if self.doc:
             self.doc = self.doc.strip()
-            doc = parse_docstring(klass.__doc__)
-            self.shortDescription = doc["shortDescription"]
-            self.longDescription = doc["longDescription"]
+            doc = parse_docstring(cls.__doc__)
+            self.short_description = doc["short_description"]
+            self.long_description = doc["long_description"]
         else:
-            self.shortDescription = None
-            self.longDescription = None
-        _module = importlib.import_module(klass.__module__)
+            self.short_description = None
+            self.long_description = None
+        _module = importlib.import_module(cls.__module__)
         self.module = _module
-        self.moduleName = _module.__name__
+        self.module_name = _module.__name__
 
-        #ms = inspect.getmembers(klass, inspect.ismethod)
-        ds = inspect.getmembers(klass, inspect.isdatadescriptor)
+        #ms = inspect.getmembers(cls, inspect.ismethod)
+        ds = inspect.getmembers(cls, inspect.isdatadescriptor)
         self.properties = {n: d for n, d in ds if isinstance(d, property)}
         self.attributes = {n: d for n, d in ds if not isinstance(d, property)}
 
-        ds2 = inspect.getmembers(klass, lambda x: not is_callable(x))
+        ds2 = inspect.getmembers(cls, lambda x: not is_callable(x))
         self.attributes = {n: d for n, d in ds2 if not n.startswith('__')}
 
-        def _visit_FunctionDef_class(node):
-            sd, ld, rt, ps, kw, va, decs = visit_FunctionDef(node)
+        def _visit_function_def_class(node):
+            global _module
+            _module = self.module  # to reset global variable module to current class one
+            sd, ld, rt, ps, kw, va, decs = visit_function_def(node)
             mi = FunctionInspector(
                 name=node.name,
-                shortDescription=sd,
-                longDescription=ld,
+                short_description=sd,
+                long_description=ld,
                 returns=rt,
                 parameters=ps,
                 keywords=kw,
                 varargs=va,
                 decorators=decs,
             )
-            mi.function = getattr(self.klass, node.name, None)
+            mi.function = getattr(self.cls, node.name, None)
             mi.doc = mi.function.__doc__
             mi.module = self.module
-            mi.moduleName = self.moduleName
-            mi.isStatic = "staticmethod" in mi.decorators
+            mi.module_name = self.module_name
+            mi.is_staticmethod = "staticmethod" in [f.name for f in mi.decorators]
+            mi.is_classmethod = "classmethod" in [f.name for f in mi.decorators]
             # remove first argument if not static
-            if not mi.isStatic:
+            if not mi.is_staticmethod and len(mi.parameters):
                 mi.parameters.pop(0)
             self.methods[node.name] = mi
 
         node_iter = ast.NodeVisitor()
-        node_iter.visit_FunctionDef = _visit_FunctionDef_class
+        node_iter.visit_FunctionDef = _visit_function_def_class
 
         # avoid builtin
         def is_builtin(obj):
             mn = obj.__module__
             return (mn in EXCLUDED_MODULES)
 
-        if not is_builtin(self.klass):
-            node = ast.parse(inspect.getsource(self.klass))
+        if not is_builtin(self.cls):
+            node = ast.parse(inspect.getsource(self.cls))
             node_iter.visit(node)
 
         self.mro = []
-        for mro in inspect.getmro(self.klass)[1:]:
+        for mro in inspect.getmro(self.cls)[1:]:
             if is_builtin(mro):
                 break
             ci_mro = ClassInspector(mro)
             self.mro.append(ci_mro)
-            self.attributesInherited.update(ci_mro.attributes)
-            self.propertiesInherited.update(ci_mro.properties)
-            self.methodsInherited.update(ci_mro.methods)
+            self.attributes_inherited.update(ci_mro.attributes)
+            self.properties_inherited.update(ci_mro.properties)
+            self.methods_inherited.update(ci_mro.methods)
 
     def __repr__(self):
         return "<ClassInsp %s>" % self.name
@@ -327,25 +357,25 @@ class ClassInspector(object):
         return self.methods.get("__init__", None)
 
     @property
-    def methodsAll(self):
+    def methods_all(self):
         return dict(
             itertools.chain(
                 six.iteritems(self.methods),
-                six.iteritems(self.methodsInherited)))
+                six.iteritems(self.methods_inherited)))
 
     @property
-    def methodsPublic(self):
+    def methods_public(self):
         return {
             n: m
-            for n, m in self.methodsAll.items()
+            for n, m in self.methods_all.items()
             if n not in list(self.properties.keys() +
-                             self.propertiesInherited.keys())
+                             self.properties_inherited.keys())
             and not n.startswith("_")
         }
 
-    def to_json_schema(self, **ns):
+    def to_json_schema(self, use_init=True, **ns):
         from ..classbuilder import get_builder
-        uri = get_builder().get_cname_ref(f'{self.moduleName}.{self.name}', **ns)
+        uri = get_builder().get_cname_ref(f'{self.module_name}.{self.name}', **ns)
         schema = {
             '$id': uri,
             'type': 'object',
@@ -354,10 +384,13 @@ class ClassInspector(object):
         }
         if self.doc is None:
             del schema['description']
-        extends = [get_builder().get_cname_ref(f'{m.moduleName}.{m.name}', **ns) for m in self.mro]
+        extends = [get_builder().get_cname_ref(f'{m.module_name}.{m.name}', **ns) for m in self.mro]
         if extends:
             schema['extends'] = extends
         props = {k: infer_json_schema(v) for k, v in self.attributes.items()}
+        if use_init:
+            props_init = {k.name: k.to_json_schema() for k in self.init.parameters}
+            props.update(props_init)
         if props:
             schema['properties'] = props
         return schema

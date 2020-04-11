@@ -103,22 +103,32 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
     def is_dirty(self):
         return HasCache.is_dirty(self) or self.strict or self._dirty
 
-    def _validate(self, data):
-        self.data = data
-        self.validate_items(data)
-        self.validate_length()
-        self.validate_uniqueness()
+    _opts_cached = {}
 
-        are_validated = [item.validate() for item in self._typed if item]
+    def validate(self, **opts):
+        validate_lazy = opts.pop('validate_lazy', False)
 
-        if all(are_validated):
-            self._validated_data = [item._validated_data for item in self._typed]
-        else:
-            errors = [i for i, item in enumerate(self._typed) if item and item.is_dirty()]
-            logger.info('errors validating items %s', errors)
+        if self.is_dirty() or opts != self._opts_cached:
+            inputs = self._inputs_data()
+            data = self.data
+            if self.has_expr():
+                data = self.eval_expr(**inputs) or data
 
-    def validate(self):
-        return HasCache.validate(self)
+            self.validate_items(data)
+            self.validate_length()
+            self.validate_uniqueness()
+
+            are_validated = [item.validate(validate_lazy=validate_lazy, **opts) for item in self._typed if item]
+
+            if all(are_validated):
+                self._validated_data = [item._validated_data for item in self._typed]
+            else:
+                errors = [i for i, item in enumerate(self._typed) if item and item.is_dirty()]
+                logger.info('errors validating items %s', errors)
+
+            self._opts_cached = opts
+            self._inputs_cached = inputs
+        return True
 
     def validate_items(self, data):
         from python_jsonschema_objects import classbuilder

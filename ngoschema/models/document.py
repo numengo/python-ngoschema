@@ -29,9 +29,10 @@ from ..decorators import assert_arg, depend_on_prop
 from ..query import Query
 from ..schema_metaclass import SchemaMetaclass
 from ..resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
+from .entity import Entity
 
 
-class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
+class Document(with_metaclass(SchemaMetaclass, Entity)):
     """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
@@ -48,18 +49,18 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     _identifier = None
 
     def __init__(self, *args, **props):
-        ProtocolBase.__init__(self, *args, **props)
+        Entity.__init__(self, *args, **props)
 
     @property
     def _id(self):
         if self._content:
             return self._content.get('$id')
 
-    @property
-    def identifier(self):
+    def get_identifier(self):
         if self._identifier is None:
             self._identifier = self.filepath or self.url
-        return str(self._identifier) if self._identifier else ''
+        assert self._identifier
+        return self._identifier
 
     def load(self):
         """
@@ -158,7 +159,7 @@ class Document(with_metaclass(SchemaMetaclass, ProtocolBase)):
     @depend_on_prop('filepath')
     def get_mimetype(self):
         val = self._get_prop_value('mimetype')
-        if not val:
+        if not val and self.filepath:
             import magic
             val = magic.Magic(mime=True).from_file(str(self.filepath))
         return val

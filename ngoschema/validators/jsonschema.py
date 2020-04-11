@@ -28,7 +28,7 @@ from jsonschema.validators import extend
 from python_jsonschema_objects import ValidationError
 from python_jsonschema_objects.validators import registry
 
-from ..utils import is_importable
+from .. import utils
 from ngoschema.schemas_loader import _load_schema
 
 
@@ -167,7 +167,7 @@ ngodraft04_type_checker = TypeChecker(
         u"null": is_null,
         u"number": is_number,
         u"string": is_string,
-        u"importable": is_importable,
+        u"importable": lambda checker, instance: utils.is_importable(instance),
         u"path": lambda checker, instance: (
             is_string(checker, instance) or
             isinstance(instance, Path)

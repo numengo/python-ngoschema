@@ -58,6 +58,8 @@ __all__ = [
     'PrettyShortPrinter',
     'multiple_replace',
     'split_string',
+    'file_link_format',
+    'set_json_defaults',
     # protected regions
     'get_protected_regions',
     'get_protected_regions_from_file',

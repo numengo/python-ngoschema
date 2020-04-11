@@ -17,6 +17,7 @@ from python_jsonschema_objects.wrapper_types import ArrayWrapper
 from ..decorators import memoized_property
 from .. import utils
 
+
 class HasLogger:
     logger = None
 
@@ -253,7 +254,14 @@ class HasCache:
 
     def register_expr(self, expr):
         from ngoschema.utils.jinja2 import get_variables
-        self._expr_inputs = get_variables(expr)
+        vs = get_variables(expr)
+        if self._context:
+            def raw1(v):
+                parts = v.split('.')
+                parts[0] = self._context.propname_raw_trans(parts[0])[0]
+                return '.'.join(parts)
+            vs = [raw1(v) for v in vs]
+        self._expr_inputs = vs
         self._expr_pattern = expr
 
     def has_expr(self):
@@ -278,42 +286,11 @@ class HasCache:
             return [k for k, v in self._context.__dependencies__.items() if self._prop_name in v]
         return []
 
-
-    #@property
-    #def validated_data(self):
-    #    from ngoschema import LiteralValue, ArrayWrapper, ProtocolBase
-    #    if not self._validated_data:
-    #        if self.validate():
-    #            if isinstance(self, LiteralValue):
-    #                self._validated_data = self._value
-    #            if isinstance(self, ArrayWrapper):
-    #                self._validated_data = [el.validated_data() for el in self.typed_elems]
-    #            if isinstance(self, ProtocolBase):
-    #                self._validated_data = {k: p.validated_data() for k, p in self._properties.items() if p}
-    #    return self._validated_data
-
     def _inputs_data(self):
         ret = {}
         for input in self._inputs():
             ret[input] = utils.get_descendant(self._context, input)
         return ret
-
-    def validate(self):
-        if self.is_dirty():
-            inputs = self._inputs_data()
-            data = None
-            if isinstance(self, LiteralValue):
-                data = self._value
-            elif isinstance(self, ArrayWrapper):
-                data = self.data
-            if self.has_expr():
-                data = self.eval_expr(**inputs) or data
-            self._validate(data)
-            self._inputs_cached = inputs
-        return True
-
-    def _validate(self, data):
-        """to be overloaded"""
 
     def is_dirty(self):
         return self._validated_data is None or self._inputs_data() != self._inputs_cached
