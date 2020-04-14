@@ -19,7 +19,7 @@ from ngoci.models.project import Project
 
 def test_json_handler():
     d1 = Document(filepath="/Users/cedric/Devel/python/python-ngomf/ngomf/models/Ngo/MoistAir/PhaseChange/MACND00.json")
-    h1  = JsonFileRepository(objectClass='ngomf.models.component.ComponentDefinition', document=d1)
+    h1  = JsonFileRepository(objectClass='ngosim.models.component.ComponentDefinition', document=d1)
     c1 = h1.load()
 
     d2 = Document(filepath="/Users/cedric/Devel/python/python-ngoci/tests/fixtures/projects.ngoprj")

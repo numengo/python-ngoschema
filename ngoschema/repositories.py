@@ -10,17 +10,12 @@ from __future__ import unicode_literals
 
 import os
 import logging
-import subprocess
-import tempfile
 from abc import abstractmethod
 
-import six
 from future.utils import with_metaclass
 
 from .decorators import assert_arg, SCH_PATH_FILE, SCH_PATH
 from .session import session_maker, scoped_session
-from .utils import default_jinja2_env, TemplatedString
-from .utils.jinja2 import _jinja2_globals
 
 try:
     from StringIO import StringIO
@@ -79,11 +74,13 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def register(self, instance):
         self._catalog.register(self._identity_key(instance), instance)
-        instance._handler = self
+        if isinstance(instance, ProtocolBase):
+            instance._handler = self
 
     def unregister(self, instance):
         self._catalog.unregister(self._identity_key(instance))
-        instance._handler = None
+        if isinstance(instance, ProtocolBase):
+            instance._handler = None
 
     def get_instance(self, key):
         return self._catalog[key]
@@ -375,84 +372,5 @@ def load_xml_from_file(fp, session=None, **kwargs):
                                  handler_cls=XmlFileRepository,
                                  session=session,
                                  **kwargs)
-
-
-@repository_registry.register()
-class Jinja2FileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2FileRepository"
-    objectClass = ProtocolBase
-
-    def __init__(self, template=None, environment=None, context=None, protectedRegions=None, **kwargs):
-        """
-        Serializer based on a jinja template. Template is loaded from
-        environment. If no environment is provided, use the default one
-        `default_jinja2_env`
-        """
-        FileRepository.__init__(self, template=template, **kwargs)
-        self._jinja = environment or default_jinja2_env()
-        self._jinja.globals.update(_jinja2_globals)
-        self._context = context or {}
-        self._protected_regions = self._jinja.globals['protected_regions'] = protectedRegions or {}
-
-    def pre_commit(self):
-        return self._context
-
-    def deserialize_data(self):
-        raise Exception("not implemented")
-
-    def serialize_data(self, data):
-        self.logger.info("SERIALIZE template '%s'", self.template)
-        self.logger.debug("data:\n%r ", data)
-
-        stream = self._jinja.get_template(str(self.template)).render(data)
-        return six.text_type(stream)
-
-
-@repository_registry.register()
-class Jinja2MacroFileRepository(with_metaclass(SchemaMetaclass, Jinja2FileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroFileRepository"
-
-    def serialize_data(self, data):
-        macro_args = self.macroArgs.for_json()
-        if 'protected_regions' not in macro_args:
-            macro_args.append('protected_regions')
-        args = [k for k in macro_args if k in data]
-        to_render = "{%% from '%s' import %s %%}{{%s(%s)}}" % (
-            self.template, self.macroName, self.macroName, ', '.join(args))
-        try:
-            template = self._jinja.from_string(to_render)
-            context = self._context.copy()
-            context.update(**data)
-            return template.render(context)
-        except Exception as er:
-            self.logger.error('SERIALIZE Jinja2MacroFileRepository: %s', er)
-            raise er
-
-
-@repository_registry.register()
-class Jinja2MacroTemplatedPathFileRepository(with_metaclass(SchemaMetaclass, Jinja2MacroFileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Jinja2MacroTemplatedPathFileRepository"
-
-    def serialize_data(self, data):
-        self.logger.info('SERIALIZE Jinja2MacroTemplatedPathFileRepository')
-        try:
-            tpath = TemplatedString(self.templatedPath)(**self._context)
-        except Exception as er:
-            self.logger.error('SERIALIZE Jinja2MacroTemplatedPathFileRepository: %s', er)
-        fpath = self.outputDir.joinpath(tpath)
-        self.document = self.document or Document()
-        self.document.filepath = fpath
-        if not fpath.parent.exists():
-            os.makedirs(str(fpath.parent))
-        stream = Jinja2MacroFileRepository.serialize_data(self, data)
-        if fpath.suffix in ['.h', '.c', '.cpp']:
-            tf = tempfile.NamedTemporaryFile(mode='w+b', suffix=fpath.suffix, dir=fpath.parent, delete=False)
-            tf.write(stream.encode('utf-8'))
-            tf.close()
-            stream = subprocess.check_output(
-                'clang-format %s' % tf.name, cwd=str(self.outputDir), shell=True)
-            stream = stream.decode('utf-8')
-            os.remove(tf.name)
-        return stream
 
 

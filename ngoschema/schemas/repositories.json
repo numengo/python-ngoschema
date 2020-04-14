@@ -129,63 +129,6 @@
                     "default": "\n"
                 }
             }
-        },
-        "Jinja2FileRepository": {
-            "type": "object",
-            "extends": [
-                "#/definitions/FileRepository"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "template": {
-                    "type": "path"
-                },
-                "___c_ontext": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "___p_rotectedRegions": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                }
-            }
-        },
-        "Jinja2MacroFileRepository": {
-            "type": "object",
-            "extends": [
-                "#/definitions/Jinja2FileRepository"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "macroName": {
-                    "type": "string"
-                },
-                "macroArgs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "Jinja2MacroTemplatedPathFileRepository": {
-            "type": "object",
-            "extends": [
-                "#/definitions/Jinja2MacroFileRepository"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "outputDir": {
-                    "type": "path"
-                },
-                "templatedPath": {
-                    "type": "string"
-                }
-            }
         }
     }
 }

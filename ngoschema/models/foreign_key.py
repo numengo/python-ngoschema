@@ -46,7 +46,7 @@ class ForeignKey(LiteralValue, Relationship, HasLogger):
     def fkeys(cls):
         return [cls.key]
 
-    def __init__(self, value):
+    def __init__(self, value, **opts):
         # todo: handle relative cnames/refs
         deps = self.propinfo('dependencies') or set()
         deps.add(self.key)
@@ -128,9 +128,9 @@ class CnameForeignKey(ForeignKey):
     def key(cls):
         return 'canonicalName'
 
-    def __init__(self, value):
+    def __init__(self, value, **opts):
         # todo: handle relative cnames/refs
-        ForeignKey.__init__(self, value)
+        ForeignKey.__init__(self, value, **opts)
 
     def validate(self, **kwargs):
         if self._value:

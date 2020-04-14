@@ -1,6 +1,7 @@
 # *- coding: utf-8 -*-
 from functools import partial
 from python_jsonschema_objects import literals as pjo_literals
+import copy
 
 from . import utils
 from .mixins import HasCache
@@ -59,6 +60,7 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     _typed = None
 
     def __init__(self, value=None, **opts):
+        self._typed = None
         if isinstance(value, pjo_literals.LiteralValue):
             value = value._value
 
@@ -90,8 +92,9 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
         sub_cls = object.__getattribute__(self, '__subclass__')
         cls = object.__getattribute__(self, '__class__')
         if hasattr(sub_cls, name):
-            if isinstance(self._value, sub_cls):
-                return getattr(self._value, name)
+            if isinstance(self._typed, sub_cls):
+                _ = copy.copy(self._typed)
+                return getattr(_, name)
         elif hasattr(cls, name):
             return object.__getattribute__(self, name)
         else:

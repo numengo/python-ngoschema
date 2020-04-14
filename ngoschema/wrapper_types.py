@@ -110,15 +110,13 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
 
         if self.is_dirty() or opts != self._opts_cached:
             inputs = self._inputs_data()
-            data = self.data
-            if self.has_expr():
-                data = self.eval_expr(**inputs) or data
 
-            self.validate_items(data)
+            self.validate_items()
             self.validate_length()
             self.validate_uniqueness()
 
-            are_validated = [item.validate(validate_lazy=validate_lazy, **opts) for item in self._typed if item]
+            are_validated = [item.validate(validate_lazy=validate_lazy, **opts)
+                             for item in self._typed if item is not None]
 
             if all(are_validated):
                 self._validated_data = [item._validated_data for item in self._typed]
@@ -130,7 +128,7 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
             self._inputs_cached = inputs
         return True
 
-    def validate_items(self, data):
+    def validate_items(self):
         from python_jsonschema_objects import classbuilder
         data = self.data
 

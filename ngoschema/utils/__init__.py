@@ -1,7 +1,6 @@
 from .json import *
 from .utils import *
 from .jinja2 import *
-from .protected_regions import *
 from .str_utils import *
 from .module_loaders import *
 from ._qualname import *
@@ -12,12 +11,6 @@ __all__ = [
     'TemplatedString',
     'qualname',
     # module_loaders
-    'templates_module_loader',
-    'load_module_templates',
-    'transforms_module_loader',
-    'load_module_transforms',
-    'objects_module_loader',
-    'load_module_objects',
     'register_module',
     # utils
     'CaseInsensitiveDict',
@@ -54,16 +47,15 @@ __all__ = [
     'casted_as',
     'Bracket',
     'threadsafe_counter',
+    'topological_sort',
+    'working_directory',
     # strings
     'PrettyShortPrinter',
     'multiple_replace',
     'split_string',
     'file_link_format',
     'set_json_defaults',
-    # protected regions
-    'get_protected_regions',
-    'get_protected_regions_from_file',
-    'get_protected_regions',
-    'get_protected_regions',
-    'get_protected_regions',
+    #jinja2
+    'default_jinja2_env',
+    'get_j2_variables',
 ]

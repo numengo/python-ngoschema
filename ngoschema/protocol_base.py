@@ -164,7 +164,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         # To support defaults, we have to actually execute the constructors
         # but only for the ones that have defaults set.
         self.deactivate_read_only()
-        for raw, v in self.__has_default__.items():
+        sorted_keys = self._sort_property_list(self.__has_default__)
+        for raw in sorted_keys:
+            v = self.__has_default__[raw]
             trans = self.__prop_names_ordered__.get(raw, raw)
             if not set([raw, trans]).intersection(props.keys()):
                 # no lazy loading for read only as it implies to reset RO status later
@@ -172,9 +174,10 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                     self._lazy_data.setdefault(raw, copy.copy(v))
                 else:
                     prop = getattr(cls, trans, None)
+                    setattr(self, trans, copy.copy(v))
                     # not setting default for properties with a getter
-                    if prop and not prop.fget:
-                        setattr(self, trans, copy.copy(v))
+                    #if prop and not prop.fget:
+                    #    setattr(self, trans, copy.copy(v))
         self.activate_read_only()
 
         if props.get('name'):
@@ -195,7 +198,8 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                 utils.apply_through_collection(self._lazy_data, replace_ref, recursive=True)
                 for raw, v in self._lazy_data.items():
                     self._set_attr_by_name(raw, v)
-            for raw in list(self._lazy_data):
+            sorted_keys = self._sort_property_list(self._lazy_data)
+            for raw in sorted_keys:
                 # force setting additional props -> use raw name
                 if raw not in self.__prop_names_ordered__:
                     setattr(self, raw, self._lazy_data.pop(raw))
@@ -207,7 +211,9 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
                         setattr(self, trans, self._lazy_data.pop(raw))
         else:
             try:
-                for k, prop in props.items():
+                sorted_keys = self._sort_property_list(props)
+                for k in sorted_keys:
+                    prop = props[k]
                     trans = self.__prop_names_ordered__.get(k, k)
                     setattr(self, trans, prop)
                 # call getters on all required not defined in props
@@ -328,6 +334,19 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
             for raw, p in self._extended_properties.items():
                 deps[raw] = set([i.split('.')[0] for i in getattr(p, '_expr_inputs', [])])
         return deps
+
+    def _sort_property_list(self, prop_list):
+        ret = []
+        if prop_list:
+            prop_list = set(prop_list)
+            deps = self.dependencies_raw1
+            # call and validate props according to topological order
+            for level in utils.topological_sort(deps):
+                plist_level = level.intersection(prop_list)
+                prop_list.difference_update(plist_level)
+                ret += list(plist_level)
+            ret += list(prop_list)
+        return ret
 
     _opts_cached = {}
 
@@ -627,6 +646,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         elif raw in self._properties:
             prop = self._properties[raw]
             if isinstance(prop, (LiteralValue, ArrayWrapper)):
+                prop.touch()
                 prop.__init__(value)
             else:
                 desc = getattr(self.__class__, trans)

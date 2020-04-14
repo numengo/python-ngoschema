@@ -253,8 +253,8 @@ class HasCache:
         self._prop_name = prop_raw
 
     def register_expr(self, expr):
-        from ngoschema.utils.jinja2 import get_variables
-        vs = get_variables(expr)
+        from ngoschema.utils.jinja2 import get_j2_variables
+        vs = get_j2_variables(expr)
         if self._context:
             def raw1(v):
                 parts = v.split('.')
@@ -301,13 +301,12 @@ class HasCache:
             # touch outputs
             for output in self._outputs:
                 parts = utils.split_path(output)
-                par = self
+                par = self._context
                 if len(parts)>1:
                     par = utils.get_descendant(o, parts[:-1])
                 last = parts[-1]
                 if utils.is_string(last):
-                    getattr(par, last) # to set maybe missing prop
-                    o = par._properties[last] if last in par._properties else None
+                    o = par._properties.get(last)
                 else:
                     o = par[last]
                 if o:

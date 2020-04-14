@@ -30,6 +30,7 @@ _jinja2_globals['len'] = len
 _jinja2_globals['str'] = str
 _jinja2_globals['list'] = list
 
+
 def resolve_ref_schema(ref):
     from ngoschema.resolver import get_resolver
     return get_resolver().resolve(ref)[1]
@@ -73,7 +74,7 @@ class TemplatedString(object):
         return self._template.render(*args, **kwargs)
 
 
-def get_variables(source, remove_this=True):
+def get_j2_variables(source, remove_this=True):
     """return the list of variables in jinja2 source (no filters)"""
     env = default_jinja2_env()
     parser = jinja2.parser.Parser(env, source)
@@ -99,6 +100,7 @@ def get_variables(source, remove_this=True):
         else [v.replace('this.', '').replace('self.', '') for v in vars]
 
 # ADDITIONAL FILTERS FROM INFLECTION
+
 
 filters_registry = GenericClassRegistry()
 

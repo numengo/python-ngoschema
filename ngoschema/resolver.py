@@ -45,6 +45,7 @@ _uri_doc_store = UriDict()
 def get_uri_doc_store():
     return _uri_doc_store
 
+
 def unregister_doc_with_uri_id(uri_id):
     try:
         del _uri_doc_store[uri_id]

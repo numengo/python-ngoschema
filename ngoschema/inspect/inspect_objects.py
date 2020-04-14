@@ -25,10 +25,9 @@ import six
 
 from .doc_rest_parser import parse_docstring
 from .doc_rest_parser import parse_type_string
-from ngoschema import decorators as decorators_mod
 from ngoschema.exceptions import InvalidValue
 from ngoschema.utils import import_from_string
-from ngoschema.utils import is_string, is_class, is_function, is_callable, is_imported, infer_json_schema
+from ngoschema.utils import is_string, is_class, is_function, is_callable, infer_json_schema
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class Argument(object):
 
     def __init__(self, name, schema=None, doc=None, doctype=None):
         self.name = name
-        self.default = None
+        self.has_default = False
         self.value = None
         self.doc = doc
         self.schema = schema
@@ -55,6 +54,19 @@ class Argument(object):
             except Exception as er:
                 logger.error("impossible to parse valid schema from type doc %s", doctype)
         assert not is_string(self.schema)
+
+    def set_default(self, value):
+        self.has_default = True
+        self._default = value
+
+    def get_default(self):
+        if self.has_default:
+            return self._default
+
+    def del_default(self):
+        self.has_default = False
+
+    default = property(get_default, set_default, del_default)
 
     def __repr__(self):
         ret = "<arg %s" % self.name
@@ -159,7 +171,7 @@ def visit_function_def(node):
             for a, p in zip(d_args_val, dec.parameters):
                 p.value = a
             if len(dec.parameters) < len(d_args_val):
-                dec.varargs = d_args_val[len(dec.parameters):]
+                dec.varargs.value = d_args_val[len(dec.parameters):]
             if dec.keywords:
                 dec.keywords.value = d_kwargs_val
         elif is_class(dec):
@@ -170,7 +182,7 @@ def visit_function_def(node):
         # process assert_arg arguments to complete parameter types
         if dec.name == 'assert_arg':
             arg = dec.parameters[0].value
-            arg_schema = dec.varargs if dec.varargs is not None else dec.parameters[1].value
+            arg_schema = dec.varargs.value if dec.varargs is not None else dec.parameters[1].value
             if arg_schema:
                 if is_string(arg):
                     for p in params:
@@ -425,20 +437,3 @@ def inspect_file(file_):
     )
 
 
-def module_to_json_schema(module, **ns):
-    m = module if is_imported(module) else import_from_string(module)
-    defs = {}
-    schema = {
-        'type': 'object',
-        'description': (m.__doc__ or '').strip(),
-        'title': m.__name__,
-        'definitions': defs
-    }
-    for name, kls in inspect.getmembers(m, inspect.isclass):
-        try:
-            defs[name] = ClassInspector(kls).to_json_schema(**ns)
-        except Exception as er:
-            pass
-    for name, mod in inspect.getmembers(m, lambda x: inspect.ismodule(x) and any([x.__name__.startswith(n) for n in ns.keys()])):
-        defs[name] = module_to_json_schema(mod, **ns)
-    return schema

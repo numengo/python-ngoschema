@@ -264,7 +264,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
 
         return make_literal(str(nm), sub_cls, (LiteralValue, ), **clsdata)
 
-    def _construct(self, uri, clsdata, parent=(ProtocolBase,), **kw):
+    def _construct(self, uri, clsdata, parent=(ProtocolBase, ), **kw):
         if 'nsPrefix' in clsdata:
             self.set_namespace(clsdata['nsPrefix'], uri)
         if '$ref' in clsdata:
@@ -500,7 +500,7 @@ class ClassBuilder(pjo_classbuilder.ClassBuilder):
             for d in fi.decorators:
                 if d.name == 'depend_on_prop':
                     dependencies.setdefault(raw, [])
-                    dependencies[raw] += [p.value for p in d.parameters]
+                    dependencies[raw] += d.varargs.value
 
         # process all properties (default values, getter, setter, and type construction
         for raw, detail in propinfo.items():

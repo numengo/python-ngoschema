@@ -288,7 +288,7 @@ def assert_prop(*args2check):
     return to_decorate
 
 
-def depend_on_prop(myarg1):
+def depend_on_prop(*prop_names):
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)

@@ -1,12 +1,13 @@
 import logging
 
 from ngofile.list_files import list_files
-from ngoschema import load_schema_file
 
+from ..schemas_loader import load_schema_file
 from .utils import GenericModuleFileLoader
 
 # loader to register module with a models folder where to look for templates
 templates_module_loader = GenericModuleFileLoader('templates')
+
 
 def load_module_templates(module_name):
     templates_module_loader.register(module_name)
@@ -15,6 +16,7 @@ def load_module_templates(module_name):
 # loader to register module with a transforms folder where to look for model transformations
 transforms_module_loader = GenericModuleFileLoader('transforms')
 
+
 def load_module_transforms(module_name):
     transforms_module_loader.register(module_name)
 
@@ -22,8 +24,10 @@ def load_module_transforms(module_name):
 # loader to register module with a models folder where to look for objects
 objects_module_loader = GenericModuleFileLoader('objects')
 
+
 def load_module_objects(module_name):
     objects_module_loader.register(module_name)
+
 
 # loader to register module with a models folder where to look for objects
 schemas_module_loader = GenericModuleFileLoader('schemas')
@@ -60,8 +64,8 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
                 "Impossible to load file %s.\n%s", ms, er)
     return schemas_store
 
-def register_module(module):
-    load_module_schemas(module)
-    load_module_templates(module)
-    load_module_transforms(module)
-    load_module_objects(module)
+
+def register_module(module_name):
+    load_module_schemas(module_name)
+    for module_loader in GenericModuleFileLoader.module_loaders_registry.values():
+        module_loader.register(module_name)

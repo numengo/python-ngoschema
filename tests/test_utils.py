@@ -94,8 +94,8 @@ def test_string_utils():
                                   ",|") == ["one", "two", "three"]
 
 def test_jinja_tokens():
-    from ngoschema.utils.jinja2 import get_variables
-    vars = get_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
+    from ngoschema.utils.jinja2 import get_j2_variables
+    vars = get_j2_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
     print(vars)
 
 if __name__ == "__main__":

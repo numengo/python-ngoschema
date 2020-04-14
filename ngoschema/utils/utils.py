@@ -9,6 +9,7 @@ created on 02/01/2018
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import os
 import collections
 import copy
 import importlib
@@ -21,7 +22,7 @@ import re
 import subprocess
 import sys
 from builtins import str
-from contextlib import contextmanager
+import contextlib
 import threading
 import weakref
 from urllib.parse import urlsplit
@@ -128,10 +129,12 @@ class GenericClassRegistry(Registry):
 
 
 class GenericModuleFileLoader(Registry):
+    module_loaders_registry = {}
 
     def __init__(self, subfolder_name):
         Registry.__init__(self)
         self.subfolderName = subfolder_name
+        GenericModuleFileLoader.module_loaders_registry[subfolder_name] = self
 
     def register(self, module, subfolder_name=None):
         m = importlib.import_module(module)
@@ -656,7 +659,7 @@ def grouper( page_size, iterable ):
     yield page
 
 
-@contextmanager
+@contextlib.contextmanager
 def casted_as(instance, cls):
     """context manager to cast an instance as a parent class"""
     instance_cls = instance.__class__
@@ -821,3 +824,14 @@ def topological_sort(data):
         data = {item: (dep - ordered) for item,dep in data.items()
                 if item not in ordered}
     assert not data, "A cyclic dependency exists amongst %r" % data
+
+
+@contextlib.contextmanager
+def working_directory(path):
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = pathlib.Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
