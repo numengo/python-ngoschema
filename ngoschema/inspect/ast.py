@@ -63,10 +63,12 @@ def ast_eval(node, module=None):
     try:
         return ast.literal_eval(node) if node else node
     except Exception as er:
-        from ngoschema.utils import import_from_string
+        from ngoschema.types.symbols import Importable
         module = module or _module
         to_import = ast_parts(node) + [module]
         to_import = '.'.join(reversed(to_import))
+        return Importable.convert(to_import)
+        from ngoschema.utils import import_from_string
         return import_from_string(to_import)
 
 

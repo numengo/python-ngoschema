@@ -34,9 +34,9 @@ from .query import Query
 from .models.document import Document
 #from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
-from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence, to_list
+from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entity import Entity, NamedEntity
-from .types import ObjectMetaclass, ObjectProtocol
+from .types import ObjectMetaclass, ObjectProtocol, Array
 
 logger = logging.getLogger(__name__)
 
@@ -289,7 +289,7 @@ class XmlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
         _prefix = str(self.attr_prefix)
 
         def default_postprocessor(path, key, value):
-            return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, to_list(value))
+            return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, Array.convert(value))
 
         self._postprocessor = postprocessor or default_postprocessor
 

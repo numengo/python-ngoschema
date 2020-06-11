@@ -27,10 +27,12 @@ import contextlib
 import threading
 import weakref
 from urllib.parse import urlsplit
+import functools
 
 import six
 from ngofile.pathlist import PathList
 from past.types import basestring
+from jsonschema._types import is_integer
 
 from ngoschema.utils._qualname import qualname
 from ngoschema.exceptions import InvalidValue
@@ -268,6 +270,7 @@ def gcs(*classes):
         if all([x in mro for mro in mros]):
             return x
 
+
 # http://code.activestate.com/recipes/577748-calculate-the-mro-of-a-class/
 def mro(*bases):
     """Calculate the Method Resolution Order of bases using the C3 algorithm.
@@ -302,21 +305,7 @@ def mro(*bases):
           if seq[0] == candidate:
               del seq[0]
 
-import functools
-from jsonschema._types import is_bool
-from jsonschema._types import is_integer
-from jsonschema._types import is_null
-from jsonschema._types import is_number
-is_bool = functools.partial(is_bool, None)
 is_integer = functools.partial(is_integer, None)
-is_null = functools.partial(is_null, None)
-is_number = functools.partial(is_number, None)
-
-def is_basestring(value):
-    """
-    Test if value is a basestring
-    """
-    return isinstance(value, basestring) and not isinstance(value, str)
 
 
 def is_string(value):
@@ -326,29 +315,8 @@ def is_string(value):
     return isinstance(value, (str, basestring))
 
 
-def is_literal(value):
-    """
-    Test if value is literal (string, boolean, integer or number
-    """
-    return is_string(value) or is_bool(value) or is_integer(value) or is_number(value)
-
-
-def is_pattern(value):
-    """
-    Test if value is a pattern, ie contains {{ }} formatted content
-    """
-    return is_string(value) and ("{{" in value or "{%" in value)
-
-
-def is_expr(value):
-    """
-    Test if value is an expression and starts with `
-    """
-    return is_string(value) and value.strip().startswith("`")
-
-
 def fullname(obj):
-    if is_module(obj):
+    if inspect.ismodule(obj):
         return str(obj).split("'")[1]
     qn = getattr(obj, "__qualname__", None) or qualname(obj)
     mn = obj.__module__
@@ -357,134 +325,134 @@ def fullname(obj):
     return mn + "." + qn
 
 
-def import_from_string(value):
-    """
-    Imports a symbol from a string
-    """
-    if '/' in value:
-        from ..classbuilder import get_builder
-        return get_builder().resolve_or_construct(value)
-    poss = [m.start() for m in re.finditer(r"\.", "%s." % value)]
-    # going backwards
-    for pos in reversed(poss):
-        try:
-            m = value[0:pos]
-            ret = importlib.import_module(m)
-            for a in value[pos + 1:].split("."):
-                if not a:
-                    continue
-                ret = getattr(ret, a, None)
-                if not ret:
-                    raise InvalidValue(
-                        "%s is not an importable object" % value)
-            return ret
-        except Exception as er:
-            continue
-    raise InvalidValue("%s is not an importable object" % value)
+#def import_from_string(value):
+#    """
+#    Imports a symbol from a string
+#    """
+#    if '/' in value:
+#        from ..classbuilder import get_builder
+#        return get_builder().resolve_or_construct(value)
+#    poss = [m.start() for m in re.finditer(r"\.", "%s." % value)]
+#    # going backwards
+#    for pos in reversed(poss):
+#        try:
+#            m = value[0:pos]
+#            ret = importlib.import_module(m)
+#            for a in value[pos + 1:].split("."):
+#                if not a:
+#                    continue
+#                ret = getattr(ret, a, None)
+#                if not ret:
+#                    raise InvalidValue(
+#                        "%s is not an importable object" % value)
+#            return ret
+#        except Exception as er:
+#            continue
+#    raise InvalidValue("%s is not an importable object" % value)
 
 
-def is_module(value):
-    """
-    Test if value is a module
-    """
-    return inspect.ismodule(value)
-
-
-def is_class(value):
-    """
-    Test if value is a class
-    """
-    return inspect.isclass(value)
-
-
-def is_instance(value):
-    """
-    Test if value is an instance of a class
-    """
-    if getattr(value, "__class__"):
-        return isinstance(value,
-                          value.__class__) and not inspect.isclass(value)
-    return False
-
-
-def is_callable(value):
-    """
-    Test if value is a class
-    """
-    return is_instance(value) and hasattr(value, "__call__")
-
-
-def is_static_method(value):
-    """
-    Test if value is a static method
-    """
-    return type(value) is staticmethod
-
-
-def is_class_method(value):
-    """
-    Test if value is a class method
-    """
-    return type(value) is classmethod
-
-
-def is_method(value,
-              with_callable=True,
-              with_static=True,
-              with_class=True,
-              with_method_descriptor=True):
-    """
-    Test if value is a method
-    """
-    if with_callable and is_callable(value):
-        return True
-    if with_static and is_static_method(value):
-        return True
-    if with_class and is_class_method(value):
-        return True
-    if with_method_descriptor and inspect.ismethoddescriptor(value):
-        return True
-    return inspect.ismethod(value)
-
-
-def is_function(value, with_callable=True):
-    """
-    Test if value is a function
-    """
-    if with_callable and is_callable(value):
-        return True
-    return inspect.isfunction(value)
-
-
-def is_property(value):
-    return type(value) is property
-
-
-def is_imported(value):
-    """
-    Test if a symbol is importable/imported
-    """
-    return is_class(value) or is_method(value) or is_module(
-        value) or is_function(value)
-
-
-def is_importable(value):
-    """
-    Test if value is imported symbol or importable string
-    """
-    if is_string(value):
-        try:
-            if '/' in value:
-                from ..classbuilder import get_builder
-                value = get_builder().resolve_or_construct(value)
-            else:
-                value = import_from_string(value)
-            return True
-        except Exception as er:
-            return False
-    return is_imported(value)
-
-
+#def is_module(value):
+#    """
+#    Test if value is a module
+#    """
+#    return inspect.ismodule(value)
+#
+#
+#def is_class(value):
+#    """
+#    Test if value is a class
+#    """
+#    return inspect.isclass(value)
+#
+#
+#def is_instance(value):
+#    """
+#    Test if value is an instance of a class
+#    """
+#    if getattr(value, "__class__"):
+#        return isinstance(value,
+#                          value.__class__) and not inspect.isclass(value)
+#    return False
+#
+#
+#def is_callable(value):
+#    """
+#    Test if value is a class
+#    """
+#    return is_instance(value) and hasattr(value, "__call__")
+#
+#
+#def is_static_method(value):
+#    """
+#    Test if value is a static method
+#    """
+#    return type(value) is staticmethod
+#
+#
+#def is_class_method(value):
+#    """
+#    Test if value is a class method
+#    """
+#    return type(value) is classmethod
+#
+#
+#def is_method(value,
+#              with_callable=True,
+#              with_static=True,
+#              with_class=True,
+#              with_method_descriptor=True):
+#    """
+#    Test if value is a method
+#    """
+#    if with_callable and is_callable(value):
+#        return True
+#    if with_static and is_static_method(value):
+#        return True
+#    if with_class and is_class_method(value):
+#        return True
+#    if with_method_descriptor and inspect.ismethoddescriptor(value):
+#        return True
+#    return inspect.ismethod(value)
+#
+#
+#def is_function(value, with_callable=True):
+#    """
+#    Test if value is a function
+#    """
+#    if with_callable and is_callable(value):
+#        return True
+#    return inspect.isfunction(value)
+#
+#
+#def is_property(value):
+#    return type(value) is property
+#
+#
+#def is_imported(value):
+#    """
+#    Test if a symbol is importable/imported
+#    """
+#    return is_class(value) or is_method(value) or is_module(
+#        value) or is_function(value)
+#
+#
+#def is_importable(value):
+#    """
+#    Test if value is imported symbol or importable string
+#    """
+#    if is_string(value):
+#        try:
+#            if '/' in value:
+#                from ..classbuilder import get_builder
+#                value = get_builder().resolve_or_construct(value)
+#            else:
+#                value = import_from_string(value)
+#            return True
+#        except Exception as er:
+#            return False
+#    return is_imported(value)
+#
+#
 def is_mapping(value):
     """
     Test if value is a mapping (dict, ordered dict, ...)
@@ -532,15 +500,6 @@ def to_list(x, default=None):
         return list(x)
 
 
-def to_set(x):
-    if x is None:
-        return set()
-    if not isinstance(x, set):
-        return set(to_list(x))
-    else:
-        return x
-
-
 def to_none_single_list(x):
     xl = to_list(x)
     if xl is not None:
@@ -548,73 +507,6 @@ def to_none_single_list(x):
             return xl[0]
         if len(xl) > 1:
             return xl
-
-
-def infer_json_schema(instance):
-    if hasattr(instance, '_proxy____cast'):
-        instance = instance._proxy____cast()
-    def default_json_schema(value):
-        if hasattr(value, '_proxy____cast'):
-            value = value._proxy____cast()
-        if isinstance(value, (str, int, float, bool)):
-            return value
-        if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
-            return value.isoformat()
-        if isinstance(value, datetime.timedelta):
-            return value.total_seconds()
-        if is_importable(value):
-            try:
-                return fullname(value)
-            except Exception as er:
-                return
-        if is_sequence(value):
-            return [default_json_schema(v) for v in list(value)]
-        if is_mapping(value):
-            return {k: default_json_schema(v) for k, v in value.items()}
-    if instance is None:
-        sch = {'type': 'string'} # default
-    elif is_sequence(instance):
-        sch = {'type': 'array'}
-        stype = set([type(v) for v in list(instance)])
-        if len(stype) == 1:
-            sch['items'] = infer_json_schema(list(instance)[0])
-    else:
-        dft = default_json_schema(instance)
-        if isinstance(instance, str):
-            typ = 'string'
-        elif isinstance(instance, int):
-            typ = 'integer'
-        elif isinstance(instance, float):
-            typ = 'number'
-        elif isinstance(instance, bool):
-            typ = 'boolean'
-        elif isinstance(instance, dict):
-            typ = 'object'
-        elif isinstance(instance, datetime.datetime):
-            typ = 'datetime'
-        elif isinstance(instance, datetime.date):
-            typ = 'date'
-        elif isinstance(instance, datetime.time):
-            typ = 'time'
-        elif isinstance(instance, datetime.timedelta):
-            typ = 'integer'
-        elif isinstance(instance, re._pattern_type):
-            return {
-                'type': 'string',
-                'pattern': instance.pattern,
-            }
-        elif is_importable(instance):
-            typ = 'importable'
-        elif inspect.isdatadescriptor(instance):
-            typ = 'string' # no way to ckeck...
-            dft = None
-        else:
-            return {'type': 'object', 'additionalProperties': True}
-            #assert False, instance
-        sch = {'type': typ}
-        if dft is not None:
-            sch['default'] = dft
-    return sch
 
 
 def reduce_coll(coll):

@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema#",
+  "$id": "https://numengo.org/ngoschema/draft-06",
+  "title": "numenGo core schema meta-schema",
+  "type": [
+    "object",
+    "boolean"
+  ],
+  "$vocabulary": {
+    "https://json-schema.org/draft/2019-09/vocab/core": true,
+    "https://json-schema.org/draft/2019-09/vocab/applicator": true,
+    "https://json-schema.org/draft/2019-09/vocab/validation": true,
+    "https://json-schema.org/draft/2019-09/vocab/meta-data": true,
+    "https://json-schema.org/draft/2019-09/vocab/format": false,
+    "https://json-schema.org/draft/2019-09/vocab/content": true
+  },
+  "$recursiveAnchor": true,
+  "allOf": [
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/core"
+    },
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/applicator"
+    },
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/validation"
+    },
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/meta-data"
+    },
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/format"
+    },
+    {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/content"
+    }
+  ],
+  "properties": {
+    "definitions": {
+      "$comment": "While no longer an official keyword as it is replaced by $defs, this keyword is retained in the meta-schema to prevent incompatible extensions as it remains in common use.",
+      "type": "object",
+      "additionalProperties": {
+        "$recursiveRef": "#"
+      },
+      "default": {}
+    },
+    "dependencies": {
+      "$comment": "dictionary of property dependencies in an object",
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$recursiveRef": "#"
+          },
+          {
+            "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+          }
+        ]
+      }
+    },
+    "readOnly": {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+    },
+    "notSerialized": {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+    },
+    "wraps": {
+      "type": "importable",
+      "$comment": "for creating APIs and store objects defined in importable components"
+    },
+    "extends": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri-reference"
+      },
+      "$comment": "for inheritance..."
+    },
+    "isAbstract": {
+      "type": "boolean",
+      "$comment": "for code generation"
+    },
+    "isPathDir": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "isPathFile": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "isPathExisting": {
+      "type": "boolean",
+      "$comment": "for complexType path"
+    },
+    "foreignKey": {
+      "$ref": "#/$defs/ForeignKey"
+    },
+    "complexTypes": {
+      "enum": [
+        "importable",
+        "path",
+        "uri",
+        "date",
+        "time",
+        "datetime",
+        "foreignKey",
+        "canonicalName"
+      ]
+    },
+    "type": {
+      "anyOf": [
+        {
+          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/simpleTypes"
+        },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/simpleTypes"
+              },
+              {
+                "$ref": "#/$defs/complexTypes"
+              }
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        {
+          "$ref": "#/$defs/complexTypes"
+        },
+        {
+          "$ref": "#/$defs/ForeignKey"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "IdentifiedObject": {
+      "type": "object",
+      "description": "Protocol shared by all instances",
+      "properties": {
+        "$id": {
+          "type": "string"
+        },
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        }
+      }
+    },
+    "Entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Protocol for persistent entities with primary keys",
+      "extends": [
+        "#/$defs/IdentifiedObject"
+      ],
+      "properties": {
+        "primaryKeys": {
+          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+        }
+      }
+    },
+    "NamedObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "readOnly": [
+        "canonicalName"
+      ],
+      "notSerialized": [
+        "canonicalName"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "canonicalName": {
+          "type": "string"
+        }
+      }
+    },
+    "NamedEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "notSerialized": [
+        "canonicalName"
+      ],
+      "primaryKeys": [
+        "canonicalName"
+      ],
+      "extends": [
+        "#/$defs/Entity",
+        "#/$defs/NamedObject"
+      ]
+    },
+    "Relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "fkeys": {
+          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+        },
+        "cardinality": {
+          "enum": [
+            "one2one",
+            "one2many"
+          ]
+        },
+        "ordering": {
+          "type": "string"
+        },
+        "reverse": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "ForeignKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "$comment": "to define a relationship to another instance",
+      "extends": [
+        "#/$defs/Relationship"
+      ],
+      "properties": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "backPopulates": {
+          "$ref": "#/$defs/Relationship"
+        },
+        "onDelete": {
+          "enum": [
+            "CASCADE",
+            "PROTECT",
+            "SET_NULL",
+            "SET_DEFAULT",
+            "SET",
+            "DO_NOTHING"
+          ]
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "extends": [
+        "#/$defs/NamedEntity"
+      ],
+      "properties": {
+        "person": {
+          "type": "integer"
+        },
+        "event": {
+          "type": "integer"
+        },
+        "place": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObjectMetadata": {
+      "type": "object",
+      "extends": [
+        "#/$defs/NamedObject"
+      ],
+      "properties": {
+        "title": {
+          "default": "{{this.name|titleize}}",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "namePlural": {
+          "default": "{{this.name|pluralize}}",
+          "type": "string"
+        },
+        "extra": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Tag"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "EntityWithMetadata": {
+      "type": "object",
+      "extends": [
+        "#/$defs/NamedEntity",
+        "#/$defs/ObjectMetadata"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

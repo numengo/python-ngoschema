@@ -44,36 +44,6 @@ def domain_uri(name, domain=None):
 _resolver = None
 
 
-def get_resolver___(base_uri=None):
-    """
-    Return a resolver set with the main loaded schema store
-    with a base URI and the corresponding referred document.
-    If no base_uri is defined, DEFAULT_MS_URI is used
-
-    :param base_uri: base_uri to use for resolver
-    :type base_uri: string
-    """
-    from . import settings
-    base_uri = base_uri or settings.DEFAULT_MS_URI
-    global _resolver
-    ms = UriResolver._doc_store
-    base_uri, dummy = urldefrag(base_uri)
-    if base_uri not in ms:
-        raise IOError("%s not found in loaded documents (%s)" %
-                      (base_uri, ", ".join(ms.keys())))
-    referrer = ms[base_uri]
-    if _resolver is None:
-        _resolver = RefResolver(base_uri, referrer, ms)
-        # rebuild store using our UriDict which deals with lowercase urls
-        _resolver.store = ms
-    if not set(ms.keys()).issubset(_resolver.store.keys()):
-        _resolver.store.update(ms)
-    if base_uri != _resolver.base_uri:
-        _resolver.push_scope(base_uri)
-    return _resolver
-
-
-
 @functools.lru_cache(30)
 def resolve_doc(uri_id, remote=False):
     uri, frag = urldefrag(uri_id)
@@ -230,29 +200,3 @@ class UriResolver(RefResolver):
             del schema['properties']
 
         return schema
-        #for i, ref in enumerate(extends):
-        #    ref = self._urljoin_cache(doc_scope, ref)
-        #    uri_, schema_ = RefResolver.resolve(self, ref)
-        #    extends[i] = uri_
-        #    sch = self._expand(uri_, schema_, doc_scope)
-        #    # sch is returned from _expand and is already "a copy", no need to deepcopy it
-        #    dpath.util.merge(schema_exp, sch, flags=dpath.util.MERGE_REPLACE)
-        #
-        #schema_copy = copy.deepcopy(schema)
-
-        def replace_relative_uris(coll, key, level):
-            val = coll[key]
-            if is_string(val) and val.startswith('#/'):
-                coll[key] = self._urljoin_cache(schema_scope, val)
-
-        apply_through_collection(schema_copy, replace_relative_uris, recursive=True)
-
-        dpath.util.merge(schema_exp, schema_copy, flags=dpath.util.MERGE_REPLACE)
-
-        extends = schema.get("extends", [])
-        extends_ = []
-        [extends_.append(x) for x in extends if x not in extends_]
-        schema_exp["extends"] = extends_
-
-        # self._def_store[uri] = schema_exp
-        return schema_exp
