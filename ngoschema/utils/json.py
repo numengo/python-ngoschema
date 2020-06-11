@@ -22,7 +22,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
     def __init__(self,
                  no_defaults=True,
                  no_read_only=True,
-                 remove_refs=True,
+                 use_entity_ref=True,
                  attr_prefix='',
                  excludes=[],
                  only=[],
@@ -30,26 +30,40 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
         from .. import settings
         self.no_defaults = no_defaults
         self.no_read_only = no_read_only
-        self.remove_refs = remove_refs
+        self.use_entity_ref = use_entity_ref
         self.attr_prefix = attr_prefix
         self.excludes = excludes
         self.only = only
         pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
+        from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol, TypeChecker
+        for t in (ObjectProtocol, ArrayProtocol):
+            if isinstance(obj, t):
+                return t.do_serialize(obj, excludes=self.excludes,
+                                        only=self.only,
+                                        no_read_only=self.no_read_only,
+                                        no_defaults=self.no_defaults,
+                                        attr_prefix=self.attr_prefix,
+                                        use_entity_ref=self.use_entity_ref)
+        else:
+            tn, ty = TypeChecker.detect_type(obj)
+            return ty().serialize(obj)
+        return json.JSONEncoder.default(self, obj)
+
+    def default_(self, obj):
         from python_jsonschema_objects import classbuilder
         from python_jsonschema_objects import wrapper_types
         from ..models.entity import Entity
-        from ..literals import LiteralValue
-        from ..utils import is_string, is_literal
+        from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol
+        #from ..literals import LiteralValue
+        #from ..utils import is_string, is_literal
         from ..validators.pjo import format_date, format_datetime, format_time, format_path
 
-        if is_literal(obj):
+        if Literal.check(obj):
             return obj
-        if isinstance(obj, classbuilder.LiteralValue):
-            return obj.for_json()
-        if isinstance(obj, wrapper_types.ArrayWrapper):
-            if not self.remove_refs:
+        if Array.check(obj):
+            if not self.use_entity_ref:
                 return [self.default(item) for item in obj]
             ret = []
             for item in obj:
@@ -58,11 +72,12 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                 else:
                     ret.append(self.default(item))
             return ret
-        if isinstance(obj, classbuilder.ProtocolBase):
-            ns = getattr(obj, '__not_serialized__', [])
-            reqs = getattr(obj, '__required__', [])
-            ro = getattr(obj, '__read_only__', {})
-            defvs = getattr(obj, '__has_default__', {})
+        if isinstance(obj, (ObjectProtocol, ArrayProtocol)):
+            return obj.do_serialize(excludes=self.excludes, only=self.only, )
+            ns = getattr(obj, '_not_serialized', [])
+            reqs = getattr(obj, '_required', [])
+            ro = getattr(obj, '_read_only', {})
+            defvs = getattr(obj, '_has_default', {})
             props = collections.OrderedDict()
             to_put_first = []
 
@@ -98,7 +113,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
                     if prop._expr_pattern == defv or prop == defv:
                         continue
 
-                if self.remove_refs and isinstance(prop, Entity) and prop.identity_keys:
+                if self.use_entity_ref and isinstance(prop, Entity) and prop.identity_keys:
                     props[pname] = prop.identity_keys
                 else:
                     props[pname] = self.default(prop)

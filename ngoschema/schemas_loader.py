@@ -22,21 +22,10 @@ from jsonschema.exceptions import SchemaError
 
 logger = logging.getLogger(__name__)
 
-def get_schema_store_list():
-    from .resolver import get_uri_doc_store
-    return [k for k, d in get_uri_doc_store().items() if 'definitions' in d]
-
 
 def _id_of(schema):
     return schema.get("$id", schema.get("id"))
 
-def _load_schema(name):
-    """
-    Load a schema from ./schemas/``name``.json and return it.
-
-    """
-    data = pkgutil.get_data("ngoschema", "schemas/{0}.json".format(name))
-    return json.loads(data.decode("utf-8"), object_pairs_hook=collections.OrderedDict)
 
 def load_schema(schema, schemas_store=None):
     """
@@ -49,7 +38,7 @@ def load_schema(schema, schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     """
-    from .resolver import register_doc_with_uri_id
+    from .resolver import UriResolver
     uri = _id_of(schema).rstrip('#')
     if not uri and "title" in schema:
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")
@@ -62,7 +51,7 @@ def load_schema(schema, schemas_store=None):
             logger.info("Overwriting a different schema '%s' is already registered in schema store." % uri)
         schemas_store[uri] = schema
     # add to main registry
-    register_doc_with_uri_id(schema, uri)
+    UriResolver.register_doc(schema, uri)
     return uri, schema
 
 

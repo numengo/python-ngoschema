@@ -13,6 +13,8 @@ __all__ = [
     # module_loaders
     'register_module',
     # utils
+    'ReadOnlyChainMap',
+    'ContextManager',
     'CaseInsensitiveDict',
     'UriDict',
     'Registry',
@@ -55,7 +57,7 @@ __all__ = [
     'split_string',
     'file_link_format',
     'set_json_defaults',
-    #jinja2
+    # jinja2
     'default_jinja2_env',
-    'get_j2_variables',
+    'get_jinja2_variables',
 ]

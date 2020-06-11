@@ -14,7 +14,7 @@ from builtins import object
 import pytest
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema.decorators import SCH_INT
+from ngoschema.types import Integer
 from ngoschema.decorators import assert_arg
 from ngoschema.decorators import assert_prop
 from ngoschema.decorators import log_exceptions
@@ -71,17 +71,17 @@ def test_decorators():
             raise MyException("YO")
 
         @log_exceptions
-        @assert_arg(1, SCH_INT)
+        @assert_arg(1, Integer)
         def foo(self, integer):
             return 1 + integer
 
         @log_exceptions
-        @assert_arg(1, SCH_INT)
+        @assert_arg(1, Integer)
         def bar(self, integer=1):
             return 1 + integer
 
         @log_exceptions
-        @assert_arg("integer", SCH_INT)
+        @assert_arg("integer", Integer)
         def bar2(self, integer=1):
             """
             Test docstring
@@ -90,7 +90,7 @@ def test_decorators():
 
         @log_exceptions
         @assert_prop("notExistingProp")
-        @assert_arg("integer", SCH_INT)
+        @assert_arg("integer", Integer)
         def bar3(self, integer=1):
             """
             bar 3 documentation

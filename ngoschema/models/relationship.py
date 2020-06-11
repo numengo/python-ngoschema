@@ -9,57 +9,38 @@ created on 28/01/2019
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from ngoschema.decorators import classproperty
+from ..decorators import classproperty
+from ..types import with_metaclass, ObjectMetaclass
 
 
-class Relationship:
+class Relationship(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with relationships
     """
-    __propinfo__ = {}
-
-    @classmethod
-    def _propinfo(cls, name, default=None):
-        return cls.__propinfo__.get('__literal__', {}).get(name, default)
+    _schema_id = 'https://numengo.org/ngoschema/draft-06#/$defs/Relationship'
 
     @classproperty
     def foreignSchema(cls):
-        return cls._propinfo('$schema')
+        return cls._schema.get('$schema')
 
-    @classproperty
-    def fkeys(cls):
-        return cls._propinfo('fkeys')
-
-    @classproperty
-    def isOne2Many(cls):
-        return cls._propinfo('cardinality') == 'one2many'
-
-    @classproperty
-    def ordering(cls):
-        return cls._propinfo('ordering')
-
-    @classproperty
-    def reverse(cls):
-        return cls._propinfo('reverse', False)
-
-    _foreignClass = None
+    _foreign_class = None
     @classproperty
     def foreignClass(cls):
-        from ..classbuilder import get_builder
+        from ..types.type_builder import TypeBuilder
         from ngoschema.models.entity import Entity
-        if not cls._foreignClass and cls.foreignSchema:
+        if not cls._foreign_class and cls.foreignSchema:
             try:
-                cls._foreignClass = get_builder().resolve_or_construct(cls.foreignSchema)
+                cls._foreign_class = TypeBuilder.load(cls.foreignSchema)
             except Exception as er:
                 cls.logger.error("error resolving foreign schema %s", cls.foreignSchema, exc_info=True)
                 raise
-            if not issubclass(cls._foreignClass, Entity):
+            if not issubclass(cls._foreign_class, Entity):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
-                                % (cls._foreignClass, Entity))
-        return cls._foreignClass
+                                % (cls._foreign_class, Entity))
+        return cls._foreign_class
 
     def resolve(self, keys):
-        return self.foreignClass.resolve_by_keys(keys)
+        return self._foreign_class.resolve_by_keys(keys)
 
     def __get__(self):
         return self.resolve(self.fkeys)

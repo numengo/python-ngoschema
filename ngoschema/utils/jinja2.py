@@ -49,7 +49,7 @@ def default_jinja2_env():
     """
     global _default_jinja_env
     if _default_jinja_env is None:
-        from ngoschema.query import Query
+        from ..query import Query
         _default_jinja_env = ModulePrefixedJinja2Environment(extensions=['jinja2.ext.loopcontrols'])
         _default_jinja_env.globals.update(**_jinja2_globals,
                                           Query=Query)
@@ -70,11 +70,10 @@ class TemplatedString(object):
         self._has_dot = regex_has_dot.search(self._templated_str) is not None
 
     def __call__(self, *args, **kwargs):
-        # ctx = context.as_dict() if hasattr(context,'as_dict') else context
         return self._template.render(*args, **kwargs)
 
 
-def get_j2_variables(source, remove_this=True):
+def get_jinja2_variables(source, remove_this=True):
     """return the list of variables in jinja2 source (no filters)"""
     env = default_jinja2_env()
     parser = jinja2.parser.Parser(env, source)

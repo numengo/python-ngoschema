@@ -190,6 +190,5 @@ def rreplace(s, old, new, occurrence=1):
     return new.join(li)
 
 
-def file_link_format(fpath):
-    fpath = pathlib.Path(fpath.resolve())
-    return f'file://{fpath}'
+def file_link_format(fp):
+    return pathlib.Path(fp).resolve().as_uri()

@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import datetime
 import pathlib
+import urllib.parse
 import logging
 import itertools
 from builtins import str
@@ -17,7 +18,7 @@ from decimal import Decimal
 
 import arrow
 import six
-from ngoschema.utils import is_importable
+from ngoschema.utils import is_importable, GenericClassRegistry
 from past.builtins import basestring
 from python_jsonschema_objects import validators
 from python_jsonschema_objects.literals import MakeLiteral
@@ -37,6 +38,8 @@ converter_registry = ValidatorRegistry()
 
 formatter_registry = ValidatorRegistry()
 
+type2_registry = GenericClassRegistry()
+
 
 #additional types
 import datetime
@@ -49,6 +52,25 @@ datetime_types = (datetime.datetime, arrow.Arrow)
 
 # validators
 ############
+
+@registry.register()
+def maxItems(param, value, _):
+    if len(value) > param:
+        raise ValidationError("{1} has too many elements. Wanted {0}.".format(value, param))
+
+
+@registry.register()
+def minItems(param, value, _):
+    if len(value) < param:
+        raise ValidationError("{1} has too few elements. Wanted {0}.".format(value, param))
+
+
+@registry.register()
+def uniqueItems(param, value, _):
+    testset = set(repr(item) for item in value)
+    if len(testset) != len(value):
+        raise ValidationError("{0} has duplicate elements, but uniqueness required".format(value))
+
 
 @registry.register()
 def minimum(param, value, type_data):
@@ -95,8 +117,6 @@ def isPathExisting(param, value, type_data):
         raise ValidationError("{0} is not an existing path".format(value))
 
 
-# type checkers
-################
 
 BOOLEAN_TRUE_STR_LIST = ['true']
 BOOLEAN_FALSE_STR_LIST = ['false']
@@ -116,18 +136,37 @@ def check_string_type(param, value, _):
         raise ValidationError("{0} is not a string".format(value))
 
 
+@type_registry.register(name="integer")
+def check_integer_type(param, value, _):
+    if not isinstance(value, int) or isinstance(value, bool):
+        try:
+            return int(value)
+        except Exception as er:
+            raise ValidationError("{0} is not an integer".format(value))
+
+
 @type_registry.register(name="number")
 def check_number_type(param, value, _):
     number_types = six.integer_types + (float, Decimal)
     if not isinstance(value, number_types):
-        raise ValidationError("{0} is neither an integer nor a float".format(value))
+        try:
+            return float(value)
+        except Exception as er:
+            raise ValidationError("{0} is neither an integer nor a float".format(value))
 
 
 @type_registry.register(name="path")
 def check_path_type(param, value, _):
-    if not isinstance(value, pathlib.Path):
+    if not isinstance(value, (pathlib.Path, urllib.parse.ParseResult)):
         if not utils.is_string(value):
             raise ValidationError("{0} is not a path".format(value))
+
+
+@type_registry.register(name="uri")
+def check_uri_type(param, value, _):
+    if not isinstance(value, (pathlib.Path, urllib.parse.ParseResult)):
+        if not utils.is_string(value):
+            raise ValidationError("{0} is not a uri".format(value))
 
 
 @type_registry.register(name="date")
@@ -149,6 +188,7 @@ def check_datetime_type(param, value, _):
     if not isinstance(value, datetime.datetime):
         if not utils.is_string(value):
             raise ValidationError("{0} is not a datetime".format(value))
+
 
 @type_registry.register(name="importable")
 def check_importable_type(param, value, _):
@@ -305,9 +345,26 @@ def convert_datetime_type(value, type_data):
 def convert_path_type(value, type_data):
     if isinstance(value, pathlib.Path):
         return value
-    if isinstance(value, string_types):
-        return pathlib.Path(value)
-    raise ValidationError("{0} is not a path".format(value))
+    try:
+        if isinstance(value, urllib.parse.ParseResult):
+            return pathlib.Path(urllib.parse.unquote(value.geturl()))
+        if isinstance(value, string_types):
+            return pathlib.Path(value)
+    except Exception as er:
+        raise ValidationError("{0} is not a path".format(value))
+
+
+@converter_registry.register(name="uri")
+def convert_uri_type(value, type_data):
+    if isinstance(value, urllib.parse.ParseResult):
+        return value
+    try:
+        if isinstance(value, pathlib.Path):
+            return urllib.parse.urlparse(value.as_uri())
+        if isinstance(value, string_types):
+            return urllib.parse.urlparse(value)
+    except Exception as er:
+        raise ValidationError("{0} is not a uri".format(value))
 
 
 # formatters
@@ -316,6 +373,11 @@ def convert_path_type(value, type_data):
 @formatter_registry.register(name="path")
 def format_path(value, type_data=None):
     return str(value)
+
+
+@formatter_registry.register(name="uri")
+def format_uri(value, type_data=None):
+    return value.geturl()
 
 
 @formatter_registry.register(name="date")

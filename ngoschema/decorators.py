@@ -96,38 +96,20 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
     return to_decorate
 
 
-# useful schemas shortcuts
-SCH_STR = pmap({"type": "string"})
-SCH_INT = pmap({"type": "integer"})
-SCH_NUM = pmap({"type": "number"})
-SCH_STR_ARRAY = pmap({"type": "array", "items": {"type": "string"}})
-SCH_URI = pmap({"type": "string", "format": "uri-reference"})
-SCH_PATH = pmap({"type": "path"})
-SCH_PATH_DIR = pmap({"type": "path", "isPathDir": True})
-SCH_PATH_FILE = pmap({"type": "path", "isPathFile": True})
-SCH_PATH_EXISTS = pmap({"type": "path", "isPathExisting": True})
-SCH_PATH_FILE_EXISTS = pmap({"type": "path", "isPathFile": True, "isPathExisting": True})
-SCH_PATH_DIR_EXISTS = pmap({"type": "path", "isPathDir": True, "isPathExisting": True})
-SCH_DATE = pmap({"type": "date"})
-SCH_TIME = pmap({"type": "time"})
-SCH_DATETIME = pmap({"type": "datetime"})
-
 logger = logging.getLogger(__name__)
 
 
-def assert_arg(arg, schema=None, **schema_parts):
+def assert_arg(arg, typ, **schema):
     """
     Decorator to add a schema to validate a given argument against a json-schema.
     If the decorated function has a keyword argument `assert_args`, it is used as
     a flag to enable/disable argument validation/conversion.
 
     :param arg: argument to convert/validate, can be position (start 0) or name
-    :type arg: [str, int]
+    :type type: Type subclass
     :param schema: json-schema for the type
-    :type schema: dict
     """
-    schema = schema or schema_parts
-    from .validators.jsonschema import convert_validate
+    validator = typ(**schema)
 
     def to_decorate(wrapped):
         # find argument in signature
@@ -158,14 +140,14 @@ def assert_arg(arg, schema=None, **schema_parts):
             args = list(args)
             try:
                 if arg_s in kwargs:
-                    kwargs[arg_s] = convert_validate(kwargs[arg_s], schema)
+                    kwargs[arg_s] = validator(kwargs[arg_s], validate=True)
                 elif type(arg_i2) is int and arg_i2 < len(args):
-                    args[arg_i2] = convert_validate(args[arg_i2], schema)
+                    args[arg_i2] = validator(args[arg_i2], validate=True)
                 else:
                     # must be a default value, assume it s correct!
                     pass
                     #raise Exception("error with argument definition (%s,%i)"%(arg_s, arg_i2))
-            except ValidationError as er:
+            except (ValidationError, InvalidValue) as er:
                 if arg_s in kwargs:
                     raise ValidationError(
                         "%s=%r is not valid. %s" % (arg_s, kwargs[arg_s], er))
@@ -179,8 +161,8 @@ def assert_arg(arg, schema=None, **schema_parts):
         try:
             doc = (
                 (wrapped.__doc__ or "").strip() + "\nArgument '%s' is " % arg +
-                "automatically type converted and validated against this schema %s."
-                % pformat(schema))
+                "automatically type converted and validated against %s."
+                % pformat(validator))
 
             wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
         except Exception as er:
@@ -215,20 +197,20 @@ def log_exceptions(method, instance, args, kwargs):
     if instance is None:
         instance = args[0]
     try:
-        if hasattr(instance, "logger"):
-            instance.logger.debug(
+        if hasattr(instance, "_logger"):
+            instance._logger.debug(
                 "CALL %s",
                 _format_call_msg(
-                    "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                    "%r.%s" % (instance, getattr(method, '__name__', 'unknown')),
                     args, kwargs))
         return method(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
-        if hasattr(instance, "logger"):
-            instance.logger.error(
+        if hasattr(instance, "_logger"):
+            instance._logger.error(
                 "CALL %s",
                 _format_call_msg(
-                    "%r.%s" % (instance, getattr(method, __name__, 'unknown')),
+                    "%r.%s" % (instance, getattr(method, '__name__', 'unknown')),
                     args, kwargs) +
                 "\n\tERROR %s: %s" % (etype.__name__, value))
         try:
@@ -242,7 +224,7 @@ def log_init(init, instance, args, kwargs):
     """
     log init of instance and possible exceptions
     """
-    instance.logger.info(
+    instance._logger.info(
         "%s",
         _format_call_msg("INIT <%s>.__init__" % instance.__class__.__name__,
                          args, kwargs))
@@ -250,7 +232,7 @@ def log_init(init, instance, args, kwargs):
         return init(*args, **kwargs)
     except Exception as er:
         etype, value, trace = sys.exc_info()
-        instance.logger.error(
+        instance._logger.error(
             "CALL %s\n\tERROR: %s: %s",
             _format_call_msg(
                 "INIT <%s>.__init__" % instance.__class__.__name__, args,

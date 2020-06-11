@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 import os
 import collections
+from pyrsistent import pmap
 import copy
 import importlib
 import inspect
@@ -35,6 +36,83 @@ from ngoschema.utils._qualname import qualname
 from ngoschema.exceptions import InvalidValue
 from collections import OrderedDict as odict
 from collections import Mapping, MutableMapping
+
+
+class ReadOnlyChainMap(Mapping):
+
+    def __init__(self, *maps):
+        self._maps = [m for m in maps]
+
+    def __getitem__(self, key):
+        for mapping in self._maps:
+            try:
+                return mapping[key]
+            except KeyError:
+                pass
+        raise KeyError(key)
+
+    def __contains__(self, key):
+        return any(key in m or {} for m in self._maps)
+
+    def __iter__(self):
+        viewed = set()
+        for m in self._maps:
+            for k in m or {}:
+                if k not in viewed:
+                    viewed.update([k])
+                    yield k
+
+    def __len__(self):
+        return len(set().union(*self._maps))
+
+    def new_child(self, *maps, **kwargs):
+        return ReadOnlyChainMap(kwargs, *maps, *self._maps)
+
+    def __repr__(self):
+        return repr(list(self._maps))
+
+    _maps_flattened = None
+    @property
+    def maps_flattened(self):
+        if self._maps_flattened is None:
+            mf = []
+            for m in self._maps:
+                if isinstance(m, ReadOnlyChainMap):
+                    mf.extend(m.maps_flattened)
+                else:
+                    mf.append(m)
+            self._maps_flattened = mf
+        return self._maps_flattened
+
+    @property
+    def merged(self):
+        return dict(self)
+
+
+class ContextManager(ReadOnlyChainMap):
+
+    def __init__(self, *parents, **local):
+        self._parents = parents
+        ReadOnlyChainMap.__init__(self, local, *parents)
+
+    def __enter__(self):
+        return copy.deepcopy(self)
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def __repr__(self):
+        return repr(list(self._maps))
+
+    def extend(self, *parents, **local):
+        'Make a child context, inheriting enable_nonlocal unless specified'
+        #parents = [p for p in parents if p and isinstance(p, Mapping)]
+        if not parents and not local:
+            return self
+        if local:
+            parents = (local, ) + parents
+        #return ContextManager(*parents, *self._maps)
+        return ContextManager(*parents, self)
 
 
 class _KeyModifierMapping(MutableMapping):
@@ -67,6 +145,9 @@ class _KeyModifierMapping(MutableMapping):
 
     def __len__(self):
         return len(self._dict)
+
+    def __repr__(self):
+        return repr(self._dict)
 
 
 class CaseInsensitiveDict(_KeyModifierMapping):
@@ -575,7 +656,7 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
             v = coll.get(k) if is_map else (
                 coll[i] if i < len(coll) else
                 None)
-            if is_collection(v):
+            if is_mapping(v) or isinstance(v, list):
                 apply_through_collection(v, func, recursive, level=level+1, **func_kwargs)
 
 
@@ -663,11 +744,23 @@ def grouper( page_size, iterable ):
 def casted_as(instance, cls):
     """context manager to cast an instance as a parent class"""
     instance_cls = instance.__class__
-    if cls not in instance_cls.mro():
+    if cls not in instance_cls.__mro__:
         raise AttributeError("'%s' is not a parent of '%s'" % (cls, instance))
     instance.__class__ = cls
     yield instance
     instance.__class__ = instance_cls
+
+
+def class_casted_as(cls, other):
+    """return a class casted to another"""
+    if other not in cls.__mro__:
+        raise AttributeError("'%s' is not a parent of '%s'" % (other, cls))
+    # get all attributes of cls not in other mro
+    attrs = dict(ReadOnlyChainMap(*[b.__dict__ for b in cls.__mro__ if b not in other.__mro__]))
+    # add public attributes of other mro
+    attrs.update({k: v for k, v in ReadOnlyChainMap(*[b.__dict__ for b in other.__mro__]).items()
+                  if not k.startswith('_')})
+    return type(cls.__name__, (other, ), attrs)
 
 
 class Bracket:

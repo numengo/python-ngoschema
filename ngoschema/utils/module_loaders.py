@@ -8,26 +8,14 @@ from .utils import GenericModuleFileLoader
 # loader to register module with a models folder where to look for templates
 templates_module_loader = GenericModuleFileLoader('templates')
 
-
-def load_module_templates(module_name):
-    templates_module_loader.register(module_name)
-
-
 # loader to register module with a transforms folder where to look for model transformations
 transforms_module_loader = GenericModuleFileLoader('transforms')
-
-
-def load_module_transforms(module_name):
-    transforms_module_loader.register(module_name)
-
 
 # loader to register module with a models folder where to look for objects
 objects_module_loader = GenericModuleFileLoader('objects')
 
-
-def load_module_objects(module_name):
-    objects_module_loader.register(module_name)
-
+# loader to register module with a models folder where to look for static files
+static_module_loader = GenericModuleFileLoader('static')
 
 # loader to register module with a models folder where to look for objects
 schemas_module_loader = GenericModuleFileLoader('schemas')
@@ -47,13 +35,13 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     :type schemas_store: dict
     :rtype: dict
     """
-    from ..resolver import get_uri_doc_store
+    from ..resolver import UriResolver
     schema_folder = schemas_module_loader.register(module)
 
     logger = logging.getLogger(__name__)
 
     if schemas_store is None:
-        schemas_store = get_uri_doc_store()
+        schemas_store = UriResolver.get_doc_store()
     if not schema_folder.exists():
         return schemas_store
     for ms in list_files(schema_folder, "**.json", recursive=True):

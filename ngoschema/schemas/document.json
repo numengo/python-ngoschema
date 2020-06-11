@@ -1,12 +1,12 @@
 {
-  "$schema": "http://numengo.org/ngoschema/draft-05",
-  "$id": "http://numengo.org/ngoschema/document",
+  "$schema": "https://numengo.org/ngoschema/draft-06",
+  "$id": "https://numengo.org/ngoschema/document",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
+  "$defs": {
     "Document": {
       "type": "object",
-      "extends": ["http://numengo.org/ngoschema/draft-05#/definitions/Entity"],
+      "extends": ["https://numengo.org/ngoschema/draft-06#/$defs/Entity"],
       "additionalProperties": false,
       "primaryKeys": ["identifier"],
       "readOnly": ["identifier"],
@@ -22,8 +22,7 @@
           "default": false
         },
         "uri": {
-          "type": "string",
-          "format": "uri-reference"
+          "type": "uri"
         },
         "id": {
           "type": "string",

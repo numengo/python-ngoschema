@@ -17,6 +17,7 @@ from ngoschema.session import session_maker, scoped_session
 
 Session = scoped_session(session_maker())
 
+
 def test_session():
     s1 = Session()
     s2 = Session()
@@ -25,8 +26,10 @@ def test_session():
     s1.register(v1)
     s2.register(v2)
 
+
 def test_global_session():
     pass
+
 
 if __name__ == "__main__":
     test_session()

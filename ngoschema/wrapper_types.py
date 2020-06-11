@@ -176,9 +176,9 @@ class ArrayWrapper(pjo_wrapper_types.ArrayWrapper, HandleRelativeCname, HasParen
                               **self._parent._childConf,
                               **util.coerce_for_expansion(elem))
                 except (TypeError, ValidationError) as er:
-                    raise six.reraise(ValidationError,
-                                      ValidationError("Problem setting array item [%i]: %s " % (i, er)),
-                                      sys.exc_info()[2])
+                    six.reraise(ValidationError,
+                                ValidationError("Problem setting array item [%i]: %s " % (i, er)),
+                                sys.exc_info()[2])
                 typed_elems.append(val)
             elif util.safe_issubclass(typ, ArrayWrapper):
                 val = typ(elem, _parent=self._parent)

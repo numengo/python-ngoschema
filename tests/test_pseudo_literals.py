@@ -148,7 +148,12 @@ def test_datetime():
     dte.datetime = a_dt
     assert isinstance(dte.datetime._value, arrow.Arrow)
 
+def test_literal():
+    from ngoschema import Path
+    p = Path('/Users/cedric/Devel/admin/NUMENGO/NGOSCHEMA/url.mm')
+    assert p.to_uri()
 
 if __name__ == "__main__":
-    test_path()
-    test_datetime()
+    #test_path()
+    #test_datetime()
+    test_literal()

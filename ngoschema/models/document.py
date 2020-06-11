@@ -21,27 +21,24 @@ from ngofile.list_files import list_files
 from six.moves.urllib.request import urlopen
 from collections import Mapping, ChainMap
 
-from ngoschema import utils
-from ..protocol_base import ProtocolBase
-from ..decorators import SCH_PATH_DIR
-from ..decorators import SCH_PATH_FILE
+#from ngoschema import utils, get_builder
+#from ..protocol_base import ProtocolBase
+#from ..decorators import SCH_PATH_DIR
+#from ..decorators import SCH_PATH_FILE
+from ..types import Type, PathDir, PathFile
 from ..decorators import assert_arg, depend_on_prop
+from ..types import ObjectMetaclass
 from ..query import Query
-from ..schema_metaclass import SchemaMetaclass
-from ..resolver import register_doc_with_uri_id, unregister_doc_with_uri_id
-from .entity import Entity
+from ..resolver import UriResolver
 
 
-class Document(with_metaclass(SchemaMetaclass, Entity)):
+class Document(with_metaclass(ObjectMetaclass)):
     """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    __schema_uri__ = r'http://numengo.org/ngoschema/document#/definitions/Document'
-    __add_logging__ = False
-    __assert_args__ = False
-    __attr_by_name__ = False
+    _schema_id = 'https://numengo.org/ngoschema/document#/$defs/Document'
     _contentRaw = None
     _content = None
     _loaded = False
@@ -49,6 +46,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
     _identifier = None
 
     def __init__(self, *args, **props):
+        from .entity import Entity
         Entity.__init__(self, *args, **props)
 
     @property
@@ -58,7 +56,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
 
     def get_identifier(self):
         if self._identifier is None:
-            self._identifier = self.filepath or self.url
+            self._identifier = self.filepath or self.uri
         assert self._identifier
         return self._identifier
 
@@ -78,7 +76,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
                 with open(str(self.filepath), mode='rb') as f:
                     content = f.read()
         elif self.uri:
-            response = urlopen(str(self.uri))
+            response = urlopen(self.uri.geturl())
             if not self.binary:
                 content = response.read().decode(encoding)
             else:
@@ -102,7 +100,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
     def unload(self):
         # remove reference from main registry
         if self._id:
-            unregister_doc_with_uri_id(self._id)
+            UriResolver.unregister_doc(self._id)
         self._contentRaw = self._content = None
 
     def write(self, content, mode='w'):
@@ -115,7 +113,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
                 with open(str(self.filepath), mode+'b') as f:
                     f.write(content)
             self._contentRaw = content if mode != 'a' else self._contentRaw + content
-        elif self.url:
+        elif self.uri:
             raise Exception('impossible to write on a URL referenced document')
 
     def _deserialize(self, load_function, **kwargs):
@@ -128,7 +126,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
             raise
             raise Exception('impossible to deserialize %s: %s' % (self.identifier, er))
         if self._id:
-            register_doc_with_uri_id(self._content, self._id)
+            UriResolver.register_doc(self._content, self._id)
         return self._content
 
     @property
@@ -158,7 +156,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
 
     @depend_on_prop('filepath')
     def get_mimetype(self):
-        val = self._get_prop_value('mimetype')
+        val = self._data.get('mimetype')
         if not val and self.filepath:
             import magic
             val = magic.Magic(mime=True).from_file(str(self.filepath))
@@ -175,7 +173,7 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
 
     @property
     def filename(self):
-        return self.filepath.name if self.filepath else self.url.split('/')[-1]
+        return self.filepath.name if self.filepath else self.uri.split('/')[-1]
 
     _sha1 = None
     @property
@@ -189,8 +187,8 @@ class Document(with_metaclass(SchemaMetaclass, Entity)):
                     while len(block) != 0:
                         sha.update(block)
                         block = source.read(2 ** 16)
-            elif self.url:
-                response = urlopen(str(self.url))
+            elif self.uri:
+                response = urlopen(str(self.uri))
                 block = response.read(2 ** 16)
                 while len(block) != 0:
                     sha.update(block)
@@ -228,7 +226,7 @@ class DocumentRegistry(Mapping):
     def __len__(self):
         return len(self._chained)
 
-    @assert_arg(1, SCH_PATH_FILE)
+    @assert_arg(1, PathFile)
     def register_from_file(self, fp):
         """
         Register a document from a filepath
@@ -242,7 +240,7 @@ class DocumentRegistry(Mapping):
         doc = self._fp_catalog.get_instance(str(fp))
         return doc
 
-    @assert_arg(1, {"type": "string", "format": "uri-reference"})
+    @assert_arg(1, Type, type="string", format="uri-reference")
     def register_from_url(self, url):
         """
         Register a document from an URL
@@ -257,7 +255,7 @@ class DocumentRegistry(Mapping):
         doc = self._url_catalog[str(url)]
         return doc
 
-    @assert_arg(1, SCH_PATH_DIR)
+    @assert_arg(1, PathDir)
     def register_from_directory(self,
                                 src,
                                 includes=["*"],

@@ -1,9 +1,9 @@
 {
-  "$schema": "http://numengo.org/ngoschema/draft-05",
-  "$id": "http://numengo.org/ngoschema/object-transform",
+  "$schema": "https://numengo.org/ngoschema/draft-06",
+  "$id": "https://numengo.org/ngoschema/object-transform",
   "additionalProperties": false,
   "type": "object",
-  "definitions": {
+  "$defs": {
       "ObjectTransform": {
           "type": "object",
           "additionalProperties": false,

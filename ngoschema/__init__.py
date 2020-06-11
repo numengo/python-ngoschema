@@ -8,45 +8,39 @@ __version__ = "__version__ = '0.3.0'"
 from simple_settings import LazySettings
 settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
 
-# add additional types
-import itertools
-from python_jsonschema_objects import validators
-validators.SCHEMA_TYPE_MAPPING = tuple(itertools.chain(validators.SCHEMA_TYPE_MAPPING, settings.EXTRA_SCHEMA_TYPE_MAPPING))
+from .utils import ContextManager
+
+DEFAULT_CONTEXT = ContextManager(**{
+    'True': True,
+    'False': False,
+    'None': None,
+})
+
+APP_CONTEXT = DEFAULT_CONTEXT.extend(settings)
 
 from .utils import register_module
 register_module('ngoschema')
 
-from .exceptions import InvalidOperationException, SchemaError, ValidationError
-from .resolver import get_resolver
-from .classbuilder import get_builder
-from .schema_metaclass import SchemaMetaclass
-from .protocol_base import ProtocolBase
+from .exceptions import InvalidOperation, SchemaError, ValidationError
+from .types import *
 from .repositories import *
 from .query import Query, Filter
-from .literals import LiteralValue, TextField, ImportableField, IntegerField
-from .wrapper_types import ArrayWrapper
 
 __all__ = [
     'settings',
     # exceptions
     'SchemaError',
     'ValidationError',
-    'InvalidOperationException',
+    'InvalidOperation',
     # loaders
     'register_module',
     # builder and protocol
-    'get_resolver',
-    'get_builder',
+    'NamespaceManager',
+    'TypeBuilder',
+    'Type',
     'with_metaclass',
-    'SchemaMetaclass',
-    'ProtocolBase',
+    'ObjectMetaclass',
     # literals
-    'LiteralValue',
-    'TextField',
-    'ImportableField',
-    'IntegerField',
-    # arrays
-    'ArrayWrapper',
     # query
     'Query',
     'Filter',

@@ -1,8 +1,8 @@
 {
-    "$schema": "http://numengo.org/ngoschema/draft-05",
-    "$id": "http://numengo.org/ngoschema/repositories",
+    "$schema": "https://numengo.org/ngoschema/draft-06",
+    "$id": "https://numengo.org/ngoschema/repositories",
     "type": "object",
-    "definitions": {
+    "$defs": {
         "Repository": {
             "type": "object",
             "isAbstract": true,
@@ -25,7 +25,7 @@
                     "type": "boolean",
                     "default": true
                 },
-                "remove_refs": {
+                "use_entity_ref": {
                     "type": "boolean",
                     "default": true
                 }
@@ -58,8 +58,8 @@
             "type": "object",
             "additionalProperties": false,
             "extends": [
-                "#/definitions/Repository",
-                "#/definitions/FilterRepositoryMixin"
+                "#/$defs/Repository",
+                "#/$defs/FilterRepositoryMixin"
             ]
         },
         "FileRepository": {
@@ -67,12 +67,12 @@
             "isAbstract": true,
             "additionalProperties": false,
             "extends": [
-                "#/definitions/Repository",
-                "#/definitions/FilterRepositoryMixin"
+                "#/$defs/Repository",
+                "#/$defs/FilterRepositoryMixin"
             ],
             "properties": {
                 "document": {
-                    "$ref": "http://numengo.org/ngoschema/document#/definitions/Document"
+                    "$ref": "https://numengo.org/ngoschema/document#/$defs/Document"
                 },
                 "overwrite": {
                     "type": "boolean",
@@ -83,21 +83,21 @@
         "JsonFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileRepository"
+                "#/$defs/FileRepository"
             ],
             "additionalProperties": true
         },
         "YamlFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileRepository"
+                "#/$defs/FileRepository"
             ],
             "additionalProperties": true
         },
         "XmlFileRepository": {
             "type": "object",
             "extends": [
-                "#/definitions/FileRepository"
+                "#/$defs/FileRepository"
             ],
             "additionalProperties": true,
             "properties": {

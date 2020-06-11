@@ -1,25 +1,24 @@
-from .generic_object import *
 from .document import *
-from .foreign_key import *
+#from .inspect import *
+from .metadata import *
 from .entity import *
 from .relationship import *
-from ngoschema.transforms.object_transform import *
+
+
 
 __all__ = [
-    'GenericObject',
     # document
     'Document',
     'get_document_registry',
     'DocumentRegistry',
-    # foreign_key
-    'ForeignKey',
-    'CnameForeignKey',
-    # keyed_object
+    # metadata
+    'NamedObject',
+    'ObjectMetadata',
+    # entity
     'Entity',
     'NamedEntity',
     'EntityWithMetadata',
-    # Relationship
+    # relationship
     'Relationship',
-    # transforms
-    'ObjectTransform'
+    'ObjectTransform',
 ]

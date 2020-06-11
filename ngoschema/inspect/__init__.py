@@ -1,6 +1,8 @@
-from .inspect_objects import *
+from .inspect_symbols import *
 
 __all__ = [
-    'FunctionInspector',
-    'ClassInspector',
+    'inspect_importable',
+    'inspect_module',
+    'inspect_function',
+    'inspect_class',
 ]

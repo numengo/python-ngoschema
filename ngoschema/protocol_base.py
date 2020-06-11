@@ -120,7 +120,7 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         self.logger.debug(lazy_format("INIT {0} with {1}", self.short_repr, props, to_format=[1]))
 
         cls = self.__class__
-        #props.pop('$schema', None)
+        props.pop('$schema', None)
 
         self._lazy_data = {}
         self._extended_properties = collections.OrderedDict()
@@ -566,11 +566,11 @@ class ProtocolBase(mixins.HasParent, mixins.HasCache, HasLogger, pjo_classbuilde
         except KeyError as er:
             return default
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name, value):
         """allow setting of protected attributes"""
         # protected members
         if name.startswith("_"):
-            return collections.MutableMapping.__setattr__(self, name, val)
+            return collections.MutableMapping.__setattr__(self, name, value)
 
         # object attributes
         if name in self.__object_attr_list_flatten__:

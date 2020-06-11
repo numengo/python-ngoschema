@@ -1,8 +1,8 @@
 {
-    "$schema": "http://numengo.org/ngoschema/draft-05",
-    "$id": "http://numengo.org/ngoschema/session",
+    "$schema": "https://numengo.org/ngoschema/draft-05",
+    "$id": "https://numengo.org/ngoschema/session",
     "type": "object",
-    "definitions": {
+    "$defs": {
         "Session": {
             "type": "object",
             "additionalProperties": false,

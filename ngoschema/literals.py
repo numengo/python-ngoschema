@@ -1,12 +1,42 @@
 # *- coding: utf-8 -*-
 from functools import partial
-from python_jsonschema_objects import literals as pjo_literals
+from python_jsonschema_objects import literals as pjo_literals, util as pjo_util
 import copy
+import urllib.parse
+import pathlib
+import types
 
 from . import utils
 from .mixins import HasCache
 from .validators import validator_registry, converter_registry, formatter_registry
 from .decorators import memoized_property
+
+
+def _dispatch_to_typed(fn):
+    def wrapper(self, other):
+        return fn(self._typed, other)
+        pass
+
+    return wrapper
+
+
+class PathMixin(object):
+    def to_uri(self):
+        return converter_registry('uri')(self._typed, {})
+
+
+class UriMixin(object):
+    @property
+    def defrag(self):
+        urlparsed = self._typed
+        return urllib.parse.urlunsplit((*urlparsed[:4], '')), urlparsed.fragment
+
+    def resolve_json(self, remote=False):
+        from .resolver import resolve_uri
+        return resolve_uri(self._typed.geturl(), remote=remote)
+
+    def to_path(self):
+        return converter_registry('path')(self._typed, {})
 
 
 def make_literal(name, subclass, base, **schema):
@@ -41,18 +71,32 @@ def make_literal(name, subclass, base, **schema):
     propinfo = schema.copy()
     propinfo['__literal__'] = schema
     propinfo['__default__'] = schema.get('default')
-
-    return type(
-        str(name),
-        tuple(base),
-        {
+    attrs = {
             "__propinfo__": propinfo,
             "__subclass__": subclass,
             "_converter": staticmethod(converter),
             "_formatter": staticmethod(formatter),
             "_validator": staticmethod(validator),
-        },
-    )
+        }
+
+
+    # add method to path to return as uri
+    if type_ == 'path':
+        base = base + (PathMixin, subclass)
+
+    # add a method to uri to defrag the uri
+    if type_ == 'uri':
+        base = base + (UriMixin, subclass)
+
+    cls = type(str(name), tuple(base), attrs,)
+
+    if type_ in ['uri', 'path', 'date', 'datetime', 'time']:
+        for op in dir(subclass):
+            if op not in pjo_literals.EXCLUDED_OPERATORS:
+                fn = getattr(subclass, op)
+                setattr(cls, op, _dispatch_to_typed(fn))
+
+    return cls
 
 
 class LiteralValue(pjo_literals.LiteralValue, HasCache):
@@ -84,21 +128,21 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     def __format__(self, format_spec):
         return self.for_json().__format__(format_spec)
 
-    def __getattr__(self, name):
-        """
-        Special __getattr__ method to be able to use subclass methods
-        directly on literal
-        """
-        sub_cls = object.__getattribute__(self, '__subclass__')
-        cls = object.__getattribute__(self, '__class__')
-        if hasattr(sub_cls, name):
-            if isinstance(self._typed, sub_cls):
-                _ = copy.copy(self._typed)
-                return getattr(_, name)
-        elif hasattr(cls, name):
-            return object.__getattribute__(self, name)
-        else:
-            return pjo_literals.LiteralValue.__getattribute__(self, name)
+    #def __getattr__(self, name):
+    #    """
+    #    Special __getattr__ method to be able to use subclass methods
+    #    directly on literal
+    #    """
+    #    sub_cls = object.__getattribute__(self, '__subclass__')
+    #    cls = object.__getattribute__(self, '__class__')
+    #    if hasattr(sub_cls, name):
+    #        if isinstance(self._typed, sub_cls):
+    #            _ = copy.copy(self._typed)
+    #            return getattr(_, name)
+    #    elif hasattr(cls, name):
+    #        return object.__getattribute__(self, name)
+    #    else:
+    #        return pjo_literals.LiteralValue.__getattribute__(self, name)
 
     def for_json(self):
         if self._validated_data is not None:
@@ -149,24 +193,43 @@ class LiteralValue(pjo_literals.LiteralValue, HasCache):
     __nonzero__ = __bool__
 
 
-# EXPERIMENTAL: attempt
-class TextField(object):
-    def __new__(self, *args, **kwargs):
-        schema = {'type': 'string'}
-        schema.update(**kwargs)
-        return make_literal('TextField', str, (LiteralValue, ), **schema)
+""" We also have to patch the reverse operators,
+which aren't conveniently defined anywhere """
+LiteralValue.__radd__ = lambda self, other: other + self._typed
+LiteralValue.__rsub__ = lambda self, other: other - self._typed
+LiteralValue.__rmul__ = lambda self, other: other * self._typed
+LiteralValue.__rtruediv__ = lambda self, other: other / self._typed
+LiteralValue.__rfloordiv__ = lambda self, other: other // self._typed
+LiteralValue.__rmod__ = lambda self, other: other % self._typed
+LiteralValue.__rdivmod__ = lambda self, other: divmod(other, self._typed)
+LiteralValue.__rpow__ = lambda self, other, modulo=None: pow(other, self._typed, modulo)
+LiteralValue.__rlshift__ = lambda self, other: other << self._typed
+LiteralValue.__rrshift__ = lambda self, other: other >> self._typed
+LiteralValue.__rand__ = lambda self, other: other & self._typed
+LiteralValue.__rxor__ = lambda self, other: other ^ self._typed
+LiteralValue.__ror__ = lambda self, other: other | self._typed
 
 
-class ImportableField(object):
-    def __new__(self, *args, **kwargs):
-        schema = {'type': 'importable'}
-        schema.update(**kwargs)
-        return make_literal('ImportableField', str, (LiteralValue, ), **schema)
+# EXPERIMENTAL
+def Text(*args, **schema):
+    return make_literal('Text', str, (LiteralValue, ), type='text', **schema)(*args)
 
 
-class IntegerField(object):
-    def __new__(self, *args, **kwargs):
-        schema = {'type': 'string'}
-        schema.update(**kwargs)
-        return make_literal('IntegerField', str, (LiteralValue, ), **schema)
+def Integer(*args, **schema):
+    return make_literal('Integer', int, (LiteralValue, ), type='integer', **schema)(*args)
 
+
+def Number(*args, **schema):
+    return make_literal('Number', float, (LiteralValue, ), type='number', **schema)(*args)
+
+
+def Importable(*args, **schema):
+    return make_literal('Importable', str, (LiteralValue, ), type='importable', **schema)(*args)
+
+
+def Path(*args, **schema):
+    return make_literal('Path', pathlib.Path, (LiteralValue, ), type='path', **schema)(*args)
+
+
+def Uri(*args, **schema):
+    return make_literal('Uri', urllib.parse.ParseResult, (LiteralValue, ), type='uri', **schema)(*args)

@@ -13,9 +13,12 @@ import collections
 from builtins import str
 from datetime import datetime, date, time
 from pathlib import Path
+import urllib.parse
 
 import six
 from arrow import Arrow
+import pkgutil
+import json
 from jsonschema import TypeChecker, Draft6Validator
 
 from jsonschema._format import draft7_format_checker
@@ -29,7 +32,15 @@ from python_jsonschema_objects import ValidationError
 from python_jsonschema_objects.validators import registry
 
 from .. import utils
-from ngoschema.schemas_loader import _load_schema
+
+
+def _load_schema(name):
+    """
+    Load a schema from ./schemas/``name``.json and return it.
+
+    """
+    data = pkgutil.get_data("ngoschema", "schemas/{0}.json".format(name))
+    return json.loads(data.decode("utf-8"), object_pairs_hook=collections.OrderedDict)
 
 
 def _format_checker(validator):
@@ -168,6 +179,10 @@ ngodraft04_type_checker = TypeChecker(
         u"number": is_number,
         u"string": is_string,
         u"importable": lambda checker, instance: utils.is_importable(instance),
+        u"uri": lambda checker, instance: (
+            is_string(checker, instance) or
+            isinstance(instance, urllib.parse.SplitResult)
+        ),
         u"path": lambda checker, instance: (
             is_string(checker, instance) or
             isinstance(instance, Path)

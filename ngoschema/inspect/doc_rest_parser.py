@@ -25,16 +25,16 @@ from ngoschema.utils.str_utils import multiple_replace
 
 ##### C. ROMAN (NUMENGO) modifies regex to retrieve type of parameters
 
-PARAM_OR_RETURNS_REGEX = re.compile(":(?:param|type|rtype)")
-RETURNS_REGEX = re.compile(":rtype:\s*(?P<doc>.*)", re.S)
+PARAM_OR_RETURNS_REGEX = re.compile(":(?:param|type|return|rtype|returns)")
+RETURNS_REGEX = re.compile(":(?:rtype|return|returns):\s*(?P<doc>.*)", re.S)
 PARAM_REGEX = re.compile(
     ":param (?P<name>[\*\w]+):\s*(?P<doc>.*?)"
-    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
+    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:return)|(?=:returns)|(?=:raises)|\Z)",
     re.S,
 )
 TYPE_REGEX = re.compile(
     ":type (?P<name>[\*\w]+):\s*(?P<type>.*?)"
-    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:raises)|\Z)",
+    "(?:(?=:param)|(?=:type)|(?=:rtype)|(?=:return)|(?=:returns)|(?=:raises)|\Z)",
     re.S,
 )
 
@@ -82,7 +82,7 @@ def parse_docstring(docstring):
     Parse the docstring into its components.
 
     :param docstring: docstring to parse
-    :returns: a dictionary of form
+    :return: a dictionary of form
               {
                   "short_description": ...,
                   "long_description": ...,

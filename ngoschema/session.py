@@ -8,15 +8,17 @@ licence: GNU GPLv3
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future.utils import with_metaclass
+#from future.utils import with_metaclass
 from collections import ChainMap
 import weakref
 
 from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
+
 from . import utils
-from .classbuilder import get_builder
-from .protocol_base import ProtocolBase
-from .schema_metaclass import SchemaMetaclass
+from .types import with_metaclass, ObjectMetaclass
+from .types import TypeBuilder, ObjectProtocol, ArrayProtocol
+from .types import Tuple, Array
+from .decorators import assert_arg, memoized_method
 from .query import Query
 
 _sessions = weakref.WeakValueDictionary()
@@ -36,40 +38,48 @@ def _state_session(state):
     return None
 
 
-class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
-    __schema_uri__ = "http://numengo.org/ngoschema/session#/definitions/Session"
+class Session(with_metaclass(ObjectMetaclass)):
+    _schema_id = "https://numengo.org/ngoschema/session#/$defs/Session"
 
-    def __init__(self, bind=None, builder=None, **kwargs):
-        ProtocolBase.__init__(self, **kwargs)
-        self._builder = builder or get_builder()
-        self._handlers = []
+    def __init__(self, bind=None, **kwargs):
+        ObjectProtocol.__init__(self, **kwargs)
+        self._repos = []
         self._chained = ChainMap()
         if bind is not None:
-            binds = bind if utils.is_sequence(bind) else [bind]
-            for bind in binds:
-                self.bind_handler(bind)
-
+            for bind in Array.convert(bind):
+                self.bind_repo(bind)
 
         self._new = {}  # InstanceState->object, strong refs object
         self._deleted = {}  # same
         self._hash_key = _new_sessionid()
         _sessions[self._hash_key] = self
 
-    def bind_handler(self, handler):
-        self._handlers.append(handler)
-        handler._session = self
-        self._chained = ChainMap(*self._handlers)
+    def bind_repo(self, repo):
+        self._repos.append(repo)
+        repo._session = self
+        self._chained = ChainMap(*self._repos)
 
     def get_instance(self, key):
         return self._chained[key]
 
+    @memoized_method(maxsize=512)
     def resolve_cname(self, cname):
-        for handler in self._handlers:
-            try:
-                return handler.resolve_cname(cname)
-            except Exception as er:
-                raise
+        from .models.entity import NamedEntity
+        cns = cname.split('.')
+        rn = cns[0]
+        cn = cns[1:]
+        for repo in [r for r in self._repos if issubclass(r.objectClass, NamedEntity)]:
+            if rn in repo._catalog:
+                v = repo.get_instance(rn)
+                return v if not cn else v.resolve_cname(cn)
         raise Exception("impossible to resolve '%s'" % cname)
+
+    @assert_arg(1, Tuple, str_delimiter=',')
+    def resolve_fkey(self, keys, object_class):
+        for repo in [r for r in self._repos if issubclass(r.objectClass, object_class)]:
+            if keys in repo._catalog:
+                return repo.get_instance(keys)
+        raise Exception("impossible to resolve %s '%s'" % (object_class, keys))
 
     def query(self, *attrs, order_by=False, **attrs_value):
         """
@@ -116,7 +126,6 @@ class Session(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
     def merge(self, instance, load=True):
         pass
-
 
 
 class session_maker(object):
@@ -243,7 +252,6 @@ class session_maker(object):
             Session.configure(bind=create_engine('sqlite://'))
         """
         self.kw.update(new_kw)
-
 
 
 def close_all_sessions():

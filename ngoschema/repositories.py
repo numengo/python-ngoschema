@@ -14,7 +14,8 @@ from abc import abstractmethod
 
 from future.utils import with_metaclass
 
-from .decorators import assert_arg, SCH_PATH_FILE, SCH_PATH
+from .types import Path, PathFile
+from .decorators import assert_arg
 from .session import session_maker, scoped_session
 
 try:
@@ -27,36 +28,37 @@ from ruamel import yaml
 from ruamel.yaml import YAML
 from ngoschema.utils import xmltodict, file_link_format
 
-from .exceptions import InvalidOperationException
+from .exceptions import InvalidOperation
 from .query import Query
-from .protocol_base import ProtocolBase
+#from .protocol_base import ProtocolBase
 from .models.document import Document
-from .schema_metaclass import SchemaMetaclass
+#from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection, is_mapping, is_sequence, to_list
 from .models.entity import Entity, NamedEntity
+from .types import ObjectMetaclass, ObjectProtocol
 
 logger = logging.getLogger(__name__)
 
 repository_registry = GenericClassRegistry()
 
 
-class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
+class Repository(with_metaclass(ObjectMetaclass)):
     """
     Class to store read/write operations of objects
     """
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/Repository"
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/Repository'
 
     def __init__(self, **kwargs):
-        ProtocolBase.__init__(self, **kwargs)
+        ObjectProtocol.__init__(self, **kwargs)
         self._catalog = Registry()
         self._pkeys = None
         if self.primaryKeys is not None and self.primaryKeys:
-            self._pkeys = self.primaryKeys.for_json()
+            self._pkeys = tuple(self.primaryKeys)
         elif self.objectClass and issubclass(self.objectClass, Entity):
             self._pkeys = tuple(self.objectClass._primaryKeys)
         self._session = None
-        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, remove_refs=self.remove_refs)
+        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
 
     @property
     def session(self):
@@ -67,68 +69,24 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
             raise Exception("%r is not an instance of %r" % (instance, self.objectClass))
         if self._pkeys:
             if len(self._pkeys) == 1:
-                return instance._get_prop_value(self._pkeys[0])
+                k = self._pkeys[0]
+                return instance._property_type(k).serialize(instance[k])
             else:
-                return tuple([instance._get_prop_value(k) for k in self._pkeys])
+                return tuple([instance._property_type(k).serialize(instance[k]) for k in self._pkeys])
         return id(instance)
 
     def register(self, instance):
         self._catalog.register(self._identity_key(instance), instance)
-        if isinstance(instance, ProtocolBase):
-            instance._handler = self
+        if isinstance(instance, ObjectProtocol):
+            instance._repo = self
 
     def unregister(self, instance):
         self._catalog.unregister(self._identity_key(instance))
-        if isinstance(instance, ProtocolBase):
-            instance._handler = None
+        if isinstance(instance, ObjectProtocol):
+            instance._repo = None
 
     def get_instance(self, key):
         return self._catalog[key]
-
-    def resolve_cname_path(self, cname):
-        # use generators because of 'null' which might lead to different paths
-        def _resolve_cname_path(cn, cur, cur_cn, cur_path):
-            cn = [e.replace('<anonymous>', 'null') for e in cn]
-            # empty path, yield current path and doc
-            if not cn:
-                yield cur, cn, cur_path
-            if is_mapping(cur):
-                cn2 = cur_cn + [cur.get('name', 'null')]
-                if cn2 == cn[0:len(cn2)]:
-                    if cn2 == cn:
-                        yield cur, cn, cur_path
-                    for k, v in cur.items():
-                        if is_mapping(v) or is_sequence(v):
-                            for _ in _resolve_cname_path(cn, v, cn2, cur_path + [k]):
-                                yield _
-            if is_sequence(cur):
-                for i, v in enumerate(cur):
-                    for _ in _resolve_cname_path(cn, v, cur_cn, cur_path + [i]):
-                        yield _
-
-        cn_path = cname.split('.')
-        for i in self.instances:
-            if not isinstance(i, NamedEntity) and cname.startswith(str(i.canonicalName)):
-                continue
-            # found ancestor
-            cur_cn = []
-            # first search without last element, as last one might not be a named object
-            # but the name of an attribute
-            for d, c, p in _resolve_cname_path(cn_path[:-1], i, cur_cn, []):
-                if cn_path[-1] in d or d.get('name', '<anonymous>') == cn_path[-1]:
-                    p.append(cn_path[-1])
-                    return i, p
-                # we can continue the search from last point. we remove the last element of the
-                # canonical name which is going to be read again
-                for d2, c2, p2 in _resolve_cname_path(cn_path, d, c[:-1], p):
-                    return i, p2
-        raise Exception("Unresolvable canonical name '%s' in '%s'" % (cname, i))
-
-    def resolve_cname(self, cname):
-        cur, path = self.resolve_cname_path(cname)
-        for p in path:
-            cur = cur[p]
-        return cur
 
     @property
     def instances(self):
@@ -148,10 +106,10 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
             if not len(values)==1:
                 raise Exception('handler is configured for 1 registered objects (%i).' % len(list(values)))
             o = values[0]
-            o.validate(validate_lazy=True)
+            #o.do_validate()
             return self._encoder.default(o)
         else:
-            return [self._encoder.default(o) for o in values if o.validate(validate_lazy=True)]
+            return [self._encoder.default(o) for o in values if o.do_validate()]
 
     @abstractmethod
     def commit(self):
@@ -176,7 +134,7 @@ class Repository(with_metaclass(SchemaMetaclass, ProtocolBase)):
 
 
 class FilterRepositoryMixin(object):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/FilterRepositoryMixin"
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/FilterRepositoryMixin'
 
     def filter_data(self, data):
         only = self.only.for_json() if self.only else ()
@@ -185,19 +143,19 @@ class FilterRepositoryMixin(object):
         return filter_collection(data, only, but, rec)
 
 
-class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/MemoryRepository"
+class MemoryRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/MemoryRepository'
 
     def commit(self):
-        raise InvalidOperationException('commit is not possible with MemoryRepository')
+        raise InvalidOperation('commit is not possible with MemoryRepository')
 
     def pre_load(self):
         return {}
-        raise InvalidOperationException('pre_load is not possible with MemoryRepository')
+        raise InvalidOperation('pre_load is not possible with MemoryRepository')
 
 
-class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/FileRepository"
+class FileRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/FileRepository'
 
     def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
@@ -230,51 +188,51 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositor
         doc = self.document
         fpath = doc.filepath
         if not fpath.parent.exists():
-            self.logger.info("creating missing directory '%s'", file_link_format(fpath.parent))
+            self._logger.info("creating missing directory '%s'", file_link_format(fpath.parent))
             os.makedirs(str(fpath.parent))
         if fpath.exists():
             doc.load()
             if stream == doc.contentRaw:
-                self.logger.info("File '%s' already exists with same content. Not overwriting.", file_link_format(fpath))
+                self._logger.info("File '%s' already exists with same content. Not overwriting.", file_link_format(fpath))
                 return
 
-        self.logger.info("DUMP %s", file_link_format(fpath))
-        self.logger.debug("data:\n%r ", stream)
+        self._logger.info("DUMP %s", file_link_format(fpath))
+        self._logger.debug("data:\n%r ", stream)
         doc.write(stream)
 
 
-@assert_arg(0, SCH_PATH_FILE)
-def load_object_from_file(fp, handler_cls=None, session=None, **kwargs):
+@assert_arg(0, PathFile)
+def load_object_from_file(fp, repo=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    handler_cls = handler_cls or JsonFileRepository
-    handler = handler_cls(filepath=fp, **kwargs)
-    session.bind_handler(handler)
+    repo = repo or JsonFileRepository
+    handler = repo(filepath=fp, **kwargs)
+    session.bind_repo(handler)
     logger.info("LOAD %s from %s", handler.objectClass or '<class unknown>', file_link_format(fp))
     handler.load()
     instances = handler.instances
     return instances if handler.many else instances[0]
 
 
-@assert_arg(1, SCH_PATH)
-def serialize_object_to_file(obj, fp, handler_cls=None, session=None, **kwargs):
+@assert_arg(1, Path)
+def serialize_object_to_file(obj, fp, repo=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    handler_cls = handler_cls or JsonFileRepository
-    handler = handler_cls(filepath=fp, **kwargs)
-    session.bind_handler(handler)
+    repo = repo or JsonFileRepository
+    handler = repo(filepath=fp, **kwargs)
+    session.bind_repo(handler)
     logger.info("DUMP %s from %s", handler.objectClass, file_link_format(fp))
     handler.register(obj)
     handler.commit()
 
 
 @repository_registry.register()
-class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/JsonFileRepository"
+class JsonFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/JsonFileRepository'
 
     def __init__(self, **kwargs):
         FileRepository.__init__(self, **kwargs)
 
     def deserialize_data(self):
-        data = self.document._deserialize(json.loads, **self._extended_properties)
+        data = self.document._deserialize(json.loads, **{k: v for k, v in self.do_validate().items() if k not in self._properties})
         return data
 
     def serialize_data(self, data):
@@ -287,14 +245,14 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         )
 
 
-@assert_arg(0, SCH_PATH_FILE)
+@assert_arg(0, PathFile)
 def load_json_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, handler_cls=JsonFileRepository, session=session, **kwargs)
+    return load_object_from_file(fp, repo=JsonFileRepository, session=session, **kwargs)
 
 
 @repository_registry.register()
-class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/YamlFileRepository"
+class YamlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/YamlFileRepository'
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
@@ -310,19 +268,19 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         return output.getvalue()
 
 
-@assert_arg(0, SCH_PATH_FILE)
+@assert_arg(0, PathFile)
 def load_yaml_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, handler_cls=YamlFileRepository, session=session, **kwargs)
+    return load_object_from_file(fp, repo=YamlFileRepository, session=session, **kwargs)
 
 
 @repository_registry.register()
-class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
-    __schema_uri__ = "http://numengo.org/ngoschema/repositories#/definitions/XmlFileRepository"
+class XmlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+    _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/XmlFileRepository'
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):
         FileRepository.__init__(self, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
-                                            remove_refs=self.remove_refs)
+                                            use_entity_ref=self.use_entity_ref)
         self._tag = tag
         if not tag and self.objectClass:
             self._tag = self.objectClass.__name__
@@ -366,10 +324,10 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         )
 
 
-@assert_arg(0, SCH_PATH_FILE)
+@assert_arg(0, PathFile)
 def load_xml_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp,
-                                 handler_cls=XmlFileRepository,
+                                 repo=XmlFileRepository,
                                  session=session,
                                  **kwargs)
 

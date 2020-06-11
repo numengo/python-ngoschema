@@ -15,7 +15,6 @@ import re
 from python_jsonschema_objects.literals import LiteralValue
 
 from . import utils
-from .protocol_base import ProtocolBase
 from ngoschema.utils import get_descendant
 
 _operators = [
@@ -45,6 +44,8 @@ _operators = [
 
 
 def _comparable(obj):
+    return obj
+    from .protocol_base import ProtocolBase
     if isinstance(obj, ProtocolBase):
         #obj = obj[CN_KEY]
         obj = str(obj.canonicalName)
@@ -186,6 +187,28 @@ def search_object(obj, path, *attrs, **attrs_value):
         val = get_descendant(obj, [p[0] for p in path])
         if afilter and afilter(val):
             yield (separator.join(map(str, dpath.path.paths_only(path))), val)
+
+
+def search_object_non_rec(obj, path, *attrs, **attrs_value):
+    res = next(search_object(obj, path, *attrs, **attrs_value))
+    if res:
+        p, e = res
+        yield p, e
+        # only next siblings and remaining next cousins, etc...
+        p_cur, cur = p, e
+        while cur and '/' in p_cur:
+            if cur is obj:
+                yield
+            p_par = p_cur.rsplit('/', 1)[0]
+            par = get_descendant(obj, p_par.split('/'))
+            if utils.is_sequence(par):
+                next_siblings = list(range(par.index(cur)+1, len(par)))
+            else:
+                next_siblings = {k for i, k in enumerate(par.keys()) if i > list(par.keys()).index(cur)}
+            for s in next_siblings:
+                for ps, pe in par[s].search_non_rec(path, *attrs, **attrs_value):
+                    yield ps, pe
+            p_cur, cur = p_par, cur._parent
 
 
 class Query(object):

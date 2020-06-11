@@ -13,68 +13,66 @@ from future.utils import with_metaclass
 import sys
 import weakref
 
-from ngoschema import SchemaMetaclass, ProtocolBase
-from ngoschema.mixins import HasCanonicalName
+from .. import settings
+from ..decorators import classproperty, depend_on_prop
+from ..resolver import UriResolver, resolve_uri
+from ..types import ObjectMetaclass, ObjectProtocol
+from ..types.foreign_key import Ref, ForeignKey
+from ..types.type_builder import TypeBuilder, scope
+from .metadata import NamedObject, ObjectMetadata
 
-from ngoschema.protocol_base import ProtocolBase
-from ngoschema.schema_metaclass import SchemaMetaclass
-
-from ngoschema.decorators import classproperty
+ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 
-class Entity(with_metaclass(SchemaMetaclass, ProtocolBase)):
+class Entity(with_metaclass(ObjectMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/Entity"
+    _schema_id = "https://numengo.org/ngoschema/draft-06#/$defs/Entity"
+
+    def __init__(self, *args, **kwargs):
+        data = args[0] if args else kwargs
+        if '$ref' in data:
+            data.update(resolve_uri(scope(data.pop('$ref'), self._id)))
+        if 'foreignKeys' in kwargs:
+            data.update(ForeignKey(**self._schema).resolve(data.pop('foreignKeys')))
+        ObjectProtocol.__init__(self, *args, **kwargs)
 
     @classproperty
     def _primaryKeys(cls):
-        return cls.__schema__.get('primaryKeys')
+        return cls._schema.get('primaryKeys') or cls._schema['properties']['primaryKeys'].get('default', [])
 
     _keys = None
     @property
     def identity_keys(self):
         if self._keys is None:
-            self._keys = {(str(k) if k != '$id' else '$ref'): getattr(self, str(k)) for k in self.primaryKeys}
+            self._keys = tuple(self[k] for k in self.primaryKeys)
         return self._keys
 
-    def __init__(self, *args, **kwargs):
-        ProtocolBase.__init__(self, *args, **kwargs)
+    def do_serialize(self, use_entity_ref=False, **opts):
+        if use_entity_ref:
+            keys = self.primaryKeys
+            assert len(keys) == 1, keys
+            return {(keys[0] if keys[0] != '$id' else '$ref'): self.identity_keys[0]}
+        else:
+            return ObjectProtocol.do_serialize(self, **opts)
 
 
-class NamedEntity(with_metaclass(SchemaMetaclass, HasCanonicalName, Entity)):
+class NamedEntity(with_metaclass(ObjectMetaclass, NamedObject)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/NamedEntity"
+    _schema_id = "https://numengo.org/ngoschema/draft-06#/$defs/NamedEntity"
 
     def __init__(self, *args, **kwargs):
-        #HasCanonicalName.__init__(self)
         Entity.__init__(self, *args, **kwargs)
 
-    @classproperty
-    def _primaryKeys(cls):
-        return cls.__schema__.get('primaryKeys') or ['canonicalName']
 
-    def set_name(self, value):
-        HasCanonicalName.set_name(self, value)
-
-    def get_canonicalName(self):
-        return self._get_prop_value('canonicalName') or self._cname
-
-    #def set_canonicalName(self, value):
-    #    value = value.replace('-', '_')
-    #    cn = str(value) if value else None
-    #    self._cname = cn
-    #    self._set_prop_value('canonicalName', cn)
-
-
-class EntityWithMetadata(with_metaclass(SchemaMetaclass, NamedEntity)):
+class EntityWithMetadata(with_metaclass(ObjectMetaclass, NamedEntity, ObjectMetadata)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    __schema_uri__ = "http://numengo.org/ngoschema/draft-05#/definitions/EntityWithMetadata"
+    _schema_id = "https://numengo.org/ngoschema/draft-06#/$defs/EntityWithMetadata"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)

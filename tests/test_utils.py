@@ -20,9 +20,9 @@ import pytest
 import six
 from future.utils import text_to_native_str
 
-from ngoschema.utils import str_utils
-from ngoschema import utils
-from ngoschema.exceptions import InvalidValue
+#from ngoschema.utils import str_utils
+#from ngoschema import utils
+#from ngoschema.exceptions import InvalidValue
 
 
 def test_resolve_import():
@@ -94,11 +94,57 @@ def test_string_utils():
                                   ",|") == ["one", "two", "three"]
 
 def test_jinja_tokens():
-    from ngoschema.utils.jinja2 import get_j2_variables
-    vars = get_j2_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
+    from ngoschema.utils.jinja2 import get_jinja2_variables
+    vars = get_jinja2_variables("{{ this.type }}-{{ this.name|lower|replace(' ','-') }}")
     print(vars)
 
+def test_class_casted_as():
+
+    from ngoschema.utils import class_casted_as
+
+    class A:
+        _a = 'world'
+        @classmethod
+        def f(cls):
+            return 'hello %s!' % cls._a
+
+    class B(A):
+        _a = 'sunshine'
+        @classmethod
+        def f(cls):
+            return 'good morning %s!' % cls._a
+
+    assert B.f() == 'good morning sunshine!'
+    assert class_casted_as(B, A).f() == 'hello sunshine!'
+
+
+    class A:
+        _a = 'world'
+        @classmethod
+        def f(cls):
+            return A._f(cls)
+
+        @staticmethod
+        def _f(cls):
+            return 'hello %s!' % cls._a
+
+    class B(A):
+        _a = 'sunshine'
+        @classmethod
+        def f(cls):
+            return B._f(cls)
+
+        @staticmethod
+        def _f(cls):
+            return 'good morning %s!' % cls._a
+
+    assert B.f() == 'good morning sunshine!'
+    assert A._f(B) == 'hello sunshine!'
+
+
+
 if __name__ == "__main__":
+    test_class_casted_as()
     test_jinja_tokens()
     #break
     #test_resolve_import()

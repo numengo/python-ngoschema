@@ -55,6 +55,7 @@
       "enum": [
         "importable",
         "path",
+        "uri",
         "date",
         "time",
         "datetime"

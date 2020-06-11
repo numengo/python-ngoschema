@@ -22,45 +22,29 @@ from urllib.parse import unquote, urlparse
 import dpath.util
 import requests
 import inflection
-from jsonschema.compat import urldefrag
+from jsonschema.compat import urldefrag, lru_cache, urljoin
 from jsonschema.validators import RefResolver
 
-from .utils import UriDict
+from .exceptions import InvalidValue
+from .utils import UriDict, ReadOnlyChainMap as ChainMap
 from .utils import apply_through_collection
 from .utils import is_string, is_sequence
+from . import settings
 
 logger = logging.getLogger(__name__)
 
 
 def domain_uri(name, domain=None):
     from . import settings
-    from .classbuilder import clean_ns_uri
+    from ngoschema.types.namespace import clean_for_uri
     domain = domain or settings.MS_DOMAIN
-    return "%s%s#" % (domain, clean_ns_uri(name))
-
-
-_uri_doc_store = UriDict()
-
-
-def get_uri_doc_store():
-    return _uri_doc_store
-
-
-def unregister_doc_with_uri_id(uri_id):
-    try:
-        del _uri_doc_store[uri_id]
-    except KeyError:
-        logger.warning("no %s uri in URI registry", uri_id)
-
-
-def register_doc_with_uri_id(doc, uri_id):
-    _uri_doc_store[uri_id] = doc
+    return "%s%s#" % (domain, clean_for_uri(name))
 
 
 _resolver = None
 
 
-def get_resolver(base_uri=None):
+def get_resolver___(base_uri=None):
     """
     Return a resolver set with the main loaded schema store
     with a base URI and the corresponding referred document.
@@ -70,9 +54,9 @@ def get_resolver(base_uri=None):
     :type base_uri: string
     """
     from . import settings
-    base_uri = base_uri or settings.MS_URI
+    base_uri = base_uri or settings.DEFAULT_MS_URI
     global _resolver
-    ms = get_uri_doc_store()
+    ms = UriResolver._doc_store
     base_uri, dummy = urldefrag(base_uri)
     if base_uri not in ms:
         raise IOError("%s not found in loaded documents (%s)" %
@@ -89,16 +73,17 @@ def get_resolver(base_uri=None):
     return _resolver
 
 
+
 @functools.lru_cache(30)
 def resolve_doc(uri_id, remote=False):
     uri, frag = urldefrag(uri_id)
-    ret = _uri_doc_store.get(uri)
+    ret = UriResolver._doc_store.get(uri)
     if ret:
         return ret
     if remote:
         # we could load the resource
         doc = requests.get(uri).json()
-        _uri_doc_store[uri] = doc
+        UriResolver._doc_store[uri] = doc
         return doc
     raise Exception('Unresolvable uri %s' % uri_id)
 
@@ -106,14 +91,14 @@ def resolve_doc(uri_id, remote=False):
 def resolve_fragment(doc, fragment):
     fragment = fragment.lstrip(u'/')
     parts = unquote(fragment).split(u"/") if fragment else []
-    for part in parts:
+    for i, part in enumerate(parts):
         try:
             part = part.replace(u"~1", u"/").replace(u"~0", u"~")
             if is_sequence(doc):
                 part = int(part)
             doc = doc[part]
         except:
-            raise KeyError(part)
+            raise InvalidValue("Impossible to find fragment '%s' in document." % ('/'.join(parts[:i+1])))
     return doc
 
 
@@ -121,7 +106,10 @@ def resolve_uri(uri_id, doc=None, remote=False):
     uri, frag = urldefrag(uri_id)
     if doc is None:
         doc = resolve_doc(uri, remote)
-    return resolve_fragment(doc, frag)
+    try:
+        return resolve_fragment(doc, frag)
+    except Exception as er:
+        raise InvalidValue("Impossible to resolve uri %s. %s" % (uri_id, str(er)))
 
 
 def qualify_ref(ref, base):
@@ -142,7 +130,7 @@ def relative_url(target, base):
     return posixpath.relpath(target, start=base_dir)
 
 
-class ExpandingResolver(RefResolver):
+class UriResolver(RefResolver):
     __doc__ = (""" 
     Resolver expanding the resolved document according to the 'extends' field
     (array of uri-reference). The returned document is a deep merge of all
@@ -150,8 +138,55 @@ class ExpandingResolver(RefResolver):
     The merge is done according to the order of 'extends' (properties can be
     overwritten).The original resolved document is merged at the end.
     """ + RefResolver.__doc__)
-    _def_store = dict()
-    _expanding = True
+
+    _doc_store = UriDict()
+
+    @staticmethod
+    def get_doc_store():
+        return UriResolver._doc_store
+
+    @staticmethod
+    def unregister_doc(uri_id):
+        try:
+            del UriResolver._doc_store[uri_id]
+        except KeyError:
+            logger.warning("no %s uri in URI registry", uri_id)
+
+    @staticmethod
+    def register_doc(doc, uri_id):
+        UriResolver._doc_store[uri_id] = doc
+
+    def __init__(
+        self,
+        base_uri,
+        referrer,
+        store=None,
+        cache_remote=True,
+        handlers=(),
+        urljoin_cache=None,
+        remote_cache=None,
+    ):
+        if urljoin_cache is None:
+            urljoin_cache = functools.lru_cache(1024)(urljoin)
+        if remote_cache is None:
+            remote_cache = functools.lru_cache(1024)(self.resolve_from_url)
+
+        self.referrer = referrer
+        self.cache_remote = cache_remote
+        self.handlers = dict(handlers)
+
+        self._scopes_stack = [base_uri]
+        self.store = store or UriResolver._doc_store
+        self.store[base_uri] = referrer
+
+        self._urljoin_cache = urljoin_cache
+        self._remote_cache = remote_cache
+
+    @staticmethod
+    def create(uri=None, schema=None):
+        uri = uri or settings.DEFAULT_MS_URI
+        return UriResolver(uri,
+                           resolve_uri(uri) if schema is None else schema)
 
     def _expand(self, uri, schema, doc_scope):
         """ expand a schema to add properties of all definitions it extends
@@ -171,34 +206,39 @@ class ExpandingResolver(RefResolver):
 
         schema_scope, frag = urldefrag(uri)
 
-        ref = schema.get("$ref")
+        ref = schema.pop('$ref', None)
 
         if ref:
             ref = self._urljoin_cache(doc_scope, ref)
             uri_, schema_ = RefResolver.resolve(self, ref)
-            ret = self._def_store.get(uri_)
-            if ret:
-                return ret
             sch = self._expand(uri_, schema_, doc_scope)
-            self._def_store[uri_] = sch
-            return sch
+            schema.update(sch)
 
-        ret = self._def_store.get(uri)
-        if ret:
-            return ret
-
-        schema_exp = {}
-
-        extends = schema.get("extends", [])
-        for i, ref in enumerate(extends):
-            ref = self._urljoin_cache(doc_scope, ref)
+        if 'items' in schema and '$ref' in schema['items']:
+            ref = schema['items'].pop('$ref')
             uri_, schema_ = RefResolver.resolve(self, ref)
-            extends[i] = uri_
-            sch = self._expand(uri_, schema_, doc_scope)
-            # sch is returned from _expand and is already "a copy", no need to deepcopy it
-            dpath.util.merge(schema_exp, sch, flags=dpath.util.MERGE_REPLACE)
+            schema['items'].update(schema_)
 
-        schema_copy = copy.deepcopy(schema)
+        for k, v in schema.get('properties', {}).items():
+            if '$ref' in v:
+                uri_, schema_ = RefResolver.resolve(self, v.pop('$ref'))
+                schema['properties'][k].update(schema_)
+
+        extends = [RefResolver.resolve(self, e)[1] for e in schema.pop("extends", [])]
+        schema['properties'] = ChainMap(schema.get('properties', {}), *[e.get('properties', {}) for e in extends])
+        if not schema['properties']:
+            del schema['properties']
+
+        return schema
+        #for i, ref in enumerate(extends):
+        #    ref = self._urljoin_cache(doc_scope, ref)
+        #    uri_, schema_ = RefResolver.resolve(self, ref)
+        #    extends[i] = uri_
+        #    sch = self._expand(uri_, schema_, doc_scope)
+        #    # sch is returned from _expand and is already "a copy", no need to deepcopy it
+        #    dpath.util.merge(schema_exp, sch, flags=dpath.util.MERGE_REPLACE)
+        #
+        #schema_copy = copy.deepcopy(schema)
 
         def replace_relative_uris(coll, key, level):
             val = coll[key]
@@ -216,45 +256,3 @@ class ExpandingResolver(RefResolver):
 
         # self._def_store[uri] = schema_exp
         return schema_exp
-
-    @functools.lru_cache(50)
-    def resolve_from_url(self, url, expand=True):
-        """
-        Resolve a reference and returns its URI and the corresponding schema.
-
-        :param url: reference to look for
-        :type url: string
-        :param expand: expand result if schema extends others
-        :rtype: [string, dict]
-        """
-        schema = RefResolver.resolve_from_url(self, url)
-        if expand:
-            url_scoped = self._urljoin_cache(self.resolution_scope, url)
-            res_scope, frag = urldefrag(url_scoped)
-            schema = self._expand(url, schema, res_scope)
-        return schema
-
-    def resolve_by_name(self, name, expand=True):
-        """
-        Resolve a definition by name from the schema store.
-        Return a tuple (uri,schema) or a list of tuple
-
-        :param name: definition name
-        :type name: string
-        :rtype: tuple
-        """
-        res_scope, _ = urldefrag(self.resolution_scope)
-        uris = list(self.store.keys())
-        uris.remove(res_scope)
-        uris.insert(0, res_scope)
-
-        for uri in uris:
-            s = self.store[uri]
-            for p, d in dpath.util.search(
-                s.get("definitions", {}), "**/%s" % name, yielded=True):
-                id = "%s#/definitions/%s" % (uri, p)
-                if expand:
-                    self.push_scope(uri)
-                    d = self._expand(id, d, res_scope)
-                    self.pop_scope()
-                return id, d
