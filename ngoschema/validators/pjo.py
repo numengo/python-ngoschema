@@ -18,7 +18,7 @@ from decimal import Decimal
 
 import arrow
 import six
-from ngoschema.utils import is_importable, GenericClassRegistry
+from ngoschema.utils import GenericClassRegistry
 from past.builtins import basestring
 from python_jsonschema_objects import validators
 from python_jsonschema_objects.literals import MakeLiteral
@@ -37,8 +37,6 @@ validator_registry = registry
 converter_registry = ValidatorRegistry()
 
 formatter_registry = ValidatorRegistry()
-
-type2_registry = GenericClassRegistry()
 
 
 #additional types
@@ -192,7 +190,8 @@ def check_datetime_type(param, value, _):
 
 @type_registry.register(name="importable")
 def check_importable_type(param, value, _):
-    if not is_importable(value):
+    from ngoschema.types.symbols import Importable
+    if not Importable.check(value):
         raise ValidationError("{0} is not a importable string".format(value))
 
 # converters

@@ -22,6 +22,7 @@ from ngoschema import utils
 from .utils import is_mapping, is_sequence, is_collection, is_string
 from past.builtins import basestring
 from ngoschema.decorators import take_arrays
+from .. import settings
 
 
 class PrettyShortPrinter(pprint.PrettyPrinter):
@@ -192,3 +193,14 @@ def rreplace(s, old, new, occurrence=1):
 
 def file_link_format(fp):
     return pathlib.Path(fp).resolve().as_uri()
+
+
+def shorten(s, max_size=settings.PPRINT_MAX_STRL):
+    s = str(s)
+    if len(s) > max_size:
+        return s[:max_size] + '...'
+    return s
+
+
+def inline(s):
+    return '\\n'.join(s.split('\n'))

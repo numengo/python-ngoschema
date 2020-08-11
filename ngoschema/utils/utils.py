@@ -73,6 +73,9 @@ class ReadOnlyChainMap(Mapping):
     def __repr__(self):
         return repr(list(self._maps))
 
+    def __str__(self):
+        return str(self.merged)
+
     _maps_flattened = None
     @property
     def maps_flattened(self):
@@ -163,7 +166,7 @@ class UriDict(_KeyModifierMapping):
 
     @classmethod
     def key_modifier(cls, key):
-        return urlsplit(key).geturl().lower()
+        return str(urlsplit(key).geturl()).lower()
 
 
 class Registry(Mapping):

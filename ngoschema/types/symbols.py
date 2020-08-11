@@ -24,9 +24,9 @@ class Importable(String):
     DOT = re.compile(r"\.")
 
     @classmethod
-    def convert(cls, value, context=None, **opts):
+    def convert(cls, value, context=None, convert=True, **opts):
         typed = value
-        if String.check(value):
+        if String.check(value, convert=False):
             value = String.convert(value, **opts)
             poss = [m.start() for m in cls.DOT.finditer("%s." % value)]
             # going backwards
@@ -44,16 +44,16 @@ class Importable(String):
                     break
                 except Exception as er:
                     continue
-        if not cls.check(typed, convert=False, **opts):
+        if typed is not None and not cls.check(typed, convert=False, **opts):
             raise InvalidValue("%s is not a %s" % (value, cls._type))
         return typed
 
     @classmethod
-    def check(cls, value, **opts):
-        if String.check(value, convert=False):
+    def check(cls, value, convert=False, **opts):
+        if String.check(value, convert=False) and convert:
             try:
                 value = cls.convert(value, **opts)
-            except Exception as er:
+            except (Exception, InvalidValue) as er:
                 return False
         return cls._check_symbol(value)
 
@@ -63,8 +63,9 @@ class Importable(String):
                or Method._check_symbol(value) or Instance._check_symbol(value) or Callable._check_symbol(value)
 
     def serialize(self, value, **opts):
-        if not String.check(value):
-            value = '%s.%s' % (value.__module__, qualname(value))
+        if value and not String.check(value):
+            m = getattr(value, '__module__', None)
+            value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
         return String.serialize(self, value, **opts)
 
 
@@ -75,6 +76,11 @@ class Module(Importable):
     @staticmethod
     def _check_symbol(value):
         return isinstance(value, types.ModuleType)
+
+    def serialize(self, value, **opts):
+        if value and not String.check(value):
+            value = value.__name__
+        return String.serialize(self, value, **opts)
 
 
 @TypeChecker.register('function')

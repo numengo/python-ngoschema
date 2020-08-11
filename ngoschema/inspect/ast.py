@@ -4,12 +4,14 @@ from __future__ import unicode_literals
 
 import ast
 import logging
+import copy
 import inspect
+from collections import Mapping
 import builtins
 import importlib
 from pathlib import Path
 
-from .doc_rest_parser import parse_docstring, parse_type_string
+from .doc_rest_parser import parse_docstring, parse_type_string, _set_not_null
 
 # global variale used in visit_FunctionDef
 # set by inspectors when inspecting a class/function
@@ -25,7 +27,7 @@ def set_visit_module(module):
     # parse module to get its symbols
     m = importlib.import_module(module)
     _module_symbols = {k: v for k, v in builtins.__dict__.items()}
-    source = Path(m.__file__).read_text()
+    source = Path(m.__file__).read_text(encoding='utf-8')
     parsed = ast.parse(source)
     for node in parsed.body:
         if isinstance(node, ast.ImportFrom):
@@ -65,9 +67,10 @@ def ast_eval(node, module=None):
     except Exception as er:
         from ngoschema.types.symbols import Importable
         module = module or _module
-        to_import = ast_parts(node) + [module]
-        to_import = '.'.join(reversed(to_import))
-        return Importable.convert(to_import)
+        to_import = list(reversed(ast_parts(node) + [module]))
+        n = to_import.pop()
+        #to_import = '.'.join(reversed(to_import))
+        return getattr(Importable.convert('.'.join(to_import)), n, None)
         from ngoschema.utils import import_from_string
         return import_from_string(to_import)
 
@@ -78,11 +81,8 @@ def visit_function_def(node):
     from ..types.symbols import Function, Class
     from .inspect_symbols import inspect_function, inspect_function_call, inspect_class
     module = _module
-    doc = parse_docstring(ast.get_docstring(node))
-    short_desc = doc["short_description"]
-    long_desc = doc["long_description"]
-    doc_params = doc["params"]
-    returns = doc["returns"]
+    ret = parse_docstring(ast.get_docstring(node))
+    doc_params = ret.pop('arguments', [])
 
     args = node.args.args
     defs = node.args.defaults
@@ -94,10 +94,11 @@ def visit_function_def(node):
     doctypes = [doc_params[a]["type"]
                 if a in doc_params and "type" in doc_params[a] else None
                 for a in args_name]
-    params = [{'name': a, 'description': doc, 'doctype': doctype}
+    params = [{'name': a, 'description': doc, 'type': doctype}
               for a, doc, doctype in zip(args_name, docs, doctypes)]
     defaults = [ast_eval(d) for d in defs]
     for d, p in zip(reversed(defaults), reversed(params)):
+        p['hasDefaultValue'] = True
         p['defaultValueLiteral'] = d
 
     varargs = {'name': ast_name(vargs)} if vargs else None
@@ -116,16 +117,20 @@ def visit_function_def(node):
         if Function.check(symbol):
             from ..utils import qualname
             from ..types import Literal, Boolean, Integer
-            dec = inspect_function_call(symbol)
-            for a, p in zip(d_args_val, dec['arguments']):
-                p['value'] = a
-                p['valueLiteral'] = a if String.check(a) or Boolean.check(a, convert=False) or Integer.check(a) else qualname(a)
-            if len(dec['arguments']) < len(d_args_val):
-                dec['varargs']['valueLiteral'] = d_args_val[len(dec['arguments']):]
-            if dec['keywords']:
+            dec = inspect_function_call(symbol).copy()
+            if 'arguments' in dec:
+                dec['arguments'] = copy.deepcopy(dec['arguments'])
+                for a, p in zip(d_args_val, dec['arguments']):
+                    p['value'] = a
+                    p['valueLiteral'] = a if String.check(a) or Boolean.check(a, convert=False) or Integer.check(a) else qualname(a)
+            if len(dec.get('arguments', [])) < len(d_args_val):
+                dec['varargs'] = copy.deepcopy(dec['varargs'])
+                dec['varargs']['valueLiteral'] = d_args_val[len(dec.get('arguments', [])):]
+            if 'keywords' in dec:
+                dec['keywords'] = copy.deepcopy(dec['keywords'])
                 dec['keywords']['valueLiteral'] = d_kwargs_val
         elif Class.check(symbol):
-            dec = inspect_class(symbol)
+            dec = inspect_class(symbol).copy()
             if d_args_val or d_kwargs_val:
                 raise Exception('TODO setting value in class from dec args and kwargs values')
         decorators.append(dec)
@@ -142,15 +147,12 @@ def visit_function_def(node):
                 else:
                     param = params[arg]
                 param['type'] = arg_schema
-    return {
-        'shortDescription': short_desc,
-        'description': long_desc,
-        'return': returns,
-        'arguments': params,
-        'keywords': keywords,
-        'varargs': varargs,
-        'decorators': decorators
-    }
+
+    _set_not_null(ret, 'arguments', params)
+    _set_not_null(ret, 'keywords', keywords)
+    _set_not_null(ret, 'varargs', varargs)
+    _set_not_null(ret, 'decorators', decorators)
+    return ret
 
 
 def reindent(source):

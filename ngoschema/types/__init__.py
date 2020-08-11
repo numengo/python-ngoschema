@@ -1,5 +1,5 @@
 from .type import *
-from .null import *
+from .constants import *
 from .literals import *
 from .complex import *
 from .object import *
@@ -9,7 +9,7 @@ from .jsch_validators import *
 from .object_protocol import *
 from .array_protocol import *
 from .type_builder import *
-from .namespace import *
+from .namespace_manager import *
 from future.utils import with_metaclass
 
 __all__ = [

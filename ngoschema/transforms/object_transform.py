@@ -21,7 +21,10 @@ class ObjectTransform(with_metaclass(ObjectMetaclass)):
 
     @classmethod
     def transform(cls, src, *args, **kwargs):
-        return cls(**kwargs)(src, *args)
+        try:
+            return cls(**kwargs)(src, *args)
+        except Exception as er:
+            raise
 
 
 transform_registry = GenericClassRegistry()

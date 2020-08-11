@@ -3,12 +3,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
+import inflection
 from collections import Mapping, Sequence, OrderedDict
 from jsonschema.validators import extend
 from jsonschema.exceptions import UndefinedTypeCheck
 
 from .. import DEFAULT_CONTEXT
-from ..utils import ReadOnlyChainMap as ChainMap
+from ..utils import ReadOnlyChainMap as ChainMap, ContextManager
 from ..resolver import resolve_uri, UriResolver
 from ..decorators import classproperty
 from ..exceptions import InvalidValue, ValidationError, ConversionError
@@ -57,6 +58,14 @@ class TypeChecker(object):
             if t.check(value):
                 return k, t
 
+    @staticmethod
+    def get(id):
+        return TypeChecker._registry.get(id)
+
+    @staticmethod
+    def contains(id):
+        return id in TypeChecker._registry
+
 
 DefaultValidator = extend(Draft201909Validator, type_checker=TypeChecker)
 
@@ -81,20 +90,23 @@ class Type:
     _schema = {}
     _validator = DefaultValidator({})
     _context = DEFAULT_CONTEXT
+    _repr = None
+    _str = None
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
         from .type_builder import TypeBuilder
-        from .namespace import default_ns_manager
+        from .namespace_manager import default_ns_manager
         attrs = attrs or {}
-        cname = default_ns_manager.get_id_cname(id)
+        ref = schema.get('$ref')
+        cname = default_ns_manager.get_id_cname(ref or id)
         clsname = cname.split('.')[-1]
         # convert schema items provided as a class or instance of Type
         schema = untype_schema(schema)
         extra_bases = tuple(TypeBuilder.load(e) for e in schema.get('extends', []))
         # extract type and ref from schema and add the corresponding python types in bases
-        if '$ref' in schema:
-            extra_bases += (TypeBuilder.load(schema['$ref']), )
+        if ref:
+            extra_bases += (TypeBuilder.load(ref), )
         # add enum type if detected
         if 'enum' in schema:
             from .literals import Enum
@@ -111,8 +123,12 @@ class Type:
         return type(clsname, bases + extra_bases, attrs)
 
     @classmethod
-    def extend_type(cls, *bases, **schema):
-        return Type.build(cls.__name__, schema, bases=(cls, )+bases)
+    def qualname(cls):
+        return cls.__module__ + '.' + cls.__name__
+
+    @classmethod
+    def extend_type(cls, name, *bases, **schema):
+        return TypeChecker.register(inflection.underscore(name))(Type.build(name, schema, bases=(cls, )+bases))
 
     def __init__(self, **schema):
         # create a chainmap of all schemas and validators of ancestors, reduce it and make it persistent
@@ -131,7 +147,10 @@ class Type:
 
     def _make_context(self, context=None, *extra_contexts):
         context = context if context is not None else self._context
-        return context.extend(*extra_contexts)
+        if not isinstance(context, ContextManager):
+            return ContextManager(context, *extra_contexts)
+        else:
+            return context.extend(*extra_contexts)
 
     def __instancecheck__(cls, instance):
         """Override for isinstance(instance, cls)."""
@@ -243,7 +262,9 @@ class Type:
 
     @classmethod
     def is_literal(cls):
-        return False
+        from .literals import Literal
+        t = TypeChecker.get(cls._type)
+        return issubclass(t, Literal) if t is not None else False
 
     def serialize(self, value, **opts):
         """
@@ -256,16 +277,30 @@ class Type:
         """
         return value
 
+    _sch_repr = None
+    @staticmethod
+    def _repr_schema(self):
+        if self._sch_repr is None:
+            self._sch_repr = OrderedDict(self._schema)
+            if 'type' in self._sch_repr:
+                self._sch_repr.move_to_end('type', False)
+        return self._sch_repr
+
     def __repr__(self):
-        def serialize(k):
-            v = self._schema.get(k)
-            if isinstance(v, Mapping):
-                return '%s{%i}' % (k, len(v))
-            if isinstance(v, Sequence) and not isinstance(v, str):
-                return '%s[%i]' % (k, len(v))
-            return '%s=%s' % (k, v)
-        s = ' '.join([serialize('type')]+[serialize(k) for k in self._schema.keys() if k not in ['type']])
-        ret = '<%s %s>' % (self.__class__.__name__, s)
-        return ret
+        if self._repr is None:
+            s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema(self).items()])
+            #self._repr = '%s(%s)' % (self.qualname(), s)
+            self._repr = '%s(%s)' % (Type.qualname(), s)
+        return self._repr
 
-
+    def __str__(self):
+        if self._str is None:
+            def serialize(k, v):
+                if isinstance(v, Mapping):
+                    return '%s{%i}' % (k, len(v))
+                if isinstance(v, Sequence) and not isinstance(v, str):
+                    return '%s[%i]' % (k, len(v))
+                return '%s=%r' % (k, v)
+            s = ' '.join([serialize(k, v) for k, v in self._repr_schema(self).items()])
+            self._str = '<%s %s>' % (self.qualname(), s)
+        return self._str

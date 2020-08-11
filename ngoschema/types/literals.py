@@ -12,7 +12,7 @@ import re
 from ..exceptions import ValidationError, ConversionError, ExpressionError
 from .type import Type, TypeChecker
 from .. import settings
-from ..utils import class_casted_as
+from ..utils import shorten, inline
 from ..utils.jinja2 import TemplatedString
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,15 @@ class Literal(Type):
         raw_literals = raw_literals or cls._raw_literals
         if raw_literals or value is None:
             return value
-        if Expr.check(value):
-            typed = Expr.convert(value, **opts)
-        elif Pattern.check(value):
-            typed = Pattern.convert(value, **opts)
-        else:
+        try:
+            if Expr.check(value):
+                typed = Expr.convert(value, **opts)
+            elif Pattern.check(value):
+                typed = Pattern.convert(value, **opts)
+            else:
+                typed = value
+        except Exception as er:
+            logger.warning('impossible to convert %s: %s', shorten(inline(value)), er)
             typed = value
         return Type._convert(cls, typed, **opts)
 
@@ -138,8 +142,12 @@ class String(Literal):
         return isinstance(value, str)
 
     def serialize(self, value, **opts):
-        if Pattern.check(value) and not self._raw_literals:
-            return String.convert(value, **opts)
+        raw_literals = opts.get('raw_literals', self._raw_literals)
+        if Pattern.check(value) and not raw_literals:
+            try:
+                return String.convert(value, **opts)
+            except Exception as er:
+                pass
         return value
 
 
@@ -184,7 +192,7 @@ class Expr(Literal):
 
     @staticmethod
     def check(value, **opts):
-        return String.check(value) and value.strip().startswith("`")
+        return String.check(value) and value.startswith("`")
 
     @classmethod
     def convert(cls, value, context=None, **opts):

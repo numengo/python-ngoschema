@@ -1,5 +1,5 @@
 {
-    "$schema": "https://numengo.org/ngoschema/draft-05",
+    "$schema": "https://numengo.org/ngoschema/draft-06",
     "$id": "https://numengo.org/ngoschema/session",
     "type": "object",
     "$defs": {

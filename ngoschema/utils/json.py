@@ -14,10 +14,9 @@ import json
 import six
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
-from python_jsonschema_objects import util as pjo_util
 
 
-class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
+class ProtocolJSONEncoder(json.JSONEncoder):
 
     def __init__(self,
                  no_defaults=True,
@@ -34,7 +33,7 @@ class ProtocolJSONEncoder(pjo_util.ProtocolJSONEncoder):
         self.attr_prefix = attr_prefix
         self.excludes = excludes
         self.only = only
-        pjo_util.ProtocolJSONEncoder.__init__(self, **kwargs)
+        json.JSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
         from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol, TypeChecker

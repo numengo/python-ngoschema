@@ -17,7 +17,7 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with relationships
     """
-    _schema_id = 'https://numengo.org/ngoschema/draft-06#/$defs/Relationship'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/Relationship'
 
     @classproperty
     def foreignSchema(cls):

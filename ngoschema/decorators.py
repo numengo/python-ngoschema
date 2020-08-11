@@ -142,7 +142,7 @@ def assert_arg(arg, typ, **schema):
                 if arg_s in kwargs:
                     kwargs[arg_s] = validator(kwargs[arg_s], validate=True)
                 elif type(arg_i2) is int and arg_i2 < len(args):
-                    args[arg_i2] = validator(args[arg_i2], validate=True)
+                    args[arg_i2] = validator(args[arg_i2], check=True, validate=True)
                 else:
                     # must be a default value, assume it s correct!
                     pass
@@ -160,7 +160,7 @@ def assert_arg(arg, typ, **schema):
 
         try:
             doc = (
-                (wrapped.__doc__ or "").strip() + "\nArgument '%s' is " % arg +
+                (wrapped.__doc__ or "").strip() + "\n\nArgument '%s' is " % arg +
                 "automatically type converted and validated against %s."
                 % pformat(validator))
 

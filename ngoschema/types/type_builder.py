@@ -43,7 +43,7 @@ class TypeBuilder:
 
         @classmethod
         def _ref_class_registry(cls):
-            return TypeBuilder._registry[cls._ref]
+            return TypeBuilder._registry.get(cls._ref)
 
         @classmethod
         def __instancecheck__(cls, instance):
@@ -56,12 +56,33 @@ class TypeBuilder:
         def __hash__(self):
             return hash(type(self))
 
+        def __repr__(self):
+            rc = self.ref_class
+            return repr(rc) if rc else f'<TypeProxy ref={self._ref}>'
+
+        def __str__(self):
+            rc = self.ref_class
+            return str(rc) if rc else f'<TypeProxy ref={self._ref}>'
+
+        def __getattr__(self, item):
+            return getattr(self.ref_class, item)
+
+        @classmethod
+        def _property_raw_trans(cls, name):
+            return cls._ref_class_registry()._property_raw_trans(name)
+
+        @classmethod
+        def _property_type(cls, name):
+            return cls._ref_class_registry()._property_type(name)
+
         @property
         def ref_class(self):
             if self._ref_class is None and self._ref in TypeBuilder._registry:
-                self._ref_class = self._ref_class_registry().extend_type(**self._schema)
+                self._ref_class = self._ref_class_registry()
                 self.__dict__.update(self._ref_class.__dict__)
             return self._ref_class
+
+            return self._ref_class or self._ref_class_registry()
 
         def __call__(self, *args, **kwargs):
             return self.ref_class(*args, **kwargs)
@@ -74,7 +95,7 @@ class TypeBuilder:
 
         @staticmethod
         def build(ref, schema=None):
-            from .namespace import default_ns_manager
+            from .namespace_manager import default_ns_manager
             from .object_protocol import ObjectProtocol
             from .array_protocol import ArrayProtocol
             schema = schema or {}
@@ -98,6 +119,7 @@ class TypeBuilder:
 
     @staticmethod
     def build(id, schema=None, bases=(), attrs=None):
+        from .constants import _True, _False
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
         if id in TypeBuilder._registry:
@@ -107,7 +129,9 @@ class TypeBuilder:
         if schema is None:
             schema = resolve_uri(id)
         if schema is True:
-            schema = {}
+            return _True()
+        if schema is False:
+            return _False()
         attrs = attrs or {}
         TypeBuilder._on_construction[id] = (schema, bases, attrs)
         if '$ref' in schema:
@@ -142,14 +166,14 @@ class TypeBuilder:
     @staticmethod
     def schema_mro(id, schema=None):
         schema = schema or resolve_uri(id)
-        def _schema_mro(sch):
+        def _schema_mro(id, sch):
             for e in sch.get('extends', []):
                 i = scope(e, id)
                 s = resolve_uri(i)
                 yield i, s
-                for m in _schema_mro(s):
+                for m in _schema_mro(i, s):
                     yield m
-        return OrderedDict(_schema_mro(schema))
+        return OrderedDict(_schema_mro(id, schema))
 
     @staticmethod
     def expand(id, schema=None):
@@ -213,3 +237,23 @@ class ObjectMetaclass(type):
             del TypeBuilder._registry[id]
         attrs['clsname'] = clsname
         return TypeBuilder.register(id)(TypeBuilder.build(id, schema, bases, attrs=attrs))
+
+    def __subclasscheck__(cls, subclass):
+        """Just modify the behavior for classes that aren't genuine subclasses."""
+        # https://stackoverflow.com/questions/40764347/python-subclasscheck-subclasshook
+        if super().__subclasscheck__(subclass):
+            return True
+        else:
+            # Not a normal subclass, implement some customization here.
+            cls_id = getattr(cls, '_schema_id', None)
+            scls_id = getattr(cls, '_schema_id', None)
+
+            def _is_subclass(class_id):
+                if class_id == scls_id:
+                    return True
+                for e in resolve_uri(class_id).get('extends', []):
+                    if _is_subclass(e):
+                        return True
+                return False
+
+            return _is_subclass(cls_id)

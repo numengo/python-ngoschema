@@ -6,7 +6,7 @@
   "$defs": {
     "Document": {
       "type": "object",
-      "extends": ["https://numengo.org/ngoschema/draft-06#/$defs/Entity"],
+      "extends": ["https://numengo.org/ngoschema#/$defs/Entity"],
       "additionalProperties": false,
       "primaryKeys": ["identifier"],
       "readOnly": ["identifier"],

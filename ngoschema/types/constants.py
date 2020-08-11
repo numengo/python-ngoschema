@@ -16,6 +16,7 @@ class Constant(Type):
     def convert(cls, value, **opts):
         return cls._constant
 
+    @classmethod
     def __bool__(self):
         return bool(self._constant)
 
@@ -40,7 +41,7 @@ class _True(Constant):
         return value.do_validate(**opts) if hasattr(value, 'do_validate') else value
 
 
-class _False(_True):
+class _False(Constant):
     _constant = False
 
     def serialize(self, value, **opts):

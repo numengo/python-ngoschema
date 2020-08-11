@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 def domain_uri(name, domain=None):
     from . import settings
-    from ngoschema.types.namespace import clean_for_uri
+    from ngoschema.types.namespace_manager import clean_for_uri
     domain = domain or settings.MS_DOMAIN
     return "%s%s#" % (domain, clean_for_uri(name))
 
@@ -48,12 +48,12 @@ _resolver = None
 def resolve_doc(uri_id, remote=False):
     uri, frag = urldefrag(uri_id)
     ret = UriResolver._doc_store.get(uri)
-    if ret:
+    if ret is not None:
         return ret
     if remote:
         # we could load the resource
         doc = requests.get(uri).json()
-        UriResolver._doc_store[uri] = doc
+        UriResolver.register_doc(doc, uri)
         return doc
     raise Exception('Unresolvable uri %s' % uri_id)
 
@@ -155,6 +155,9 @@ class UriResolver(RefResolver):
     @staticmethod
     def create(uri=None, schema=None):
         uri = uri or settings.DEFAULT_MS_URI
+        doc_uri = uri.split('#')[0]
+        if doc_uri in UriResolver._doc_store:
+            return UriResolver(doc_uri, UriResolver._doc_store[doc_uri])
         return UriResolver(uri,
                            resolve_uri(uri) if schema is None else schema)
 

@@ -36,7 +36,7 @@ from .models.document import Document
 from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entity import Entity, NamedEntity
-from .types import ObjectMetaclass, ObjectProtocol, Array
+from .types import ObjectMetaclass, ObjectProtocol, Array, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class Repository(with_metaclass(ObjectMetaclass)):
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = tuple(self.primaryKeys)
         elif self.objectClass and issubclass(self.objectClass, Entity):
-            self._pkeys = tuple(self.objectClass._primaryKeys)
+            self._pkeys = tuple(self.objectClass._primary_keys)
         self._session = None
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
 
@@ -68,12 +68,13 @@ class Repository(with_metaclass(ObjectMetaclass)):
         if self.objectClass and not isinstance(instance, self.objectClass):
             raise Exception("%r is not an instance of %r" % (instance, self.objectClass))
         if self._pkeys:
-            if len(self._pkeys) == 1:
-                k = self._pkeys[0]
-                return instance._property_type(k).serialize(instance[k])
-            else:
-                return tuple([instance._property_type(k).serialize(instance[k]) for k in self._pkeys])
-        return id(instance)
+            def get_pk_value(pk):
+                t = instance._property_type(pk)
+                if instance.get(pk) is None and t._type in ['integer', 'number']:
+                    return max(0, *self._catalog.keys()) + 1
+                return t.serialize(instance[pk])
+            return tuple([instance._property_type(pk).serialize(instance[pk]) for pk in self._pkeys])
+        return (id(instance), )
 
     def register(self, instance):
         self._catalog.register(self._identity_key(instance), instance)
@@ -85,6 +86,7 @@ class Repository(with_metaclass(ObjectMetaclass)):
         if isinstance(instance, ObjectProtocol):
             instance._repo = None
 
+    @assert_arg(1, Tuple, str_delimiter=',')
     def get_instance(self, key):
         return self._catalog[key]
 

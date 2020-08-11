@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import ast
 import inspect
+from functools import lru_cache
 
 from .doc_rest_parser import parse_docstring
 from .. import settings
@@ -12,31 +13,38 @@ from .ast import visit_function_def, set_visit_module, ast_name, ast_eval, reind
 EXCLUDED_MODULES = settings.INSPECT_EXCLUDED_MODULES
 
 
+@lru_cache(maxsize=512)
 def inspect_importable(value):
     from ..types.symbols import Importable
     symbol = Importable.convert(value)
     importable = {
-        'name': symbol.__name__,
         'symbol': symbol,
     }
+    if hasattr(symbol, '__name__'):
+        importable['name'] = symbol.__name__
     doc = symbol.__doc__
     if doc:
-        importable['doc'] = doc.strip()
-        doc_parsed = parse_docstring(doc)
-        importable['shortDescription'] = doc_parsed["short_description"]
-        importable['description'] = doc_parsed["long_description"]
+        doc_parsed = parse_docstring(doc.strip())
+        importable.update(doc_parsed)
     return importable
 
 
+@lru_cache(maxsize=512)
 def inspect_module(value):
     from ..types.symbols import Module
     value = Module.convert(value)
-    return inspect_importable(value)
+    module = inspect_importable(value).copy()
+    mn = value.__name__
+    module['modules'] = [m for n, m in inspect.getmembers(value, inspect.ismodule)]
+    module['classes'] = [inspect_class(m) for n, m in inspect.getmembers(value, inspect.isclass) if m.__module__ == mn]
+    module['functions'] = [inspect_function(m) for n, m in inspect.getmembers(value, inspect.isfunction) if m.__module__ == mn]
+    return module
 
 
+@lru_cache(maxsize=512)
 def inspect_function(value):
     from ..types.symbols import Module
-    function = inspect_importable(value)
+    function = inspect_importable(value).copy()
     symbol = function['symbol']
     function['name'] = getattr(symbol, '__name__', None)
     module = symbol.__module__ if not type(function) in [staticmethod, classmethod] else symbol.__class__.__module__
@@ -55,8 +63,9 @@ def inspect_function(value):
     return function
 
 
+@lru_cache(maxsize=512)
 def inspect_function_call(value):
-    function_call = inspect_function(value)
+    function_call = inspect_function(value).copy()
     symbol = function_call['symbol']
     module = function_call['module']
 
@@ -83,9 +92,33 @@ def inspect_function_call(value):
     return function_call
 
 
-def inspect_class(value):
-    from ..types.symbols import Module, Function, Method, Callable
-    cls = inspect_importable(value)
+@lru_cache(maxsize=512)
+def inspect_descriptor(value, name=None):
+    from ..types.object_protocol import PropertyDescriptor
+    desc = inspect_importable(value).copy()
+    del desc['symbol']
+    if name:
+        desc['name'] = name
+    if isinstance(value, PropertyDescriptor):
+        desc['$schema'] = 'https://numengo.org/ngoschema/inspect#/$defs/classes/$defs/PropertyDescriptor'
+        if desc['name'] != value.pname:
+            desc['pname'] = value.pname
+        desc['ptype'] = dict(value.ptype._schema)
+        if value.fget:
+            desc['fget'] = inspect_function(value.fget)
+        if value.fset:
+            desc['fset'] = inspect_function(value.fset)
+        if value.fdel:
+            desc['fdel'] = inspect_function(value.fdel)
+    return desc
+
+
+@lru_cache(maxsize=128)
+def inspect_class(value, with_inherited=False):
+    from ..types.symbols import Module, Function, Method, Callable, Class
+    cls = inspect_importable(value).copy()
+    if 'arguments' in cls:
+        del cls['arguments']
     symbol = cls['symbol']
     cls['name'] = symbol.__name__
     cls['name'] = getattr(symbol, '__name__', None)
@@ -95,25 +128,34 @@ def inspect_class(value):
         return cls
 
     ds = inspect.getmembers(symbol, inspect.isdatadescriptor)
-    cls['properties'] = {n: d for n, d in ds if isinstance(d, property)}
-    cls['attributes'] = {n: d for n, d in ds if not isinstance(d, property)}
+    properties = [inspect_descriptor(d, name=n) for n, d in ds]
+    if properties:
+        cls['properties'] = properties
 
-    ds2 = inspect.getmembers(symbol, lambda x: not (Function.check(x) or Callable.check(x)))
-    cls['attributes'] = {n: d for n, d in ds2 if not n.startswith('__')}
-    cls['methods'] = {}
+    ds2 = inspect.getmembers(symbol, lambda x: not (Function.check(x) or Callable.check(x) or Class.check(x)))
+    attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__')]
+    if attributes:
+        cls['attributes'] = attributes
 
+    methods = []
     def _visit_function_def_class(node):
         set_visit_module(module)
         cls_symbol = getattr(symbol, node.name, None)
         if Function.check(cls_symbol) or Method.check(cls_symbol):
             mi = visit_function_def(node)
+            decs = mi.get('decorators', [])
+            mi['name'] = node.name
             # only testing decorators, but what to do?
-            mi['static'] = 'staticmethod' in [f['name'] for f in mi['decorators']]
-            mi['class'] = 'classmethod' in [f['name'] for f in mi['decorators']]
+            if 'staticmethod' in [f['name'] for f in decs]:
+                mi['static'] = True
+            if 'classmethod' in [f['name'] for f in decs]:
+                mi['class'] = True
             # remove first argument if not static
-            if not mi['static'] and len(mi['arguments']):
+            if not mi.get('static') and len(mi.get('arguments', [])):
                 mi['arguments'].pop(0)
-            cls['methods'][node.name] = mi
+            if 'arguments' in mi and not mi['arguments']:
+                del mi['arguments']
+            methods.append(mi)
 
     node_iter = ast.NodeVisitor()
     node_iter.visit_FunctionDef = _visit_function_def_class
@@ -121,22 +163,21 @@ def inspect_class(value):
     # avoid builtin
     def is_builtin(obj):
         mn = obj.__module__
-        return (mn in EXCLUDED_MODULES)
+        return not hasattr(obj, '_schema_id') or (mn in EXCLUDED_MODULES)
 
     if not is_builtin(symbol):
         node = ast.parse(reindent(inspect.getsource(symbol)))
         node_iter.visit(node)
 
-    cls['mro'] = []
-    cls['attributesInherited'] = {}
-    cls['propertiesInherited'] = {}
-    cls['methodsInherited'] = {}
-    for mro in inspect.getmro(symbol)[1:]:
-        if is_builtin(mro):
-            break
-        ci_mro = inspect_class(mro)
-        cls['mro'].append(ci_mro)
-        cls['attributesInherited'].update(ci_mro['attributes'])
-        cls['propertiesInherited'].update(ci_mro['properties'])
-        cls['methodsInherited'].update(ci_mro['methods'])
+    if methods:
+        cls['methods'] = methods
+
+    mro = []
+    for m in inspect.getmro(symbol)[1:]:
+        if is_builtin(m):
+            continue
+        mro.append(inspect_class(m))
+    if mro:
+        cls['mro'] = mro
     return cls
+

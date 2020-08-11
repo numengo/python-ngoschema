@@ -1,6 +1,4 @@
 {
-  "$id": "https://numengo.org/ngoschema/inspect#",
-  "$comment": "automatically generated for ngoschema.inspect",
   "$defs": {
     "Scope": {
       "type": "string",
@@ -12,6 +10,9 @@
     },
     "Symbol": {
       "properties": {
+        "longDescription": {
+          "type": "string"
+        },
         "access": {
           "$ref": "#/$defs/Scope"
         },
@@ -19,17 +20,34 @@
           "type": "importable"
         },
         "module": {
-          "$ref": "#/$defs/modules/$defs/Module"
+          "type": "module"
         }
       },
       "extends": [
-        "https://numengo.org/ngoschema/draft-06#/$defs/ObjectMetadata"
+        "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
       ],
       "type": "object"
     },
     "variables": {
       "$defs": {
+        "Ref": {
+          "notSerialized": [
+            "cname"
+          ],
+          "properties": {
+            "$ref": {
+              "type": "string"
+            },
+            "cname": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
         "VariableType": {
+          "aliases": {
+            "default": "defaultValueLiteral"
+          },
           "properties": {
             "type": {
               "type": "string"
@@ -37,33 +55,14 @@
             "items": {
               "$ref": "#/$defs/variables/$defs/VariableType"
             },
-            "dimension": {
-              "default": 1,
+            "minItems": {
               "type": "integer"
-            }
-          },
-          "extends": [
-            "https://numengo.org/ngoschema/draft-06#/$defs/ObjectMetadata"
-          ],
-          "type": "object"
-        },
-        "Variable": {
-          "required": [
-            "variableType"
-          ],
-          "properties": {
-            "access": {
-              "$ref": "#/$defs/Scope"
             },
-            "const": {
-              "default": true,
-              "type": "boolean"
-            },
-            "variableType": {
-              "$ref": "#/$defs/variables/$defs/VariableType"
+            "maxItems": {
+              "type": "integer"
             },
             "hasDefaultValue": {
-              "default": true,
+              "default": false,
               "type": "boolean"
             },
             "defaultValueLiteral": {
@@ -71,22 +70,35 @@
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/draft-06#/$defs/ObjectMetadata"
+            "#/$defs/variables/$defs/Ref",
+            "#/$defs/Symbol"
+          ],
+          "type": "object"
+        },
+        "Variable": {
+          "properties": {
+            "access": {
+              "$ref": "#/$defs/Scope"
+            },
+            "const": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "extends": [
+            "#/$defs/variables/$defs/VariableType"
           ],
           "type": "object"
         },
         "VariableValue": {
-          "required": [
-            "variable"
-          ],
           "properties": {
-            "variable": {
-              "$ref": "#/$defs/variables/$defs/Variable"
-            },
             "valueLiteral": {
               "type": "string"
             }
           },
+          "extends": [
+            "#/$defs/variables/$defs/Variable"
+          ],
           "type": "object"
         }
       },
@@ -98,9 +110,6 @@
           "properties": {
             "abstract": {
               "type": "boolean"
-            },
-            "shortDescription": {
-              "type": "string"
             },
             "arguments": {
               "type": "array",
@@ -123,12 +132,21 @@
             "body": {
               "type": "string"
             },
+            "pseudo": {
+              "type": "string"
+            },
             "returns": {
               "$ref": "#/$defs/variables/$defs/VariableType"
+            },
+            "decorators": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/functions/$defs/FunctionCall"
+              }
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/inspect#/$defs/Symbol"
+            "#/$defs/Symbol"
           ],
           "type": "object"
         },
@@ -151,24 +169,142 @@
               "type": "string"
             },
             "required": {
-              "default": true,
+              "default": false,
               "type": "boolean"
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/Variable"
+            "#/$defs/variables/$defs/Variable"
           ],
           "type": "object"
         },
         "FunctionCall": {
           "properties": {
-            "function": {
-              "$ref": "#/$defs/functions/$defs/Function"
-            },
             "arguments": {
-              "$ref": "#/$defs/variables/$defs/VariableValue"
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variables/$defs/VariableValue"
+              }
             }
           },
+          "extends": [
+            "#/$defs/Symbol"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "definitions": {
+      "$defs": {
+        "Definition": {
+          "aliases": {
+            "$defs": "definitions"
+          },
+          "properties": {
+            "extends": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variables/$defs/Ref"
+              }
+            },
+            "dependencies": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "aliases": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "negated_alias": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "notSerialized": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "notValidated": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "readOnly": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "properties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variables/$defs/VariableType"
+              }
+            },
+            "patternProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variables/$defs/VariableType"
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/variables/$defs/VariableType"
+            },
+            "definitions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/definitions/$defs/Definition"
+              }
+            }
+          },
+          "extends": [
+            "#/$defs/Symbol"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "descriptors": {
+      "$defs": {
+        "Descriptor": {
+          "properties": {
+            "fget": {
+              "$ref": "#/$defs/functions/$defs/Function"
+            },
+            "fset": {
+              "$ref": "#/$defs/functions/$defs/Function"
+            },
+            "fdel": {
+              "$ref": "#/$defs/functions/$defs/Function"
+            }
+          },
+          "extends": [
+            "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
+          ],
+          "type": "object"
+        },
+        "PropertyDescriptor": {
+          "properties": {
+            "pname": {
+              "type": "string"
+            },
+            "ptype": {
+              "$ref": "#/$defs/variables/$defs/VariableType"
+            }
+          },
+          "extends": [
+            "#/$defs/descriptors/$defs/Descriptor"
+          ],
           "type": "object"
         }
       },
@@ -185,19 +321,16 @@
                 "$ref": "#/$defs/classes/$defs/Class"
               }
             },
-            "shortDescription": {
-              "type": "string"
-            },
             "abstract": {
               "type": "boolean"
             },
-            "properties": {
+            "attributes": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/$defs/variables/$defs/VariableValue"
               }
             },
-            "constructor": {
+            "init": {
               "$ref": "#/$defs/classes/$defs/Method"
             },
             "methods": {
@@ -206,43 +339,86 @@
                 "$ref": "#/$defs/classes/$defs/Method"
               }
             },
-            "destructor": {
-              "$ref": "#/$defs/classes/$defs/Method"
+            "classes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/classes/$defs/Class"
+              }
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/inspect#/$defs/Symbol"
+            "#/$defs/definitions/$defs/Definition"
           ],
           "type": "object"
         },
         "Method": {
           "properties": {
             "const": {
-              "default": true,
+              "default": false,
               "type": "boolean"
             },
             "static": {
-              "default": true,
+              "default": false,
               "type": "boolean"
             },
             "class": {
-              "default": true,
+              "default": false,
               "type": "boolean"
             },
             "virtual": {
-              "default": true,
+              "default": false,
               "type": "boolean"
-            },
-            "decorators": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/functions/$defs/FunctionCall"
-              }
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/inspect#/$defs/functions/$defs/Function"
+            "#/$defs/functions/$defs/Function"
           ],
+          "type": "object"
+        },
+        "ObjectProtocol": {
+          "readOnly": [
+            "_parent",
+            "_root"
+          ],
+          "notSerialized": [
+            "_parent",
+            "_root"
+          ],
+          "properties": {
+            "primaryKeys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lazy_loading": {
+              "type": "boolean"
+            },
+            "attribute_by_name": {
+              "type": "boolean"
+            },
+            "_parent": {
+              "$ref": "#/$defs/classes/$defs/ObjectProtocol"
+            },
+            "_root": {
+              "$ref": "#/$defs/classes/$defs/ObjectProtocol"
+            }
+          },
+          "extends": [
+            "#/$defs/classes/$defs/Class"
+          ],
+          "type": "object"
+        },
+        "ObjectTransform": {
+          "additionalProperties": true,
+          "properties": {
+            "to_": {
+              "type": "importable"
+            },
+            "from_": {
+              "type": "importable"
+            }
+          },
           "type": "object"
         }
       },
@@ -279,12 +455,18 @@
             "modules": {
               "type": "array",
               "items": {
+                "type": "string"
+              }
+            },
+            "namespaces": {
+              "type": "array",
+              "items": {
                 "$ref": "#/$defs/modules/$defs/Module"
               }
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema/draft-06#/$defs/ObjectMetadata"
+            "#/$defs/definitions/$defs/Definition"
           ],
           "type": "object"
         }
@@ -292,5 +474,7 @@
       "type": "object"
     }
   },
-  "type": "object"
+  "type": "object",
+  "$id": "https://numengo.org/ngoschema/inspect#",
+  "$comment": "automatically generated for ngoschema.inspect"
 }

@@ -77,6 +77,11 @@ def reindent(string):
     return "\n".join(l.strip() for l in string.strip().split("\n"))
 
 
+def _set_not_null(coll, key, value):
+    if value:
+        coll[key] = value
+
+
 def parse_docstring(docstring):
     """
     Parse the docstring into its components.
@@ -84,20 +89,20 @@ def parse_docstring(docstring):
     :param docstring: docstring to parse
     :return: a dictionary of form
               {
-                  "short_description": ...,
-                  "long_description": ...,
-                  "params": { name: {"type", ..., "doc": ...}},
+                  "description": ...,
+                  "longDescription": ...,
+                  "arguments": { name: {"type", ..., "doc": ...}},
                   "returns": ...
               }
     """
 
-    short_description = long_description = returns = ""
-    params = []
+    short_description = long_description = ""
+    returns = {}
+    arguments = {}
 
     def add2dict(dic, k, el):
         k = k.strip()
-        if k not in dic:
-            dic[k] = {}
+        dic.setdefault(k, {})
         dic[k].update(el)
 
     if docstring:
@@ -119,27 +124,33 @@ def parse_docstring(docstring):
 
             if params_returns_desc:
                 all = PARAM_REGEX.findall(params_returns_desc)
-                params = {
+                arguments = {
                     name.strip(): {
-                        "doc": trim(doc).strip()
+                        "description": trim(doc).strip()
                     }
                     for name, doc in PARAM_REGEX.findall(params_returns_desc)
                 }
                 types = TYPE_REGEX.findall(params_returns_desc)
                 for name, typ in types:
-                    add2dict(params, name, {"type": typ.strip()})
+                    add2dict(arguments, name, {"type": typ.strip()})
 
                 match = RETURNS_REGEX.search(params_returns_desc)
                 if match:
-                    returns = reindent(match.group("doc"))
+                    returns = {'description': reindent(match.group("doc"))}
 
-    return {
-        "doc": docstring,
-        "short_description": short_description,
-        "long_description": long_description,
-        "params": params,
-        "returns": returns,
-    }
+    for k, v in arguments.items():
+        v['name'] = k
+
+    ret = {}
+    if short_description.startswith('`'):
+        short_description = ' ' + short_description
+    if long_description.startswith('`'):
+        long_description = ' ' + long_description
+    _set_not_null(ret, 'description', short_description)
+    _set_not_null(ret, 'longDescription', long_description)
+    _set_not_null(ret, 'arguments', list(arguments.values()))
+    _set_not_null(ret, 'returns', returns)
+    return ret
 
 
 class InfoMixin(object):
@@ -154,17 +165,9 @@ class InfoMixin(object):
 
     @classmethod
     def get_info(cls):
-        doc = parse_docstring(cls._get_doc())
-
-        return {
-            "name": cls.get_name(),
-            "platform": cls.get_platform(),
-            "module": cls.__module__,
-            "title": doc["shortDescription"],
-            "description": doc["longDescription"],
-            "parameters": doc["params"],
-            "returns": doc["returns"],
-        }
+        ret = parse_docstring(cls._get_doc())
+        ret['name'] = cls.__name__
+        ret['module'] = cls.__module__
 
 
 def parse_type_string(typestring):

@@ -64,6 +64,9 @@
     "notSerialized": {
       "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
     },
+    "notValidated": {
+      "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+    },
     "wraps": {
       "type": "importable",
       "$comment": "for creating APIs and store objects defined in importable components"
@@ -94,6 +97,18 @@
     },
     "foreignKey": {
       "$ref": "#/$defs/ForeignKey"
+    },
+    "aliases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "negatedAliases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "complexTypes": {
       "enum": [
@@ -134,177 +149,6 @@
           "$ref": "#/$defs/ForeignKey"
         }
       ]
-    }
-  },
-  "$defs": {
-    "IdentifiedObject": {
-      "type": "object",
-      "description": "Protocol shared by all instances",
-      "properties": {
-        "$id": {
-          "type": "string"
-        },
-        "$schema": {
-          "format": "uri-reference",
-          "type": "string"
-        }
-      }
-    },
-    "Entity": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Protocol for persistent entities with primary keys",
-      "extends": [
-        "#/$defs/IdentifiedObject"
-      ],
-      "properties": {
-        "primaryKeys": {
-          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
-        }
-      }
-    },
-    "NamedObject": {
-      "type": "object",
-      "additionalProperties": false,
-      "readOnly": [
-        "canonicalName"
-      ],
-      "notSerialized": [
-        "canonicalName"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "canonicalName": {
-          "type": "string"
-        }
-      }
-    },
-    "NamedEntity": {
-      "type": "object",
-      "additionalProperties": false,
-      "notSerialized": [
-        "canonicalName"
-      ],
-      "primaryKeys": [
-        "canonicalName"
-      ],
-      "extends": [
-        "#/$defs/Entity",
-        "#/$defs/NamedObject"
-      ]
-    },
-    "Relationship": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "$schema": {
-          "format": "uri-reference",
-          "type": "string"
-        },
-        "fkeys": {
-          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
-        },
-        "cardinality": {
-          "enum": [
-            "one2one",
-            "one2many"
-          ]
-        },
-        "ordering": {
-          "type": "string"
-        },
-        "reverse": {
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
-    "ForeignKey": {
-      "type": "object",
-      "additionalProperties": false,
-      "$comment": "to define a relationship to another instance",
-      "extends": [
-        "#/$defs/Relationship"
-      ],
-      "properties": {
-        "$schema": {
-          "format": "uri-reference",
-          "type": "string"
-        },
-        "key": {
-          "type": "string"
-        },
-        "backPopulates": {
-          "$ref": "#/$defs/Relationship"
-        },
-        "onDelete": {
-          "enum": [
-            "CASCADE",
-            "PROTECT",
-            "SET_NULL",
-            "SET_DEFAULT",
-            "SET",
-            "DO_NOTHING"
-          ]
-        }
-      }
-    },
-    "Tag": {
-      "type": "object",
-      "extends": [
-        "#/$defs/NamedEntity"
-      ],
-      "properties": {
-        "person": {
-          "type": "integer"
-        },
-        "event": {
-          "type": "integer"
-        },
-        "place": {
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
-    "ObjectMetadata": {
-      "type": "object",
-      "extends": [
-        "#/$defs/NamedObject"
-      ],
-      "properties": {
-        "title": {
-          "default": "{{this.name|titleize}}",
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "namePlural": {
-          "default": "{{this.name|pluralize}}",
-          "type": "string"
-        },
-        "extra": {
-          "type": "string"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Tag"
-          }
-        }
-      },
-      "additionalProperties": true
-    },
-    "EntityWithMetadata": {
-      "type": "object",
-      "extends": [
-        "#/$defs/NamedEntity",
-        "#/$defs/ObjectMetadata"
-      ],
-      "additionalProperties": true
     }
   }
 }

@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import Mapping, Sequence, deque
+from collections import Mapping, Sequence, deque, OrderedDict
 
 from ..exceptions import ValidationError, ConversionError
 from ..utils import ReadOnlyChainMap as ChainMap
@@ -34,6 +34,20 @@ class Array(Type):
             self._items = [Type.build(f'{self.__class__.__name__}/items/{i}', item)()
                                for i, item in enumerate(items)]
         self._str_delimiter = self._schema.get('str_delimiter') or self._str_delimiter
+
+    @staticmethod
+    def _repr_schema(self):
+        if self._sch_repr is None:
+            self._sch_repr = OrderedDict()
+            self._sch_repr['type'] = 'array'
+            self._sch_repr['items'] = self._items
+            min = self._schema.get('minItems', False)
+            if min:
+                self._sch_repr['minItems'] = min
+            max = self._schema.get('maxItems', False)
+            if max:
+                self._sch_repr['maxItems'] = max
+        return self._sch_repr
 
     @classmethod
     def check(cls, value, with_string=True, **opts):
@@ -101,7 +115,7 @@ class Array(Type):
         return self._py_type(t.serialize(v, **opts) for t, v in zip(Array._items_types(self, value), value))
 
 
-ArrayString = Array.extend_type(items=String)
+ArrayString = Array.extend_type('ArrayString', items=String)
 
 
 @TypeChecker.register('tuple')

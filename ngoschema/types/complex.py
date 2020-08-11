@@ -63,14 +63,9 @@ class Path(Uri):
     _py_type = pathlib.Path
 
     @staticmethod
-    def convert(value, expand_user=False, resolve=False, **opts):
+    def convert(value, **opts):
         """
         convert from urllib.parse.ParsedResult, unquoting the url.
-
-        :param value: value to instanciate
-        :param expand_user: expand user path
-        :param resolve: resolve the path
-        :return: pathlib.Path instance
         """
         typed = value
         if isinstance(typed, urllib.parse.ParseResult):
@@ -80,11 +75,19 @@ class Path(Uri):
         return typed
 
     def __call__(self, value, expand_user=False, resolve=False, validate=True, **opts):
+        """
+        convert and eventually resolve path from from urllib.parse.ParsedResult, unquoting the url.
+
+        :param value: value to instanciate
+        :param expand_user: expand user path
+        :param resolve: resolve the path
+        :return: pathlib.Path instance
+        """
         typed = Type.__call__(self, value, validate=False, **opts)
         if expand_user:
-            typed.expanduser()
+            typed = typed.expanduser()
         if resolve:
-            typed.resolve()
+            typed = typed.resolve()
         if validate:
             self.validate(typed)
         return typed
@@ -92,12 +95,22 @@ class Path(Uri):
     def serialize(self, value, **opts):
         return str(value)
 
+PathExists = Path.extend_type('PathExists', isPathExisting=True)
+PathDir = Path.extend_type('PathDir', isPathDir=True)
+PathFile = Path.extend_type('PathFile', isPathFile=True)
+PathDirExists = PathDir.extend_type('PathDirExists', isPathExisting=True)
+PathFileExists = PathDir.extend_type('PathFileExists', isPathExisting=True)
 
-PathExists = Path.extend_type(isPathExisting=True)
-PathDir = Path.extend_type(isPathDir=True)
-PathFile = Path.extend_type(isPathFile=True)
-PathDirExists = PathDir.extend_type(isPathExisting=True)
-PathFileExists = PathFile.extend_type(isPathExisting=True)
+
+def _serialize(cls, value, **opts):
+    format = opts.get('format') or cls._schema.get('format')
+    format = settings.DATETIME_FORMATS.get(format, format)
+    if format:
+        if '%' in format:
+            return value.strftime(format)
+        else:
+            return value.format(format)
+    return value.isoformat()
 
 
 @TypeChecker.register('date')
@@ -138,9 +151,7 @@ class Date(Literal):
 
     @classmethod
     def serialize(cls, value, **opts):
-        if "format" in cls._schema:
-            return value.strftime(cls._schema["format"])
-        return value.isoformat()
+        return _serialize(cls, value, **opts)
 
 
 @TypeChecker.register('time')
@@ -177,9 +188,7 @@ class Time(Literal):
 
     @classmethod
     def serialize(cls, value, **opts):
-        if "format" in cls._schema:
-            return value.strftime(cls._schema["format"])
-        return value.isoformat()
+        return _serialize(cls, value, **opts)
 
 
 @TypeChecker.register('datetime')
@@ -207,9 +216,13 @@ class Datetime(Date, Time):
                     return arrow.utcnow()
                 if value in settings.DATE_TODAY_STRINGS:
                     return arrow.get(arrow.utcnow().date())
-                a_d = arrow.get(value, settings.ALT_DATE_FORMATS)
+                a_d = arrow.get(value, settings.DATE_FORMATS + settings.ALT_DATE_FORMATS)
                 a_t = arrow.get(value, settings.ALT_TIME_FORMATS)
                 dt = datetime.datetime.combine(a_d.date(), a_t.time())
                 return arrow.get(dt)
         except Exception as er:
-            raise InvalidValue("{0} is not detected as a datetime: {}".format(value, str(er)))
+            raise InvalidValue("{0} is not detected as a datetime: {1}".format(value, str(er)))
+
+    @classmethod
+    def serialize(cls, value, **opts):
+        return _serialize(cls, value, **opts)

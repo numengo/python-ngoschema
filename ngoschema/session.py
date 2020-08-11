@@ -44,7 +44,6 @@ class Session(with_metaclass(ObjectMetaclass)):
     def __init__(self, bind=None, **kwargs):
         ObjectProtocol.__init__(self, **kwargs)
         self._repos = []
-        self._chained = ChainMap()
         if bind is not None:
             for bind in Array.convert(bind):
                 self.bind_repo(bind)
@@ -57,10 +56,6 @@ class Session(with_metaclass(ObjectMetaclass)):
     def bind_repo(self, repo):
         self._repos.append(repo)
         repo._session = self
-        self._chained = ChainMap(*self._repos)
-
-    def get_instance(self, key):
-        return self._chained[key]
 
     @memoized_method(maxsize=512)
     def resolve_cname(self, cname):
@@ -79,7 +74,6 @@ class Session(with_metaclass(ObjectMetaclass)):
         for repo in [r for r in self._repos if issubclass(r.objectClass, object_class)]:
             if keys in repo._catalog:
                 return repo.get_instance(keys)
-        raise Exception("impossible to resolve %s '%s'" % (object_class, keys))
 
     def query(self, *attrs, order_by=False, **attrs_value):
         """

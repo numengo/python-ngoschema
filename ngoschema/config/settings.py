@@ -53,7 +53,7 @@ DEFAULT_MS_URI = MS_URI
 
 # utils.str_utils
 PPRINT_MAX_EL = 10
-PPRINT_MAX_STRL = 80
+PPRINT_MAX_STRL = 40
 
 DEFAULT_CDATA_KEY = '#text'
 DEFAULT_LAZY_LOADING = False
@@ -124,6 +124,10 @@ ALT_DATE_FORMATS = [
 ]
 
 ALT_TIME_FORMATS = [
+    'HH:mm:ss.SSSSSS ZZ',
+    'HH:mm:ss.SSSSSS',
+    'HH:mm:ss.SSS ZZ',
+    'HH:mm:ss.SSS',
     'HH:mm:ssZZ',
     'HH:mm:ss ZZ',
     'HH:mm:ss',
@@ -132,6 +136,19 @@ ALT_TIME_FORMATS = [
     'HH:mm A',
 ]
 
+DATETIME_FORMATS = {
+    'ATOM': 'YYYY-MM-DD HH:mm:ssZZ',
+    'COOKIE': 'dddd, DD-MMM-YYYY HH:mm:ss ZZZ',
+    'RFC822': 'ddd, DD MMM YY HH:mm:ss Z',
+    'RFC850': 'dddd, DD-MMM-YY HH:mm:ss ZZZ',
+    'RFC1036': 'ddd, DD MMM YY HH:mm:ss Z',
+    'RFC1123': 'ddd, DD MMM YYYY HH:mm:ss Z',
+    'RFC2822': 'ddd, DD MMM YYYY HH:mm:ss Z',
+    'RFC3339': 'YYYY-MM-DD HH:mm:ssZZ',
+    'RSS': 'ddd, DD MMM YYYY HH:mm:ss Z',
+    'W3C': 'YYYY-MM-DD HH:mm:ssZZ',
+}
+
 GETTER_PREFIX = 'get_'
 SETTER_PREFIX = 'set_'
 DELETER_PREFIX = 'del_'
@@ -139,5 +156,5 @@ DELETER_PREFIX = 'del_'
 # code inspection
 INSPECT_EXCLUDED_MODULES = [
     None, str.__class__.__module__, "future.types.newobject", "__builtin__",
-    '_abcoll', 'abc', 'collections.abc'
+    '_abcoll', 'abc', 'collections.abc', 'itertools'
 ]

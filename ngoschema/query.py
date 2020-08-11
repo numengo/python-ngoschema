@@ -116,11 +116,9 @@ class Filter(object):
                  *attrs,
                  negate=False,
                  any_of=False,
-                 load_lazy = False,
                  **attrs_value):
         self.negate = negate
         self.anyOf = any_of
-        self.loadLazy = load_lazy
         self.attrs_value = attrs_value
         self.attrs = attrs
 
@@ -236,7 +234,6 @@ class Query(object):
     @staticmethod
     def _filter_or_exclude(iterable,
                            *attrs,
-                           load_lazy=False,
                            negate=False,
                            any_of=False,
                            distinct=False,
@@ -253,12 +250,10 @@ class Query(object):
         with an attribute `numElements` greater or equal to 5
 
         :param iterable: iterable to process
-        :param load_lazy: in case of lazy loaded object, force loading
         :param attrs: select/reject objects with given attributes defined
         :param attrs_value: select/objects objects with given attribute/value pairs
         """
         test_op = Filter(*attrs,
-                           load_lazy=load_lazy,
                            negate=negate,
                            any_of=any_of,
                            **attrs_value)
@@ -278,7 +273,6 @@ class Query(object):
     @staticmethod
     def _filter_or_exclude__(iterable,
                                *attrs,
-                               load_lazy=False,
                                negate=False,
                                any_of=False,
                                distinct=False,
@@ -299,7 +293,7 @@ class Query(object):
             test = not any_of
             for k, v2 in attrs_value.items():
                 ks, ops, ops_negate = attrs_ops[k]
-                o = get_descendant(obj, ks, load_lazy)
+                o = get_descendant(obj, ks)
                 if o is None:
                     # breaking the look we never go in the for/ELSE statement where
                     # an object is potentially yielded
@@ -308,7 +302,7 @@ class Query(object):
                 elif ops and utils.is_mapping(o):
                     # check if it s not a child
                     for op in ops:
-                        o2 = get_descendant(o, op, load_lazy)
+                        o2 = get_descendant(o, op)
                         if o2:
                             o = o2
                             ks.append(ops.pop(0))
@@ -327,7 +321,7 @@ class Query(object):
 
             for k in attrs:
                 ks = k.split('__')
-                test2 = get_descendant(obj, ks, load_lazy) is not None
+                test2 = get_descendant(obj, ks) is not None
                 test = (test or test2) if any_of else (test and test2)
                 if any_of:
                     if test2:
@@ -345,14 +339,12 @@ class Query(object):
 
     def filter(self,
                *attrs,
-               load_lazy=None,
                order_by=None,
                reverse=None,
                distinct=None,
                **attrs_value):
         return Query(
                 (x for x in Query._filter_or_exclude(self._iterable, *attrs,
-                                                    load_lazy=load_lazy,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
                 order_by=order_by or self._order_by,
@@ -361,14 +353,12 @@ class Query(object):
 
     def exclude(self,
                *attrs,
-                load_lazy=None,
                 order_by=None,
                 reverse=None,
                 distinct=None,
                 **attrs_value):
         return Query(
                 (x for x in Query._filter_or_exclude(self._iterable, *attrs,
-                                                    load_lazy=load_lazy,
                                                     negate=True,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
@@ -378,14 +368,12 @@ class Query(object):
 
     def filter_any_of(self,
                *attrs,
-               load_lazy=None,
                order_by=None,
                reverse=None,
                distinct=None,
                **attrs_value):
         return Query(
                 (x for x in Query._filter_or_exclude(self._iterable, *attrs,
-                                                    load_lazy=load_lazy,
                                                     any_of=True,
                                                     distinct=distinct or self._distinct,
                                                     **attrs_value)),
@@ -395,14 +383,12 @@ class Query(object):
 
     def exclude_any_of(self,
                 *attrs,
-                load_lazy=None,
                 order_by=None,
                 reverse=None,
                 distinct=None,
                 **attrs_value):
         return Query(
                 (x for x in Query._filter_or_exclude(self._iterable, *attrs,
-                                                    load_lazy=load_lazy,
                                                     any_of=True,
                                                     negate=True,
                                                     distinct=distinct or self._distinct,
@@ -420,8 +406,10 @@ class Query(object):
         if self._result_cache is None:
             self._result_cache = list(self._iterable)
 
-            if self._order_by:
-                ks = self._order_by.split('__')
+            ob = self._order_by
+            if ob:
+                from .utils.utils import split_path
+                ks = split_path(ob) if isinstance(ob, str) else ob
                 self._result_cache = sorted(self._result_cache,
                                             lambda x: get_descendant(x, ks))
             if self._reverse:
@@ -469,10 +457,9 @@ class Query(object):
             res = [r for r in res if r not in ores]
         return Query(res, self._distinct, self._order_by)
 
-    def get(self, *attrs, load_lazy=False, **attrs_value):
+    def get(self, *attrs, **attrs_value):
         ret = list(Query._filter_or_exclude(self._iterable,
                                         *attrs,
-                                        load_lazy=load_lazy,
                                         distinct=self._distinct,
                                         **attrs_value))
         if len(ret) == 0:
@@ -483,12 +470,11 @@ class Query(object):
             raise Exception('Multiple objects returned')
         return ret[0]
 
-    def next(self, *attrs, load_lazy=False, **attrs_value):
+    def next(self, *attrs, **attrs_value):
         return next(
                 Query._filter_or_exclude(self._iterable,
                                          *attrs,
                                          distinct=self._distinct,
-                                         load_lazy=load_lazy,
                                          **attrs_value))
 
     def first(self):

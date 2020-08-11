@@ -41,6 +41,8 @@ __all__ = [
     'split_string',
     'file_link_format',
     'set_json_defaults',
+    'shorten',
+    'inline',
     # jinja2
     'default_jinja2_env',
     'get_jinja2_variables',
