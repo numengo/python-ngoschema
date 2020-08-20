@@ -35,6 +35,10 @@ class Array(Type):
                                for i, item in enumerate(items)]
         self._str_delimiter = self._schema.get('str_delimiter') or self._str_delimiter
 
+    @classmethod
+    def is_array(cls):
+        return True
+
     @staticmethod
     def _repr_schema(self):
         if self._sch_repr is None:
@@ -59,7 +63,7 @@ class Array(Type):
         return Array._convert(self, value, **opts)
 
     @staticmethod
-    def _convert(self, value, convert=True, **opts):
+    def _convert(self, value, convert=False, **opts):
         if String.check(value, **opts):
             value = [s.strip() for s in value.split(self._str_delimiter)]
         value = value if isinstance(value, (Sequence, deque)) else [value]

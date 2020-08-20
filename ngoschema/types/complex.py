@@ -62,6 +62,11 @@ class Path(Uri):
     _schema = {'type': 'path'}
     _py_type = pathlib.Path
 
+    def __init__(self, **schema):
+        Literal.__init__(self, **schema)
+        self._expand_user = schema.get('expandUser', False)
+        self._resolve = schema.get('resolve', False)
+
     @staticmethod
     def convert(value, **opts):
         """
@@ -74,15 +79,19 @@ class Path(Uri):
             typed = pathlib.Path(String.convert(str(typed), **opts))
         return typed
 
-    def __call__(self, value, expand_user=False, resolve=False, validate=True, **opts):
+    def __call__(self, value, expand_user=None, resolve=None, validate=True, **opts):
         """
         convert and eventually resolve path from from urllib.parse.ParsedResult, unquoting the url.
 
         :param value: value to instanciate
-        :param expand_user: expand user path
-        :param resolve: resolve the path
+        :param expand_user: boolean to expand user path
+        :param resolve: boolean to resolve the path
         :return: pathlib.Path instance
         """
+        if expand_user is None:
+            expand_user = self._expand_user
+        if resolve is None:
+            resolve = self._resolve
         typed = Type.__call__(self, value, validate=False, **opts)
         if expand_user:
             typed = typed.expanduser()

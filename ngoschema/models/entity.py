@@ -18,7 +18,8 @@ from ..decorators import memoized_property
 from ..resolver import UriResolver, resolve_uri
 from ..types import ObjectMetaclass, ObjectProtocol
 from ..types.foreign_key import Ref, ForeignKey
-from ..types.type_builder import TypeBuilder, scope
+from ..types.type_builder import TypeBuilder
+from ngoschema.resolver import scope
 from .metadata import NamedObject, ObjectMetadata
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD

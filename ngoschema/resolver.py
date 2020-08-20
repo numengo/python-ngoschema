@@ -44,7 +44,7 @@ def domain_uri(name, domain=None):
 _resolver = None
 
 
-@functools.lru_cache(30)
+@functools.lru_cache(128)
 def resolve_doc(uri_id, remote=False):
     uri, frag = urldefrag(uri_id)
     ret = UriResolver._doc_store.get(uri)
@@ -80,14 +80,6 @@ def resolve_uri(uri_id, doc=None, remote=False):
         return resolve_fragment(doc, frag)
     except Exception as er:
         raise InvalidValue("Impossible to resolve uri %s. %s" % (uri_id, str(er)))
-
-
-def qualify_ref(ref, base):
-    if ref[0] == "#":
-        # Local ref
-        return base.rsplit("#", 1)[0] + ref
-    else:
-        return ref
 
 
 def relative_url(target, base):
@@ -155,11 +147,13 @@ class UriResolver(RefResolver):
     @staticmethod
     def create(uri=None, schema=None):
         uri = uri or settings.DEFAULT_MS_URI
-        doc_uri = uri.split('#')[0]
+        doc_uri, frag = urldefrag(uri)
         if doc_uri in UriResolver._doc_store:
             return UriResolver(doc_uri, UriResolver._doc_store[doc_uri])
-        return UriResolver(uri,
-                           resolve_uri(uri) if schema is None else schema)
+        # not in doc store, create a resolver with a copy
+        if schema is None:
+            schema = resolve_uri(uri)
+        return UriResolver(uri, schema, store=dict(UriResolver._doc_store))
 
     def _expand(self, uri, schema, doc_scope):
         """ expand a schema to add properties of all definitions it extends
@@ -203,3 +197,7 @@ class UriResolver(RefResolver):
             del schema['properties']
 
         return schema
+
+
+def scope(uri, base_id):
+    return f'{uri.split("#")[0] or base_id.split("#")[0]}#{uri.split("#")[1]}' if '#' in uri else uri

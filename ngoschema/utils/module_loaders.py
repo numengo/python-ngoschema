@@ -5,8 +5,14 @@ from ngofile.list_files import list_files
 from ..schemas_loader import load_schema_file
 from .utils import GenericModuleFileLoader
 
+
+def update_default_jinja2_env():
+    from .jinja2 import default_jinja2_env
+    default_jinja2_env().update_loader()
+
+
 # loader to register module with a models folder where to look for templates
-templates_module_loader = GenericModuleFileLoader('templates')
+templates_module_loader = GenericModuleFileLoader('templates', update_function=update_default_jinja2_env)
 
 # loader to register module with a transforms folder where to look for model transformations
 transforms_module_loader = GenericModuleFileLoader('transforms')

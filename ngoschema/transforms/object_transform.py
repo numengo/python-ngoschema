@@ -24,6 +24,7 @@ class ObjectTransform(with_metaclass(ObjectMetaclass)):
         try:
             return cls(**kwargs)(src, *args)
         except Exception as er:
+            cls._logger.error(er, exc_info=True)
             raise
 
 

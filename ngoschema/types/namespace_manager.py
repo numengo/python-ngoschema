@@ -120,7 +120,7 @@ class NamespaceManager(Registry):
 
     def namespaces(self, contains=None):
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
-        nsk = [n for n in ns.keys()]
+        nsk = list(ns.keys())
         if contains:
             nsk = [n for n in nsk if contains in n]
         return OrderedDict([(k, ns[k]) for k in sorted(nsk)])

@@ -2,8 +2,9 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ..types import ObjectMetaclass, with_metaclass
+from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager
 from ..types.symbols import *
+from ..decorators import memoized_property, depend_on_prop
 
 
 class Symbol(with_metaclass(ObjectMetaclass)):
@@ -15,21 +16,48 @@ class Symbol(with_metaclass(ObjectMetaclass)):
         return Importable(inspect_importable(value))
 
 
+class Ref(with_metaclass(ObjectMetaclass)):
+    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/types/$defs/Ref'
+
+    def _make_context(self, context=None, *extra_contexts):
+        ObjectProtocol._make_context(self, context, *extra_contexts)
+        self._ns_mgr = next((m for m in self._context.maps_flattened if isinstance(m, NamespaceManager)), None)
+
+    @depend_on_prop('$ref')
+    def get_cname(self):
+        ref = self._validated_data['$ref']
+        if ref:
+            return self._ns_mgr.get_id_cname(ref) if getattr(self, '_ns_mgr') else None
+        return getattr(self, 'name', None)
+
+
 class VariableType(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/VariableType'
+    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/types/$defs/VariableType'
 
-    @property
-    def schema(self):
-        t = self.type
-        sch = {'type': t}
-        if self.dimension != -1:
-            sch['maxLength'] = self.dimension
-        if self.items:
-            sch['items'] = self.items.do_serialize(no_defaults=True)
-        return sch
+    def _json_schema(self, cls=None):
+        cls = cls or self.__class__
+        if self.ref:
+            return {'$ref': self.ref}
+        elif self.booleanValue is not None:
+            return self.booleanValue
+        else:
+            ret = {'type': self.type}
+            if self.hasDefaultValue or self.defaultValueLiteral is not None:
+                ret['default'] = self.defaultValueLiteral
+            cps = list(cls._properties)
+            extra = cls.serialize(self, only=cps, excludes=_vartyp_props, no_defaults=True)
+            ret.update(extra)
+        return ret
+
+    @memoized_property
+    def json_schema(self):
+        return self._json_schema()
 
 
-class Variable(with_metaclass(ObjectMetaclass)):
+_vartyp_props = list(VariableType._properties)
+
+
+class Variable(with_metaclass(ObjectMetaclass, VariableType)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/Variable'
 
 
@@ -58,9 +86,6 @@ class Function(with_metaclass(ObjectMetaclass)):
         from ..inspect.inspect_symbols import inspect_function
         return Function(inspect_function(value))
 
-    def to_json_schema(self, ns):
-        return self.do_serialize(no_defaults=True)
-
 
 class FunctionCall(with_metaclass(ObjectMetaclass)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/functions/$defs/FunctionCall'
@@ -72,7 +97,6 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
         return FunctionCall(inspect_function_call(value))
 
 
-#class Class(with_metaclass(ObjectMetaclass, Importable)):
 class Class(with_metaclass(ObjectMetaclass, Symbol)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/classes/$defs/Class'
 
@@ -106,37 +130,17 @@ class Class(with_metaclass(ObjectMetaclass, Symbol)):
             raise er
 
     def to_json_schema(self, ns):
-        sch = {'$id': self.schema_id(ns), 'type': 'object'}
-        if self.description:
-            sch['description'] = self.description
-        if self.longDescription:
-            sch['longDescription'] = self.longDescription
-        if self.abstract:
-            sch['abstract'] = True
-        if self.mro:
-            sch['extends'] = [m.schema_id(ns) for m in self.mro]
-        sch['properties'] = {n: p.do_serialize(no_defaults=True) for n, p in self.propertiesInherited.items() if not n.startswith('__')}
-        for k, v in sch['properties'].items():
-            v.setdefault('type', 'string')
-        sch['attributes'] = {n: p.do_serialize(no_defaults=True) for n, p in self.attributesInherited.items() if not n.startswith('__')}
-        for k, v in sch['attributes'].items():
-            v.setdefault('type', 'string')
-        sch['methods'] = {n: p.do_serialize(no_defaults=True) for n, p in self.methodsInherited.items() if not n.startswith('__')}
-        for k in ['properties', 'attributes', 'methods']:
-            if not sch[k]:
-                del sch[k]
+        sch = self._json_schema()
         return sch
 
     def schema_id(self, ns):
         return getattr(self.symbol, '_schema_id', None) or ns.get_cname_id(f'{self.module.__name__}.{self.symbol.__name__}')
 
 
-#class Definition(with_metaclass(ObjectMetaclass, Importable)):
 class Definition(with_metaclass(ObjectMetaclass, Symbol)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/definitions/$defs/Definition'
 
 
-#class Module(with_metaclass(ObjectMetaclass, Importable)):
 class Module(with_metaclass(ObjectMetaclass, Symbol)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/modules/$defs/Module'
 
@@ -146,6 +150,8 @@ class Module(with_metaclass(ObjectMetaclass, Symbol)):
         return Module(inspect_module(value))
 
     def to_json_schema(self, ns):
+        sch = self._json_schema()
+        return sch
         sch = {'$id': self.schema_id(ns), 'type': 'object'}
         if self.description:
             sch['description'] = self.description

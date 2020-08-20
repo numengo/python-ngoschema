@@ -217,9 +217,10 @@ class GenericClassRegistry(Registry):
 class GenericModuleFileLoader(Registry):
     module_loaders_registry = {}
 
-    def __init__(self, subfolder_name):
+    def __init__(self, subfolder_name, update_function=None):
         Registry.__init__(self)
         self.subfolderName = subfolder_name
+        self.update_function = update_function
         GenericModuleFileLoader.module_loaders_registry[subfolder_name] = self
 
     def register(self, module, subfolder_name=None):
@@ -231,6 +232,8 @@ class GenericModuleFileLoader(Registry):
             if module not in self._registry:
                 self._registry[module] = []
             self._registry[module].append(subfolder)
+            if self.update_function:
+                self.update_function()
         return subfolder
 
     def preload(self,

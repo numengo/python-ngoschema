@@ -96,7 +96,7 @@
       "$comment": "for complexType path"
     },
     "foreignKey": {
-      "$ref": "#/$defs/ForeignKey"
+      "$ref": "https://numengo.org/ngoschema#/$defs/ForeignKey"
     },
     "aliases": {
       "type": "object",
@@ -144,9 +144,6 @@
         },
         {
           "$ref": "#/$defs/complexTypes"
-        },
-        {
-          "$ref": "#/$defs/ForeignKey"
         }
       ]
     }

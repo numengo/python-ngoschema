@@ -37,10 +37,10 @@ class Object(Type):
         # split the schema to isolate properties schema and object schema
         from .type_builder import TypeBuilder
         Type.__init__(self, **schema)
-        mro_schemas = self._schema._maps
-        schema = self._schema._maps[0]
+        mro_schemas = self._chained_schema._maps
+        schema = self._chained_schema._maps[0]
         self._dependencies = defaultdict(set)
-        for k,v in ChainMap(*[s.get('dependencies', {}) for s in mro_schemas]).items():
+        for k, v in ChainMap(*[s.get('dependencies', {}) for s in mro_schemas]).items():
             self._dependencies[k].update(set(v))
         self._extends = sum([s.get('extends', []) for s in mro_schemas], [])
         self._not_serialized = set().union(*[s.get('notSerialized', {}) for s in mro_schemas])
@@ -56,10 +56,12 @@ class Object(Type):
             schema['required'] = self._required
         if self._read_only:
             schema['readOnly'] = self._read_only
+        # by modifying the first schema of the chained schema, we need to regenerate _schema (computed in Type.__init__)
+        self._schema = dict(self._chained_schema)
 
         cls_name = self.__class__.__name__
         schema['properties'] = ChainMap(*[s.get('properties', {}) for s in mro_schemas])
-        self._properties = OrderedDict([(name, Type.build(f'{cls_name}/properties/{name}', sch)())
+        self._properties = OrderedDict([(name, TypeBuilder.build(f'{cls_name}/properties/{name}', sch)())
                                          for name, sch in schema.get('properties', {}).items()])
         pattern_properties = ChainMap(*[s.get('patternProperties', {}) for s in mro_schemas])
         self._pattern_properties = set([(re.compile(k), Type.build(
@@ -93,14 +95,17 @@ class Object(Type):
         return self._sch_repr
 
     @classmethod
+    def is_object(cls):
+        return True
+
+    @classmethod
     def check(cls, value, **opts):
         return isinstance(value, Mapping)
 
     def convert(self, value, **opts):
         return Object._convert(self, value, **opts)
 
-    def _convert(self, value, convert=True, **opts):
-        #ret = Type._convert(Object, value, **opts)
+    def _convert(self, value, convert=False, **opts):
         ret = OrderedDict((k, None) for k in Object.call_order(self, value, with_inputs=convert))
         for k in ret.keys():
             t = self._property_type(k)
@@ -120,7 +125,7 @@ class Object(Type):
                             if raw == k and trans not in self._properties and trans in value:
                                 v = value[trans]
                                 break
-            if v is None and t.has_default():
+            if v is None and (t.has_default() or k in self._required):
                 v = t.default()
             ret[k] = v if v is None or not convert else t(v, **opts)
         return ret
@@ -143,7 +148,7 @@ class Object(Type):
 
     def serialize(self, value, attr_prefix='', **opts):
         no_defaults = opts.get('no_defaults', False)
-        ptypes = [(k, self._property_type(k)) for k in Object.print_order(self, value)]
+        ptypes = [(k, self._property_type(k)) for k in Object.print_order(self, value, **opts)]
         ret = OrderedDict([((attr_prefix if t.is_literal() else '') + k,
                              t.serialize(value[k], attr_prefix=attr_prefix, **opts))
                              for k, t in ptypes])
@@ -181,7 +186,7 @@ class Object(Type):
             # order call according to dependencies
             unordered = set(value or {})
             to_untranslate = unordered.intersection(self._properties_translation)
-            to_unalias = unordered.intersection(self._aliases).intersection(self._negated_aliases)
+            to_unalias = unordered.intersection(set(self._aliases).union(self._negated_aliases))
             # replace translated keys
             unordered = unordered.difference(to_untranslate).difference(to_unalias).union(self._properties)
             from ..utils import topological_sort
@@ -220,10 +225,11 @@ class Object(Type):
         :param only: list of the only keys to return
         :param no_defaults: removes values equal to their default
         """
-        keys = set(value.keys())
+        keys = set((value or {}).keys())
         all_ordered = list(keys.intersection(self._required))
         all_ordered += [k for k in self._properties.keys() if k in keys and k not in self._required]
         all_ordered += list(keys.difference(all_ordered))
+        rq = self._required
         ns = self._not_serialized
         ro = self._read_only
         for k in all_ordered:
@@ -233,11 +239,11 @@ class Object(Type):
                 continue
             if only and k not in only:
                 continue
-            if k not in value:
-                continue
-            if no_defaults:
-                v = value.get(k)
+            v = value.get(k)
+            if no_defaults and k not in rq:
                 if v is None:
+                    continue
+                if isinstance(v, Mapping) and not v:
                     continue
                 t = self._property_type(k)
                 if t.has_default() and v == t.default():

@@ -29,7 +29,7 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
     def __str__(self):
         if self._str is None:
             cn = self.canonicalName
-            a = ([cn] if cn else [])+ [f'{k}={str(self._validated_data[k] or self._data[k])}' for k in self._required]
+            a = ([cn] if cn else []) + [f'{k}={str(self._validated_data[k] or self._data[k])}' for k in self._required]
             self._str = '<%s %s>' % (self.qualname(), ' '.join(a))
         return self._str
 

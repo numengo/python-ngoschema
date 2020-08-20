@@ -7,18 +7,11 @@ import copy
 from collections import OrderedDict, Mapping
 
 from ..utils import ReadOnlyChainMap, apply_through_collection
-from ..resolver import resolve_uri
+from ..resolver import resolve_uri, scope
 from .jsch_validators import default_meta_validator
-from .type import TypeChecker, Type, untype_schema, DefaultValidator
-
-from .. import settings
-
+from .type import Type
 
 logger = logging.getLogger(__name__)
-
-
-def scope(uri, base_id):
-    return f'{uri.split("#")[0] or base_id.split("#")[0]}#{uri.split("#")[1]}' if '#' in uri else uri
 
 
 def unref_schema(schema, base_id):
@@ -100,7 +93,7 @@ class TypeBuilder:
             from .array_protocol import ArrayProtocol
             schema = schema or {}
             sch, bases, attrs = TypeBuilder._on_construction[ref]
-            clsname = attrs.get('clsname') or default_ns_manager.get_id_cname(ref)
+            clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(ref)
             protocol = {'object': ObjectProtocol, 'array': ArrayProtocol}.get(sch['type'], Type)
             bases += (protocol, ) if not issubclass(protocol, bases) else ()
             return type(clsname, (TypeBuilder.TypeProxy, *bases), {
@@ -145,7 +138,7 @@ class TypeBuilder:
         elif 'array' in schema.get('type', ''):
             cls = ArrayProtocol.build(id, schema, bases, attrs)
         else:
-            cls = Type.build(id, schema, bases, attrs)()
+            cls = Type.build(id, schema, bases, attrs)(**schema)
         TypeBuilder._on_construction.pop(id)
         return TypeBuilder.register(id)(cls)
 
@@ -230,12 +223,14 @@ class ObjectMetaclass(type):
         id = attrs.get('_schema_id')
         if not schema and id:
             schema = resolve_uri(id)
+        elif bases:
+            schema['extends'] = [b._schema_id for b in bases if hasattr(b, '_schema_id')]
         schema.setdefault('type', 'object')
         id = id or clsname
         # remove previous entry in registry
         if id in TypeBuilder._registry:
             del TypeBuilder._registry[id]
-        attrs['clsname'] = clsname
+        attrs['_clsname'] = clsname
         return TypeBuilder.register(id)(TypeBuilder.build(id, schema, bases, attrs=attrs))
 
     def __subclasscheck__(cls, subclass):

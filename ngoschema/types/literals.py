@@ -23,6 +23,14 @@ class Literal(Type):
     _py_type = str
     _raw_literals = False
 
+    def __init__(self, **schema):
+        Type.__init__(self, **schema)
+        self._raw_literals = schema.get('rawLiterals', False)
+
+    @classmethod
+    def is_literal(cls):
+        return True
+
     @classmethod
     def convert(cls, value, raw_literals=None, **opts):
         raw_literals = raw_literals or cls._raw_literals
@@ -37,6 +45,7 @@ class Literal(Type):
                 typed = value
         except Exception as er:
             logger.warning('impossible to convert %s: %s', shorten(inline(value)), er)
+            logger.error(er, exc_info=True)
             typed = value
         return Type._convert(cls, typed, **opts)
 
@@ -65,6 +74,14 @@ class Literal(Type):
             except Exception as er:
                 return False
         return Type._check(cls, value, convert=convert, **opts)
+
+    def default(self):
+        if 'default' in self._schema:
+            s = self._schema.get('default')
+            if Expr.check(s) or Pattern.check(s):
+                return s
+            return self(s, validate=False) if s else s
+        return self._py_type() if self._py_type else None
 
 
 @TypeChecker.register('boolean')
@@ -110,10 +127,6 @@ class Boolean(Literal):
 
     def default(self):
         return self._schema.get('default', False)
-
-    @staticmethod
-    def has_default():
-        return True
 
 
 @TypeChecker.register('integer')
@@ -181,10 +194,6 @@ class Enum(String):
 
     def has_default(self):
         return bool(self._enum)
-
-    @classmethod
-    def is_literal(cls):
-        return True
 
 
 class Expr(Literal):

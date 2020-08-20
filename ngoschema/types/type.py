@@ -10,7 +10,7 @@ from jsonschema.exceptions import UndefinedTypeCheck
 
 from .. import DEFAULT_CONTEXT
 from ..utils import ReadOnlyChainMap as ChainMap, ContextManager
-from ..resolver import resolve_uri, UriResolver
+from ..resolver import scope, resolve_uri, UriResolver
 from ..decorators import classproperty
 from ..exceptions import InvalidValue, ValidationError, ConversionError
 from .jsch_validators import Draft201909Validator
@@ -103,10 +103,10 @@ class Type:
         clsname = cname.split('.')[-1]
         # convert schema items provided as a class or instance of Type
         schema = untype_schema(schema)
-        extra_bases = tuple(TypeBuilder.load(e) for e in schema.get('extends', []))
+        extra_bases = tuple(TypeBuilder.load(scope(e, id)) for e in schema.get('extends', []))
         # extract type and ref from schema and add the corresponding python types in bases
         if ref:
-            extra_bases += (TypeBuilder.load(ref), )
+            extra_bases += (TypeBuilder.load(scope(ref, id)), )
         # add enum type if detected
         if 'enum' in schema:
             from .literals import Enum
@@ -117,7 +117,9 @@ class Type:
         extra_bases = tuple(b for b in extra_bases if not issubclass(b, bases))
         if not bases and not extra_bases:
             extra_bases = (Type, )
-        attrs['_schema'] = schema
+        if 'rawLiterals' in schema:
+            attrs['_raw_literals'] = schema['rawLiterals']
+        attrs['_schema'] = schema = dict(ChainMap(schema, *[b._schema for b in bases + extra_bases if hasattr(b, '_schema')]))
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         return type(clsname, bases + extra_bases, attrs)
@@ -134,17 +136,19 @@ class Type:
         # create a chainmap of all schemas and validators of ancestors, reduce it and make it persistent
         from .type_builder import TypeBuilder
         schema = untype_schema(schema)
-        self._schema = ChainMap(schema,
+        self._chained_schema = ChainMap(schema,
                                 *[getattr(s, '_schema', {}) for s in self.__class__.__mro__],
                                 *[resolve_uri(e) for e in schema.get('extends', [])])
-        TypeBuilder.check_schema(self._schema)
+        self._schema = schema = dict(self._chained_schema)
+        TypeBuilder.check_schema(schema)
         self._id = schema.get('$id', None) or self._id
         self._validator = DefaultValidator(schema, resolver=UriResolver.create(uri=self._id, schema=schema))
         if not self._py_type:
             if 'type' in schema:
-                self._type = schema['type']
-                self._py_type =TypeChecker._registry[self._type]._py_type
+                self._type = ty = schema['type']
+                self._py_type =TypeChecker._registry[ty]._py_type
 
+    @staticmethod
     def _make_context(self, context=None, *extra_contexts):
         context = context if context is not None else self._context
         if not isinstance(context, ContextManager):
@@ -262,9 +266,15 @@ class Type:
 
     @classmethod
     def is_literal(cls):
-        from .literals import Literal
-        t = TypeChecker.get(cls._type)
-        return issubclass(t, Literal) if t is not None else False
+        return False
+
+    @classmethod
+    def is_array(cls):
+        return False
+
+    @classmethod
+    def is_object(cls):
+        return False
 
     def serialize(self, value, **opts):
         """
@@ -289,7 +299,6 @@ class Type:
     def __repr__(self):
         if self._repr is None:
             s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema(self).items()])
-            #self._repr = '%s(%s)' % (self.qualname(), s)
             self._repr = '%s(%s)' % (Type.qualname(), s)
         return self._repr
 

@@ -67,8 +67,11 @@ def load_schema_file(schema_path, schemas_store=None):
     :rtype: dict
     """
     with open(str(schema_path), "rb") as f:
-        schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
-        schema.setdefault('$id', pathlib.Path(schema_path).stem)
-        return load_schema(schema, schemas_store)
-
-
+        try:
+            schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)
+            schema.setdefault('$id', pathlib.Path(schema_path).stem)
+            return load_schema(schema, schemas_store)
+        except Exception as er:
+            logger.error(schema_path)
+            logger.error(er, exc_info=True)
+            raise

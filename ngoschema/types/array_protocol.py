@@ -32,7 +32,7 @@ class ArrayProtocol(Array, MutableSequence):
     _validated_data = []
 
     def __init__(self, data, validate=False, check=False, context=None, session=None, **opts):
-        self._context = Array._make_context(self, context)
+        self._make_context(context)
         self._session = session
         self._lazy_loading = lz = not validate or self._lazy_loading
         if check and not self.check(data):
@@ -75,6 +75,12 @@ class ArrayProtocol(Array, MutableSequence):
             self._touch(index)
         self._validated_data[index] = value
 
+    def _make_context(self, context=None, *extra_contexts):
+        self._context = Array._make_context(self, context, *extra_contexts)
+        from .object_protocol import ObjectProtocol
+        self._parent = next((m for m in self._context.maps_flattened if isinstance(m, ObjectProtocol) and m is not self), None)
+        self._root = next((m for m in reversed(self._context.maps_flattened) if isinstance(m, ObjectProtocol) and m is not self), None)
+
     def _item_evaluate(self, index, value, **opts):
         from .object_protocol import ObjectProtocol
         ptype = Array._item_type(self, index)
@@ -82,7 +88,6 @@ class ArrayProtocol(Array, MutableSequence):
             if isinstance(value, (ObjectProtocol, ArrayProtocol)):
                 lz_excludes = ['items', 'properties'] if getattr(ptype, '_lazy_loading', False) else []
                 value.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
-                #ptype.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
             else:
                 ptype.validate(value, **opts)
         else:
@@ -95,16 +100,16 @@ class ArrayProtocol(Array, MutableSequence):
         return len(self._data)
 
     def insert(self, index, value):
-        itype = self._item_type(index)
         self._input_data.insert(index, {})
         self._validated_data.insert(index, None)
         self._data.insert(index, value)
         if not self._lazy_loading:
             self._set_validated_data(index, self._item_evaluate(index, self._data[index]))
+        else:
+            value._make_context(self._context)
         self.validate(self, excludes=['items'])
 
     def __setitem__(self, index, value):
-        itype = self._item_type(index)
         self._data[index] = value
         if not self._lazy_loading:
             self._set_validated_data(index, self._item_evaluate(index, self._data[index]))
@@ -214,6 +219,8 @@ class ArrayProtocol(Array, MutableSequence):
         attrs['_items_list'] = items_list
         attrs['_schema'] = schema
         attrs['_logger'] = logger
+        attrs['_schema_id'] = id
+        attrs['_id'] = id
         cls = type(clsname, tuple(bases), attrs)
         return cls
 
@@ -224,23 +231,16 @@ class ArrayProtocol(Array, MutableSequence):
         return cls
 
     @property
-    def _parent(self):
-        from .object_protocol import ObjectProtocol
-        return next((m for m in self._context.maps_flattened if isinstance(m, ObjectProtocol) and m is not self), None)
-
-    @property
-    def _root(self):
-        from .object_protocol import ObjectProtocol
-        return next((m for m in reversed(self._context.maps_flattened) if isinstance(m, ObjectProtocol) and m is not self), None)
-
-    @property
     def session(self):
         if not self._session and self._root and getattr(self._root, '_repo', None):
             self._session = self._root._repo.session
         return self._session
 
-    def get(self, *pks, **kwargs):
+    def get(self, *pks, default=None, **kwargs):
         from ..query import Query
         if pks:
             kwargs.update({k: v for k, v in zip(self._items._primary_keys, pks)})
-        return Query(self).next(**kwargs)
+        try:
+            return Query(self).next(**kwargs)
+        except StopIteration as er:
+            return default

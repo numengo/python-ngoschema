@@ -31,12 +31,12 @@ _jinja2_globals['str'] = str
 _jinja2_globals['list'] = list
 
 
-def resolve_ref_schema(ref):
-    from ngoschema.resolver import get_resolver
-    return get_resolver().resolve(ref)[1]
-
-
-_jinja2_globals['resolve_ref_schema'] = resolve_ref_schema
+#def resolve_ref_schema(ref):
+#    from ngoschema.resolver import get_resolver
+#    return get_resolver().resolve(ref)[1]
+#
+#
+#_jinja2_globals['resolve_ref_schema'] = resolve_ref_schema
 
 
 def extend_jinja2_globals(**globals):
@@ -184,17 +184,18 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
     }
 
     def __init__(self, **opts):
-        loader = jinja2.PrefixLoader({
-            mname: jinja2.PackageLoader(mname, path.name)
-            for mname, paths in templates_module_loader.items()
-            for path in paths
-        })
+        self.loader = jinja2.PrefixLoader({})
         from ngoschema.query import Query
-        jinja2.Environment.__init__(self, loader=loader, **opts, **self._extra_opts)
+        jinja2.Environment.__init__(self, loader=self.loader, **opts, **self._extra_opts)
         self.globals.update(**_jinja2_globals, Query=Query)
 
         # add filters
         for k, v in filters_registry.items():
             self.filters[k] = v
 
-
+    def update_loader(self):
+        self.loader.mapping = {
+            mname: jinja2.PackageLoader(mname, path.name)
+            for mname, paths in templates_module_loader.items()
+            for path in paths
+        }

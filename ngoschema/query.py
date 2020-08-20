@@ -229,8 +229,6 @@ class Query(object):
     def _chain(self):
         return Query(self._iterable, self._distinct, self._order_by, self._reverse)
 
-
-
     @staticmethod
     def _filter_or_exclude(iterable,
                            *attrs,
