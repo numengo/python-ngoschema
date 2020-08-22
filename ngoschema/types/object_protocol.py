@@ -67,15 +67,12 @@ class PropertyDescriptor:
             key = self.pname
             outdated = obj._is_outdated(key)
             if outdated or self.fget:
-                try:
-                    inputs = obj._evaluate_inputs(key)
-                    if self.fget:
-                        obj._set_data(key, self.fget(obj))
-                    obj._set_validated_data(key, obj._property_evaluate(key, obj._data.get(key)))
-                    obj._input_data[key] = inputs  # after set_validated_data as it touches inputs data
-                except Exception as er:
-                    raise
-            value = obj._validated_data[key]
+                inputs = obj._evaluate_inputs(key)
+                if self.fget:
+                    obj._set_data(key, self.fget(obj))
+                obj._set_data_validated(key, obj._property_evaluate(key, obj._data.get(key)))
+                obj._input_data[key] = inputs  # after set_validated_data as it touches inputs data
+            value = obj._data_validated[key]
             if outdated and self.fset:
                 self.fset(obj, value)
             return value
@@ -91,9 +88,9 @@ class PropertyDescriptor:
             obj._set_data(key, value)
             if not obj._lazy_loading:
                 obj._input_data[key] = obj._evaluate_inputs(key)
-                obj._set_validated_data(key, obj._property_evaluate(key, obj._data.get(key)))
+                obj._set_data_validated(key, obj._property_evaluate(key, obj._data.get(key)))
                 if self.fset:
-                    self.fset(obj, obj._validated_data[key])
+                    self.fset(obj, obj._data_validated[key])
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
@@ -106,7 +103,7 @@ class PropertyDescriptor:
             self.fdel(obj)
         del obj._data[key]
         del obj._input_data[key]
-        del obj._validated_data[key]
+        del obj._data_validated[key]
 
 
 class ObjectProtocol(Object, MutableMapping):
@@ -129,7 +126,8 @@ class ObjectProtocol(Object, MutableMapping):
     _attribute_by_name = ATTRIBUTE_BY_NAME
     _data = {}
     _is_validated = False
-    _validated_data = {}
+    _data_validated = {}
+    _data_additional = {}
     _input_data = {}
     _aliases = {}
     _negated_aliases = {}
@@ -163,6 +161,8 @@ class ObjectProtocol(Object, MutableMapping):
             self._data = self.default().copy()
         else:
             self._data = Object.convert(self, data, convert=False)
+        self._data_validated = {}
+        self._data_additional = {}
         for k in self._has_pk:
             self._set_data(k, self._data[k])
         self._touch()
@@ -180,17 +180,14 @@ class ObjectProtocol(Object, MutableMapping):
             self.validate(self, excludes=['properties'] if lz else [])
 
     def _make_context(self, context=None, *extra_contexts):
-        self._context = Type._make_context(self, context, *extra_contexts, self._validated_data, self)
+        self._context = Type._make_context(self, context, *extra_contexts, self._data_validated, self)
         # _parent and _root are declared readonly in inspect.mm and it raises an error
         self._parent = next((m for m in self._context.maps_flattened if isinstance(m, ObjectProtocol) and m is not self), None)
         self._root = next((m for m in reversed(self._context.maps_flattened) if isinstance(m, ObjectProtocol) and m is not self), None)
 
     def _touch(self, key=None):
-        self._repr = None
-        self._str = None
-        self._is_validated = False
         if key:
-            self._validated_data[key] = None
+            self._data_validated[key] = None
             self._input_data[key] = {}
             for d, s in self._dependencies.items():
                 if key in s:
@@ -198,27 +195,31 @@ class ObjectProtocol(Object, MutableMapping):
         else:
             keys = list(self._data.keys())
             self._input_data = {k: {} for k in keys}
-            self._validated_data = {k: None for k in keys}
+            self._data_validated = {k: None for k in keys}
+            self._data_additional = {k: None for k in self._data_additional.keys()}
+        self._repr = None
+        self._str = None
+        self._is_validated = False
 
     def __len__(self):
-        return len(self._validated_data)
+        return len(self._data_validated)
 
     def __iter__(self):
-        return iter(self._validated_data.keys())
+        return iter(self._data_validated.keys())
 
     @classmethod
     def _property_raw_trans(cls, name):
         for trans, raw in cls._properties_translation.items():
             if name in (raw, trans):
                 return raw, trans
+        if name in cls._properties:
+            return name, name
         alias = cls._aliases.get(name)
         if alias:
             return alias, name
         alias = cls._negated_aliases.get(name)
         if alias:
             return alias, name
-        if name in cls._properties:
-            return name, name
         if cls._additional_properties:
             return name, clean_js_name(name)
         return None, None
@@ -229,7 +230,9 @@ class ObjectProtocol(Object, MutableMapping):
         if issubclass(ptype, Entity) and value is not None and not Object.check(value):
             value = self.session.resolve_fkey(value, ptype)
             assert value
-        if (Literal.check(value) or value is None) and value != self._data.get(key):
+        if (ptype.is_literal() or value is None) and value != self._data.get(key):
+            self._touch(key)
+        elif value is not self._data.get(key):
             self._touch(key)
         self._data[key] = value
 
@@ -245,18 +248,18 @@ class ObjectProtocol(Object, MutableMapping):
                     pass
             return ret
 
-    def _set_validated_data(self, key, value):
+    def _set_data_validated(self, key, value):
         if Literal.check(value):
-            if value != self._validated_data.get(key):
+            if value != self._data_validated.get(key):
                 self._touch(key)
-            if self._data.get(key) is None:
+            if not Pattern.check(self._data.get(key)):
                 self._data[key] = value
         else:
             self._data[key] = value
-        self._validated_data[key] = value
+        self._data_validated[key] = value
 
     def _is_outdated(self, key):
-        return (self._validated_data.get(key) is None and self._data.get(key) is not None
+        return (self._data_validated.get(key) is None and self._data.get(key) is not None
                 ) or (key not in self._not_validated and self._input_data[key] != self._evaluate_inputs(key))
 
     @classmethod
@@ -270,7 +273,7 @@ class ObjectProtocol(Object, MutableMapping):
 
     def do_validate(self, **opts):
         from .array_protocol import ArrayProtocol
-        for k, v in self._validated_data.items():
+        for k, v in self._data_validated.items():
             if k in self._not_validated:
                 continue
             if self._is_outdated(k):
@@ -280,7 +283,7 @@ class ObjectProtocol(Object, MutableMapping):
             elif v is not None:
                 self._property_type(k).validate(v, **opts)
         self._is_validated = True
-        return self._validated_data
+        return self._data_validated
 
     @classmethod
     def serialize(cls, value, **opts):
@@ -292,7 +295,7 @@ class ObjectProtocol(Object, MutableMapping):
         ktn = [(k, t, k if not t.is_literal() else f'{attr_prefix}{k}') for k, t in kt]
         ret = OrderedDict([(n, None) for k, t, n in ktn])
         for k, t, n in ktn:
-            v = self._validated_data.get(k)
+            v = self._data_additional.get(k) or self._data_validated.get(k)
             if v is None and self._data.get(k) is not None:
                 v = self[k]
             if isinstance(v, (ObjectProtocol, ArrayProtocol)):
@@ -312,8 +315,9 @@ class ObjectProtocol(Object, MutableMapping):
         if raw in self._properties:
             return op(object.__getattribute__(self, name))
         if self._additional_properties and name in self._data:
-            self._input_data[name] = self._evaluate_inputs(name)
-            return op(self[name])
+            self._input_data[raw] = self._evaluate_inputs(name)
+            self._data_additional[raw] = v = op(self[name])
+            return v
         if self._attribute_by_name:
             try:
                 return op(self.resolve_cname([name]))
@@ -382,8 +386,6 @@ class ObjectProtocol(Object, MutableMapping):
 
     def __getitem__(self, key):
         op = lambda x: neg(x) if key in self._negated_aliases else x
-        key = self._negated_aliases.get(key, key)
-        key = self._aliases.get(key, key)
         raw, trans = self._property_raw_trans(key)
         if raw in self._properties:
             return op(object.__getattribute__(self, trans))
@@ -397,23 +399,23 @@ class ObjectProtocol(Object, MutableMapping):
         if key in self._data:
             if self._lazy_loading or self._is_outdated(key):
                 self._input_data[key] = self._evaluate_inputs(key)
-                self._set_validated_data(key, self._property_evaluate(key, self._data[key]))
-            return op(self._validated_data[key])
+                self._set_data_validated(key, self._property_evaluate(key, self._data[key]))
+            return op(self._data_validated[key])
         raise KeyError(key)
 
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._negated_aliases else x
-        key = self._negated_aliases.get(key, key)
-        key = self._aliases.get(key, key)
         raw, trans = self._property_raw_trans(key)
         if raw in self._properties:
             return object.__setattr__(self, trans, op(value))
         if not self._additional_properties:
             raise KeyError(key)
-        self._set_data(key, op(value))
+        v = op(value)
+        self._set_data(key, v)
+        self._data_additional[key] = v
         if not self._lazy_loading:
             self._input_data[key] = self._evaluate_inputs(key)
-            self._set_validated_data(key, self._property_evaluate(key, self._data.get(key)))
+            self._set_data_validated(key, self._property_evaluate(key, self._data.get(key)))
 
     def __delitem__(self, key):
         for trans, raw in self._properties_translation.items():
@@ -423,14 +425,14 @@ class ObjectProtocol(Object, MutableMapping):
         else:
             del self._data[key]
             del self._input_data[key]
-            del self._validated_data[key]
+            del self._data_validated[key]
 
     def __repr__(self):
         if self._repr is None:
             m = settings.PPRINT_MAX_EL
             ks = list(self.print_order(self._data, no_defaults=True, no_read_only=True))
             hidden = max(0, len(ks) - m)
-            a = ['%s=%s' % (k, shorten(self._validated_data.get(k) or self._data.get(k))) for k in ks[:m]]
+            a = ['%s=%s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
         return self._repr
@@ -440,7 +442,7 @@ class ObjectProtocol(Object, MutableMapping):
             m = settings.PPRINT_MAX_EL
             ks = list(self.print_order(self._data, no_defaults=False, no_read_only=False))
             hidden = max(0, len(ks) - m)
-            a = ['%s: %s' % (k, shorten(self._validated_data.get(k) or self._data.get(k))) for k in ks[:m]]
+            a = ['%s: %s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._str = '{%s}' % (', '.join(a))
         return self._str

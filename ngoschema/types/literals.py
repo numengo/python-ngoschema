@@ -25,7 +25,8 @@ class Literal(Type):
 
     def __init__(self, **schema):
         Type.__init__(self, **schema)
-        self._raw_literals = schema.get('rawLiterals', False)
+        if 'rawLiterals' in schema:
+            self._raw_literals = schema['rawLiterals']
 
     @classmethod
     def is_literal(cls):
@@ -223,7 +224,8 @@ class Pattern(String):
     @classmethod
     def convert(cls, value, context=None, **opts):
         context = Type._make_context(cls, context, opts)
-        return TemplatedString(value)(context, this=context)
+        ctx = context
+        return TemplatedString(value)(ctx, this=ctx)
 
     @staticmethod
     def inputs(value, **opts):

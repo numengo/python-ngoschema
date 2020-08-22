@@ -255,9 +255,7 @@
                 "maxItems": {
                   "type": "integer"
                 },
-                "items": {
-                  "$ref": "#/$defs/variables/$defs/types/$defs/VariableType"
-                }
+                "items": true
               },
               "extends": [
                 "#/$defs/variables/$defs/types/$defs/VariableType"
@@ -592,6 +590,10 @@
             "_rootObject"
           ],
           "notSerialized": [
+            "_parentObject",
+            "_rootObject"
+          ],
+          "notValidated": [
             "_parentObject",
             "_rootObject"
           ],

@@ -2,9 +2,10 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager
+from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager, Boolean
 from ..types.symbols import *
 from ..decorators import memoized_property, depend_on_prop
+from .metadata import NamedObject
 
 
 class Symbol(with_metaclass(ObjectMetaclass)):
@@ -25,7 +26,7 @@ class Ref(with_metaclass(ObjectMetaclass)):
 
     @depend_on_prop('$ref')
     def get_cname(self):
-        ref = self._validated_data['$ref']
+        ref = self._data_validated['$ref']
         if ref:
             return self._ns_mgr.get_id_cname(ref) if getattr(self, '_ns_mgr') else None
         return getattr(self, 'name', None)
@@ -33,6 +34,26 @@ class Ref(with_metaclass(ObjectMetaclass)):
 
 class VariableType(with_metaclass(ObjectMetaclass)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/types/$defs/VariableType'
+
+    def __init__(self, *args, **kwargs):
+        data = args[0] if args else kwargs
+        # check for items which are declared as arrays but given as named mappings
+        if Object.check(data):
+            for k, v in list(data.items()):
+                raw, trans = self._property_raw_trans(k)
+                t = self._property_type(raw)
+                if t.is_array() and Object.check(v):
+                    del data[k] # remove previous entry in case it s an alias (eg $defs)
+                    vs = []
+                    for i, (n, d) in enumerate(v.items()):
+                        d = {'booleanValue': d} if Boolean.check(d) else dict(d)
+                        d['name'] = n
+                        vs.append(d)
+                    data[raw] = vs
+        # transform a boolean input
+        if Boolean.check(data):
+            data = {'booleanValue': data}
+        ObjectProtocol.__init__(self, **data)
 
     def _json_schema(self, cls=None):
         cls = cls or self.__class__
@@ -97,7 +118,11 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
         return FunctionCall(inspect_function_call(value))
 
 
-class Class(with_metaclass(ObjectMetaclass, Symbol)):
+class Definition(with_metaclass(ObjectMetaclass)):
+    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/definitions/$defs/Definition'
+
+
+class Class(with_metaclass(ObjectMetaclass)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/classes/$defs/Class'
 
     @staticmethod
@@ -135,10 +160,6 @@ class Class(with_metaclass(ObjectMetaclass, Symbol)):
 
     def schema_id(self, ns):
         return getattr(self.symbol, '_schema_id', None) or ns.get_cname_id(f'{self.module.__name__}.{self.symbol.__name__}')
-
-
-class Definition(with_metaclass(ObjectMetaclass, Symbol)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/definitions/$defs/Definition'
 
 
 class Module(with_metaclass(ObjectMetaclass, Symbol)):

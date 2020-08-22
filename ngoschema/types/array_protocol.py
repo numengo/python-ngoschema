@@ -29,7 +29,7 @@ class ArrayProtocol(Array, MutableSequence):
     """
     _lazy_loading = LAZY_LOADING
     _data = []
-    _validated_data = []
+    _data_validated = []
 
     def __init__(self, data, validate=False, check=False, context=None, session=None, **opts):
         self._make_context(context)
@@ -53,11 +53,11 @@ class ArrayProtocol(Array, MutableSequence):
     def _touch(self, index=None):
         self._srepr = None
         if index:
-            self._validated_data[index] = None
+            self._data_validated[index] = None
             self._input_data[index] = {}
         else:
             self._input_data = [{}] * len(self._data)
-            self._validated_data = [None] * len(self._data)
+            self._data_validated = [None] * len(self._data)
 
     def _set_data(self, index, value):
         from ..models import Entity
@@ -70,10 +70,10 @@ class ArrayProtocol(Array, MutableSequence):
             self._touch(index)
         self._data[index] = value
 
-    def _set_validated_data(self, index, value):
-        if Literal.check(value) and value != self._validated_data[index]:
+    def _set_data_validated(self, index, value):
+        if Literal.check(value) and value != self._data_validated[index]:
             self._touch(index)
-        self._validated_data[index] = value
+        self._data_validated[index] = value
 
     def _make_context(self, context=None, *extra_contexts):
         self._context = Array._make_context(self, context, *extra_contexts)
@@ -101,10 +101,10 @@ class ArrayProtocol(Array, MutableSequence):
 
     def insert(self, index, value):
         self._input_data.insert(index, {})
-        self._validated_data.insert(index, None)
+        self._data_validated.insert(index, None)
         self._data.insert(index, value)
         if not self._lazy_loading:
-            self._set_validated_data(index, self._item_evaluate(index, self._data[index]))
+            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
         else:
             value._make_context(self._context)
         self.validate(self, excludes=['items'])
@@ -112,16 +112,16 @@ class ArrayProtocol(Array, MutableSequence):
     def __setitem__(self, index, value):
         self._data[index] = value
         if not self._lazy_loading:
-            self._set_validated_data(index, self._item_evaluate(index, self._data[index]))
+            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
 
     def __getitem__(self, index):
-        if self._validated_data[index] is None:
-            self._set_validated_data(index, self._item_evaluate(index, self._data[index]))
-        return self._validated_data[index]
+        if self._data_validated[index] is None:
+            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
+        return self._data_validated[index]
 
     def __delitem__(self, index):
         del self._data[index]
-        del self._validated_data[index]
+        del self._data_validated[index]
         self.validate(self, excludes=['items'])
 
     def __eq__(self, other):
@@ -135,7 +135,7 @@ class ArrayProtocol(Array, MutableSequence):
         return True
 
     def __hash__(self):
-        return hash(tuple(self._id, self._validated_data))
+        return hash(tuple(self._id, self._data_validated))
 
     @classmethod
     def validate(cls, value, **opts):
@@ -143,14 +143,14 @@ class ArrayProtocol(Array, MutableSequence):
 
     def do_validate(self, **opts):
         from .object_protocol import ObjectProtocol
-        for i, (d, v) in enumerate(zip(self._data, self._validated_data)):
+        for i, (d, v) in enumerate(zip(self._data, self._data_validated)):
             if v is None and d is not None:
                 v = self[i]
             if isinstance(v, (ObjectProtocol, ArrayProtocol)):
                 v.do_validate(**opts)
             elif v is not None:
                 Array._item_type(self, i).validate(v, **opts)
-        return self._validated_data
+        return self._data_validated
 
     @classmethod
     def serialize(cls, value, **opts):
@@ -159,7 +159,7 @@ class ArrayProtocol(Array, MutableSequence):
     def do_serialize(self, **opts):
         from .object_protocol import ObjectProtocol
         ret = [None] * len(self._data)
-        for i, (d, v) in enumerate(zip(self._data, self._validated_data)):
+        for i, (d, v) in enumerate(zip(self._data, self._data_validated)):
             if v is None and d is not None:
                 v = self[i]
             if isinstance(v, (ObjectProtocol, ArrayProtocol)):
@@ -172,7 +172,7 @@ class ArrayProtocol(Array, MutableSequence):
     def _repr_list(self):
         if self._srepr is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._validated_data[i] or self._data[i]) for i, t in enumerate(self._items_types(self))
+            a = [shorten(self._data_validated[i] or self._data[i]) for i, t in enumerate(self._items_types(self))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
             self._srepr = '[%s]' % (', '.join(a))
         return self._srepr

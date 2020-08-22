@@ -81,7 +81,8 @@ class Array(Type):
         return Array._inputs(cls, value, **opts)
 
     def _inputs(self, value, index=None, with_inner=False, **opts):
-        value = Array.convert(self, value or [], convert=False)
+        if String.check(value):
+            value = Array.convert(self, value or [], convert=False)
         if index is not None:
             try:
                 itypes = Array._items_types(self, value)

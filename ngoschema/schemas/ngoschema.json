@@ -1,0 +1,200 @@
+{
+  "$schema": "https://numengo.org/ngoschema/draft-06",
+  "$id": "https://numengo.org/ngoschema#",
+  "title": "numenGo core models",
+  "$defs": {
+    "IdentifiedObject": {
+      "type": "object",
+      "description": "Protocol shared by all instances",
+      "properties": {
+        "$id": {
+          "type": "string"
+        },
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        }
+      }
+    },
+    "Entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Protocol for persistent entities with primary keys",
+      "readOnly": [
+        "primaryKeys"
+      ],
+      "notSerialized": [
+        "primaryKeys"
+      ],
+      "extends": [
+        "#/$defs/IdentifiedObject"
+      ],
+      "properties": {
+        "primaryKeys": {
+          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+        }
+      }
+    },
+    "NamedObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "readOnly": [
+        "canonicalName",
+        "_parent_named"
+      ],
+      "notSerialized": [
+        "canonicalName",
+        "_parent_named"
+      ],
+      "notValidated": [
+        "_parent_named"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "_parent_named": {
+          "$ref": "#/$defs/NamedObject"
+        },
+        "canonicalName": {
+          "type": "string"
+        }
+      }
+    },
+    "NamedEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "primaryKeys": [
+        "name"
+      ],
+      "extends": [
+        "#/$defs/Entity",
+        "#/$defs/NamedObject"
+      ]
+    },
+    "CanonicalNamedEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "primaryKeys": [
+        "canonicalName"
+      ],
+      "extends": [
+        "#/$defs/NamedEntity"
+      ]
+    },
+    "Relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "fkeys": {
+          "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+        },
+        "cardinality": {
+          "enum": [
+            "one2one",
+            "one2many"
+          ]
+        },
+        "ordering": {
+          "type": "string"
+        },
+        "reverse": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "ForeignKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "$comment": "to define a relationship to another instance",
+      "extends": [
+        "#/$defs/Relationship"
+      ],
+      "properties": {
+        "$schema": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "backPopulates": {
+          "$ref": "#/$defs/Relationship"
+        },
+        "onDelete": {
+          "enum": [
+            "CASCADE",
+            "PROTECT",
+            "SET_NULL",
+            "SET_DEFAULT",
+            "SET",
+            "DO_NOTHING"
+          ]
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "extends": [
+        "#/$defs/NamedEntity"
+      ],
+      "properties": {
+        "person": {
+          "type": "integer"
+        },
+        "event": {
+          "type": "integer"
+        },
+        "place": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObjectMetadata": {
+      "type": "object",
+      "extends": [
+        "#/$defs/NamedObject"
+      ],
+      "notSerialized": [
+        "namePlural"
+      ],
+      "properties": {
+        "title": {
+          "default": "{%if this.name %}{{this.name|titleize}}{% endif %}",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "namePlural": {
+          "default": "{%if this.name %}{{this.name|pluralize}}{% endif %}",
+          "type": "string"
+        },
+        "extra": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Tag"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "EntityWithMetadata": {
+      "type": "object",
+      "extends": [
+        "#/$defs/CanonicalNamedEntity",
+        "#/$defs/ObjectMetadata"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

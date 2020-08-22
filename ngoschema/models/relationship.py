@@ -10,7 +10,20 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from ..decorators import classproperty
-from ..types import with_metaclass, ObjectMetaclass
+from ..types import with_metaclass, ObjectMetaclass, ObjectProtocol
+
+
+class ForeignKey(with_metaclass(ObjectMetaclass)):
+    """
+    Class to deal with relationships
+    """
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/ForeignKey'
+
+    def __new__(cls, *args, **kwargs):
+        new = super(ObjectProtocol, cls).__new__
+        if new is object.__new__:
+            return new(cls)
+        return new(cls, *args, **kwargs)
 
 
 class Relationship(with_metaclass(ObjectMetaclass)):
@@ -18,6 +31,12 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     Class to deal with relationships
     """
     _schema_id = 'https://numengo.org/ngoschema#/$defs/Relationship'
+
+    def __new__(cls, *args, **kwargs):
+        new = super(ObjectProtocol, cls).__new__
+        if new is object.__new__:
+            return new(cls)
+        return new(cls, *args, **kwargs)
 
     @classproperty
     def foreignSchema(cls):

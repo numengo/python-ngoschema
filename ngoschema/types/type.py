@@ -117,9 +117,9 @@ class Type:
         extra_bases = tuple(b for b in extra_bases if not issubclass(b, bases))
         if not bases and not extra_bases:
             extra_bases = (Type, )
+        attrs['_schema'] = schema = dict(ChainMap(schema, *[b._schema for b in bases + extra_bases if hasattr(b, '_schema')]))
         if 'rawLiterals' in schema:
             attrs['_raw_literals'] = schema['rawLiterals']
-        attrs['_schema'] = schema = dict(ChainMap(schema, *[b._schema for b in bases + extra_bases if hasattr(b, '_schema')]))
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         return type(clsname, bases + extra_bases, attrs)

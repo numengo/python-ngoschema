@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import logging
 import re
+import functools
 from builtins import object
 from builtins import str
 
@@ -73,6 +74,7 @@ class TemplatedString(object):
         return self._template.render(*args, **kwargs)
 
 
+@functools.lru_cache(512)
 def get_jinja2_variables(source, remove_this=True):
     """return the list of variables in jinja2 source (no filters)"""
     env = default_jinja2_env()

@@ -29,18 +29,20 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
     def __str__(self):
         if self._str is None:
             cn = self.canonicalName
-            a = ([cn] if cn else []) + [f'{k}={str(self._validated_data[k] or self._data[k])}' for k in self._required]
+            a = ([cn] if cn else []) + [f'{k}={str(self._data_validated[k] or self._data[k])}' for k in self._required]
             self._str = '<%s %s>' % (self.qualname(), ' '.join(a))
         return self._str
 
     def _make_context(self, context=None, *extra_contexts):
         ObjectProtocol._make_context(self, context, *extra_contexts)
-        self._set_validated_data('_parent_named', next((m for m in self._context.maps_flattened if isinstance(m, NamedObject) and m is not self), None))
+        self._set_data_validated('_parent_named', next((m for m in self._context.maps_flattened if isinstance(m, NamedObject) and m is not self), None))
 
     @depend_on_prop('name')
     def get_canonicalName(self):
         p = self._parent_named
-        return f'{p.canonicalName}.{self.name}' if p is not None and p.canonicalName else self.name
+        pcn = p.canonicalName if p else None
+        n = self.name
+        return f'{pcn}.{n}' if pcn else n
 
 
 class ObjectMetadata(with_metaclass(ObjectMetaclass)):
