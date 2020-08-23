@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from urllib.parse import urlparse, urlsplit
+from urllib.parse import urlparse, urlsplit, urldefrag
 import inflection
 import re
 from collections import OrderedDict
@@ -12,7 +12,6 @@ from .. import settings
 from ..exceptions import InvalidValue
 from ..utils import ReadOnlyChainMap as ChainMap, Registry
 from ..resolver import resolve_uri, UriResolver
-from ..decorators import memoized_method
 
 CLEAN_JS_NAME_REGEX = re.compile(r"[^a-zA-z0-9\.\-_]+")
 
@@ -32,6 +31,8 @@ def clean_for_uri(name):
 class NamespaceManager(Registry):
 
     def __init__(self, *parents, **local):
+        self.get_id_cname = lru_cache(1024)(self.get_id_cname_cached)
+        self.get_cname_id = lru_cache(1024)(self.get_cname_id_cached)
         self._local = local
         self._registry = ChainMap(self._local, *parents)
 
@@ -43,20 +44,21 @@ class NamespaceManager(Registry):
     def set_current(self, name):
         self._local[''] = self._registry[name]
 
-    @memoized_method(maxsize=2048)
-    def get_id_cname(self, ref):
+    def get_id_cname_cached(self, ref):
+        from .complex import Uri
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
+        ns_uri, frag = urldefrag(ref)
         ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)
                     if ref.startswith(uri)]
-        if ns_names:
-            ns_name = ns_names[0] if ns_names else NamespaceManager._uri_to_cname(ref.split('#')[0])
-            cn = NamespaceManager._fragment_to_cname(ref.split('#')[-1])
-            return f'{ns_name}.{cn}'
-        else:
-            return NamespaceManager._fragment_to_cname(ref.split('#')[-1])
+        ns_cn = ns_names[0] if ns_names else Uri.convert(ref).path.replace('/', '.')
+        cn = ns_cn
+        if frag:
+            f_cn = NamespaceManager._fragment_to_cname(frag)
+            return '%s.%s' % (ns_cn, f_cn)
+        return ns_cn
 
-    @memoized_method(maxsize=2048)
-    def get_cname_id(self, cname):
+
+    def get_cname_id_cached(self, cname):
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         # iterate on namespace sorted from the longest to get the most qualified
         ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)

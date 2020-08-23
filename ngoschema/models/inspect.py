@@ -2,7 +2,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager, Boolean
+from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager, Boolean, default_ns_manager
 from ..types.symbols import *
 from ..decorators import memoized_property, depend_on_prop
 from .metadata import NamedObject
@@ -23,6 +23,7 @@ class Ref(with_metaclass(ObjectMetaclass)):
     def _make_context(self, context=None, *extra_contexts):
         ObjectProtocol._make_context(self, context, *extra_contexts)
         self._ns_mgr = next((m for m in self._context.maps_flattened if isinstance(m, NamespaceManager)), None)
+        self._ns_mgr = self._ns_mgr or default_ns_manager
 
     @depend_on_prop('$ref')
     def get_cname(self):
@@ -37,6 +38,7 @@ class VariableType(with_metaclass(ObjectMetaclass)):
 
     def __init__(self, *args, **kwargs):
         data = args[0] if args else kwargs
+        kwargs = kwargs if args else {}
         # check for items which are declared as arrays but given as named mappings
         if Object.check(data):
             for k, v in list(data.items()):
@@ -53,7 +55,7 @@ class VariableType(with_metaclass(ObjectMetaclass)):
         # transform a boolean input
         if Boolean.check(data):
             data = {'booleanValue': data}
-        ObjectProtocol.__init__(self, **data)
+        ObjectProtocol.__init__(self, **data, **kwargs)
 
     def _json_schema(self, cls=None):
         cls = cls or self.__class__
@@ -120,6 +122,24 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
 
 class Definition(with_metaclass(ObjectMetaclass)):
     _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/definitions/$defs/Definition'
+
+    def to_json_schema(self, ns):
+        sch = self._json_schema()
+        for tag in ['properties', 'patternProperties', 'definitions', 'attributes']:
+            a = sch.get(tag)
+            if a:
+                sch[tag] = {d.pop('name'): d for d in a}
+            else:
+                sch.pop(tag, None)
+        # remove private
+        for k in list(sch.get('properties', {})):
+            if k.startswith('__'):
+                del sch['properties'][k]
+        if not sch.get('properties'):
+            sch.pop('properties', None)
+        if 'definitions' in sch:
+            sch['$defs'] = sch.pop('definitions')
+        return sch
 
 
 class Class(with_metaclass(ObjectMetaclass)):

@@ -8,9 +8,9 @@ __version__ = "__version__ = '0.3.0'"
 from simple_settings import LazySettings
 settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
 
-from .utils import ContextManager
+from .utils import Context
 
-DEFAULT_CONTEXT = ContextManager(**{
+DEFAULT_CONTEXT = Context(**{
     'True': True,
     'False': False,
     'None': None,

@@ -7,7 +7,7 @@ import re
 
 from .. import settings
 from ..exceptions import InvalidValue
-from ..utils import ContextManager
+from ..utils import Context
 from ..decorators import assert_arg
 from ..resolver import resolve_uri
 from ..session import Session, scoped_session, session_maker
@@ -148,7 +148,7 @@ class CanonicalName(ForeignKey):
                     v = ForeignKey.resolve(self, n, context=cur)
                 except Exception as er:
                     raise InvalidValue('impossible to resolve %s in context' % repr('.'.join(cname[:i + 1])))
-            cur = ContextManager(v)
+            cur = Context(v)
         return v
 
 

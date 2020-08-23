@@ -9,7 +9,7 @@ from jsonschema.validators import extend
 from jsonschema.exceptions import UndefinedTypeCheck
 
 from .. import DEFAULT_CONTEXT
-from ..utils import ReadOnlyChainMap as ChainMap, ContextManager
+from ..utils import ReadOnlyChainMap as ChainMap, Context
 from ..resolver import scope, resolve_uri, UriResolver
 from ..decorators import classproperty
 from ..exceptions import InvalidValue, ValidationError, ConversionError
@@ -151,8 +151,8 @@ class Type:
     @staticmethod
     def _make_context(self, context=None, *extra_contexts):
         context = context if context is not None else self._context
-        if not isinstance(context, ContextManager):
-            return ContextManager(context, *extra_contexts)
+        if not isinstance(context, Context):
+            return Context(context, *extra_contexts)
         else:
             return context.extend(*extra_contexts)
 
@@ -256,12 +256,12 @@ class Type:
     def _has_default(self):
         return 'default' in self._schema
 
-    def default(self):
-        return Type._default(self)
+    def default(self, **opts):
+        return Type._default(self, **opts)
 
-    def _default(self):
+    def _default(self, **opts):
         if 'default' in self._schema:
-            return self(self._schema['default'], raw_literals=True, validate=False)
+            return self(self._schema['default'], raw_literals=True, validate=False, **opts)
         return self._py_type() if self._py_type else None
 
     @classmethod

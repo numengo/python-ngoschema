@@ -157,6 +157,9 @@
                 },
                 "pattern": {
                   "type": "string"
+                },
+                "format": {
+                  "type": "string"
                 }
               },
               "extends": [
@@ -420,6 +423,20 @@
     },
     "definitions": {
       "$defs": {
+        "IdentifiedObject": {
+          "properties": {
+            "$id": {
+              "type": "string"
+            },
+            "$schema": {
+              "type": "uri"
+            }
+          },
+          "extends": [
+            "#/$defs/variables/$defs/types/$defs/Object"
+          ],
+          "type": "object"
+        },
         "Definition": {
           "aliases": {
             "$defs": "definitions"
@@ -475,7 +492,7 @@
             }
           },
           "extends": [
-            "#/$defs/variables/$defs/types/$defs/Object"
+            "#/$defs/definitions/$defs/IdentifiedObject"
           ],
           "type": "object"
         }

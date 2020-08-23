@@ -6,13 +6,12 @@ from collections import OrderedDict, defaultdict, Mapping
 import re
 
 from ..exceptions import InvalidValue
-from ..decorators import memoized_method
 from ..utils import ReadOnlyChainMap as ChainMap
 from .type import Type, TypeChecker
 from .constants import _True, _False
 from .type import Type
 from .array import Array
-from .literals import Literal, Expr
+from .literals import Pattern
 
 
 @TypeChecker.register('object')
@@ -88,7 +87,7 @@ class Object(Type):
             self._sch_repr = OrderedDict()
             self._sch_repr['type'] = 'object'
             self._sch_repr['properties'] = {}
-            for k in self.print_order(self._schema.get('properties', {}), no_read_only=True):
+            for k in Object.print_order(self, self._schema.get('properties', {}), no_read_only=True):
                 self._sch_repr['properties'][k] = self._schema['properties'].get('type')
             if self._schema.get('additionalProperties', False):
                 self._sch_repr['additionalProperties'] = True
@@ -146,9 +145,10 @@ class Object(Type):
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
-    def serialize(self, value, attr_prefix='', **opts):
+    def serialize(self, value, excludes=[], only=[], attr_prefix='', **opts):
+        # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
-        ptypes = [(k, self._property_type(k)) for k in Object.print_order(self, value, **opts)]
+        ptypes = [(k, self._property_type(k)) for k in Object.print_order(self, value, excludes=excludes, only=only, **opts)]
         ret = OrderedDict([((attr_prefix if t.is_literal() else '') + k,
                              t.serialize(value[k], attr_prefix=attr_prefix, **opts))
                              for k, t in ptypes])
@@ -163,7 +163,11 @@ class Object(Type):
         Create object dependency tree according to class declared dependencies and expression inputs.
         Make all property names raw and keep only first level
         """
-        value = value if value is not None else self.default()
+        if value is None:
+            if self.has_default():
+                return self._inputs(self.default(), key, with_inner, **opts)
+            return set()
+        #value = value if value is not None else self.default()
         if key is not None:
             v = value.get(key)
             try:
@@ -176,7 +180,7 @@ class Object(Type):
             return ChainMap(*[set([f'{k}.{i}' for i in Object._inputs(self, value, k, with_inner=False, **opts)]) for k in value.keys()])
         return set()
 
-    def call_order(self, value, with_inputs=True):
+    def call_order(self, value, with_inputs=True, **opts):
         """Generate a call order according to schema dependencies and inputs detected in values."""
         from .object_protocol import ObjectProtocol
         if isinstance(value, ObjectProtocol) and isinstance(value, self._py_type):
@@ -203,7 +207,7 @@ class Object(Type):
                         k = self._aliases.get(k)
                     t = self._property_type(k)
                     if v is None and t.has_default():
-                        v = t.default()
+                        v = t.default(**opts)
                     inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
                     deps[k].update([i for i in inputs if i in self._properties])
             unordered = unordered.union([self._properties_translation.get(k) for k in to_untranslate]).union([self._aliases.get(k) for k in to_unalias])
@@ -246,18 +250,22 @@ class Object(Type):
                 if isinstance(v, Mapping) and not v:
                     continue
                 t = self._property_type(k)
-                if t.has_default() and v == t.default():
-                    continue
+                if t.has_default():
+                    d = t.default()
+                    if v == d:
+                        continue
+                    if Pattern.check(d) and v == t.convert(d, **opts):
+                        continue
             yield k
 
-    def default(self):
+    def default(self, **opts):
         dft = Type.default(self)
         ret = OrderedDict((k, None) for k in Object.call_order(self, dft))
         for k in ret.keys():
             v = dft.get(k)
             if v is None:
                 t = self._property_type(k)
-                v = t.default() if t.has_default() else None
+                v = t.default(**opts) if t.has_default() else None
             ret[k] = v
         return self._py_type(ret) if self._py_type else ret
 

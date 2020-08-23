@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 #from future.utils import with_metaclass
 from collections import ChainMap
 import weakref
+import functools
 
 from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 
@@ -18,7 +19,7 @@ from . import utils
 from .types import with_metaclass, ObjectMetaclass
 from .types import TypeBuilder, ObjectProtocol, ArrayProtocol
 from .types import Tuple, Array
-from .decorators import assert_arg, memoized_method
+from .decorators import assert_arg
 from .query import Query
 
 _sessions = weakref.WeakValueDictionary()
@@ -42,6 +43,7 @@ class Session(with_metaclass(ObjectMetaclass)):
     _schema_id = "https://numengo.org/ngoschema/session#/$defs/Session"
 
     def __init__(self, bind=None, **kwargs):
+        self._resolve_cname = functools.lru_cache(1024)(self._resolve_cname_cached)
         ObjectProtocol.__init__(self, **kwargs)
         self._repos = []
         if bind is not None:
@@ -57,8 +59,10 @@ class Session(with_metaclass(ObjectMetaclass)):
         self._repos.append(repo)
         repo._session = self
 
-    @memoized_method(maxsize=512)
     def resolve_cname(self, cname):
+        return self._resolve_cname(cname)
+
+    def _resolve_cname_cached(self, cname):
         from .models.entity import NamedEntity
         cns = cname.split('.')
         rn = cns[0]

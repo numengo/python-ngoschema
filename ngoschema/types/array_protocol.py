@@ -189,9 +189,9 @@ class ArrayProtocol(Array, MutableSequence):
 
     _default = None
     @classmethod
-    def default(cls):
+    def default(cls, **opts):
         if cls._default is None:
-            cls._default = Array.default(cls)
+            cls._default = Array.default(cls, **opts)
         return cls._default
 
     @staticmethod

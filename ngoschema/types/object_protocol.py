@@ -12,7 +12,7 @@ import sys
 import six
 
 from ..exceptions import InvalidValue
-from ..decorators import memoized_method, assert_arg
+from ..decorators import assert_arg
 from ..utils import ReadOnlyChainMap as ChainMap, shorten
 from .. import decorators
 from ..resolver import UriResolver, resolve_uri
@@ -180,7 +180,7 @@ class ObjectProtocol(Object, MutableMapping):
             self.validate(self, excludes=['properties'] if lz else [])
 
     def _make_context(self, context=None, *extra_contexts):
-        self._context = Type._make_context(self, context, *extra_contexts, self._data_validated, self)
+        self._context = Type._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
         # _parent and _root are declared readonly in inspect.mm and it raises an error
         self._parent = next((m for m in self._context.maps_flattened if isinstance(m, ObjectProtocol) and m is not self), None)
         self._root = next((m for m in reversed(self._context.maps_flattened) if isinstance(m, ObjectProtocol) and m is not self), None)
@@ -251,7 +251,8 @@ class ObjectProtocol(Object, MutableMapping):
     def _set_data_validated(self, key, value):
         if Literal.check(value):
             if value != self._data_validated.get(key):
-                self._touch(key)
+            #    self._touch(key)
+                self._data[key] = value
             if not Pattern.check(self._data.get(key)):
                 self._data[key] = value
         else:
@@ -291,7 +292,7 @@ class ObjectProtocol(Object, MutableMapping):
 
     def do_serialize(self, attr_prefix='', **opts):
         from .array_protocol import ArrayProtocol
-        kt = ((k, self._property_type(k)) for k in Object.print_order(self, self._data, **opts))
+        kt = ((k, self._property_type(k)) for k in self.print_order(**opts))
         ktn = [(k, t, k if not t.is_literal() else f'{attr_prefix}{k}') for k, t in kt]
         ret = OrderedDict([(n, None) for k, t, n in ktn])
         for k, t, n in ktn:
@@ -427,10 +428,16 @@ class ObjectProtocol(Object, MutableMapping):
             del self._input_data[key]
             del self._data_validated[key]
 
+    def print_order(self, **opts):
+        return Object.print_order(self, self._data, **opts)
+
+    def call_order(self, **opts):
+        return Object.call_order(self, self._data, **opts)
+
     def __repr__(self):
         if self._repr is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self.print_order(self._data, no_defaults=True, no_read_only=True))
+            ks = list(self.print_order(no_defaults=True, no_read_only=True))
             hidden = max(0, len(ks) - m)
             a = ['%s=%s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
@@ -440,7 +447,7 @@ class ObjectProtocol(Object, MutableMapping):
     def __str__(self):
         if self._str is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self.print_order(self._data, no_defaults=False, no_read_only=False))
+            ks = list(self.print_order(no_defaults=False, no_read_only=False))
             hidden = max(0, len(ks) - m)
             a = ['%s: %s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
@@ -513,9 +520,9 @@ class ObjectProtocol(Object, MutableMapping):
 
     _default = None
     @classmethod
-    def default(cls):
+    def default(cls, **opts):
         if cls._default is None:
-            cls._default = Object.default(cls)
+            cls._default = Object.default(cls, **opts)
         return cls._default
 
     @staticmethod

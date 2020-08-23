@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 from collections import Mapping, Sequence, deque, OrderedDict
 
 from ..exceptions import ValidationError, ConversionError
-from ..utils import ReadOnlyChainMap as ChainMap
-from ..decorators import classproperty, memoized_method
 from .type import Type, TypeChecker
 from .literals import String
 
@@ -111,10 +109,10 @@ class Array(Type):
     def has_default(cls):
         return True
 
-    def default(self):
+    def default(self, **opts):
         ret = Type._default(self)
         size = self._schema.get('minItems', len(ret or []))
-        return self.convert(ret) if ret else [self._items.default() if self._items and size else None] * size
+        return self.convert(ret, **opts) if ret else [self._items.default(**opts) if self._items and size else None] * size
 
     def serialize(self, value, **opts):
         return self._py_type(t.serialize(v, **opts) for t, v in zip(Array._items_types(self, value), value))

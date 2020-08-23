@@ -94,7 +94,7 @@ class ReadOnlyChainMap(Mapping):
         return dict(self)
 
 
-class ContextManager(ReadOnlyChainMap):
+class Context(ReadOnlyChainMap):
 
     def __init__(self, *parents, **local):
         self._parents = parents
@@ -116,8 +116,8 @@ class ContextManager(ReadOnlyChainMap):
             return self
         if local:
             parents = (local, ) + parents
-        #return ContextManager(*parents, *self._maps)
-        return ContextManager(*parents, self)
+        #return Context(*parents, *self._maps)
+        return Context(*parents, self)
 
 
 class _KeyModifierMapping(MutableMapping):

@@ -76,12 +76,12 @@ class Literal(Type):
                 return False
         return Type._check(cls, value, convert=convert, **opts)
 
-    def default(self):
+    def default(self, **opts):
         if 'default' in self._schema:
             s = self._schema.get('default')
             if Expr.check(s) or Pattern.check(s):
                 return s
-            return self(s, validate=False) if s else s
+            return self(s, validate=False, **opts) if s else s
         return self._py_type() if self._py_type else None
 
 
@@ -126,7 +126,7 @@ class Boolean(Literal):
                 return bool(value)
         raise ConversionError('Impossible to convert %s to boolean.' % value)
 
-    def default(self):
+    def default(self, **opts):
         return self._schema.get('default', False)
 
 
@@ -190,7 +190,7 @@ class Enum(String):
                 return s
         raise ConversionError('Impossible to convert %s to enum %r' % (value, enum))
 
-    def default(self):
+    def default(self, **opts):
         return self._schema.get('default') or self._schema['enum'][0]
 
     def has_default(self):
@@ -224,8 +224,9 @@ class Pattern(String):
     @classmethod
     def convert(cls, value, context=None, **opts):
         context = Type._make_context(cls, context, opts)
-        ctx = context
-        return TemplatedString(value)(ctx, this=ctx)
+        ctx = context.merged
+        ctx.setdefault('this', ctx)
+        return TemplatedString(value)(ctx)
 
     @staticmethod
     def inputs(value, **opts):

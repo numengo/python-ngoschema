@@ -103,11 +103,11 @@ def test_object():
 
 
 def test_canonical_name():
-    from ngoschema.utils import ContextManager
+    from ngoschema.utils import Context
     from ngoschema.types.foreign_key import CanonicalName
     b = {'name': 'b'}
     a = 'a value'
-    context = ContextManager({
+    context = Context({
         'A': {
             'a': a,
             0: b
