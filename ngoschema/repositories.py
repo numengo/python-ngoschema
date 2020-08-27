@@ -31,11 +31,11 @@ from ngoschema.utils import xmltodict, file_link_format
 from .exceptions import InvalidOperation
 from .query import Query
 #from .protocol_base import ProtocolBase
-from .models.document import Document
+from .models.documents import Document
 #from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection
-from .models.entity import Entity, NamedEntity
+from .models.entities import Entity, NamedEntity
 from .types import ObjectMetaclass, ObjectProtocol, Array, Tuple
 
 logger = logging.getLogger(__name__)
@@ -48,17 +48,19 @@ class Repository(with_metaclass(ObjectMetaclass)):
     Class to store read/write operations of objects
     """
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/Repository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/Repository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/Repository'
 
     def __init__(self, **kwargs):
-        ObjectProtocol.__init__(self, **kwargs)
         self._catalog = Registry()
         self._pkeys = None
+        self._session = None
+        ObjectProtocol.__init__(self, **kwargs)
+        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = tuple(self.primaryKeys)
         elif self.objectClass and issubclass(self.objectClass, Entity):
             self._pkeys = tuple(self.objectClass._primary_keys)
-        self._session = None
-        self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
 
     @property
     def session(self):
@@ -69,11 +71,11 @@ class Repository(with_metaclass(ObjectMetaclass)):
             raise Exception("%r is not an instance of %r" % (instance, self.objectClass))
         if self._pkeys:
             def get_pk_value(pk):
-                t = instance._property_type(pk)
+                t = instance._properties_type(pk)
                 if instance.get(pk) is None and t._type in ['integer', 'number']:
                     return max(0, *self._catalog.keys()) + 1
                 return t.serialize(instance[pk])
-            return tuple([instance._property_type(pk).serialize(instance[pk]) for pk in self._pkeys])
+            return tuple([instance._properties_type(pk).serialize(instance[pk]) for pk in self._pkeys])
         return (id(instance), )
 
     def register(self, instance):
@@ -90,8 +92,7 @@ class Repository(with_metaclass(ObjectMetaclass)):
     def get_instance(self, key):
         return self._catalog[key]
 
-    @property
-    def instances(self):
+    def get_instances(self):
         return list(self._catalog.values())
 
     def filter(self, *attrs, order_by=False, **attrs_value):
@@ -137,6 +138,8 @@ class Repository(with_metaclass(ObjectMetaclass)):
 
 class FilterRepositoryMixin(object):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/FilterRepositoryMixin'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/FilterRepositoryMixin'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FilterRepositoryMixin'
 
     def filter_data(self, data):
         only = self.only.for_json() if self.only else ()
@@ -147,6 +150,8 @@ class FilterRepositoryMixin(object):
 
 class MemoryRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/MemoryRepository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/MemoryRepository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
 
     def commit(self):
         raise InvalidOperation('commit is not possible with MemoryRepository')
@@ -158,6 +163,8 @@ class MemoryRepository(with_metaclass(ObjectMetaclass, Repository, FilterReposit
 
 class FileRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/FileRepository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/FileRepository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
 
     def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
@@ -229,6 +236,8 @@ def serialize_object_to_file(obj, fp, repo=None, session=None, **kwargs):
 @repository_registry.register()
 class JsonFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/JsonFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/JsonFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/JsonFileRepository'
 
     def __init__(self, **kwargs):
         FileRepository.__init__(self, **kwargs)
@@ -255,6 +264,8 @@ def load_json_from_file(fp, session=None, **kwargs):
 @repository_registry.register()
 class YamlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/YamlFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/YamlFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/YamlFileRepository'
     _yaml = YAML(typ="safe")
 
     def deserialize_data(self):
@@ -278,6 +289,8 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 @repository_registry.register()
 class XmlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
     _schema_id = 'https://numengo.org/ngoschema/repositories#/$defs/XmlFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/repositories/$defs/XmlFileRepository'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/XmlFileRepository'
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):
         FileRepository.__init__(self, **kwargs)

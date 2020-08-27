@@ -53,7 +53,7 @@ class ProtocolJSONEncoder(json.JSONEncoder):
     def default_(self, obj):
         from python_jsonschema_objects import classbuilder
         from python_jsonschema_objects import wrapper_types
-        from ..models.entity import Entity
+        from ..models.entities import Entity
         from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol
         #from ..literals import LiteralValue
         #from ..utils import is_string, is_literal

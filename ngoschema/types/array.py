@@ -5,7 +5,9 @@ from __future__ import unicode_literals
 from collections import Mapping, Sequence, deque, OrderedDict
 
 from ..exceptions import ValidationError, ConversionError
+from ..decorators import log_exceptions
 from .type import Type, TypeChecker
+from .constants import _True
 from .literals import String
 
 
@@ -16,7 +18,7 @@ class Array(Type):
     """
     _schema = {'type': 'array'}
     _py_type = list
-    _items = Type()
+    _items = _True()
     _items_list = False
     _str_delimiter = ','
 
@@ -57,8 +59,9 @@ class Array(Type):
             return True
         return isinstance(value, (Sequence, deque)) and not isinstance(value, str)
 
-    def convert(self, value, **opts):
-        return Array._convert(self, value, **opts)
+    @classmethod
+    def convert(cls, value, **opts):
+        return Array._convert(cls, value, **opts)
 
     @staticmethod
     def _convert(self, value, convert=False, **opts):
@@ -80,7 +83,7 @@ class Array(Type):
 
     def _inputs(self, value, index=None, with_inner=False, **opts):
         if String.check(value):
-            value = Array.convert(self, value or [], convert=False)
+            value = Array._convert(self, value or [], convert=False)
         if index is not None:
             try:
                 itypes = Array._items_types(self, value)
@@ -109,11 +112,13 @@ class Array(Type):
     def has_default(cls):
         return True
 
+    #@log_exceptions
     def default(self, **opts):
         ret = Type._default(self)
         size = self._schema.get('minItems', len(ret or []))
         return self.convert(ret, **opts) if ret else [self._items.default(**opts) if self._items and size else None] * size
 
+    #@log_exceptions
     def serialize(self, value, **opts):
         return self._py_type(t.serialize(v, **opts) for t, v in zip(Array._items_types(self, value), value))
 

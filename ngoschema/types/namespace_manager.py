@@ -29,11 +29,14 @@ def clean_for_uri(name):
 
 
 class NamespaceManager(Registry):
+    _current_ns = ''
+    _current_ns_uri = '#'
 
     def __init__(self, *parents, **local):
-        self.get_id_cname = lru_cache(1024)(self.get_id_cname_cached)
-        self.get_cname_id = lru_cache(1024)(self.get_cname_id_cached)
-        self._local = local
+        self._get_id_cname = lru_cache(1024)(self._get_id_cname_cached)
+        self._get_cname_id = lru_cache(1024)(self._get_cname_id_cached)
+        self._local = dict(local)
+        self._local.setdefault('', self._current_ns_uri)
         self._registry = ChainMap(self._local, *parents)
 
     def add(self, uri, name=None):
@@ -42,9 +45,23 @@ class NamespaceManager(Registry):
         self._local[NamespaceManager._uri_to_cname(uri) if name is None else name] = uri
 
     def set_current(self, name):
-        self._local[''] = self._registry[name]
+        ns_names = sorted([k for k in self._registry.keys() if name.startswith(k)])
+        assert ns_names, name
+        cname = ns_names[-1]
+        self._current_ns = cname
+        self._current_ns_uri = self._local[''] = self._registry[cname]
 
-    def get_id_cname_cached(self, ref):
+    def get_id_cname(self, ref):
+        cname = self._get_id_cname(ref)
+        rcn = self._current_ns
+        if rcn and cname.startswith(rcn):
+            local_cn = cname[len(rcn):].split('.')
+            if local_cn and not local_cn[0]:
+                return '.'.join(local_cn[1:])
+            return rcn
+        return cname
+
+    def _get_id_cname_cached(self, ref):
         from .complex import Uri
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         ns_uri, frag = urldefrag(ref)
@@ -57,8 +74,17 @@ class NamespaceManager(Registry):
             return '%s.%s' % (ns_cn, f_cn)
         return ns_cn
 
+    def get_cname_id(self, cname):
+        if cname.startswith('.'):
+            rcn = self._current_ns.split('.')
+            cname = cname[1:]
+            while cname[0] == '.':
+                rcn.pop()
+                cname = cname[1:]
+            cname = '.'.join(rcn + [cname])
+        return self._get_cname_id(cname)
 
-    def get_cname_id_cached(self, cname):
+    def _get_cname_id_cached(self, cname):
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         # iterate on namespace sorted from the longest to get the most qualified
         ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)

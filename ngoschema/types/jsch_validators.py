@@ -51,21 +51,21 @@ jsch_validators_registry.register('definitions')(_validators.properties)
 jsch_validators_registry.register('$defs')(_validators.properties)
 
 
-@jsch_validators_registry.register('$ref')
-def ref(validator, ref, instance, schema):
-    resolve = getattr(validator.resolver, "resolve", None)
-    if resolve is None:
-        with validator.resolver.resolving(ref) as resolved:
-            for error in validator.descend(instance, resolved):
-                yield error
-    else:
-        scope, resolved = validator.resolver.resolve(ref)
-
-        try:
-            for error in validator.descend(instance, resolved):
-                yield error
-        finally:
-            pass
+#@jsch_validators_registry.register('$ref')
+#def ref(validator, ref, instance, schema):
+#    resolve = getattr(validator.resolver, "resolve", None)
+#    if resolve is None:
+#        with validator.resolver.resolving(ref) as resolved:
+#            for error in validator.descend(instance, resolved):
+#                yield error
+#    else:
+#        scope, resolved = validator.resolver.resolve(ref)
+#
+#        try:
+#            for error in validator.descend(instance, resolved):
+#                yield error
+#        finally:
+#            pass
 
 
 @jsch_validators_registry.register('$recursiveRef')

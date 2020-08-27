@@ -39,14 +39,17 @@ class Document(with_metaclass(ObjectMetaclass)):
     deserializers or using the deserializers registered in memory
     """
     _schema_id = 'https://numengo.org/ngoschema/document#/$defs/Document'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/documents/$defs/Document'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/documents/$defs/Document'
     _contentRaw = None
     _content = None
     _loaded = False
+    _lazy_loading = True
 
     _identifier = None
 
     def __init__(self, *args, **props):
-        from .entity import Entity
+        from .entities import Entity
         Entity.__init__(self, *args, **props)
 
     @property

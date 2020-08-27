@@ -1,8 +1,8 @@
-from .document import *
+from .documents import *
 #from .inspect import *
 from .metadata import *
-from .entity import *
-from .relationship import *
+from .entities import *
+from .relationships import *
 
 
 
@@ -13,7 +13,7 @@ __all__ = [
     'DocumentRegistry',
     # metadata
     'NamedObject',
-    'ObjectMetadata',
+    'Metadata',
     # entity
     'Entity',
     'NamedEntity',

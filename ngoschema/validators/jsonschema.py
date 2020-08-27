@@ -99,7 +99,7 @@ def properties_ngo_draft2(validator, properties, instance, schema):
             if property not in (
                     'definitions', 'properties', 'additionalProperties',
                     'patternProperties', 'uniqueItems', 'readOnly',
-                    'isAbstract', 'items'
+                    'abstract', 'items'
             ) and isinstance(
                     subschema,
                     dict) and "default" in subschema and not isinstance(

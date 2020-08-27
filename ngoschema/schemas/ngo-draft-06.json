@@ -79,7 +79,7 @@
       },
       "$comment": "for inheritance..."
     },
-    "isAbstract": {
+    "abstract": {
       "type": "boolean",
       "$comment": "for code generation"
     },
@@ -94,9 +94,6 @@
     "isPathExisting": {
       "type": "boolean",
       "$comment": "for complexType path"
-    },
-    "foreignKey": {
-      "$ref": "https://numengo.org/ngoschema#/$defs/ForeignKey"
     },
     "aliases": {
       "type": "object",

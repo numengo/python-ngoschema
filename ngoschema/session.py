@@ -63,7 +63,7 @@ class Session(with_metaclass(ObjectMetaclass)):
         return self._resolve_cname(cname)
 
     def _resolve_cname_cached(self, cname):
-        from .models.entity import NamedEntity
+        from .models.entities import NamedEntity
         cns = cname.split('.')
         rn = cns[0]
         cn = cns[1:]

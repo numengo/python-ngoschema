@@ -2,14 +2,18 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, NamespaceManager, Boolean, default_ns_manager
+from collections import OrderedDict
+
+from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, ArrayProtocol
+from ..types import NamespaceManager, String, Boolean, default_ns_manager
 from ..types.symbols import *
 from ..decorators import memoized_property, depend_on_prop
 from .metadata import NamedObject
 
 
 class Symbol(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/Symbol'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/Symbol'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Symbol'
 
     @staticmethod
     def inspect(value):
@@ -17,24 +21,31 @@ class Symbol(with_metaclass(ObjectMetaclass)):
         return Importable(inspect_importable(value))
 
 
-class Ref(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/types/$defs/Ref'
+class Id(with_metaclass(ObjectMetaclass)):
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/types/$defs/Id'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Id'
+    _lazy_loading = False
 
     def _make_context(self, context=None, *extra_contexts):
         ObjectProtocol._make_context(self, context, *extra_contexts)
-        self._ns_mgr = next((m for m in self._context.maps_flattened if isinstance(m, NamespaceManager)), None)
+        self._ns_mgr = next((m for m in self._context.maps if isinstance(m, NamespaceManager)), None)
         self._ns_mgr = self._ns_mgr or default_ns_manager
 
-    @depend_on_prop('$ref')
-    def get_cname(self):
-        ref = self._data_validated['$ref']
+    def set_ref(self, value):
+        if value and '#' not in value:
+            self._data['uri'] = value + '#'
+
+    @depend_on_prop('uri')
+    def get_canonicalName(self):
+        ref = self._data_validated['uri']
         if ref:
             return self._ns_mgr.get_id_cname(ref) if getattr(self, '_ns_mgr') else None
         return getattr(self, 'name', None)
 
 
 class VariableType(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/types/$defs/VariableType'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/types/$defs/Type'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Type'
 
     def __init__(self, *args, **kwargs):
         data = args[0] if args else kwargs
@@ -42,8 +53,8 @@ class VariableType(with_metaclass(ObjectMetaclass)):
         # check for items which are declared as arrays but given as named mappings
         if Object.check(data):
             for k, v in list(data.items()):
-                raw, trans = self._property_raw_trans(k)
-                t = self._property_type(raw)
+                raw, trans = self._properties_raw_trans(k)
+                t = self._properties_type(raw)
                 if t.is_array() and Object.check(v):
                     del data[k] # remove previous entry in case it s an alias (eg $defs)
                     vs = []
@@ -52,25 +63,45 @@ class VariableType(with_metaclass(ObjectMetaclass)):
                         d['name'] = n
                         vs.append(d)
                     data[raw] = vs
+        if String.check(data):
+            data
         # transform a boolean input
         if Boolean.check(data):
             data = {'booleanValue': data}
         ObjectProtocol.__init__(self, **data, **kwargs)
+        if self.defaultValue:
+            self.hasDefault = True
 
-    def _json_schema(self, cls=None):
+    def _json_schema(self, cls=None, excludes=[], only=[], **opts):
         cls = cls or self.__class__
         if self.ref:
             return {'$ref': self.ref}
         elif self.booleanValue is not None:
             return self.booleanValue
         else:
-            ret = {'type': self.type}
-            if self.hasDefaultValue or self.defaultValueLiteral is not None:
-                ret['default'] = self.defaultValueLiteral
-            cps = list(cls._properties)
-            extra = cls.serialize(self, only=cps, excludes=_vartyp_props, no_defaults=True)
-            ret.update(extra)
-        return ret
+            #ret = {'type': self.type}
+            #if self.hasDefault:
+            #    t = TypeChecker.get(self.type)
+            #    ret['default'] = t.convert(self.defaultValue, convert=True, raw_literals=True)
+            cps = set(cls._properties).difference(cls._not_validated).difference(cls._not_serialized)\
+                     .difference(excludes).difference(['name', 'hasDefault', '_type']).union(['type', 'default', 'rawLiterals'])
+            if only:
+                cps = list(cps.intersection(only))
+            else:
+                cps = list(cps)
+            ret = OrderedDict(cls.do_serialize(self, only=cps, no_defaults=True, **opts))
+            ret.setdefault('type', self.type)
+            if self.hasDefault:
+                dft = self.defaultValue
+                if hasattr(dft, 'do_serialize'):
+                    dft = dft.do_serialize()
+                ret['default'] = dft
+            #if '_type' in ret:
+            #    ret['type'] = ret.pop('_type')
+            ret.move_to_end('type', False)
+            if 'title' in ret:
+                ret.move_to_end('title', False)
+            return ret
 
     @memoized_property
     def json_schema(self):
@@ -80,16 +111,19 @@ class VariableType(with_metaclass(ObjectMetaclass)):
 _vartyp_props = list(VariableType._properties)
 
 
-class Variable(with_metaclass(ObjectMetaclass, VariableType)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/Variable'
+class Variable(with_metaclass(ObjectMetaclass)):
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/variables/$defs/Variable'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Variable'
 
 
 class VariableValue(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/variables/$defs/VariableValue'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/variables/$defs/VariableValue'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/VariableValue'
 
 
 class Argument(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/functions/$defs/Argument'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/Argument'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
 
     @classmethod
     def convert(cls, value, **opts):
@@ -102,7 +136,8 @@ class Argument(with_metaclass(ObjectMetaclass)):
 
 
 class Function(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/functions/$defs/Function'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/Function'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function'
 
     @staticmethod
     def inspect(value):
@@ -111,7 +146,8 @@ class Function(with_metaclass(ObjectMetaclass)):
 
 
 class FunctionCall(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/functions/$defs/FunctionCall'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/FunctionCall'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/FunctionCall'
 
 
     @staticmethod
@@ -121,7 +157,11 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
 
 
 class Definition(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/definitions/$defs/Definition'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/definitions/$defs/Definition'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Definition'
+
+    def _make_context(self, context=None, *extra_contexts):
+        NamedObject._make_context(self, context, *extra_contexts)
 
     def to_json_schema(self, ns):
         sch = self._json_schema()
@@ -143,7 +183,8 @@ class Definition(with_metaclass(ObjectMetaclass)):
 
 
 class Class(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/classes/$defs/Class'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/classes/$defs/Class'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Class'
 
     @staticmethod
     def inspect(value):
@@ -183,7 +224,8 @@ class Class(with_metaclass(ObjectMetaclass)):
 
 
 class Module(with_metaclass(ObjectMetaclass, Symbol)):
-    _schema_id = 'https://numengo.org/ngoschema/inspect#/$defs/modules/$defs/Module'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/modules/$defs/Module'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/modules/$defs/Module'
 
     @staticmethod
     def inspect(value):

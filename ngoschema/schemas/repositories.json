@@ -5,7 +5,7 @@
     "$defs": {
         "Repository": {
             "type": "object",
-            "isAbstract": true,
+            "abstract": true,
             "additionalProperties": false,
             "properties": {
                 "objectClass": {
@@ -33,7 +33,7 @@
         },
         "FilterRepositoryMixin": {
             "type": "object",
-            "isAbstract": true,
+            "abstract": true,
             "additionalProperties": false,
             "properties": {
                 "only": {
@@ -64,7 +64,7 @@
         },
         "FileRepository": {
             "type": "object",
-            "isAbstract": true,
+            "abstract": true,
             "additionalProperties": false,
             "extends": [
                 "#/$defs/Repository",

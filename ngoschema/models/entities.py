@@ -20,7 +20,7 @@ from ..types import ObjectMetaclass, ObjectProtocol
 from ..types.foreign_key import Ref, ForeignKey
 from ..types.type_builder import TypeBuilder
 from ngoschema.resolver import scope
-from .metadata import NamedObject, ObjectMetadata
+from .metadata import NamedObject, Metadata
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
@@ -29,7 +29,9 @@ class Entity(with_metaclass(ObjectMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/Entity"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/Entity"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
 
     def __init__(self, *args, **kwargs):
         data = args[0] if args else kwargs
@@ -63,6 +65,8 @@ class NamedEntity(with_metaclass(ObjectMetaclass, NamedObject)):
     Class to deal with metadata and parents/children relationships
     """
     _schema_id = "https://numengo.org/ngoschema#/$defs/NamedEntity"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/NamedEntity"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/NamedEntity"
 
     def __init__(self, *args, **kwargs):
         Entity.__init__(self, *args, **kwargs)
@@ -73,16 +77,20 @@ class CanonicalNamedEntity(with_metaclass(ObjectMetaclass, NamedEntity)):
     Class to deal with metadata and parents/children relationships
     """
     _schema_id = "https://numengo.org/ngoschema#/$defs/CanonicalNamedEntity"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/CanonicalNamedEntity"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/CanonicalNamedEntity"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)
 
 
-class EntityWithMetadata(with_metaclass(ObjectMetaclass, CanonicalNamedEntity, ObjectMetadata)):
+class EntityWithMetadata(with_metaclass(ObjectMetaclass, CanonicalNamedEntity, Metadata)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/EntityWithMetadata"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/EntityWithMetadata"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/EntityWithMetadata"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/EntityWithMetadata"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)

@@ -24,7 +24,7 @@
         }
       },
       "extends": [
-        "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
+        "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"
       ],
       "type": "object"
     },
@@ -67,7 +67,7 @@
                   "type": "boolean"
                 },
                 "foreignKey": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/ForeignKey"
+                  "$ref": "https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey"
                 }
               },
               "extends": [
@@ -258,6 +258,9 @@
                 "maxItems": {
                   "type": "integer"
                 },
+                "uniqueItems": {
+                  "type": "boolean"
+                },
                 "items": true
               },
               "extends": [
@@ -441,12 +444,17 @@
           "aliases": {
             "$defs": "definitions"
           },
+          "notSerialized": ["_parentNs"],
+          "notValidated": ["_parentNs"],
           "properties": {
             "$schema": {
               "type": "uri"
             },
             "$id": {
               "type": "uri"
+            },
+            "abstract": {
+              "type": "boolean"
             },
             "extends": {
               "items": {
@@ -489,6 +497,9 @@
               "items": {
                 "$ref": "#/$defs/definitions/$defs/Definition"
               }
+            },
+            "_parentNs": {
+              "$ref": "#/$defs/definitions/$defs/Definition"
             }
           },
           "extends": [
@@ -514,7 +525,7 @@
             }
           },
           "extends": [
-            "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
+            "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"
           ],
           "type": "object"
         },

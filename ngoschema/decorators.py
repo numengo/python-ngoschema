@@ -15,6 +15,7 @@ import functools
 import weakref
 import six
 import wrapt
+from wrapt import decorator
 
 from pprint import pformat
 from pyrsistent import pmap
@@ -212,7 +213,7 @@ def log_exceptions(method, instance, args, kwargs):
                 _format_call_msg(
                     "%r.%s" % (instance, getattr(method, '__name__', 'unknown')),
                     args, kwargs) +
-                "\n\tERROR %s: %s" % (etype.__name__, value))
+                "\n\tERROR %s: %s" % (etype.__name__, value), exc_info=True)
         try:
             six.reraise(etype, value, trace)
         finally:

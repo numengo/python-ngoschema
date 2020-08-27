@@ -100,7 +100,7 @@ def inspect_descriptor(value, name=None):
     if name:
         desc['name'] = name
     if isinstance(value, PropertyDescriptor):
-        desc['$schema'] = 'https://numengo.org/ngoschema/inspect#/$defs/classes/$defs/PropertyDescriptor'
+        desc['$schema'] = 'https://numengo.org/ngoschema2#/$defs/protocols/$defs/PropertyDescriptor'
         if desc['name'] != value.pname:
             desc['pname'] = value.pname
         desc['ptype'] = dict(value.ptype._schema)

@@ -45,6 +45,10 @@ class ReadOnlyChainMap(Mapping):
     def __init__(self, *maps):
         self._maps = [m for m in maps]
 
+    @property
+    def maps(self):
+        return self._maps
+
     def __getitem__(self, key):
         for mapping in self._maps:
             try:
@@ -97,6 +101,7 @@ class ReadOnlyChainMap(Mapping):
 class Context(ReadOnlyChainMap):
 
     def __init__(self, *parents, **local):
+        self._local = local
         self._parents = parents
         ReadOnlyChainMap.__init__(self, local, *parents)
 
@@ -109,15 +114,15 @@ class Context(ReadOnlyChainMap):
     def __repr__(self):
         return repr(list(self._maps))
 
-    def extend(self, *parents, **local):
+    def create_child(self, *parents, **local):
         'Make a child context, inheriting enable_nonlocal unless specified'
         #parents = [p for p in parents if p and isinstance(p, Mapping)]
         if not parents and not local:
             return self
         if local:
             parents = (local, ) + parents
-        #return Context(*parents, *self._maps)
-        return Context(*parents, self)
+        return Context(*parents, *self._maps)
+        #return Context(*parents, self)
 
 
 class _KeyModifierMapping(MutableMapping):
@@ -241,7 +246,7 @@ class GenericModuleFileLoader(Registry):
                 excludes=[],
                 recursive=False,
                 serializers=[]):
-        from ..models.document import get_document_registry
+        from ..models.documents import get_document_registry
         all_paths = list(sum(self._registry.values(), []))
         for d in all_paths:
             get_document_registry().\

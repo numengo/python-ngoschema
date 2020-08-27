@@ -136,10 +136,10 @@ class Type:
         # create a chainmap of all schemas and validators of ancestors, reduce it and make it persistent
         from .type_builder import TypeBuilder
         schema = untype_schema(schema)
-        self._chained_schema = ChainMap(schema,
+        self._schema_chained = ChainMap(schema,
                                 *[getattr(s, '_schema', {}) for s in self.__class__.__mro__],
                                 *[resolve_uri(e) for e in schema.get('extends', [])])
-        self._schema = schema = dict(self._chained_schema)
+        self._schema = schema = dict(self._schema_chained)
         TypeBuilder.check_schema(schema)
         self._id = schema.get('$id', None) or self._id
         self._validator = DefaultValidator(schema, resolver=UriResolver.create(uri=self._id, schema=schema))
@@ -150,11 +150,8 @@ class Type:
 
     @staticmethod
     def _make_context(self, context=None, *extra_contexts):
-        context = context if context is not None else self._context
-        if not isinstance(context, Context):
-            return Context(context, *extra_contexts)
-        else:
-            return context.extend(*extra_contexts)
+        ctx = context if context is not None else self._context
+        self._context = ctx.create_child(*extra_contexts)
 
     def __instancecheck__(cls, instance):
         """Override for isinstance(instance, cls)."""

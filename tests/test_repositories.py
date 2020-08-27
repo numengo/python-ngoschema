@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 from ngoschema.repositories import JsonFileRepository, YamlFileRepository
-from ngoschema.models.document import Document
+from ngoschema.models.documents import Document
 #from ngomf.component import ComponentDefinition
 from ngoci.models.project import Project
 

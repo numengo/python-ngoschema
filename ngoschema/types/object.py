@@ -4,8 +4,10 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict, defaultdict, Mapping
 import re
+from operator import neg
 
 from ..exceptions import InvalidValue
+from ..decorators import log_exceptions
 from ..utils import ReadOnlyChainMap as ChainMap
 from .type import Type, TypeChecker
 from .constants import _True, _False
@@ -19,8 +21,8 @@ class Object(Type):
     _schema = {'type': 'object'}
     _py_type = OrderedDict
     _properties = OrderedDict()
-    _pattern_properties = set()
-    _additional_properties = _True()
+    _properties_pattern = set()
+    _properties_additional = _True()
     _dependencies = {}
     _extends = []
     _required = set()
@@ -30,14 +32,15 @@ class Object(Type):
     _has_default = set()
     _properties_translation = {}
     _aliases = {}
+    _aliases_negated = {}
     _primary_keys = []
 
     def __init__(self, **schema):
         # split the schema to isolate properties schema and object schema
         from .type_builder import TypeBuilder
         Type.__init__(self, **schema)
-        mro_schemas = self._chained_schema._maps
-        schema = self._chained_schema._maps[0]
+        mro_schemas = self._schema_chained._maps
+        schema = self._schema_chained._maps[0]
         self._dependencies = defaultdict(set)
         for k, v in ChainMap(*[s.get('dependencies', {}) for s in mro_schemas]).items():
             self._dependencies[k].update(set(v))
@@ -56,16 +59,16 @@ class Object(Type):
         if self._read_only:
             schema['readOnly'] = self._read_only
         # by modifying the first schema of the chained schema, we need to regenerate _schema (computed in Type.__init__)
-        self._schema = dict(self._chained_schema)
+        self._schema = dict(self._schema_chained)
 
         cls_name = self.__class__.__name__
         schema['properties'] = ChainMap(*[s.get('properties', {}) for s in mro_schemas])
         self._properties = OrderedDict([(name, TypeBuilder.build(f'{cls_name}/properties/{name}', sch)())
                                          for name, sch in schema.get('properties', {}).items()])
         pattern_properties = ChainMap(*[s.get('patternProperties', {}) for s in mro_schemas])
-        self._pattern_properties = set([(re.compile(k), Type.build(
+        self._properties_pattern = set([(re.compile(k), Type.build(
             f'{cls_name}/patternProperties/{k}', v)()) for k, v in pattern_properties.items()])
-        self._additional_properties = TypeBuilder.build(f'{cls_name}/additionalProperties', schema.get('additionalProperties', True))
+        self._properties_additional = TypeBuilder.build(f'{cls_name}/additionalProperties', schema.get('additionalProperties', True))
         self._has_default = set(k for k, t in self._properties.items() if t.has_default())
         self._required.difference_update(self._has_default)
 
@@ -75,7 +78,7 @@ class Object(Type):
         data = args[0] if args else kwargs
         if check and not self.check(data):
             raise InvalidValue('%s is not compatible with %s' % data, self)
-        context = Type._make_context(self, context, opts)
+        context = Type._make_context(self, context)
         data = Object._convert(self, data, context=context, convert=convert, **opts)
         if validate:
             self.validate(data)
@@ -101,54 +104,48 @@ class Object(Type):
     def check(cls, value, **opts):
         return isinstance(value, Mapping)
 
-    def convert(self, value, **opts):
-        return Object._convert(self, value, **opts)
+    @classmethod
+    def convert(cls, value, **opts):
+        return Object._convert(cls, value, **opts)
 
+    @staticmethod
     def _convert(self, value, convert=False, **opts):
+        avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
+        navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
         ret = OrderedDict((k, None) for k in Object.call_order(self, value, with_inputs=convert))
         for k in ret.keys():
-            t = self._property_type(k)
-            v = value.get(k)
-            if v is None:
-                for alias, raw in self._aliases.items():
-                    if raw == k and alias in value:
-                        v = value[alias]
-                        break
-                else:
-                    for alias, raw in self._negated_aliases.items():
-                        if raw == k and alias in value:
-                            v = - value[alias]
-                            break
-                    else:
-                        for trans, raw in self._properties_translation.items():
-                            if raw == k and trans not in self._properties and trans in value:
-                                v = value[trans]
-                                break
+            t = self._properties_type(k)
+            v = value.get(k) or avs.get(k) or navs.get(k)
             if v is None and (t.has_default() or k in self._required):
                 v = t.default()
             ret[k] = v if v is None or not convert else t(v, **opts)
         return ret
 
     def validate(self, value, excludes=[], as_dict=False, **opts):
+        from ngoschema.types import ObjectProtocol, ArrayProtocol
         errors = {}
         try:
             if 'properties' not in excludes:
                 for k in Object.call_order(self, value, with_inputs=True):
                     if k not in self._not_validated and k not in excludes and value.get(k) is not None:
-                        t = self._property_type(k)
+                        t = self._properties_type(k)
                         v = value[k]
-                        if isinstance(v, t) and hasattr(v, 'validate'):
-                            t = v
-                        errors.update(t.validate(value[k], excludes=[], as_dict=True))
+                        protocol = Type
+                        if issubclass(t, ObjectProtocol):
+                            protocol = ObjectProtocol
+                        if issubclass(t, ArrayProtocol):
+                            protocol = ArrayProtocol
+                        errors.update(protocol.validate(t, value[k], excludes=[], as_dict=True))
             errors.update(Type.validate(self, value, excludes=excludes+['properties', 'patternProperties', 'additionalProperties'], as_dict=True, **opts))
         except Exception as er:
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
+    #@log_exceptions
     def serialize(self, value, excludes=[], only=[], attr_prefix='', **opts):
         # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
-        ptypes = [(k, self._property_type(k)) for k in Object.print_order(self, value, excludes=excludes, only=only, **opts)]
+        ptypes = [(k, self._properties_type(k)) for k in Object.print_order(self, value, excludes=excludes, only=only, **opts)]
         ret = OrderedDict([((attr_prefix if t.is_literal() else '') + k,
                              t.serialize(value[k], attr_prefix=attr_prefix, **opts))
                              for k, t in ptypes])
@@ -171,7 +168,7 @@ class Object(Type):
         if key is not None:
             v = value.get(key)
             try:
-                i = set() if not v else self._property_type(key).inputs(v, **opts)
+                i = set() if not v else self._properties_type(key).inputs(v, **opts)
             except Exception as er:
                 self._logger.error(f'{key} {str(value)[:40]}...: {str(er)}', exc_info=True)
                 raise er
@@ -190,7 +187,7 @@ class Object(Type):
             # order call according to dependencies
             unordered = set(value or {})
             to_untranslate = unordered.intersection(self._properties_translation)
-            to_unalias = unordered.intersection(set(self._aliases).union(self._negated_aliases))
+            to_unalias = unordered.intersection(set(self._aliases).union(self._aliases_negated))
             # replace translated keys
             unordered = unordered.difference(to_untranslate).difference(to_unalias).union(self._properties)
             from ..utils import topological_sort
@@ -205,7 +202,7 @@ class Object(Type):
                         k = self._properties_translation.get(k)
                     if k in to_unalias:
                         k = self._aliases.get(k)
-                    t = self._property_type(k)
+                    t = self._properties_type(k)
                     if v is None and t.has_default():
                         v = t.default(**opts)
                     inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
@@ -232,10 +229,13 @@ class Object(Type):
         keys = set((value or {}).keys())
         all_ordered = list(keys.intersection(self._required))
         all_ordered += [k for k in self._properties.keys() if k in keys and k not in self._required]
+        all_ordered += list(self._aliases) + list(self._aliases_negated)
         all_ordered += list(keys.difference(all_ordered))
-        rq = self._required
-        ns = self._not_serialized
-        ro = self._read_only
+        rq = self._required.union(getattr(value, '_required', []))
+        ns = self._not_serialized.union(getattr(value, '_not_serialized', []))
+        ro = self._read_only.union(getattr(value, '_read_only', []))
+        avs = {k2: self[k1] for k1, k2 in self._aliases.items() if k1 in all_ordered}
+        navs = {k2: - self[k1] for k1, k2 in self._aliases_negated.items() if k1 in all_ordered}
         for k in all_ordered:
             if k in ns or k in excludes:
                 continue
@@ -243,41 +243,53 @@ class Object(Type):
                 continue
             if only and k not in only:
                 continue
-            v = value.get(k)
+            v = value.get(k) or avs.get(k) or navs.get(k)
             if no_defaults and k not in rq:
                 if v is None:
                     continue
                 if isinstance(v, Mapping) and not v:
                     continue
-                t = self._property_type(k)
+                t = self._properties_type(k)
                 if t.has_default():
                     d = t.default()
+                    v = neg(v) if k in self._aliases_negated else v
                     if v == d:
                         continue
                     if Pattern.check(d) and v == t.convert(d, **opts):
                         continue
             yield k
 
+    #@log_exceptions
     def default(self, **opts):
-        dft = Type.default(self)
+        dft = Type.default(self, **opts)
+        return dft
+        #TODO remove the following
         ret = OrderedDict((k, None) for k in Object.call_order(self, dft))
         for k in ret.keys():
             v = dft.get(k)
             if v is None:
-                t = self._property_type(k)
+                t = self._properties_type(k)
                 v = t.default(**opts) if t.has_default() else None
             ret[k] = v
         return self._py_type(ret) if self._py_type else ret
 
-    def _property_type(self, name):
+    def _properties_type(self, name):
         """Returns the type of a property by its name."""
         pt = self._properties.get(name)
         if pt is not None:
             return pt
-        for reg, t in self._pattern_properties:
+        for reg, t in self._properties_pattern:
             if reg.search(name):
                 return t
-        if self._additional_properties:
-            return self._additional_properties
+        if self._properties_additional:
+            return self._properties_additional
         raise KeyError(name)
 
+    def _alias_value(self, key, value):
+        alias = self._aliases.get(key)
+        if alias:
+            return alias, value
+        alias = self._aliases_negated.get(key)
+        if alias:
+            return alias, -value
+        return key, value

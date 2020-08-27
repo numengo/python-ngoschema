@@ -98,8 +98,8 @@ def visit_function_def(node):
               for a, doc, doctype in zip(args_name, docs, doctypes)]
     defaults = [ast_eval(d) for d in defs]
     for d, p in zip(reversed(defaults), reversed(params)):
-        p['hasDefaultValue'] = True
-        p['defaultValueLiteral'] = d
+        p['hasDefault'] = True
+        p['defaultValue'] = d
 
     varargs = {'name': ast_name(vargs)} if vargs else None
     keywords = {'name': ast_name(kwargs)} if kwargs else None

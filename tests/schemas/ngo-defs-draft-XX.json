@@ -32,7 +32,7 @@
       "title": "Object",
       "type": "object",
       "additionalProperties": false,
-      "isAbstract": true,
+      "abstract": true,
       "extends": [
         "http://numengo.org/draft-04/schema#/definitions/EntityWithMetadata"
       ],
@@ -52,7 +52,7 @@
       "title": "Class",
       "type": "object",
       "additionalProperties": false,
-      "isAbstract": true,
+      "abstract": true,
       "extends": [
         "http://numengo.org/draft-04/schema#/definitions/metadata",
         "#/definitions/Object"
@@ -224,7 +224,7 @@
           "title": "Variable",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata",
             "#/definitions/Object"
@@ -794,7 +794,7 @@
           "title": "IVariableGroup",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata"
           ],
@@ -817,7 +817,7 @@
           "title": "IComponentDefinition",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata",
             "#/definitions/model/definitions/IVariableGroup"
@@ -863,7 +863,7 @@
           "title": "IPortDefinition",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata",
             "#/definitions/model/definitions/IVariableGroup"
@@ -1229,7 +1229,7 @@
           "title": "GenerationInfo",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata",
             "#/definitions/Object"
@@ -1592,7 +1592,7 @@
           "title": "ComponentDefinitionAutoInfo",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata"
           ],
@@ -2087,7 +2087,7 @@
           "title": "VariableInfoAuto",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata"
           ],
@@ -2190,7 +2190,7 @@
           "title": "FunctionInfoAuto",
           "type": "object",
           "additionalProperties": false,
-          "isAbstract": true,
+          "abstract": true,
           "extends": [
             "http://numengo.org/draft-04/schema#/definitions/metadata"
           ],

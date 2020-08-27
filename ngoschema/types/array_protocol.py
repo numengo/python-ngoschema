@@ -8,6 +8,7 @@ import logging
 
 from ..exceptions import InvalidValue
 from ..types import Array, Object, Literal, Type, Expr, Pattern
+from ..types.constants import _True
 from ..decorators import classproperty
 from ..utils import shorten
 from ..types.namespace_manager import default_ns_manager
@@ -15,6 +16,8 @@ from .. import settings, DEFAULT_CONTEXT
 from .. import settings
 
 LAZY_LOADING = settings.DEFAULT_LAZY_LOADING
+
+true = _True()
 
 
 class ArrayProtocol(Array, MutableSequence):
@@ -54,9 +57,9 @@ class ArrayProtocol(Array, MutableSequence):
         self._srepr = None
         if index:
             self._data_validated[index] = None
-            self._input_data[index] = {}
+            self._data_inputs[index] = {}
         else:
-            self._input_data = [{}] * len(self._data)
+            self._data_inputs = [{}] * len(self._data)
             self._data_validated = [None] * len(self._data)
 
     def _set_data(self, index, value):
@@ -76,20 +79,23 @@ class ArrayProtocol(Array, MutableSequence):
         self._data_validated[index] = value
 
     def _make_context(self, context=None, *extra_contexts):
-        self._context = Array._make_context(self, context, *extra_contexts)
+        Array._make_context(self, context, *extra_contexts)
         from .object_protocol import ObjectProtocol
-        self._parent = next((m for m in self._context.maps_flattened if isinstance(m, ObjectProtocol) and m is not self), None)
-        self._root = next((m for m in reversed(self._context.maps_flattened) if isinstance(m, ObjectProtocol) and m is not self), None)
+        self._parent = next((m for m in self._context.maps if isinstance(m, ObjectProtocol) and m is not self), None)
+        self._root = next((m for m in reversed(self._context.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
 
-    def _item_evaluate(self, index, value, **opts):
+    def _items_evaluate(self, index, value, **opts):
         from .object_protocol import ObjectProtocol
         ptype = Array._item_type(self, index)
         if isinstance(value, ptype) and not Expr.check(value) and not Pattern.check(value):
             if isinstance(value, (ObjectProtocol, ArrayProtocol)):
-                lz_excludes = ['items', 'properties'] if getattr(ptype, '_lazy_loading', False) else []
-                value.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
+                lz_excludes = ['properties'] if getattr(ptype, '_lazy_loading', False) else []
+                ObjectProtocol.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
+            elif isinstance(value, ArrayProtocol):
+                lz_excludes = ['items'] if getattr(ptype, '_lazy_loading', False) else []
+                ArrayProtocol.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
             else:
-                ptype.validate(value, **opts)
+                Type.validate(ptype, value, **opts)
         else:
             value = ptype(value, session=self.session, **opts, context=self._context)
         if isinstance(value, (ObjectProtocol, ArrayProtocol)):
@@ -100,11 +106,11 @@ class ArrayProtocol(Array, MutableSequence):
         return len(self._data)
 
     def insert(self, index, value):
-        self._input_data.insert(index, {})
+        self._data_inputs.insert(index, {})
         self._data_validated.insert(index, None)
         self._data.insert(index, value)
         if not self._lazy_loading:
-            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
+            self._set_data_validated(index, self._items_evaluate(index, self._data[index]))
         else:
             value._make_context(self._context)
         self.validate(self, excludes=['items'])
@@ -112,11 +118,11 @@ class ArrayProtocol(Array, MutableSequence):
     def __setitem__(self, index, value):
         self._data[index] = value
         if not self._lazy_loading:
-            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
+            self._set_data_validated(index, self._items_evaluate(index, self._data[index]))
 
     def __getitem__(self, index):
         if self._data_validated[index] is None:
-            self._set_data_validated(index, self._item_evaluate(index, self._data[index]))
+            self._set_data_validated(index, self._items_evaluate(index, self._data[index]))
         return self._data_validated[index]
 
     def __delitem__(self, index):
@@ -156,10 +162,12 @@ class ArrayProtocol(Array, MutableSequence):
     def serialize(cls, value, **opts):
         return Array.serialize(cls, value, **opts)
 
-    def do_serialize(self, **opts):
+    def do_serialize(self, excludes=[], **opts):
         from .object_protocol import ObjectProtocol
         ret = [None] * len(self._data)
         for i, (d, v) in enumerate(zip(self._data, self._data_validated)):
+            if i in excludes:
+                continue
             if v is None and d is not None:
                 v = self[i]
             if isinstance(v, (ObjectProtocol, ArrayProtocol)):
@@ -209,6 +217,8 @@ class ArrayProtocol(Array, MutableSequence):
                 items = [TypeBuilder.build(f'{id}/items/{i}', item) for i, item in enumerate(items)]
             else:
                 items = TypeBuilder.build(f'{id}/items', items)
+        else:
+            items = true
         attrs.setdefault('_lazy_loading', LAZY_LOADING)
         if not any([issubclass(b, ArrayProtocol) for b in bases]):
             bases = list(bases) + [ArrayProtocol]

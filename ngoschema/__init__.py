@@ -16,7 +16,7 @@ DEFAULT_CONTEXT = Context(**{
     'None': None,
 })
 
-APP_CONTEXT = DEFAULT_CONTEXT.extend(settings)
+APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
 
 from .utils import register_module
 register_module('ngoschema')

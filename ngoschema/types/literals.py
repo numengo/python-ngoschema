@@ -97,10 +97,15 @@ class Boolean(Literal):
 
     @classmethod
     def check(cls, value, **opts):
+        if opts.get('convert', False):
+            try:
+                value = cls.convert(value, **opts)
+            except ConversionError as er:
+                return False
         return isinstance(value, bool)
 
     @classmethod
-    def convert(self, value, **opts):
+    def convert(cls, value, **opts):
         """
         Converts to boolean.
         If the input is a string, check against the list settings.BOOLEAN_TRUE_STR_LIST
@@ -115,11 +120,11 @@ class Boolean(Literal):
             return value
         if String.check(value):
             value = value.lower()
-            if value in self._TRUES:
+            if value in cls._TRUES:
                 return True
-            if value in self._FALSES:
+            if value in cls._FALSES:
                 return False
-            raise ConversionError('Impossible to convert %s to boolean from %r' % (value, (self._FALSES, self._TRUES)))
+            raise ConversionError('Impossible to convert %s to boolean from %r' % (value, (cls._FALSES, cls._TRUES)))
         if Integer.check(value):
             value = Integer.convert(value, **opts)
             if value in [0, 1]:
@@ -206,7 +211,7 @@ class Expr(Literal):
 
     @classmethod
     def convert(cls, value, context=None, **opts):
-        context = Type._make_context(cls, context, opts)
+        context = Type._make_context(cls, context)
         typed = eval(str(value)[1:], dict(context))
         return Type._convert(cls, typed, **opts)
 
@@ -223,8 +228,8 @@ class Pattern(String):
 
     @classmethod
     def convert(cls, value, context=None, **opts):
-        context = Type._make_context(cls, context, opts)
-        ctx = context.merged
+        Type._make_context(cls, context)
+        ctx = cls._context.merged
         ctx.setdefault('this', ctx)
         return TemplatedString(value)(ctx)
 
@@ -255,3 +260,34 @@ class Number(Literal):
         decimal.setcontext(self._dcm_context)
         return Literal.__call__(self, value, **opts)
 
+
+@TypeChecker.register('id')
+class Id(String):
+    _schema = {'type': 'id'}
+    _py_type = str
+
+    @staticmethod
+    def check(value, **opts):
+        if String.check(value) and '#' in value:
+            return True
+        return False
+
+    @staticmethod
+    def convert(value, canonical=False, context=None, **opts):
+        if isinstance(value, Id) or hasattr(value, 'canonicalName'):
+            return value.canonicalName if canonical else value.ref
+        if value:
+            from .namespace_manager import NamespaceManager, default_ns_manager
+            #context = Type._make_context(Id, context)
+            ns_mgr = next((m for m in context.maps if isinstance(m, NamespaceManager)), default_ns_manager)
+            uri = value
+            if '/' not in value:
+                uri = ns_mgr.get_cname_id(value)
+            if '#' not in uri:
+                uri = uri + '#'
+            if uri.startswith(ns_mgr._current_ns_uri):
+                uri = '#' + uri.split('#')[1]
+            return ns_mgr.get_id_cname(uri) if canonical else uri
+
+    def serialize(self, value, **opts):
+        return self.convert(value, **opts)

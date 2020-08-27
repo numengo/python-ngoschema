@@ -68,12 +68,12 @@ class ForeignKey(Ref):
         if fc:
             self._foreign_class = fc
             self._foreign_keys = fk = fc._schema.get('primaryKeys')
-            self._foreign_keys_type = [fc._property_type(k) for k in fk]
+            self._foreign_keys_type = [fc._properties_type(k) for k in fk]
         else:
             self._foreign_class = ObjectProtocol
 
     def __call__(self, value, validate=True, resolve=False, context=None, **opts):
-        context = Type._make_context(self, context, opts)
+        context = Type._make_context(self, context)
         value = self.convert(value, context=context, **opts)
         if validate:
             self.validate(value, resolve=False, context=context)  # resolve False to avoid double resolution
@@ -105,7 +105,7 @@ class ForeignKey(Ref):
                     return True
             return False
 
-        ctx = Type._make_context(self, context, opts)
+        ctx = Type._make_context(self, context)
         for c in ctx.maps_flattened:
             if isinstance(c, self._foreign_class):
                 if not set(self._foreign_keys).difference(c.keys()):
@@ -139,7 +139,7 @@ class CanonicalName(ForeignKey):
                 return v if not ns else v.resolve_cname(ns)
         raise InvalidValue('impossible to resolve %s in context' % repr('.'.join(cname[1:])))
 
-        cur = Type._make_context(self, context, opts)
+        cur = Type._make_context(self, context)
         for i, n in enumerate(cname):
             if n in cur:
                 v = cur[n]

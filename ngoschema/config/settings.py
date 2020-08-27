@@ -89,7 +89,8 @@ SCHEMA_REF_TYPE_MAPPING = (
 )
 
 SCHEMA_DEF_KEYS = ('type', 'extends', 'dependencies', 'aliases', 'negatedAliases', 'notSerialized', 'notValidated',
-                   'required', 'readOnly', 'properties', 'patternProperties', 'additionalProperties', '$defs', 'items')
+                   'default', 'required', 'readOnly', 'properties', 'patternProperties', 'additionalProperties',
+                   '$defs', 'items', 'convert', 'validate')
 
 string_types = (basestring, str)
 datetime_types = string_types + (arrow.Arrow, datetime.datetime)

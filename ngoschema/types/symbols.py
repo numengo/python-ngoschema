@@ -25,7 +25,7 @@ class Importable(String):
 
     @classmethod
     def convert(cls, value, context=None, convert=True, **opts):
-        typed = value
+        typed = importlib.__builtins__.get(value, value)
         if String.check(value, convert=False):
             value = String.convert(value, **opts)
             poss = [m.start() for m in cls.DOT.finditer("%s." % value)]

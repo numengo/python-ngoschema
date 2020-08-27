@@ -18,6 +18,8 @@ class ForeignKey(with_metaclass(ObjectMetaclass)):
     Class to deal with relationships
     """
     _schema_id = 'https://numengo.org/ngoschema#/$defs/ForeignKey'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/relationships/$defs/ForeignKey'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey'
 
     def __new__(cls, *args, **kwargs):
         new = super(ObjectProtocol, cls).__new__
@@ -31,6 +33,8 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     Class to deal with relationships
     """
     _schema_id = 'https://numengo.org/ngoschema#/$defs/Relationship'
+    _schema_id = 'https://numengo.org/ngoschema2#/$defs/relationships/$defs/Relationship'
+    _schema_id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/Relationship'
 
     def __new__(cls, *args, **kwargs):
         new = super(ObjectProtocol, cls).__new__
@@ -46,7 +50,7 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     @classproperty
     def foreignClass(cls):
         from ..types.type_builder import TypeBuilder
-        from ngoschema.models.entity import Entity
+        from ngoschema.models.entities import Entity
         if not cls._foreign_class and cls.foreignSchema:
             try:
                 cls._foreign_class = TypeBuilder.load(cls.foreignSchema)

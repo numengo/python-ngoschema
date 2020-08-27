@@ -25,6 +25,8 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
     Object referenced by a list of keys of a foreign schema
     """
     _schema_id = "https://numengo.org/ngoschema#/$defs/NamedObject"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/NamedObject"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/NamedObject"
 
     def __str__(self):
         if self._str is None:
@@ -35,18 +37,20 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
 
     def _make_context(self, context=None, *extra_contexts):
         ObjectProtocol._make_context(self, context, *extra_contexts)
-        self._set_data_validated('_parent_named', next((m for m in self._context.maps_flattened if isinstance(m, NamedObject) and m is not self), None))
+        self._set_data_validated('_parentNamed', next((m for m in self._context.maps if isinstance(m, NamedObject) and m is not self), None))
 
     @depend_on_prop('name')
     def get_canonicalName(self):
-        p = self._parent_named
+        p = self._parentNamed
         pcn = p.canonicalName if p else None
         n = self.name
         return f'{pcn}.{n}' if pcn else n
 
 
-class ObjectMetadata(with_metaclass(ObjectMetaclass)):
+class Metadata(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
     _schema_id = "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/Metadata"
+    _schema_id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"

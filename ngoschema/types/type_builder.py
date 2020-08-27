@@ -61,12 +61,12 @@ class TypeBuilder:
             return getattr(self.ref_class, item)
 
         @classmethod
-        def _property_raw_trans(cls, name):
-            return cls._ref_class_registry()._property_raw_trans(name)
+        def _properties_raw_trans(cls, name):
+            return cls._ref_class_registry()._properties_raw_trans(name)
 
         @classmethod
-        def _property_type(cls, name):
-            return cls._ref_class_registry()._property_type(name)
+        def _properties_type(cls, name):
+            return cls._ref_class_registry()._properties_type(name)
 
         @property
         def ref_class(self):
@@ -84,6 +84,9 @@ class TypeBuilder:
             return self.ref_class.serialize(value, **opts)
 
         def validate(self, value, **opts):
+            from ngoschema.types import Object
+            return Object.validate(self.ref_class, value, **opts)
+            return TypeProtocol.validate(self.ref_class, value, **opts)
             return self.ref_class.validate(value, **opts)
 
         @staticmethod

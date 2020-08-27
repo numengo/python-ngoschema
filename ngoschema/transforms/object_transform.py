@@ -11,6 +11,7 @@ class ObjectTransform(with_metaclass(ObjectMetaclass)):
     Class to do simple model to model transformation
     """
     _schema_id = "https://numengo.org/ngoschema/object-transform#/$defs/ObjectTransform"
+    _schema_id = "https://numengo.org/ngoschema2#/$defs/transforms/$defs/ObjectTransform"
 
     #def __init__(self, **kwargs):
     #    ProtocolBase.__init__(self, **kwargs)

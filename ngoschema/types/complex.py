@@ -136,6 +136,8 @@ class Date(Literal):
 
     @staticmethod
     def convert(value, **opts):
+        if value is None:
+            return value
         if isinstance(value, (arrow.Arrow, datetime.datetime)):
             assert value.time() == datetime.time(0, 0), value.time()
             return value.date()
@@ -177,6 +179,8 @@ class Time(Literal):
 
     @staticmethod
     def convert(value, **opts):
+        if value is None:
+            return value
         if isinstance(value, datetime.time):
             return value
         if isinstance(value, (datetime.datetime, arrow.Arrow)):
@@ -214,6 +218,8 @@ class Datetime(Date, Time):
 
     @staticmethod
     def convert(value, **opts):
+        if value is None:
+            return value
         if isinstance(value, arrow.Arrow):
             return value
         if isinstance(value, datetime.datetime):
