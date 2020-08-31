@@ -9,32 +9,32 @@ import re
 
 from ..exceptions import InvalidValue
 from ..utils import qualname
-from .type import Type, TypeChecker
-from .type_builder import TypeBuilder
-from .literals import String
+from ..managers.type_builder import register_type
+from .type import TypeProtocol, Primitive
+from .strings import String
 from .object import Object
 
 
-@TypeChecker.register('importable')
-class Importable(String):
+@register_type('importable')
+class Symbol(Primitive):
     """
     Associate json-schema 'importable' to an imported symbol
     """
-    _schema = {'type': 'importable'}
     DOT = re.compile(r"\.")
+    _py_type = None
+    _builtins = importlib.__builtins__
 
-    @classmethod
-    def convert(cls, value, context=None, convert=True, **opts):
-        typed = importlib.__builtins__.get(value, value)
-        if String.check(value, convert=False):
-            value = String.convert(value, **opts)
-            poss = [m.start() for m in cls.DOT.finditer("%s." % value)]
+    def _convert(self, value, **opts):
+        typed = self._builtins.get(value, value)
+        if String.check(typed):
+            value = String.convert(typed, **opts)
+            poss = [m.start() for m in Symbol.DOT.finditer("%s." % typed)]
             # going backwards
             for pos in reversed(poss):
                 try:
                     m = value[0:pos]
                     ret = importlib.import_module(m)
-                    for a in value[pos + 1:].split("."):
+                    for a in typed[pos + 1:].split("."):
                         if not a:
                             continue
                         ret = getattr(ret, a, None)
@@ -44,94 +44,91 @@ class Importable(String):
                     break
                 except Exception as er:
                     continue
-        if typed is not None and not cls.check(typed, convert=False, **opts):
-            raise InvalidValue("%s is not a %s" % (value, cls._type))
+        if typed is not None and not self.check_symbol(typed):
+            raise InvalidValue("%s is not a %s" % (value, self._type))
         return typed
 
     @classmethod
-    def check(cls, value, convert=False, **opts):
+    def check_old(cls, value, convert=False, **opts):
         if String.check(value, convert=False) and convert:
             try:
                 value = cls.convert(value, **opts)
             except (Exception, InvalidValue) as er:
                 return False
-        return cls._check_symbol(value)
+        return cls.check_symbol(value)
 
-    @staticmethod
-    def _check_symbol(value):
-        return Module._check_symbol(value) or Function._check_symbol(value) or Class._check_symbol(value)\
-               or Method._check_symbol(value) or Instance._check_symbol(value) or Callable._check_symbol(value)
+    def _check(self, value, **opts):
+        return self.check_symbol(value) or TypeProtocol._check(self, value, **opts)
 
-    def serialize(self, value, **opts):
+    @classmethod
+    def check_symbol(cls, value):
+        return isinstance(value, cls._py_type) if cls._py_type else True
+
+    def _serialize(self, value, **opts):
         if value and not String.check(value):
             m = getattr(value, '__module__', None)
             value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
-        return String.serialize(self, value, **opts)
+        return String.serialize(value, **opts)
 
 
-@TypeChecker.register('module')
-class Module(Importable):
-    _schema = {'type': 'module'}
+@register_type('module')
+class Module(Symbol):
+    _py_type = types.ModuleType
 
-    @staticmethod
-    def _check_symbol(value):
-        return isinstance(value, types.ModuleType)
-
-    def serialize(self, value, **opts):
+    def _serialize(self, value, **opts):
         if value and not String.check(value):
             value = value.__name__
-        return String.serialize(self, value, **opts)
+        return String.serialize(value, **opts)
 
 
-@TypeChecker.register('function')
-class Function(Importable):
-    _schema = {'type': 'function'}
-
-    @staticmethod
-    def _check_symbol(value):
-        return isinstance(value, types.FunctionType)
+@register_type('function')
+class Function(Symbol):
+    _py_type = types.FunctionType
 
 
-@TypeChecker.register('class')
-class Class(Importable):
-    _schema = {'type': 'class'}
-
-    @staticmethod
-    def _check_symbol(value):
-        return isinstance(value, type)
+@register_type('class')
+class Class(Symbol):
+    _py_type = type
 
 
-@TypeChecker.register('method')
-class Method(Importable):
-    _schema = {'type': 'method'}
-
-    @staticmethod
-    def _check_symbol(value):
-        return inspect.ismethod(value)
+@register_type('method')
+class Method(Function):
+    _py_type = types.MethodType
 
 
-class StaticMethod(Function):
+@register_type('staticmethod')
+class StaticMethod(Method):
 
-    @staticmethod
-    def _check_symbol(value):
-        return Function.check(value) and hasattr(value, '__class__')
+    @classmethod
+    def check_symbol(cls, value):
+        return Method.check(value) and hasattr(value, '__class__')
 
 
-class Instance(Importable):
+@register_type('classmethod')
+class ClassMethod(Method):
 
-    @staticmethod
-    def _check_symbol(value):
+    @classmethod
+    def check_symbol(cls, value):
+        return Method.check(value) and isinstance(value, classmethod)
+
+
+@register_type('instance')
+class Instance(Class):
+    _py_type = None
+
+    @classmethod
+    def check_symbol(cls, value):
         if getattr(value, "__class__"):
-            return isinstance(value, value.__class__) and not inspect.isclass(value)
+            return isinstance(value, value.__class__) and not isinstance(value, type)
         return False
 
 
-class Callable(Importable):
+@register_type('callable')
+class Callable(Symbol):
+    _py_type = None
 
-    @staticmethod
-    def _check_symbol(value):
-        if getattr(value, "__class__"):
-            return isinstance(value, value.__class__) and not inspect.isclass(value)
-        return False
+    @classmethod
+    def check_symbol(cls, value):
+        return callable(value)
 
 

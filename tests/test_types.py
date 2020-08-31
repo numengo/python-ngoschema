@@ -27,11 +27,14 @@ def test_base():
     with pytest.raises(ValidationError) as e_info:
         assert types.String(maxLength=5)("hello {{name}}!", name='world') == 'hello world!'
 
+    assert types.Boolean.check('TRUE', convert=True)
+    assert types.Boolean.check('false', convert=True)
+    assert not types.Boolean.check('not a boolean', convert=True)
     assert types.Boolean()(True) is True
     assert types.Boolean()(False) is False
-    assert types.Boolean()('true') is True
-    assert types.Boolean()('TRUE') is True
-    assert types.Boolean()('false') is False
+    assert types.Boolean()('true', convert=True) is True
+    assert types.Boolean()('TRUE', convert=True) is True
+    assert types.Boolean()('false', convert=True) is False
 
     assert types.Number()(2.3) == pytest.approx(decimal.Decimal('2.3')), types.Number()(2.3)
     with pytest.raises(InvalidValue) as e_info:
@@ -81,12 +84,12 @@ def test_array():
     ArrayString = types.Array(items={'type': 'string'})
     ArrayInteger = types.Array(items={'type': 'integer'})
     ArrayInteger5 = types.Array(items={'type': 'integer'}, minItems=5, maxItems=5)
-    assert repr(ArrayInteger5) == '<Array type=array items{1} minItems=5 maxItems=5>', repr(ArrayInteger5)
+    assert repr(ArrayInteger5) == "ngoschema.types.array.Array(type='array', items={'type': 'integer'}, minItems=5, maxItems=5)", repr(ArrayInteger5)
     assert ArrayInteger([1, '2', '{{a}}', '`a'], a=1) == [1, 2, 1, 1], ArrayInteger([1, '2', '{{a}}', '`a'], a=1)
     assert ArrayString([1, '2', '{{a}}', '`a'], a=1) == ['1', '2', '1', '1']
     with pytest.raises(InvalidValue) as e_info:
         ArrayInteger5([1, '2', '{{a}}', '`a'], a=1)
-    assert ArrayInteger5.default() == [0, 0, 0, 0, 0]
+    assert ArrayInteger5._default() == [0, 0, 0, 0, 0], ArrayInteger5._default()
 
 
 def test_object():
@@ -98,12 +101,13 @@ def test_object():
 
     obj2 = Object(properties={'a': types.Integer})
     assert obj2(o)['a'] == 1
-    assert 'c' in Object(required=['c'])(o)
-    assert Object(required=['c']).default() == OrderedDict(c=None)
+    with pytest.raises(InvalidValue) as e_info:
+        assert 'c' in Object(required=['c'])(o)
+    assert Object(required=['c'])._default() == OrderedDict(c=None)
 
 
 def test_canonical_name():
-    from ngoschema.utils import Context
+    from ngoschema.managers.context import Context
     from ngoschema.types.foreign_key import CanonicalName
     b = {'name': 'b'}
     a = 'a value'
@@ -121,8 +125,8 @@ def test_canonical_name():
 
 
 if __name__ == '__main__':
+    #test_canonical_name()
+    test_object()
     test_array()
-    test_canonical_name()
     test_base()
     test_complex()
-    test_object()

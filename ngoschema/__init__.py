@@ -8,7 +8,10 @@ __version__ = "__version__ = '0.3.0'"
 from simple_settings import LazySettings
 settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
 
-from .utils import Context
+from .utils import register_module
+register_module('ngoschema')
+
+from .managers.context import Context
 
 DEFAULT_CONTEXT = Context(**{
     'True': True,
@@ -18,11 +21,9 @@ DEFAULT_CONTEXT = Context(**{
 
 APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
 
-from .utils import register_module
-register_module('ngoschema')
-
 from .exceptions import InvalidOperation, SchemaError, ValidationError
-from .types import *
+from .managers import *
+from .protocols import *
 from .repositories import *
 from .query import Query, Filter
 
@@ -35,9 +36,8 @@ __all__ = [
     # loaders
     'register_module',
     # builder and protocol
-    'NamespaceManager',
     'TypeBuilder',
-    'Type',
+    'NamespaceManager',
     'with_metaclass',
     'ObjectMetaclass',
     # literals

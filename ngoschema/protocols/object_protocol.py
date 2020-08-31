@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import logging
-from collections import MutableMapping, defaultdict, Mapping
+from collections import MutableMapping, Mapping
 from collections import OrderedDict, defaultdict
 import re
 from operator import neg
@@ -16,23 +16,22 @@ from ..decorators import assert_arg
 from ..utils import ReadOnlyChainMap as ChainMap, shorten
 from .. import decorators
 from ..resolver import UriResolver, resolve_uri
-from ..inspect import inspect_function
-from .literals import Literal, Expr, Pattern, String
-from .array import Array, Tuple
-from .object import Object
-from .symbols import Importable, Function, Method
-from .type import Type, DefaultValidator
-from .type_builder import TypeBuilder
-from ngoschema.resolver import scope
-from .namespace_manager import default_ns_manager, clean_js_name
-from .. import settings, DEFAULT_CONTEXT
-
+from ..inspect.inspect_symbols import inspect_function
+from ..types.strings import Expr, Pattern, String
+from ..types.array import Array, Tuple
+from ..types.object import Object
+from ..types.symbols import Symbol, Function, Method
+from ..resolver import scope
+from ..managers.type_builder import DefaultValidator
+from ..managers.namespace_manager import default_ns_manager, clean_js_name
+from .. import settings
+from .type_protocol import TypeProtocol
+from .collection_protocol import CollectionProtocol
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 ADD_LOGGING = settings.DEFAULT_ADD_LOGGING
 ASSERT_ARGS = settings.DEFAULT_ASSERT_ARGS
 LOGGER_LEVEL = settings.DEFAULT_LOGGER_LEVEL
-LAZY_LOADING = settings.DEFAULT_LAZY_LOADING
 ATTRIBUTE_BY_NAME = settings.DEFAULT_ATTRIBUTE_BY_NAME
 SCHEMA_DEF_KEYS = settings.SCHEMA_DEF_KEYS
 PROP_PREF = {
@@ -43,11 +42,15 @@ PROP_PREF = {
 
 
 def split_cname(cname):
+    # split cname into an array of identifiers
+    # in case a relative cname is given, removes the first empty cname
+    # all next empty id means 'parent'
     def split_part(part):
         parts = part.split('[')
         n, indices = parts[0], parts[1:]
         return [n] + [int(i.strip(']')) for i in indices]
-    return sum([split_part(part) for part in cname.split('.')], [])
+    cns = sum([split_part(part) for part in cname.split('.')], [])
+    return cns.pop(0) if cns and not cns[0] else cns
 
 
 class PropertyDescriptor:
@@ -67,11 +70,11 @@ class PropertyDescriptor:
             key = self.pname
             outdated = obj._is_outdated(key)
             if outdated or self.fget or self.fset:
-                inputs = obj._inputs_evaluate(key)
+                inputs = obj._items_inputs_evaluate(key)
                 if self.fget:
                     obj._set_data(key, self.fget(obj))
-                obj._set_data_validated(key, obj._properties_evaluate(key, obj._data.get(key)))
-                obj._data_inputs[key] = inputs  # after set_validated_data as it touches inputs data
+                obj._set_data_validated(key, obj._items_evaluate(key, validate=not obj._lazy_loading and key not in obj._not_validated))
+                obj._items_inputs[key] = inputs  # after set_validated_data as it touches inputs data
             value = obj._data_validated[key]
             if outdated and self.fset:
                 self.fset(obj, value)
@@ -88,8 +91,8 @@ class PropertyDescriptor:
                 raise AttributeError("'%s' is read only" % key)
             obj._set_data(key, value)
             if not obj._lazy_loading:
-                obj._data_inputs[key] = obj._inputs_evaluate(key)
-                obj._set_data_validated(key, obj._properties_evaluate(key, obj._data.get(key)))
+                obj._items_inputs[key] = obj._items_inputs_evaluate(key)
+                obj._set_data_validated(key, obj._items_evaluate(key, validate=not obj._lazy_loading and key not in obj._not_validated))
                 if self.fset:
                     self.fset(obj, obj._data_validated[key])
         except Exception as er:
@@ -103,15 +106,15 @@ class PropertyDescriptor:
         if self.fdel:
             self.fdel(obj)
         del obj._data[key]
-        del obj._data_inputs[key]
         del obj._data_validated[key]
+        del obj._items_inputs[key]
 
 
-class ObjectProtocol(Object, MutableMapping):
+class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     """
     ObjectProtocol is class defined by a json-schema and built by TypeBuilder.build_object_protocol.
     The schema is specified directly by a protected attribute _schema or by providing its id using a protected
-    attribute _schema_id to be resolved in loaded schemas.
+    attribute _id to be resolved in loaded schemas.
 
     The class is built with an ordered dictionary of property types (which can be Literal or a subclass of
     ObjectProtocol or ArrayProtocol.
@@ -123,84 +126,56 @@ class ObjectProtocol(Object, MutableMapping):
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
     """
-    _lazy_loading = LAZY_LOADING
     _attribute_by_name = ATTRIBUTE_BY_NAME
     _data = {}
-    _is_validated = False
     _data_validated = {}
     _data_additional = {}
-    _data_inputs = {}
-    _aliases = {}
-    _aliases_negated = {}
-    _properties = {}
+    _items_inputs = {}
+    _extends = []
     _properties_translation = {}
     _primary_keys = []
 
     def __new__(cls, *args, **kwargs):
+        from ..managers import TypeBuilder
         data = args[0] if args else kwargs
         s_id = data.get('$schema') if isinstance(data, Mapping) else None
         if s_id:
             # handle case $schema is given as a canonical name
             if '/' not in s_id:
                 data['$schema'] = default_ns_manager.get_cname_id(s_id)
-            if s_id != cls._schema_id:
+            if s_id != cls._id:
                 cls = TypeBuilder.load(s_id)
         new = super(ObjectProtocol, cls).__new__
         if new is object.__new__:
             return new(cls)
         return new(cls, *args, **kwargs)
 
-    def __init__(self, *args, validate=None, check=False, context=None, session=None, **kwargs):
-        data = args[0] if args else kwargs
-        self._lazy_loading = lz = self._lazy_loading if validate is None else not validate
-        self._session = session
-        self._is_validated = False
-        #data.pop('$schema', None)
-        if check and not self.check(data):
-            raise InvalidValue('%s is not compatible with %s' % data, self)
-        if data is None:
-            self._data = OrderedDict(Object.default(self))
-        else:
-            self._data = Object._convert(self, data, convert=False)
-        self._data_validated = {}
-        self._data_additional = {}
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('$schema', None)
+        CollectionProtocol.__init__(self, *args, **kwargs)
         for k in self._has_pk:
-            self._set_data(k, self._data[k])
-        self._touch()
-        self._make_context(context)
-        if not lz:
-            #TODO remove exception handling
-            try:
-                for k in list(MutableMapping.keys(self)):
-                    self[k]
-                #list(MutableMapping.items(self))
-            except Exception as er:
-                self._logger.error(er, exc_info=True)
-                raise
-        if validate:
-            self.validate(self, excludes=['properties'] if lz else [])
+            self[k]
 
     def _make_context(self, context=None, *extra_contexts):
-        Type._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
-        # _parent and _root are declared readonly in inspect.mm and it raises an error
-        self._parent = next((m for m in self._context.maps if isinstance(m, ObjectProtocol) and m is not self), None)
-        self._root = next((m for m in reversed(self._context.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
+        TypeProtocol._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
 
-    def _touch(self, key=None):
-        if key:
-            self._data_validated[key] = None
-            self._data_inputs[key] = {}
-            for d, s in self._dependencies.items():
-                if key in s:
-                    self._touch(d)
-        else:
-            keys = list(self._data.keys())
-            self._data_inputs = {k: {} for k in keys}
-            self._data_validated = {k: None for k in keys}
-            self._data_additional = {k: None for k in self._data_additional.keys()}
-        self._repr = None
-        self._str = None
-        self._is_validated = False
+    @classmethod
+    def is_object(cls):
+        return True
+
+    def _items_touch(self, item):
+        CollectionProtocol._items_touch(self, item)
+        for d, s in self._dependencies.items():
+            if item in s:
+                self._items_touch(d)
+
+    def touch(self):
+        CollectionProtocol._touch(self)
+        keys = list(self._data.keys())
+        self._items_inputs = {k: {} for k in keys}
+        self._data_validated = {k: None for k in keys}
+        self._data_additional = {k: None for k in self._data_additional.keys()}
+        self._dependencies = dict(self.__class__._dependencies)
 
     def __len__(self):
         return len(self._data_validated)
@@ -225,89 +200,6 @@ class ObjectProtocol(Object, MutableMapping):
             return name, clean_js_name(name)
         return None, None
 
-    def _set_data(self, key, value):
-        from ..models import Entity
-        ptype = self._properties_type(key)
-        if issubclass(ptype, Entity) and value is not None and not Object.check(value):
-            value = self.session.resolve_fkey(value, ptype)
-            assert value
-        if (ptype.is_literal() or value is None) and value != self._data.get(key):
-            self._touch(key)
-        elif value is not self._data.get(key):
-            self._touch(key)
-        self._data[key] = value
-
-    def _inputs_evaluate(self, key):
-        try:
-            return {k: self[k] for k in Object._inputs(self, self._data, key, with_inner=False)}
-        except Exception as er:
-            ret = {}
-            for k in Object._inputs(self, self._data, key, with_inner=False):
-                try:
-                    ret[k] = self[k]
-                except Exception as er:
-                    pass
-            return ret
-
-    def _set_data_validated(self, key, value):
-        if Literal.check(value):
-            if value != self._data_validated.get(key):
-            #    self._touch(key)
-                self._data[key] = value
-            if not Pattern.check(self._data.get(key)):
-                self._data[key] = value
-        else:
-            self._data[key] = value
-        self._data_validated[key] = value
-
-    def _is_outdated(self, key):
-        return (self._data_validated.get(key) is None and self._data.get(key) is not None
-                ) or (key not in self._not_validated and self._data_inputs[key] != self._inputs_evaluate(key))
-
-    @classmethod
-    def validate(cls, value, **opts):
-        if isinstance(value, cls) and value._is_validated:
-            return {}
-        ret = Object.validate(cls, value, **opts)
-        if isinstance(value, cls) and not ret:
-            value._is_validated = True
-        return ret
-
-    def do_validate(self, **opts):
-        from .array_protocol import ArrayProtocol
-        for k, v in self._data_validated.items():
-            if k in self._not_validated:
-                continue
-            if self._is_outdated(k):
-                v = self[k]
-            if isinstance(v, (ObjectProtocol, ArrayProtocol)):
-                v.do_validate(**opts)
-            elif v is not None:
-                self._properties_type(k).validate(v, **opts)
-        self._is_validated = True
-        return self._data_validated
-
-    @classmethod
-    def serialize(cls, value, **opts):
-        return Object.serialize(cls, value, **opts)
-
-    def do_serialize(self, attr_prefix='', **opts):
-        from .array_protocol import ArrayProtocol
-        kt = ((k, self._properties_type(k)) for k in self.print_order(**opts))
-        ktn = [(k, t, k if not t.is_literal() else f'{attr_prefix}{k}') for k, t in kt]
-        ret = OrderedDict([(n, None) for k, t, n in ktn])
-        #avs = {k2: self[k1] for k1, k2 in self._aliases.items() if k1 in ktn}
-        #navs = {k2: - self[k1] for k1, k2 in self._aliases_negated.items() if k1 in ktn}
-        for k, t, n in ktn:
-            v = self._data_additional.get(k) or self._data_validated.get(k) # or avs.get(k)
-            if v is None and self._data.get(k) is not None or self._aliases or self._aliases_negated:
-                v = self[k]
-            if isinstance(v, (ObjectProtocol, ArrayProtocol)):
-                ret[n] = v.do_serialize(attr_prefix=attr_prefix, **opts)
-            elif v is not None:
-                ret[n] = t.serialize(v, **opts)
-        return ret
-
     def __getattr__(self, name):
         # private and protected attributes at accessed directly
         if name.startswith('_'):
@@ -320,7 +212,7 @@ class ObjectProtocol(Object, MutableMapping):
         if desc:
             return op(desc.__get__(self))
         if self._properties_additional and name in self._data:
-            self._data_inputs[raw] = self._inputs_evaluate(name)
+            self._items_inputs[raw] = self._items_inputs_evaluate(name)
             self._data_additional[raw] = v = op(self[name])
             return v
         if self._attribute_by_name:
@@ -371,8 +263,9 @@ class ObjectProtocol(Object, MutableMapping):
                 return p2
         raise Exception("Unresolvable canonical name '%s' in '%s'" % (cname, cur))
 
-    @assert_arg(1, Tuple, str_delimiter='.')
+    #@assert_arg(1, Tuple, strDelimiter='.')
     def resolve_cname(self, cname):
+        cname = cname if Array.check(cname) else cname.split('.')
         cur, path = self, self.resolve_cname_path(cname)
         for p in path:
             cur = cur[p]
@@ -390,6 +283,8 @@ class ObjectProtocol(Object, MutableMapping):
                                  name, self.__class__.__name__))
 
     def __getitem__(self, key):
+        if not key:
+            return self._parent
         op = lambda x: neg(x) if key in self._aliases_negated else x
         key = self._aliases_negated.get(key, key)
         key = self._aliases.get(key, key)
@@ -403,11 +298,13 @@ class ObjectProtocol(Object, MutableMapping):
             cur = self
             for p in parts:
                 cur = cur[p]
+                if cur is None:
+                    return
             return op(cur)
         if key in self._data:
             if self._lazy_loading or self._is_outdated(key):
-                self._data_inputs[key] = self._inputs_evaluate(key)
-                self._set_data_validated(key, self._properties_evaluate(key, self._data[key]))
+                self._items_inputs[key] = self._items_inputs_evaluate(key)
+                self._set_data_validated(key, self._items_evaluate(key, validate=not self._lazy_loading))
             return op(self._data_validated[key])
         raise KeyError(key)
 
@@ -423,8 +320,7 @@ class ObjectProtocol(Object, MutableMapping):
         self._set_data(key, v)
         self._data_additional[key] = v
         if not self._lazy_loading:
-            self._data_inputs[key] = self._inputs_evaluate(key)
-            self._set_data_validated(key, self._properties_evaluate(key, self._data.get(key)))
+            self._set_data_validated(key, v)
 
     def __delitem__(self, key):
         for trans, raw in self._properties_translation.items():
@@ -433,7 +329,7 @@ class ObjectProtocol(Object, MutableMapping):
                 break
         else:
             del self._data[key]
-            del self._data_inputs[key]
+            del self._items_inputs[key]
             del self._data_validated[key]
 
     def print_order(self, **opts):
@@ -442,101 +338,55 @@ class ObjectProtocol(Object, MutableMapping):
     def call_order(self, **opts):
         return Object.call_order(self, self._data, **opts)
 
-    def __repr__(self):
-        if self._repr is None:
-            m = settings.PPRINT_MAX_EL
-            ks = list(self.print_order(no_defaults=True, no_read_only=True))
-            hidden = max(0, len(ks) - m)
-            a = ['%s=%s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
-            a += ['+%i...' % hidden] if hidden else []
-            self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
-        return self._repr
+    def _serialize(self, value, **opts):
+        ret = Object._serialize(self, value, **opts)
+        for alias, raw in self._aliases.items():
+            if alias not in self._not_serialized:
+                v = ret.get(raw)
+                if v is not None:
+                    ret[alias] = v
+        for alias, raw in self._aliases_negated.items():
+            if alias not in self._not_serialized:
+                v = ret.get(raw)
+                if v is not None:
+                    ret[alias] = - v
+        return ret
 
-    def __str__(self):
-        if self._str is None:
-            m = settings.PPRINT_MAX_EL
-            ks = list(self.print_order(no_defaults=False, no_read_only=False))
-            hidden = max(0, len(ks) - m)
-            a = ['%s: %s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
-            a += ['+%i...' % hidden] if hidden else []
-            self._str = '{%s}' % (', '.join(a))
-        return self._str
+    #def __repr__(self):
+    #    if self._repr is None:
+    #        m = settings.PPRINT_MAX_EL
+    #        ks = list(self.print_order(no_defaults=True, no_read_only=True))
+    #        hidden = max(0, len(ks) - m)
+    #        a = ['%s=%s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
+    #        a += ['+%i...' % hidden] if hidden else []
+    #        self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
+    #    return self._repr
+    #
+    #def __str__(self):
+    #    if self._str is None:
+    #        m = settings.PPRINT_MAX_EL
+    #        ks = list(self.print_order(no_defaults=False, no_read_only=False))
+    #        hidden = max(0, len(ks) - m)
+    #        a = ['%s: %s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
+    #        a += ['+%i...' % hidden] if hidden else []
+    #        self._str = '{%s}' % (', '.join(a))
+    #    return self._str
 
-    def __eq__(self, other):
-        if self is other:
-            return True
-        if not Object.check(other):
-            return False
-        if len(self) != len(other) or self.keys() != other.keys():
-            return False
-        for k in self:
-            if self[k] != other[k]:
-                return False
-        return True
-
+    _items_type_cache = None
     @classmethod
-    def convert(cls, value, **opts):
-        return value if isinstance(value, cls) else Object._convert(cls, value, **opts)
-
-    @classmethod
-    def check(cls, value, **opts):
-        if Type._check(cls, value, **opts):
-            return True
-        if isinstance(value, Mapping):
-            try:
-                Object.validate(cls, value, **opts)
-                return True
-            except Exception as er:
-                return False
-        return False
-
-    _properties_type_cache = None
-    @classmethod
-    def _properties_type(cls, name):
-        if cls._properties_type_cache is None:
-            cls._properties_type_cache = {}
-        t = cls._properties_type_cache.get(name)
+    def items_type(cls, item):
+        if cls._items_type_cache is None:
+            cls._items_type_cache = {}
+        t = cls._items_type_cache.get(item)
         if t is None:
-            t = Object._properties_type(cls, name)
-            cls._properties_type_cache[name] = t
+            t = Object.items_type(cls, item)
+            cls._items_type_cache[item] = t
         return t
-
-    def _properties_evaluate(self, name, value, **opts):
-        from .array_protocol import ArrayProtocol
-        if value is None:
-            return
-        ptype = self._properties_type(name)
-        if isinstance(value, ptype) and not Expr.check(value) and not Pattern.check(value):
-            lz_excludes = ['items', 'properties'] if getattr(ptype, '_lazy_loading', False) else []
-            if name not in self._not_validated:
-                if isinstance(value, ObjectProtocol):
-                    ObjectProtocol.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
-                    value._make_context(self._context)
-                elif isinstance(value, ArrayProtocol):
-                    ArrayProtocol.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
-                    value._make_context(self._context)
-                else:
-                #ptype.validate(value, excludes=opts.pop('excludes', []) + lz_excludes, **opts)
-                    ptype.validate(value, **opts)
-        else:
-            try:
-                value = ptype(value, context=self._context, session=self.session, **opts)
-            except Exception as er:
-                etype, value, trace = sys.exc_info()
-                value = f'Problem evaluating {name} in {self}: {value}'
-                six.reraise(etype, etype(value), trace)
-        return value
-
-    _default = None
-    @classmethod
-    def default(cls, **opts):
-        if cls._default is None:
-            cls._default = Object.default(cls, **opts)
-        return cls._default
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
-        from .type_builder import TypeBuilder, scope
+        from ..managers.type_builder import TypeBuilder, scope
+        from ..protocols import TypeProxy
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)
         clsname = attrs.pop('_clsname', None) or cname.split('.')[-1]
@@ -559,11 +409,10 @@ class ObjectProtocol(Object, MutableMapping):
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
 
-        not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeBuilder.TypeProxy) and b.ref_class is None)
-        not_ready_yet_sch = tuple(TypeBuilder.expand(b._ref) for b in not_ready_yet)
+        not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
+        not_ready_yet_sch = tuple(TypeBuilder.expand(b._proxy_uri) for b in not_ready_yet)
         pbases = tuple(b for b in pbases if b not in not_ready_yet)
         if not pbases:
-            #pbases = (ObjectProtocol, )
             bases += [ObjectProtocol]
 
         # create an aliases dictionary from all bases dependencies
@@ -597,14 +446,13 @@ class ObjectProtocol(Object, MutableMapping):
                 primary_keys += b._primary_keys
             primary_keys = [k for i, k in enumerate(primary_keys) if i == primary_keys.index(k)]
 
-        extends = [b._schema_id for b in pbases] + [b._ref for b in not_ready_yet]
+        extends = [b._id for b in pbases] + [b._proxy_uri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', []), *[b._not_serialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
         not_validated = set().union(schema.get('notValidated', []), *[b._not_validated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
         required = set().union(schema.get('required', []), *[b._required for b in pbases], *[s.get('required', []) for s in not_ready_yet_sch])
         read_only = set().union(schema.get('readOnly', []), *[b._read_only for b in pbases], *[s.get('readOnly', []) for s in not_ready_yet_sch])
-        has_default = set().union(*[b._has_default for b in pbases])
+        has_default = set().union(*[b._properties_with_default for b in pbases])
 
-        attrs_to_keep = {}
         # create type for properties
         properties = OrderedDict([(k, TypeBuilder.build(f'{id}/properties/{k}', v))
                                   for k, v in schema.get('properties', {}).items()])
@@ -615,9 +463,6 @@ class ObjectProtocol(Object, MutableMapping):
         pattern_properties = set([(re.compile(k),
                                    TypeBuilder.build(f'{id}/patternProperties/{k}', v))
                                    for k, v in schema.get('patternProperties', {}).items()])
-        #ap = schema.get('additionalProperties', True)
-        #additional_properties = False if not ap else TypeBuilder.build(f'{id}/additionalProperties',
-        #                                                                   ap if Object.check(ap) else {})
         additional_properties = TypeBuilder.build(f'{id}/additionalProperties', schema.get('additionalProperties', True))
 
         # add some magic on methods defined in class
@@ -625,9 +470,9 @@ class ObjectProtocol(Object, MutableMapping):
         add_logging = attrs.get('_add_logging', ADD_LOGGING)
         assert_args = attrs.get('_assert_args', ASSERT_ARGS)
         for k, v in attrs.items():
-            if isinstance(v, Type):
+            if isinstance(v, TypeProtocol):
                 schema[k] = v._schema
-            if Function.check(v, convert=False):
+            if Function.check(v):
                 f = v
                 if add_logging:
                     if k == '__init__':
@@ -641,7 +486,7 @@ class ObjectProtocol(Object, MutableMapping):
                             logger.debug(
                                 "decorate <%s>.%s with argument %i validity check.",
                                 clsname, k, pos)
-                            f = decorators.assert_arg(pos, Type, **sch)(f)
+                            f = decorators.assert_arg(pos, TypeProtocol, **sch)(f)
                 # add exception logging
                 if add_logging and not k.startswith("__"):
                     logger.debug("decorate <%s>.%s with exception logger", clsname, k)
@@ -650,13 +495,14 @@ class ObjectProtocol(Object, MutableMapping):
 
         # go through attributes to find default values, accessors and additional dependencies
         # store additional data that will be used to rebuild the inner object type with property redefinitions
-        def is_mro_symbol(a):
+        def is_symbol(f):
             import types
+            return isinstance(f, types.FunctionType) or isinstance(f, classmethod) or isinstance(f, types.MethodType)
+
+        def is_mro_symbol(a):
             mro_attrs = [getattr(b, a, None) for b in bases + bases_extended + [ObjectProtocol]] + [attrs.get(a)]
-            return any(isinstance(a, types.FunctionType)
-                       or isinstance(a, classmethod)
-                       or isinstance(a, types.MethodType)
-                       for a in mro_attrs if a)
+            return any(is_symbol(a) for a in mro_attrs if a)
+
         extra_schema_properties = {}
         descriptor_funs = {}
         for pname, ptype in all_properties.items():
@@ -665,14 +511,12 @@ class ObjectProtocol(Object, MutableMapping):
                 properties_translation[ptrans] = pname
             # excluding definition keys from schema lookup
             attr = attrs.pop(ptrans, None)
+            if attr and is_symbol(attr):
+                attr = None
             if attr is None and pname not in SCHEMA_DEF_KEYS:
                 attr = schema.get(pname)
             if attr is not None:
-                if is_mro_symbol(pname): # or isinstance(attr, staticmethod):
-                    logger.warning('"%s" is a declared property and as a symbol.'
-                                   ' Be careful with potential conflicts when calling.', pname)
-                    attrs_to_keep[ptrans] = attr
-                elif ptype.check(attr, convert=True):
+                if ptype.check(attr, convert=True):
                     v = ptype.serialize(ptype.convert(attr))
                     extra_schema_properties[pname] = dict(ptype._schema)
                     extra_schema_properties[pname]['default'] = v
@@ -748,24 +592,24 @@ class ObjectProtocol(Object, MutableMapping):
         attrs['_read_only'] = read_only
         attrs['_properties_allowed'] = set(attrs['_properties']).union(attrs['_aliases'])\
             .union(attrs['_aliases_negated']).union(attrs['_properties_translation']).difference(read_only)
-        attrs['_has_default'] = has_default
+        attrs['_properties_with_default'] = has_default
         attrs['_dependencies'] = dependencies
         attrs['_outputs'] = outputs
         attrs['_logger'] = logger
         attrs['_schema_chained'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
         attrs['_schema'] = dict(attrs['_schema_chained'])
-        attrs['_properties_type_cache'] = None
-        attrs['_schema_id'] = id
+        attrs['_items_type_cache'] = None
         attrs['_id'] = id
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
+        attrs['_mro_type'] = pbases
         # add inner definitions
         for k, d in defs.items():
             attrs[k] = d
         # add properties
         for k, p in properties_descriptor.items():
-            attrs[clean_js_name(k)] = p
-        # attribute to keep
-        attrs.update(attrs_to_keep)
+            # only set descriptors which do not overwrite existing symbols
+            if not is_mro_symbol(k):
+                attrs.setdefault(clean_js_name(k), p)
 
         bases = tuple(bases + bases_extended)
         if not_ready_yet:
@@ -776,17 +620,9 @@ class ObjectProtocol(Object, MutableMapping):
         cls._py_type = cls
         return cls
 
-    @classmethod
-    def extend_type(cls, *bases, **schema):
-        if bases or schema:
-            return ObjectProtocol.build(cls._id, schema, (cls, *bases))
-        return cls
-
     @property
     def session(self):
         if not self._session and self._root and getattr(self._root, '_repo', None):
             self._session = self._root._repo.session
         return self._session
-    #schema = PropertyDescriptor('$schema', _properties['$schema'])
-    #id = PropertyDescriptor('$id', _properties['$id'])
 

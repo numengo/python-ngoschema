@@ -4,26 +4,25 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 
-from ..types import ObjectMetaclass, with_metaclass, ObjectProtocol, ArrayProtocol
-from ..types import NamespaceManager, String, Boolean, default_ns_manager
-from ..types.symbols import *
+from ..protocols import ObjectMetaclass, with_metaclass, ObjectProtocol, ArrayProtocol
+from ..managers import NamespaceManager, default_ns_manager
+from ..types import String, Boolean, Object
+from ..types import symbols
 from ..decorators import memoized_property, depend_on_prop
 from .metadata import NamedObject
 
 
 class Symbol(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/Symbol'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Symbol'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Symbol'
 
     @staticmethod
     def inspect(value):
-        from ..inspect.inspect_symbols import inspect_importable
-        return Importable(inspect_importable(value))
+        from ..inspect.inspect_symbols import inspect_symbol
+        return Symbol(inspect_symbol(value))
 
 
 class Id(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/types/$defs/Id'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Id'
+    _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Id'
     _lazy_loading = False
 
     def _make_context(self, context=None, *extra_contexts):
@@ -44,8 +43,7 @@ class Id(with_metaclass(ObjectMetaclass)):
 
 
 class VariableType(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/types/$defs/Type'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Type'
+    _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Type'
 
     def __init__(self, *args, **kwargs):
         data = args[0] if args else kwargs
@@ -54,7 +52,7 @@ class VariableType(with_metaclass(ObjectMetaclass)):
         if Object.check(data):
             for k, v in list(data.items()):
                 raw, trans = self._properties_raw_trans(k)
-                t = self._properties_type(raw)
+                t = self.items_type(raw)
                 if t.is_array() and Object.check(v):
                     del data[k] # remove previous entry in case it s an alias (eg $defs)
                     vs = []
@@ -112,32 +110,27 @@ _vartyp_props = list(VariableType._properties)
 
 
 class Variable(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/variables/$defs/Variable'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Variable'
+    _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Variable'
 
 
 class VariableValue(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/variables/$defs/VariableValue'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/VariableValue'
+    _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/VariableValue'
 
 
 class Argument(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/Argument'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
 
-    @classmethod
-    def convert(cls, value, **opts):
+    def convert(self, value, **opts):
         from ..inspect.doc_rest_parser import parse_docstring
         data = Variable.convert(value, **opts)
         doctype = data.pop('doctype', None)
         if doctype:
             data.update({k: v for k, v in parse_docstring(doctype).items() if v})
-        return Object.convert(cls, data, **opts)
+        return Object.convert(self, data, **opts)
 
 
 class Function(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/Function'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function'
 
     @staticmethod
     def inspect(value):
@@ -146,9 +139,7 @@ class Function(with_metaclass(ObjectMetaclass)):
 
 
 class FunctionCall(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/functions/$defs/FunctionCall'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/FunctionCall'
-
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/FunctionCall'
 
     @staticmethod
     def inspect(value):
@@ -157,8 +148,7 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
 
 
 class Definition(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/definitions/$defs/Definition'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Definition'
+    _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Definition'
 
     def _make_context(self, context=None, *extra_contexts):
         NamedObject._make_context(self, context, *extra_contexts)
@@ -183,8 +173,7 @@ class Definition(with_metaclass(ObjectMetaclass)):
 
 
 class Class(with_metaclass(ObjectMetaclass)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/classes/$defs/Class'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Class'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Class'
 
     @staticmethod
     def inspect(value):
@@ -219,13 +208,12 @@ class Class(with_metaclass(ObjectMetaclass)):
         sch = self._json_schema()
         return sch
 
-    def schema_id(self, ns):
-        return getattr(self.symbol, '_schema_id', None) or ns.get_cname_id(f'{self.module.__name__}.{self.symbol.__name__}')
+    def id(self, ns):
+        return getattr(self.symbol, '_id', None) or ns.get_cname_id(f'{self.module.__name__}.{self.symbol.__name__}')
 
 
 class Module(with_metaclass(ObjectMetaclass, Symbol)):
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/symbols/$defs/modules/$defs/Module'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/modules/$defs/Module'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/modules/$defs/Module'
 
     @staticmethod
     def inspect(value):
@@ -235,7 +223,7 @@ class Module(with_metaclass(ObjectMetaclass, Symbol)):
     def to_json_schema(self, ns):
         sch = self._json_schema()
         return sch
-        sch = {'$id': self.schema_id(ns), 'type': 'object'}
+        sch = {'$id': self.id(ns), 'type': 'object'}
         if self.description:
             sch['description'] = self.description
         if self.longDescription:

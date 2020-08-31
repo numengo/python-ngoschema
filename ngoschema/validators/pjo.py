@@ -190,8 +190,8 @@ def check_datetime_type(param, value, _):
 
 @type_registry.register(name="importable")
 def check_importable_type(param, value, _):
-    from ngoschema.types.symbols import Importable
-    if not Importable.check(value):
+    from ngoschema.types.symbols import Symbol
+    if not Symbol.check(value):
         raise ValidationError("{0} is not a importable string".format(value))
 
 # converters

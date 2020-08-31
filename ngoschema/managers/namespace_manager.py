@@ -62,7 +62,7 @@ class NamespaceManager(Registry):
         return cname
 
     def _get_id_cname_cached(self, ref):
-        from .complex import Uri
+        from ..types.uri import Uri
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         ns_uri, frag = urldefrag(ref)
         ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)

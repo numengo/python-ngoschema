@@ -25,9 +25,9 @@ from collections import Mapping, ChainMap
 #from ..protocol_base import ProtocolBase
 #from ..decorators import SCH_PATH_DIR
 #from ..decorators import SCH_PATH_FILE
-from ..types import Type, PathDir, PathFile
+from ..types import PathDir, PathFile, String
 from ..decorators import assert_arg, depend_on_prop
-from ..types import ObjectMetaclass
+from ..protocols import ObjectMetaclass
 from ..query import Query
 from ..resolver import UriResolver
 
@@ -38,9 +38,7 @@ class Document(with_metaclass(ObjectMetaclass)):
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
     """
-    _schema_id = 'https://numengo.org/ngoschema/document#/$defs/Document'
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/documents/$defs/Document'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/documents/$defs/Document'
+    _id = 'https://numengo.org/ngoschema#/$defs/documents/$defs/Document'
     _contentRaw = None
     _content = None
     _loaded = False
@@ -53,7 +51,7 @@ class Document(with_metaclass(ObjectMetaclass)):
         Entity.__init__(self, *args, **props)
 
     @property
-    def _id(self):
+    def doc_id(self):
         if self._content:
             return self._content.get('$id')
 
@@ -102,8 +100,8 @@ class Document(with_metaclass(ObjectMetaclass)):
 
     def unload(self):
         # remove reference from main registry
-        if self._id:
-            UriResolver.unregister_doc(self._id)
+        if self.doc_id:
+            UriResolver.unregister_doc(self.doc_id)
         self._contentRaw = self._content = None
 
     def write(self, content, mode='w'):
@@ -128,8 +126,8 @@ class Document(with_metaclass(ObjectMetaclass)):
         except Exception as er:
             raise
             raise Exception('impossible to deserialize %s: %s' % (self.identifier, er))
-        if self._id:
-            UriResolver.register_doc(self._content, self._id)
+        if self.doc_id:
+            UriResolver.register_doc(self._content, self.doc_id)
         return self._content
 
     @property
@@ -243,7 +241,7 @@ class DocumentRegistry(Mapping):
         doc = self._fp_catalog.get_instance(str(fp))
         return doc
 
-    @assert_arg(1, Type, type="string", format="uri-reference")
+    @assert_arg(1, String, type="string", format="uri-reference")
     def register_from_url(self, url):
         """
         Register a document from an URL

@@ -36,7 +36,8 @@ class ProtocolJSONEncoder(json.JSONEncoder):
         json.JSONEncoder.__init__(self, **kwargs)
 
     def default(self, obj):
-        from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol, TypeChecker
+        from ..protocols import ArrayProtocol, ObjectProtocol
+        from ..managers import TypeBuilder
         for t in (ObjectProtocol, ArrayProtocol):
             if isinstance(obj, t):
                 return t.do_serialize(obj, excludes=self.excludes,
@@ -46,15 +47,14 @@ class ProtocolJSONEncoder(json.JSONEncoder):
                                         attr_prefix=self.attr_prefix,
                                         use_entity_ref=self.use_entity_ref)
         else:
-            tn, ty = TypeChecker.detect_type(obj)
+            tn, ty = TypeBuilder.detect_type(obj)
             return ty().serialize(obj)
         return json.JSONEncoder.default(self, obj)
 
     def default_(self, obj):
-        from python_jsonschema_objects import classbuilder
-        from python_jsonschema_objects import wrapper_types
         from ..models.entities import Entity
-        from ..types import Type, Literal, Array, ArrayProtocol, ObjectProtocol
+        from ..protocols import ArrayProtocol, ObjectProtocol, TypeProtocol
+        from ..types import Literal, Array
         #from ..literals import LiteralValue
         #from ..utils import is_string, is_literal
         from ..validators.pjo import format_date, format_datetime, format_time, format_path
@@ -76,7 +76,7 @@ class ProtocolJSONEncoder(json.JSONEncoder):
             ns = getattr(obj, '_not_serialized', [])
             reqs = getattr(obj, '_required', [])
             ro = getattr(obj, '_read_only', {})
-            defvs = getattr(obj, '_has_default', {})
+            defvs = getattr(obj, '_properties_with_default', {})
             props = collections.OrderedDict()
             to_put_first = []
 

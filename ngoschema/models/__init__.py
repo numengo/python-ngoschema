@@ -2,7 +2,6 @@ from .documents import *
 #from .inspect import *
 from .metadata import *
 from .entities import *
-from .relationships import *
 
 
 
@@ -18,7 +17,4 @@ __all__ = [
     'Entity',
     'NamedEntity',
     'EntityWithMetadata',
-    # relationship
-    'Relationship',
-    'ObjectTransform',
 ]

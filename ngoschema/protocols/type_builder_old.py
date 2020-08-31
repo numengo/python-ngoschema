@@ -8,8 +8,8 @@ from collections import OrderedDict, Mapping
 
 from ..utils import ReadOnlyChainMap, apply_through_collection
 from ..resolver import resolve_uri, scope
-from .jsch_validators import default_meta_validator
-from .type import Type
+from ..types.jsch_validators import default_meta_validator
+from ..types.type import Type
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,8 @@ class TypeBuilder:
             return cls._ref_class_registry()._properties_raw_trans(name)
 
         @classmethod
-        def _properties_type(cls, name):
-            return cls._ref_class_registry()._properties_type(name)
+        def items_type(cls, name):
+            return cls._ref_class_registry().items_type(name)
 
         @property
         def ref_class(self):
@@ -87,11 +87,11 @@ class TypeBuilder:
             from ngoschema.types import Object
             return Object.validate(self.ref_class, value, **opts)
             return TypeProtocol.validate(self.ref_class, value, **opts)
-            return self.ref_class.validate(value, **opts)
+            return self.ref_class._validate(value, **opts)
 
         @staticmethod
         def build(ref, schema=None):
-            from .namespace_manager import default_ns_manager
+            from ..managers.namespace_manager import default_ns_manager
             from .object_protocol import ObjectProtocol
             from .array_protocol import ArrayProtocol
             schema = schema or {}
@@ -115,7 +115,7 @@ class TypeBuilder:
 
     @staticmethod
     def build(id, schema=None, bases=(), attrs=None):
-        from .constants import _True, _False
+        from ..types.constants import _True, _False
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
         if id in TypeBuilder._registry:
@@ -125,7 +125,7 @@ class TypeBuilder:
         if schema is None:
             schema = resolve_uri(id)
         if schema is True:
-            return _True()
+            return _True
         if schema is False:
             return _False()
         attrs = attrs or {}
@@ -149,7 +149,7 @@ class TypeBuilder:
     def load(id):
         if id not in TypeBuilder._registry:
             if id in TypeBuilder._on_construction:
-                return TypeBuilder.TypeProxy.build(id)()
+                return TypeBuilder.TypeProxy(id)
             TypeBuilder._registry[id] = TypeBuilder.build(id)
         return TypeBuilder._registry[id]
 
@@ -211,8 +211,8 @@ class TypeBuilder:
 class ObjectMetaclass(type):
     """Metaclass for instrumented classes defined by a schema based on ObjectProtocol.
 
-    :param _schema_id: id of schema to be resolved in loaded schemas using resolve_uri
-    :param _schema: json schema (optional, schema can be supplied via _schema_id
+    :param _id: id of schema to be resolved in loaded schemas using resolve_uri
+    :param _schema: json schema (optional, schema can be supplied via _id
     :param _lazy_loading: attribute is only built and validated on first access
     :param _attribute_by_name: attributes can be accessed also by their names according to setting ATTRIBUTE_NAME_FIELD
     :param _add_logging: init method is decorated with a logger and all methods are decorated to log exceptions.
@@ -223,11 +223,11 @@ class ObjectMetaclass(type):
     def __new__(cls, clsname, bases, attrs):
         #from .object_protocol import ObjectProtocol
         schema = attrs.get('_schema', {})
-        id = attrs.get('_schema_id')
+        id = attrs.get('_id')
         if not schema and id:
             schema = resolve_uri(id)
         elif bases:
-            schema['extends'] = [b._schema_id for b in bases if hasattr(b, '_schema_id')]
+            schema['extends'] = [b._id for b in bases if hasattr(b, '_id')]
         schema.setdefault('type', 'object')
         id = id or clsname
         # remove previous entry in registry
@@ -243,8 +243,8 @@ class ObjectMetaclass(type):
             return True
         else:
             # Not a normal subclass, implement some customization here.
-            cls_id = getattr(cls, '_schema_id', None)
-            scls_id = getattr(cls, '_schema_id', None)
+            cls_id = getattr(cls, '_id', None)
+            scls_id = getattr(cls, '_id', None)
 
             def _is_subclass(class_id):
                 if class_id == scls_id:

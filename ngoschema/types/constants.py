@@ -2,48 +2,60 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from .type import Type, TypeChecker
+from ..protocols import TypeProtocol
+from ..managers.type_builder import register_type
 
 
-class Constant(Type):
-    _constant = None
+class Constant(TypeProtocol):
+
+    def __call__(self, value, serialize=False, **opts):
+        if self.check(value):
+            return value
+        self._format_error(value, f'{value} is not {self._py_type}')
 
     @classmethod
     def check(cls, value, **opts):
-        return value == cls._constant
+        return value is cls._py_type
 
     @classmethod
     def convert(cls, value, **opts):
-        return cls._constant
+        return cls._py_type
 
     @classmethod
-    def __bool__(self):
-        return bool(self._constant)
+    def __bool__(cls):
+        return bool(cls._py_type)
+
+    @classmethod
+    def serialize(cls, value, **opts):
+        return cls._py_type
+
+    @classmethod
+    def default(cls, **opts):
+        return None
 
 
-@TypeChecker.register('null')
+@register_type('null')
 class Null(Constant):
-    _constant = None
+    _py_type = None
 
 
+@register_type('true')
 class _True(Constant):
-    _constant = True
+    _py_type = True
 
     @classmethod
     def check(cls, value, **opts):
-        return cls._constant
+        return True
 
     @classmethod
     def convert(cls, value, **opts):
         return value
 
-    def serialize(self, value, **opts):
-        return value.do_validate(**opts) if hasattr(value, 'do_validate') else value
+    @classmethod
+    def serialize(cls, value, **opts):
+        return value.do_serialize(**opts) if hasattr(value, 'do_serialize') else value
 
 
+@register_type('false')
 class _False(Constant):
-    _constant = False
-
-    def serialize(self, value, **opts):
-        raise NotImplemented('should False serialize??')
-        return value
+    _py_type = False

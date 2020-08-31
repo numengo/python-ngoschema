@@ -16,9 +16,7 @@ import weakref
 from .. import settings
 from ..decorators import memoized_property
 from ..resolver import UriResolver, resolve_uri
-from ..types import ObjectMetaclass, ObjectProtocol
-from ..types.foreign_key import Ref, ForeignKey
-from ..types.type_builder import TypeBuilder
+from ..protocols import ObjectMetaclass, ObjectProtocol
 from ngoschema.resolver import scope
 from .metadata import NamedObject, Metadata
 
@@ -29,17 +27,7 @@ class Entity(with_metaclass(ObjectMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/Entity"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
-
-    def __init__(self, *args, **kwargs):
-        data = args[0] if args else kwargs
-        if '$ref' in data:
-            data.update(resolve_uri(scope(data.pop('$ref'), self._id)))
-        if 'foreignKeys' in kwargs:
-            data.update(ForeignKey(**self._schema).resolve(data.pop('foreignKeys')))
-        ObjectProtocol.__init__(self, *args, **kwargs)
+    _id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
 
     def get_primaryKeys(self):
         return self._primary_keys
@@ -60,37 +48,31 @@ class Entity(with_metaclass(ObjectMetaclass)):
         return ObjectProtocol.do_serialize(self, use_identity_keys=use_identity_keys, use_entity_ref=use_entity_ref, **opts)
 
 
-class NamedEntity(with_metaclass(ObjectMetaclass, NamedObject)):
+class NamedEntity(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/NamedEntity"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/NamedEntity"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/NamedEntity"
+    _id = "https://numengo.org/ngoschema#/$defs/entities/$defs/NamedEntity"
 
     def __init__(self, *args, **kwargs):
         Entity.__init__(self, *args, **kwargs)
 
 
-class CanonicalNamedEntity(with_metaclass(ObjectMetaclass, NamedEntity)):
+class CanonicalNamedEntity(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/CanonicalNamedEntity"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/CanonicalNamedEntity"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/CanonicalNamedEntity"
+    _id = "https://numengo.org/ngoschema#/$defs/entities/$defs/CanonicalNamedEntity"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)
 
 
-class EntityWithMetadata(with_metaclass(ObjectMetaclass, CanonicalNamedEntity, Metadata)):
+class EntityWithMetadata(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/EntityWithMetadata"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/entities/$defs/EntityWithMetadata"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/entities/$defs/EntityWithMetadata"
+    _id = "https://numengo.org/ngoschema#/$defs/entities/$defs/EntityWithMetadata"
 
     def __init__(self, *args, **kwargs):
         NamedEntity.__init__(self, *args, **kwargs)

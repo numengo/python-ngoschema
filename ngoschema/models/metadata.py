@@ -15,7 +15,7 @@ import weakref
 
 from .. import settings
 from ..decorators import classproperty, depend_on_prop
-from ..types import ObjectMetaclass, ObjectProtocol
+from ..protocols import ObjectMetaclass, ObjectProtocol
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
@@ -24,9 +24,9 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/NamedObject"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/NamedObject"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/NamedObject"
+    _id = "https://numengo.org/ngoschema#/$defs/NamedObject"
+    _id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/NamedObject"
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/NamedObject"
 
     def __str__(self):
         if self._str is None:
@@ -51,6 +51,6 @@ class Metadata(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _schema_id = "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/Metadata"
-    _schema_id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"
+    _id = "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
+    _id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/Metadata"
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"

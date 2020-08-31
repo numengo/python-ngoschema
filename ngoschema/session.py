@@ -16,8 +16,7 @@ import functools
 from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 
 from . import utils
-from .types import with_metaclass, ObjectMetaclass
-from .types import TypeBuilder, ObjectProtocol, ArrayProtocol
+from .protocols import ObjectProtocol, ArrayProtocol, ObjectMetaclass, with_metaclass
 from .types import Tuple, Array
 from .decorators import assert_arg
 from .query import Query
@@ -40,7 +39,7 @@ def _state_session(state):
 
 
 class Session(with_metaclass(ObjectMetaclass)):
-    _schema_id = "https://numengo.org/ngoschema/session#/$defs/Session"
+    _id = "https://numengo.org/ngoschema/session#/$defs/Session"
 
     def __init__(self, bind=None, **kwargs):
         self._resolve_cname = functools.lru_cache(1024)(self._resolve_cname_cached)
@@ -73,7 +72,7 @@ class Session(with_metaclass(ObjectMetaclass)):
                 return v if not cn else v.resolve_cname(cn)
         raise Exception("impossible to resolve '%s'" % cname)
 
-    @assert_arg(1, Tuple, str_delimiter=',')
+    @assert_arg(1, Tuple, strDelimiter=',')
     def resolve_fkey(self, keys, object_class):
         for repo in [r for r in self._repos if issubclass(r.objectClass, object_class)]:
             if keys in repo._catalog:

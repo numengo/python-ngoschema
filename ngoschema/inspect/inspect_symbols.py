@@ -14,9 +14,9 @@ EXCLUDED_MODULES = settings.INSPECT_EXCLUDED_MODULES
 
 
 @lru_cache(maxsize=512)
-def inspect_importable(value):
-    from ..types.symbols import Importable
-    symbol = Importable.convert(value)
+def inspect_symbol(value):
+    from ..types.symbols import Symbol
+    symbol = Symbol.convert(value)
     importable = {
         'symbol': symbol,
     }
@@ -33,7 +33,7 @@ def inspect_importable(value):
 def inspect_module(value):
     from ..types.symbols import Module
     value = Module.convert(value)
-    module = inspect_importable(value).copy()
+    module = inspect_symbol(value).copy()
     mn = value.__name__
     module['modules'] = [m for n, m in inspect.getmembers(value, inspect.ismodule)]
     module['classes'] = [inspect_class(m) for n, m in inspect.getmembers(value, inspect.isclass) if m.__module__ == mn]
@@ -44,7 +44,7 @@ def inspect_module(value):
 @lru_cache(maxsize=512)
 def inspect_function(value):
     from ..types.symbols import Module
-    function = inspect_importable(value).copy()
+    function = inspect_symbol(value).copy()
     symbol = function['symbol']
     function['name'] = getattr(symbol, '__name__', None)
     module = symbol.__module__ if not type(function) in [staticmethod, classmethod] else symbol.__class__.__module__
@@ -94,8 +94,8 @@ def inspect_function_call(value):
 
 @lru_cache(maxsize=512)
 def inspect_descriptor(value, name=None):
-    from ..types.object_protocol import PropertyDescriptor
-    desc = inspect_importable(value).copy()
+    from ..protocols.object_protocol import PropertyDescriptor
+    desc = inspect_symbol(value).copy()
     del desc['symbol']
     if name:
         desc['name'] = name
@@ -116,7 +116,7 @@ def inspect_descriptor(value, name=None):
 @lru_cache(maxsize=128)
 def inspect_class(value, with_inherited=False):
     from ..types.symbols import Module, Function, Method, Callable, Class
-    cls = inspect_importable(value).copy()
+    cls = inspect_symbol(value).copy()
     if 'arguments' in cls:
         del cls['arguments']
     symbol = cls['symbol']
@@ -163,7 +163,7 @@ def inspect_class(value, with_inherited=False):
     # avoid builtin
     def is_builtin(obj):
         mn = obj.__module__
-        return not hasattr(obj, '_schema_id') or (mn in EXCLUDED_MODULES)
+        return not hasattr(obj, '_id') or (mn in EXCLUDED_MODULES)
 
     if not is_builtin(symbol):
         node = ast.parse(reindent(inspect.getsource(symbol)))

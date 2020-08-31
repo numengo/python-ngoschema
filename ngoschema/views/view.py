@@ -2,8 +2,8 @@
 
 
 class ViewMixin:
-    _schema_id =
+    _id =
 
 class ViewMixin:
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/views/$defs/ViewMixin'
+    _id = 'https://numengo.org/ngoschema2#/$defs/views/$defs/ViewMixin'
 

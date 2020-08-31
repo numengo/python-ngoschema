@@ -65,19 +65,19 @@ def ast_eval(node, module=None):
     try:
         return ast.literal_eval(node) if node else node
     except Exception as er:
-        from ngoschema.types.symbols import Importable
+        from ngoschema.types.symbols import Symbol
         module = module or _module
         to_import = list(reversed(ast_parts(node) + [module]))
         n = to_import.pop()
         #to_import = '.'.join(reversed(to_import))
-        return getattr(Importable.convert('.'.join(to_import)), n, None)
+        return getattr(Symbol.convert('.'.join(to_import)), n, None)
         from ngoschema.utils import import_from_string
         return import_from_string(to_import)
 
 
 def visit_function_def(node):
     """ ast node visitor """
-    from ..types.literals import String
+    from ..types.strings import String
     from ..types.symbols import Function, Class
     from .inspect_symbols import inspect_function, inspect_function_call, inspect_class
     module = _module
@@ -116,20 +116,20 @@ def visit_function_def(node):
         assert symbol, 'impossible to find decorator %s' % name
         if Function.check(symbol):
             from ..utils import qualname
-            from ..types import Literal, Boolean, Integer
+            from ..types import Boolean, Integer
             dec = inspect_function_call(symbol).copy()
             if 'arguments' in dec:
                 dec['arguments'] = copy.deepcopy(dec['arguments'])
                 for a, p in zip(d_args_val, dec['arguments']):
                     p['value'] = a
-                    p['valueLiteral'] = a if String.check(a) or Boolean.check(a, convert=False) or Integer.check(a) else qualname(a)
+                    p['valueLiteral'] = a if a is None or String.check(a) or Boolean.check(a) or Integer.check(a) else qualname(a)
             if len(dec.get('arguments', [])) < len(d_args_val):
                 dec['varargs'] = copy.deepcopy(dec['varargs'])
                 dec['varargs']['valueLiteral'] = d_args_val[len(dec.get('arguments', [])):]
             if 'keywords' in dec:
                 dec['keywords'] = copy.deepcopy(dec['keywords'])
                 dec['keywords']['valueLiteral'] = d_kwargs_val
-        elif Class.check(symbol):
+        elif Class.check_symbol(symbol):
             dec = inspect_class(symbol).copy()
             if d_args_val or d_kwargs_val:
                 raise Exception('TODO setting value in class from dec args and kwargs values')

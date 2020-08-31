@@ -3,15 +3,14 @@ from abc import abstractmethod
 from future.utils import with_metaclass
 #from ngoschema import utils, get_builder, SchemaMetaclass, ProtocolBase
 from ngoschema.utils import GenericClassRegistry
-from ..types import ObjectMetaclass
+from ..protocols import ObjectMetaclass
 
 
 class ObjectTransform(with_metaclass(ObjectMetaclass)):
     """
     Class to do simple model to model transformation
     """
-    _schema_id = "https://numengo.org/ngoschema/object-transform#/$defs/ObjectTransform"
-    _schema_id = "https://numengo.org/ngoschema2#/$defs/transforms/$defs/ObjectTransform"
+    _id = "https://numengo.org/ngoschema#/$defs/transforms/$defs/ObjectTransform"
 
     #def __init__(self, **kwargs):
     #    ProtocolBase.__init__(self, **kwargs)

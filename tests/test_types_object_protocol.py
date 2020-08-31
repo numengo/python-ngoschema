@@ -3,7 +3,7 @@ import pytest
 from future.utils import with_metaclass
 from ngoschema.exceptions import InvalidValue
 from ngoschema.schemas_loader import load_schema
-from ngoschema.types import ObjectMetaclass, split_cname
+from ngoschema.protocols import ObjectMetaclass, split_cname
 
 split_cname('asd[1][2]')
 
@@ -38,10 +38,10 @@ load_schema({
 
 def test_object_protocol():
     class A(with_metaclass(ObjectMetaclass)):
-        _schema_id = 'A'
+        _id = 'A'
 
     class B(with_metaclass(ObjectMetaclass)):
-        _schema_id = 'B'
+        _id = 'B'
 
     class AB(with_metaclass(ObjectMetaclass, A, B)):
         a = 1  # define a default in class, should be converted to string as required in schema
@@ -65,7 +65,7 @@ def test_object_protocol():
     assert ab.c == 1
 
     class BA(with_metaclass(ObjectMetaclass)):
-        _schema_id = 'BextA'
+        _id = 'BextA'
 
     ba = BA(a=1)
     assert ba.a == '1', ba.a
@@ -120,4 +120,4 @@ def test_schema_mro():
 if __name__ == "__main__":
     test_call_order()
     test_object_protocol()
-    test_schema_mro()
+    #test_schema_mro()

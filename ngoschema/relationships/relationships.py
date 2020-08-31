@@ -10,16 +10,14 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from ..decorators import classproperty
-from ..types import with_metaclass, ObjectMetaclass, ObjectProtocol
+from ..protocols import with_metaclass, ObjectMetaclass, ObjectProtocol
 
 
 class ForeignKey(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with relationships
     """
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/ForeignKey'
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/relationships/$defs/ForeignKey'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey'
+    _id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey'
 
     def __new__(cls, *args, **kwargs):
         new = super(ObjectProtocol, cls).__new__
@@ -32,9 +30,7 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     """
     Class to deal with relationships
     """
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/Relationship'
-    _schema_id = 'https://numengo.org/ngoschema2#/$defs/relationships/$defs/Relationship'
-    _schema_id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/Relationship'
+    _id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/Relationship'
 
     def __new__(cls, *args, **kwargs):
         new = super(ObjectProtocol, cls).__new__
@@ -49,7 +45,7 @@ class Relationship(with_metaclass(ObjectMetaclass)):
     _foreign_class = None
     @classproperty
     def foreignClass(cls):
-        from ..types.type_builder import TypeBuilder
+        from ..managers.type_builder import TypeBuilder
         from ngoschema.models.entities import Entity
         if not cls._foreign_class and cls.foreignSchema:
             try:

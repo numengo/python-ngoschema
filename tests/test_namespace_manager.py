@@ -3,7 +3,7 @@ import pytest
 from future.utils import with_metaclass
 from ngoschema.exceptions import InvalidValue
 
-from ngoschema.types.namespace_manager import NamespaceManager
+from ngoschema.managers import NamespaceManager
 
 
 def test_namespace_manager():

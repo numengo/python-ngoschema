@@ -14,7 +14,6 @@ __all__ = [
     'register_module',
     # utils
     'ReadOnlyChainMap',
-    'Context',
     'CaseInsensitiveDict',
     'UriDict',
     'Registry',

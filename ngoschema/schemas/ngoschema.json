@@ -128,15 +128,6 @@
             },
             "foreignKey": {
               "$ref": "https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey"
-            },
-            "convert": {
-              "type": "boolean"
-            },
-            "validate": {
-              "type": "boolean"
-            },
-            "serialize": {
-              "type": "boolean"
             }
           }
         },
@@ -281,8 +272,6 @@
           "extends": [
             "#/$defs/types/$defs/String"
           ],
-          "convert": true,
-          "validate": true,
           "properties": {
             "uri": {
               "type": "string"
@@ -1126,17 +1115,6 @@
               "type": "importable"
             }
           }
-        }
-      }
-    },
-    "managers": {
-      "type": "object",
-      "$defs": {
-        "TypeManager": {
-          "type": "object"
-        },
-        "NamespaceManager": {
-          "type": "object"
         }
       }
     },
