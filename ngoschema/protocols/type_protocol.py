@@ -114,8 +114,11 @@ class TypeProtocol:
 
     @classmethod
     def evaluate(cls, value, convert=True, validate=True, **opts):
+        #### OVERWRITTEN BELOW
         typed = value
-        if typed is None and cls.has_default():
+        if typed is None:
+            if not cls.has_default():
+                return None
             typed = cls.default()
             typed = typed.copy() if hasattr(typed, 'copy') else typed
         if not cls.check(typed) or convert:
@@ -124,17 +127,37 @@ class TypeProtocol:
             cls.validate(typed)
         return typed
 
-    def _evaluate(self, value, convert=True, validate=True, context=None, **opts):
+    @classmethod
+    def evaluate(cls, value, validate=True, convert=True, context=None, **opts):
+        #### OVERWRITTEN BELOW
         typed = value
-        if typed is None and self._has_default():
-            typed = self._default(context=self._context, raw_literals=True)
+        if typed is None:
+            if not cls.has_default():
+                return None
+            typed = cls.default()
             typed = typed.copy() if hasattr(typed, 'copy') else typed
-        if not self._check(typed, convert=convert, **opts):
-            return self._validate(typed, **opts)
-        typed = self._convert(typed, convert=convert, **opts)
+        if not cls.check(typed) or convert:
+            typed = cls.convert(typed, convert=convert, **opts)
         if validate:
-            self._validate(typed, **opts)
+            cls.validate(typed)
         return typed
+
+    #def _evaluate(self, value, validate=True, convert=True, context=None, **opts):
+    #    typed = value
+    #    if typed is None:
+    #        if self._has_default():
+    #            typed = self._default(context=self._context, raw_literals=True)
+    #            typed = typed.copy() if hasattr(typed, 'copy') else typed
+    #        else:
+    #            return typed
+    #    if not self._check(typed, convert=convert, **opts):
+    #        # will throw the error
+    #        self.validate(typed, with_type=True, **opts)
+    #    if convert:
+    #        typed = self.convert(typed, **opts)
+    #    if validate:
+    #        TypeProtocol.validate(self, typed, with_type=False, **opts)
+    #    return typed
 
     @classmethod
     def has_default(cls):
@@ -161,14 +184,18 @@ class TypeProtocol:
             msg = '\n'.join([f"Problem validating {cls._type} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
             raise InvalidValue(msg)
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return TypeProtocol._validate(cls, value, **opts)
+    #@classmethod
+    #def validate(cls, value, **opts):
+    #    #return cls._validate(cls, value, **opts)
 
-    def _validate(self, value, excludes=[], as_dict=False, **opts):
+    #def _validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
+    def validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
         """
-        Check the type of value and validate according to schema or raise ngoschema.InvalidValue
+        Validate the value according to schema
+        Return dictionnary of errors or raise ngoschema.InvalidValue
         """
+        if not with_type:
+            excludes += ['type']
         errors = {
             '/'.join(e.schema_path): e.message
             for e in self._validator.iter_errors(value, {k: self._schema[k]
@@ -192,9 +219,9 @@ class TypeProtocol:
 
     @classmethod
     def inputs(cls, value, **opts):
-        return cls._inputs(cls, value, **opts)
+        #    return cls._inputs(cls, value, **opts)
 
-    def _inputs(self, value, **opts):
+        #def _inputs(self, value, **opts):
         return set()
 
     @classmethod
@@ -216,14 +243,14 @@ class TypeProtocol:
     _sch_repr = None
     def _repr_schema(self):
         if self._sch_repr is None:
-            self._sch_repr = OrderedDict(self._schema)
-            if 'type' in self._sch_repr:
-                self._sch_repr.move_to_end('type', False)
+            self._sch_repr = sch_repr = OrderedDict(self._schema)
+            if 'type' in sch_repr:
+                sch_repr.move_to_end('type', False)
         return self._sch_repr
 
     def __repr__(self):
         if self._repr is None:
-            s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema().items()])
+            s = ', '.join(['%s=%r' %(k, v) for k, v in TypeProtocol._repr_schema(self).items()])
             self._repr = '%s(%s)' % (self.qualname(), s)
         return self._repr
 
@@ -235,7 +262,7 @@ class TypeProtocol:
                 if isinstance(v, Sequence) and not isinstance(v, str):
                     return '%s[%i]' % (k, len(v))
                 return '%s=%r' % (k, v)
-            s = ' '.join([serialize(k, v) for k, v in self._repr_schema().items()])
+            s = ' '.join([serialize(k, v) for k, v in TypeProtocol._repr_schema(self).items()])
             self._str = '<%s %s>' % (self.qualname(), s)
         return self._str
 
@@ -245,8 +272,12 @@ class TypeProtocol:
         from ..managers.type_builder import TypeBuilder
         return TypeBuilder.register(inflection.underscore(id))(TypeProtocol.build(id, schema, bases=(cls, )+bases))
 
+    @property
+    def context(self):
+        return self._context
 
-class ObjectMetaclass(type):
+
+class SchemaMetaclass(type):
     """Metaclass for instrumented classes defined by a schema based on TypeProtocol.
 
     :param _id: id of schema to be resolved in loaded schemas using resolve_uri
@@ -272,7 +303,7 @@ class ObjectMetaclass(type):
         if id in TypeBuilder._registry:
             del TypeBuilder._registry[id]
         attrs['_clsname'] = clsname
-        return TypeBuilder.register(id)(TypeBuilder.build(id, schema, bases, attrs=attrs))
+        return TypeBuilder.build(id, schema, bases, attrs=attrs)
 
     def __subclasscheck__(cls, subclass):
         """Just modify the behavior for classes that aren't genuine subclasses."""

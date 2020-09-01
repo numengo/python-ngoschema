@@ -10,6 +10,6 @@ __all__ = [
     'TypeProxy',
     'ArrayProtocol',
     'ObjectProtocol',
-    'ObjectMetaclass',
+    'SchemaMetaclass',
     'with_metaclass',
 ]

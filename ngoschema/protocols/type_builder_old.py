@@ -208,7 +208,7 @@ class TypeBuilder:
         return schema
 
 
-class ObjectMetaclass(type):
+class SchemaMetaclass(type):
     """Metaclass for instrumented classes defined by a schema based on ObjectProtocol.
 
     :param _id: id of schema to be resolved in loaded schemas using resolve_uri

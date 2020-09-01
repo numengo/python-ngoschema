@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 
-from ..protocols import ObjectMetaclass, with_metaclass, ObjectProtocol, ArrayProtocol
+from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol, ArrayProtocol
 from ..managers import NamespaceManager, default_ns_manager
 from ..types import String, Boolean, Object
 from ..types import symbols
@@ -12,7 +12,7 @@ from ..decorators import memoized_property, depend_on_prop
 from .metadata import NamedObject
 
 
-class Symbol(with_metaclass(ObjectMetaclass)):
+class Symbol(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Symbol'
 
     @staticmethod
@@ -21,7 +21,7 @@ class Symbol(with_metaclass(ObjectMetaclass)):
         return Symbol(inspect_symbol(value))
 
 
-class Id(with_metaclass(ObjectMetaclass)):
+class Id(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Id'
     _lazy_loading = False
 
@@ -42,7 +42,7 @@ class Id(with_metaclass(ObjectMetaclass)):
         return getattr(self, 'name', None)
 
 
-class VariableType(with_metaclass(ObjectMetaclass)):
+class VariableType(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Type'
 
     def __init__(self, *args, **kwargs):
@@ -109,15 +109,15 @@ class VariableType(with_metaclass(ObjectMetaclass)):
 _vartyp_props = list(VariableType._properties)
 
 
-class Variable(with_metaclass(ObjectMetaclass)):
+class Variable(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Variable'
 
 
-class VariableValue(with_metaclass(ObjectMetaclass)):
+class VariableValue(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/VariableValue'
 
 
-class Argument(with_metaclass(ObjectMetaclass)):
+class Argument(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
 
     def convert(self, value, **opts):
@@ -129,7 +129,7 @@ class Argument(with_metaclass(ObjectMetaclass)):
         return Object.convert(self, data, **opts)
 
 
-class Function(with_metaclass(ObjectMetaclass)):
+class Function(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function'
 
     @staticmethod
@@ -138,7 +138,7 @@ class Function(with_metaclass(ObjectMetaclass)):
         return Function(inspect_function(value))
 
 
-class FunctionCall(with_metaclass(ObjectMetaclass)):
+class FunctionCall(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/FunctionCall'
 
     @staticmethod
@@ -147,7 +147,7 @@ class FunctionCall(with_metaclass(ObjectMetaclass)):
         return FunctionCall(inspect_function_call(value))
 
 
-class Definition(with_metaclass(ObjectMetaclass)):
+class Definition(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/Definition'
 
     def _make_context(self, context=None, *extra_contexts):
@@ -172,7 +172,7 @@ class Definition(with_metaclass(ObjectMetaclass)):
         return sch
 
 
-class Class(with_metaclass(ObjectMetaclass)):
+class Class(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Class'
 
     @staticmethod
@@ -212,7 +212,7 @@ class Class(with_metaclass(ObjectMetaclass)):
         return getattr(self.symbol, '_id', None) or ns.get_cname_id(f'{self.module.__name__}.{self.symbol.__name__}')
 
 
-class Module(with_metaclass(ObjectMetaclass, Symbol)):
+class Module(with_metaclass(SchemaMetaclass, Symbol)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/modules/$defs/Module'
 
     @staticmethod

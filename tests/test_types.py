@@ -12,6 +12,11 @@ import arrow
 
 
 def test_base():
+    i = types.Integer(maximum=0)
+    print(repr(types.Integer))
+    print(str(types.Integer))
+    print(repr(i))
+    print(str(i))
     assert types.Integer()(1) == 1
     assert types.Integer()("1") == 1
     assert types.Integer()("`1+1") == 2
@@ -40,6 +45,9 @@ def test_base():
     with pytest.raises(InvalidValue) as e_info:
         assert types.Number(maximum=2)(2.3)
 
+    t = types.Type(type='string')
+    print(repr(t))
+    print(str(t))
     assert types.Type(type='string')(1) == '1', types.Type(type='string')(1)
     assert types.Type(type='integer', minimum=0)(1) == 1
     assert types.Type(type='number')(1) == 1
@@ -84,6 +92,8 @@ def test_array():
     ArrayString = types.Array(items={'type': 'string'})
     ArrayInteger = types.Array(items={'type': 'integer'})
     ArrayInteger5 = types.Array(items={'type': 'integer'}, minItems=5, maxItems=5)
+    print(repr(ArrayString))
+    print(str(ArrayString))
     assert repr(ArrayInteger5) == "ngoschema.types.array.Array(type='array', items={'type': 'integer'}, minItems=5, maxItems=5)", repr(ArrayInteger5)
     assert ArrayInteger([1, '2', '{{a}}', '`a'], a=1) == [1, 2, 1, 1], ArrayInteger([1, '2', '{{a}}', '`a'], a=1)
     assert ArrayString([1, '2', '{{a}}', '`a'], a=1) == ['1', '2', '1', '1']
@@ -126,7 +136,7 @@ def test_canonical_name():
 
 if __name__ == '__main__':
     #test_canonical_name()
-    test_object()
-    test_array()
     test_base()
+    test_array()
+    test_object()
     test_complex()

@@ -3,7 +3,7 @@ import pytest
 from future.utils import with_metaclass
 from ngoschema.exceptions import InvalidValue
 from ngoschema.schemas_loader import load_schema
-from ngoschema.protocols import ObjectMetaclass, split_cname
+from ngoschema.protocols import SchemaMetaclass, split_cname
 
 split_cname('asd[1][2]')
 
@@ -37,13 +37,13 @@ load_schema({
 
 
 def test_object_protocol():
-    class A(with_metaclass(ObjectMetaclass)):
+    class A(with_metaclass(SchemaMetaclass)):
         _id = 'A'
 
-    class B(with_metaclass(ObjectMetaclass)):
+    class B(with_metaclass(SchemaMetaclass)):
         _id = 'B'
 
-    class AB(with_metaclass(ObjectMetaclass, A, B)):
+    class AB(with_metaclass(SchemaMetaclass, A, B)):
         a = 1  # define a default in class, should be converted to string as required in schema
 
     a = A(a=1)
@@ -64,7 +64,7 @@ def test_object_protocol():
     ab.c = 1  # additional properties default is True, not redefined in AB
     assert ab.c == 1
 
-    class BA(with_metaclass(ObjectMetaclass)):
+    class BA(with_metaclass(SchemaMetaclass)):
         _id = 'BextA'
 
     ba = BA(a=1)
@@ -73,7 +73,7 @@ def test_object_protocol():
 
 def test_call_order():
     # test smart lazy loading and property evaluation order
-    class Foo(with_metaclass(ObjectMetaclass)):
+    class Foo(with_metaclass(SchemaMetaclass)):
         _schema = {
             'type': 'object',
             'additionalProperties': False,
@@ -117,7 +117,40 @@ def test_schema_mro():
     assert mro
 
 
+def test_repr():
+    class Obj(with_metaclass(SchemaMetaclass)):
+        _schema = {
+            'type': 'object',
+            'properties': {
+                'a': {'type': 'string'},
+                'b': {'type': 'integer'},
+            }
+        }
+
+    print(repr(Obj))
+    fa = Obj(a=1)
+    fb = Obj(b=1)
+    print(repr(fa))
+    print(repr(fb))
+    print(str(Obj))
+    print(str(fa))
+    print(str(fb))
+
+    class Arr(with_metaclass(SchemaMetaclass)):
+        _schema = {
+            'type': 'array',
+            'items': {
+                'type': 'string'
+            }
+        }
+
+    #print(repr(Arr))
+    a1 = Arr(['a', 'b'])
+    print(repr(a1))
+    print(str(a1))
+
 if __name__ == "__main__":
+    test_repr()
     test_call_order()
     test_object_protocol()
     #test_schema_mro()

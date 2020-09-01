@@ -15,12 +15,12 @@ import weakref
 
 from .. import settings
 from ..decorators import classproperty, depend_on_prop
-from ..protocols import ObjectMetaclass, ObjectProtocol
+from ..protocols import SchemaMetaclass, ObjectProtocol
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 
-class NamedObject(with_metaclass(ObjectMetaclass)):
+class NamedObject(with_metaclass(SchemaMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
@@ -47,7 +47,7 @@ class NamedObject(with_metaclass(ObjectMetaclass)):
         return f'{pcn}.{n}' if pcn else n
 
 
-class Metadata(with_metaclass(ObjectMetaclass)):
+class Metadata(with_metaclass(SchemaMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """

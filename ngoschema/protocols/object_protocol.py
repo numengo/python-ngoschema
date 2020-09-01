@@ -159,17 +159,13 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def _make_context(self, context=None, *extra_contexts):
         TypeProtocol._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
 
-    @classmethod
-    def is_object(cls):
-        return True
-
     def _items_touch(self, item):
         CollectionProtocol._items_touch(self, item)
         for d, s in self._dependencies.items():
             if item in s:
                 self._items_touch(d)
 
-    def touch(self):
+    def _touch(self):
         CollectionProtocol._touch(self)
         keys = list(self._data.keys())
         self._items_inputs = {k: {} for k in keys}
@@ -304,7 +300,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         if key in self._data:
             if self._lazy_loading or self._is_outdated(key):
                 self._items_inputs[key] = self._items_inputs_evaluate(key)
-                self._set_data_validated(key, self._items_evaluate(key, validate=not self._lazy_loading))
+                self._set_data_validated(key, self._items_evaluate(key, validate=not self._lazy_loading and key not in self._not_validated))
             return op(self._data_validated[key])
         raise KeyError(key)
 
@@ -332,11 +328,11 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             del self._items_inputs[key]
             del self._data_validated[key]
 
-    def print_order(self, **opts):
-        return Object.print_order(self, self._data, **opts)
+    #def print_order(self, **opts):
+    #    return Object.print_order(self, self._data, **opts)
 
-    def call_order(self, **opts):
-        return Object.call_order(self, self._data, **opts)
+    #def call_order(self, **opts):
+    #    return Object.call_order(self, self._data, **opts)
 
     def _serialize(self, value, **opts):
         ret = Object._serialize(self, value, **opts)
@@ -352,36 +348,44 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                     ret[alias] = - v
         return ret
 
-    #def __repr__(self):
-    #    if self._repr is None:
-    #        m = settings.PPRINT_MAX_EL
-    #        ks = list(self.print_order(no_defaults=True, no_read_only=True))
-    #        hidden = max(0, len(ks) - m)
-    #        a = ['%s=%s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
-    #        a += ['+%i...' % hidden] if hidden else []
-    #        self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
-    #    return self._repr
-    #
-    #def __str__(self):
-    #    if self._str is None:
-    #        m = settings.PPRINT_MAX_EL
-    #        ks = list(self.print_order(no_defaults=False, no_read_only=False))
-    #        hidden = max(0, len(ks) - m)
-    #        a = ['%s: %s' % (k, shorten(self._data_validated.get(k) or self._data.get(k))) for k in ks[:m]]
-    #        a += ['+%i...' % hidden] if hidden else []
-    #        self._str = '{%s}' % (', '.join(a))
-    #    return self._str
+    def __repr__(self):
+        if self._repr is None:
+            m = settings.PPRINT_MAX_EL
+            ks = list(self._print_order(no_defaults=True, no_read_only=True))
+            hidden = max(0, len(ks) - m)
+            a = ['%s=%s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a += ['+%i...' % hidden] if hidden else []
+            self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
+        return self._repr
 
-    _items_type_cache = None
+    def __str__(self):
+        if self._str is None:
+            m = settings.PPRINT_MAX_EL
+            ks = list(self._print_order(no_defaults=False, no_read_only=False))
+            hidden = max(0, len(ks) - m)
+            a = ['%s: %s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a += ['+%i...' % hidden] if hidden else []
+            self._str = '{%s}' % (', '.join(a))
+        return self._str
+
     @classmethod
     def items_type(cls, item):
+        from .type_proxy import TypeProxy
         if cls._items_type_cache is None:
             cls._items_type_cache = {}
         t = cls._items_type_cache.get(item)
         if t is None:
             t = Object.items_type(cls, item)
+            if t and isinstance(t, TypeProxy) and t.proxy_type:
+                t = t.proxy_type
             cls._items_type_cache[item] = t
         return t
+
+    @property
+    def session(self):
+        if not self._session and self._root and getattr(self._root, '_repo', None):
+            self._session = self._root._repo.session
+        return self._session
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
@@ -585,7 +589,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         attrs['_has_pk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primary_keys', [])))
         attrs['_properties_pattern'] = set().union(pattern_properties, *[b._properties_pattern for b in pbases])
         attrs['_properties_additional'] = additional_properties
-        attrs['_properties_descriptor'] = dict(ChainMap(properties_descriptor, *[b._properties_descriptor for b in pbases]))
+        attrs['_properties_descriptor'] = dict(ChainMap(properties_descriptor, *[getattr(b, '_properties_descriptor', {})
+                                                                                 for b in pbases]))
         attrs['_not_serialized'] = not_serialized
         attrs['_not_validated'] = not_validated
         attrs['_required'] = required
@@ -619,10 +624,4 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         cls = type(clsname, bases, attrs)
         cls._py_type = cls
         return cls
-
-    @property
-    def session(self):
-        if not self._session and self._root and getattr(self._root, '_repo', None):
-            self._session = self._root._repo.session
-        return self._session
 

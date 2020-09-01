@@ -16,7 +16,7 @@ import functools
 from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 
 from . import utils
-from .protocols import ObjectProtocol, ArrayProtocol, ObjectMetaclass, with_metaclass
+from .protocols import ObjectProtocol, ArrayProtocol, SchemaMetaclass, with_metaclass
 from .types import Tuple, Array
 from .decorators import assert_arg
 from .query import Query
@@ -38,7 +38,7 @@ def _state_session(state):
     return None
 
 
-class Session(with_metaclass(ObjectMetaclass)):
+class Session(with_metaclass(SchemaMetaclass)):
     _id = "https://numengo.org/ngoschema/session#/$defs/Session"
 
     def __init__(self, bind=None, **kwargs):

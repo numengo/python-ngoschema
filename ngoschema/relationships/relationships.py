@@ -10,10 +10,10 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from ..decorators import classproperty
-from ..protocols import with_metaclass, ObjectMetaclass, ObjectProtocol
+from ..protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
 
 
-class ForeignKey(with_metaclass(ObjectMetaclass)):
+class ForeignKey(with_metaclass(SchemaMetaclass)):
     """
     Class to deal with relationships
     """
@@ -26,7 +26,7 @@ class ForeignKey(with_metaclass(ObjectMetaclass)):
         return new(cls, *args, **kwargs)
 
 
-class Relationship(with_metaclass(ObjectMetaclass)):
+class Relationship(with_metaclass(SchemaMetaclass)):
     """
     Class to deal with relationships
     """

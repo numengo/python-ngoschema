@@ -22,20 +22,35 @@ class CollectionProtocol(TypeProtocol):
     _is_validated = False
     _data = None
     _data_validated = None
-    _dependencies = None
+    _dependencies = {}
     _items_inputs = None
     _parent = None
     _root = None
+    _items_type_cache = None
 
     def __init__(self, *args, validate=False, lazy_loading=None, context=None, session=None, **kwargs):
-        data = args[0] if args else kwargs
+        # prepare data
+        kwargs.pop('$schema', None)
+        data = args[0] if len(args) == 1 else (args or kwargs)
+        opts = kwargs
+        #data = args[0] if args else kwargs
         self._lazy_loading = lz = self._lazy_loading if lazy_loading is None else lazy_loading
         self._session = session = session or self._session
-        self._data = self._convert(data, convert=False, raw_literals=True, **kwargs)
-        self.touch()
+        #
+        self._data = self.evalute(data, items=not lz, **opts)
+        self._touch()
         self._make_context(context)
+        if not lz:
+            enumerate(self)
         if validate:
-            self._validate(items=not lazy_loading)
+            self.validate(items=not lz)
+
+    def _make_context(self, context=None, *extra_contexts):
+        from .object_protocol import ObjectProtocol
+        TypeProtocol._make_context(self, context, *extra_contexts)
+        # _parent and _root are declared readonly in inspect.mm and it raises an error
+        self._parent = next((m for m in self._context.maps if isinstance(m, ObjectProtocol) and m is not self), None)
+        self._root = next((m for m in reversed(self._context.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
 
     @classmethod
     def check(cls, value, **opts):
@@ -51,25 +66,32 @@ class CollectionProtocol(TypeProtocol):
             typed = self.default()
             typed = typed.copy() if hasattr(typed, 'copy') else typed
         if not isinstance(value, self._py_type) or convert:
-            typed = self.convert(typed, items=not self._lazy_loading, **opts)
+            typed = self._convert(typed, items=not self._lazy_loading, **opts)
         if validate:
-            cls.validate(typed, items=not self._lazy_loading)
+            self._validate(typed, items=not self._lazy_loading)
         return typed
 
-    def _make_context(self, context=None, *extra_contexts):
-        from .object_protocol import ObjectProtocol
-        TypeProtocol._make_context(self, context, *extra_contexts)
-        # _parent and _root are declared readonly in inspect.mm and it raises an error
-        self._parent = next((m for m in self._context.maps if isinstance(m, ObjectProtocol) and m is not self), None)
-        self._root = next((m for m in reversed(self._context.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
-
+    def call_order(self, **opts):
+        return self._call_order(self, self._data, **opts)
 
     @abstractmethod
-    def items_type(self, name):
+    def _call_order(self, value, with_inputs=True, **opts):
+        pass
+        return self.call_order(self._data, with_inputs=True, **opts)
+
+    #@classmethod
+    #def print_order(cls, value, with_inputs=True, **opts):
+    #    return cls._print_order(cls, value, with_inputs, **opts)
+
+    def print_order(self, with_inputs=True, **opts):
+        return self._print_order(self._data, with_inputs, **opts)
+
+    @abstractmethod
+    def _print_order(self, value, with_inputs=True, **opts):
         pass
 
     @abstractmethod
-    def touch(self):
+    def items_type(self, name):
         pass
 
     def _touch(self):
@@ -78,14 +100,25 @@ class CollectionProtocol(TypeProtocol):
         self._str = None
 
     def _items_touch(self, item):
-        self._touch()
+        CollectionProtocol._touch(self)
         self._data_validated[item] = None
         self._items_inputs[item] = {}
 
     def _items_inputs_evaluate(self, item):
+        inputs = self.inputs(self._data, item, with_inner=False)
+        print(inputs)
+        ret = {k: self._items_evaluate(k, convert=True, validate=False) for k in inputs}
+        return ret
         return {k: self[k] for k in self.inputs(self._data, item, with_inner=False)}
 
     def _items_evaluate(self, item, **opts):
+        ctx = self._context
+        v = self._data
+        for n in item.split('.'):
+            t = self.items_type(n)
+            v = t.evaluate(v[n], context=ctx, **opts)
+            ctx = getattr(v, 'context', None)
+        return v
         t = self.items_type(item)
         return t.evaluate(self._data[item], context=self._context, **opts)
 
@@ -93,12 +126,12 @@ class CollectionProtocol(TypeProtocol):
         self._data[item] = value
         if not self._lazy_loading:
             self._items_inputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_data_validated(item, self._items_evaluate(item, validate=True))
 
     def __getitem__(self, item):
         if self._data_validated[item] is None:
             self._items_inputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_data_validated(item, self._items_evaluate(item, validate=True))
         return self._data_validated[item]
 
     def __delitem__(self, index):
@@ -130,10 +163,11 @@ class CollectionProtocol(TypeProtocol):
                 ) or (self._items_inputs[item] != self._items_inputs_evaluate(item))
 
     @classmethod
-    def validate(cls, value, items=True, as_dict=True, **opts):
+    def validate(cls, value, as_dict=True, **opts):
         if not cls.check(value):
             errors = {'type': '%s is not of type %s' % (value, cls._py_type)}
         else:
+            items = opts.pop('items', not cls._lazy_loading)
             if isinstance(value, cls) and value._is_validated:
                 return {}
             errors = cls._validate(cls, value, items=items, as_dict=as_dict, **opts)
@@ -142,7 +176,7 @@ class CollectionProtocol(TypeProtocol):
         return errors if as_dict else cls._format_error(value, errors)
 
     def do_validate(self, **opts):
-        return self.validate(self, **opts)
+        return self.validate(self, items=True, **opts)
 
     @classmethod
     def _format_error(cls, value, errors):
@@ -168,4 +202,5 @@ class CollectionProtocol(TypeProtocol):
         return True
 
     def __hash__(self):
-        return hash(self._data_validated)
+        return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._data_validated))))
+

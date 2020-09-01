@@ -32,13 +32,12 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     """
     _data = []
     _data_validated = []
-    _dependencies = []
     _items_inputs = []
 
-    def __init__(self, *args, **kwargs):
-        data = args[0] if len(args)==1 else args
-        opts = kwargs
-        CollectionProtocol.__init__(self, data, **kwargs)
+    #def __init__(self, *args, **kwargs):
+    #    data = args[0] if len(args)==1 else args
+    #    opts = kwargs
+    #    CollectionProtocol.__init__(self, data, **kwargs)
 
     def _items_touch(self, item):
         CollectionProtocol._items_touch(item)
@@ -46,13 +45,32 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
             if item in s:
                 self._items_touch(d)
 
-    def touch(self):
+    def _touch(self):
         CollectionProtocol._touch(self)
         self._data_validated = [None] * len(self._data)
         self._items_inputs = [{}] * len(self._data)
 
     @classmethod
     def items_type(cls, item):
+        from .type_proxy import TypeProxy
+        if cls._items_type_cache is None:
+            if not cls._items_list:
+                if isinstance(cls._items, TypeProxy):
+                    if cls._items.proxy_type:
+                        cls._items = cls._items.proxy_type
+                        cls._items_type_cache = cls._items
+                else:
+                    cls._items_type_cache = cls._items
+            else:
+                ok = True
+                for i, t in enumerate(cls._items):
+                    if isinstance(t, TypeProxy):
+                        if t.proxy_type:
+                            cls._items[i] = t.proxy_type
+                        else:
+                            ok = False
+                if ok:
+                    cls._items_type_cache = cls._items
         return Array.items_type(cls, item)
 
     #def _set_data(self, index, value):
@@ -75,25 +93,24 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         self._data.insert(item, value)
         if not self._lazy_loading:
             self._items_inputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_data_validated(item, self._items_evaluate(item, validate=not self._lazy_loading))
         elif isinstance(value, TypeProtocol):
             value._make_context(self._context)
         self.validate(items=False)
 
-    _srepr = None
-    def _repr_list(self):
-        if self._srepr is None:
+    def _str_list(self):
+        if self._str is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._data_validated[i] or self._data[i]) for i, t in enumerate(self._items_types(self))
+            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr) for i, t in enumerate(self._items_types(self))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
-            self._srepr = '[%s]' % (', '.join(a))
-        return self._srepr
+            self._str = '[%s]' % (', '.join(a))
+        return self._str
 
     def __repr__(self):
-        return '%s([%s])' % (self.qualname(), self._repr_list())
+        return '%s(%s)' % (self.qualname(), ArrayProtocol._str_list(self))
 
     def __str__(self):
-        return self._repr_list()
+        return ArrayProtocol._str_list(self)
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):

@@ -18,6 +18,7 @@ class Array(Type):
     json-schema 'array' type
     """
     _py_type = list
+    _coll_type = list
     _items = _True()
     _items_list = False
     _str_delimiter = ','
@@ -47,9 +48,9 @@ class Array(Type):
     def is_array(cls):
         return True
 
-    @classmethod
-    def check(cls, value, **opts):
-        return Array._check(cls, value, **opts)
+    #@classmethod
+    #def check(cls, value, **opts):
+    #    return Array._check(cls, value, **opts)
 
     def _check(self, value, with_string=True, **opts):
         if String.check(value):
@@ -65,9 +66,17 @@ class Array(Type):
             return False
         return True
 
-    @classmethod
-    def convert(cls, value, **opts):
-        return Array._convert(cls, value, **opts)
+    def _print_order(self, value, **opts):
+        # better later including dependencies
+        return range(len(value))
+
+    def _call_order(self, value, **opts):
+        # better later including dependencies
+        return range(len(value))
+
+    #@classmethod
+    #def convert(cls, value, **opts):
+    #    return Array._convert(cls, value, **opts)
 
     def _convert(self, value, convert=False, **opts):
         if String.check(value, **opts):
@@ -80,15 +89,26 @@ class Array(Type):
             items[i] = v if not convert else t(v, **opts)
         return self._py_type(items) if convert else items
 
+    def _convert(self, value, items=False, **opts):
+        if String.check(value, **opts):
+            value = [s.strip() for s in value.split(self._str_delimiter)]
+        value = value if isinstance(value, (Sequence, deque)) else [value]
+        lv = len(value)
+        typed = list(value)
+        typed += [None] * max(0, self._min_items - len(typed))
+        for i, (t, v) in enumerate(zip(Array._items_types(self, typed), typed)):
+            typed[i] = v if not items else t.evaluate(v, **opts)
+        return self._coll_type(typed) if items else self._py_type(typed)
+
     def _items_types(self, value):
         return self._items if self._items_list else [self._items] * len(value)
 
-    def items_type(self, index):
+    def _items_type(self, index):
         return self._items[index] if self._items_list else self._items
 
-    @classmethod
-    def inputs(cls, value, item=None, **opts):
-        return Array._inputs(cls, value, item, **opts)
+    #@classmethod
+    #def inputs(cls, value, item=None, **opts):
+    #    return Array._inputs(cls, value, item, **opts)
 
     def _inputs(self, value, item=None, with_inner=False, **opts):
         if String.check(value):
@@ -104,9 +124,9 @@ class Array(Type):
             return set().union(*[Array.inputs(self, value, i, with_inner=False, **opts) for i, v in enumerate(value)])
         return set()
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return Array._validate(cls, value, **opts)
+    #@classmethod
+    #def validate(cls, value, **opts):
+    #    return Array._validate(cls, value, **opts)
 
     def _validate(self, value, items=True, as_dict=False, **opts):
         errors = {}
@@ -146,3 +166,10 @@ ArrayString = Array.extend_type('ArrayString', items=String)
 @register_type('tuple')
 class Tuple(Array):
     _py_type = tuple
+    _coll_type = tuple
+
+
+@register_type('set')
+class Set(Array):
+    _py_type = set
+    _coll_type = set

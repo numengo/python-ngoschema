@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 def domain_uri(name, domain=None):
     from . import settings
-    from ngoschema.types.namespace_manager import clean_for_uri
+    from ngoschema.managers.namespace_manager import clean_for_uri
     domain = domain or settings.MS_DOMAIN
     return "%s%s#" % (domain, clean_for_uri(name))
 

@@ -51,8 +51,8 @@ class Type(TypeProtocol):
         from .strings import Expr, Pattern
         value = args[0] if args else kwargs
         opts = kwargs if args else {}
-        typed = self._evaluate(value, **opts)
-        return self._serialize(self, typed, **opts) if serialize else typed
+        typed = TypeProtocol.evaluate(self, value, **opts)
+        return TypeProtocol._serialize(self, typed, **opts) if serialize else typed
 
     def _convert(self, value, **opts):
         from .strings import Expr, Pattern

@@ -39,7 +39,7 @@ __all__ = [
     'TypeBuilder',
     'NamespaceManager',
     'with_metaclass',
-    'ObjectMetaclass',
+    'SchemaMetaclass',
     # literals
     # query
     'Query',

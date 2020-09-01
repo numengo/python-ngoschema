@@ -37,14 +37,14 @@ from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entities import Entity, NamedEntity
 from .types import Array, Tuple
-from .protocols import ObjectMetaclass, ObjectProtocol
+from .protocols import SchemaMetaclass, ObjectProtocol
 
 logger = logging.getLogger(__name__)
 
 repository_registry = GenericClassRegistry()
 
 
-class Repository(with_metaclass(ObjectMetaclass)):
+class Repository(with_metaclass(SchemaMetaclass)):
     """
     Class to store read/write operations of objects
     """
@@ -142,7 +142,7 @@ class FilterRepositoryMixin(object):
         return filter_collection(data, self.only, self.but, self.recursive)
 
 
-class MemoryRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
+class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
 
     def commit(self):
@@ -153,7 +153,7 @@ class MemoryRepository(with_metaclass(ObjectMetaclass, Repository, FilterReposit
         raise InvalidOperation('pre_load is not possible with MemoryRepository')
 
 
-class FileRepository(with_metaclass(ObjectMetaclass, Repository, FilterRepositoryMixin)):
+class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
 
     def __init__(self, filepath=None, document=None, **kwargs):
@@ -224,7 +224,7 @@ def serialize_object_to_file(obj, fp, repo=None, session=None, **kwargs):
 
 
 @repository_registry.register()
-class JsonFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/JsonFileRepository'
 
     def __init__(self, **kwargs):
@@ -250,7 +250,7 @@ def load_json_from_file(fp, session=None, **kwargs):
 
 
 @repository_registry.register()
-class YamlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/YamlFileRepository'
     _yaml = YAML(typ="safe")
 
@@ -273,7 +273,7 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 
 
 @repository_registry.register()
-class XmlFileRepository(with_metaclass(ObjectMetaclass, FileRepository)):
+class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/XmlFileRepository'
 
     def __init__(self, tag=None, postprocessor=None, **kwargs):

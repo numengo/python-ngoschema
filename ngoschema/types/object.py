@@ -19,6 +19,7 @@ from .strings import Pattern
 @register_type('object')
 class Object(Type):
     _py_type = OrderedDict
+    _coll_type = OrderedDict
     _properties = OrderedDict()
     _properties_pattern = set()
     _properties_allowed = set()
@@ -70,44 +71,29 @@ class Object(Type):
         self._properties_with_default = set(k for k, t in self._properties.items() if t.has_default())
         self._required.difference_update(self._properties_with_default)
 
-    #def __call__(self, *args, validate=True, convert=True, check=False, context=None, **kwargs):
-    #    # to replace by Type.__call__ ???
-    #    # return Type.__call__(self, *args,
-    #    assert len(args) <= 1
-    #    opts = kwargs if len(args) == 1 else {}
-    #    data = args[0] if args else kwargs
-    #    if check and not self.check(data):
-    #        raise InvalidValue('%s is not compatible with %s' % data, self)
-    #    context = TypeProtocol.make_context(self, context)
-    #    data = Object.convert(self, data, context=context, convert=convert, **opts)
-    #    if validate:
-    #        self.validate(data)
-    #    return data
+    @classmethod
+    def is_object(cls):
+        return True
 
-    @staticmethod
     def _repr_schema(self):
         if self._sch_repr is None:
-            self._sch_repr = OrderedDict()
-            self._sch_repr['type'] = 'object'
-            self._sch_repr['properties'] = {}
+            self._sch_repr = sch_repr = TypeProtocol._repr_schema(self)
+            sch_repr['type'] = 'object'
+            sch_repr['properties'] = {}
             for k in Object.print_order(self, self._schema.get('properties', {}), no_read_only=True):
-                self._sch_repr['properties'][k] = self._schema['properties'].get('type')
+                sch_repr['properties'][k] = self._schema['properties'].get('type')
             if self._schema.get('additionalProperties', False):
-                self._sch_repr['additionalProperties'] = True
+                sch_repr['additionalProperties'] = True
         return self._sch_repr
 
     def _default(self, **opts):
         if self._default_cache is None:
             self._default_cache = Object._convert(self, self._schema.get('default', {}), convert=True, **opts)
-            #ret = Type._default(self)
-            #for k in self._properties_with_default:
-            #    ret.setdefault(k, self.items_type(k).default(**opts))
-            #self._default_cache = Object._convert(self, ret, **opts)
         return self._default_cache
 
-    @classmethod
-    def check(cls, value, **opts):
-        return Object._check(cls, value, **opts)
+    #@classmethod
+    #def check(cls, value, **opts):
+    #    return Object._check(cls, value, **opts)
 
     def _check(self, value, **opts):
         if not isinstance(value, Mapping):
@@ -124,18 +110,14 @@ class Object(Type):
                     return False
         return True
 
-    @classmethod
-    def is_object(cls):
-        return False
-
-    @classmethod
-    def convert(cls, value, **opts):
-        return Object._convert(cls, value, **opts)
+    #@classmethod
+    #def convert(cls, value, **opts):
+    #    return Object._convert(cls, value, **opts)
 
     def _convert(self, value, convert=False, **opts):
         avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
         navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
-        ret = OrderedDict((k, None) for k in Object.call_order(self, value, with_inputs=convert))
+        ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=convert))
         for k in ret.keys():
             t = self.items_type(k)
             v = value.get(k) or avs.get(k) or navs.get(k)
@@ -146,15 +128,28 @@ class Object(Type):
             ret['context'] = self._context
         return self._py_type(ret) if convert else ret
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return Object._validate(cls, value, **opts)
+    def _convert(self, value, items=False, **opts):
+        avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
+        navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
+        ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=items))
+        for k in ret.keys():
+            t = self.items_type(k)
+            v = value.get(k) or avs.get(k) or navs.get(k)
+            # should be done in t.evaluate
+            #if v is None and (t.has_default() or k in self._required):
+            #    v = t.default(**opts)
+            ret[k] = v if not items else t.evaluate(v, **opts)
+        return self._coll_type(ret) if items else self._py_type(items)
+
+    #@classmethod
+    #def validate(cls, value, **opts):
+    #    return Object._validate(cls, value, **opts)
 
     def _validate(self, value, items=True, excludes=[], as_dict=False, **opts):
         errors = {}
         try:
             if items:
-                for k in Object.call_order(self, value, with_inputs=True):
+                for k in Object._call_order(self, value, with_inputs=True):
                     if k not in self._not_validated and k not in excludes and value.get(k) is not None:
                         t = self.items_type(k)
                         errors.update(t.validate(value[k], **opts, as_dict=True))
@@ -163,22 +158,22 @@ class Object(Type):
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
-    @classmethod
-    def serialize(cls, value, **opts):
-        return Object._serialize(cls, value, **opts)
+    #@classmethod
+    #def serialize(cls, value, **opts):
+    #    return Object._serialize(cls, value, **opts)
 
     def _serialize(self, value, excludes=[], only=[], attr_prefix='', **opts):
         # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
-        ptypes = [(k, self.items_type(k)) for k in Object.print_order(self, value, excludes=excludes, only=only, **opts)]
+        ptypes = [(k, self.items_type(k)) for k in Object._print_order(self, value, excludes=excludes, only=only, **opts)]
         ret = OrderedDict([((attr_prefix if t.is_primitive() else '') + k,
                              t.serialize(value[k], attr_prefix=attr_prefix, **opts))
                              for k, t in ptypes])
         return ret if not no_defaults else OrderedDict([(k, v) for k, v in ret.items() if v is not None])
 
-    @classmethod
-    def inputs(cls, value, item=None, **opts):
-        return Object._inputs(cls, value, item, **opts)
+    #@classmethod
+    #def inputs(cls, value, item=None, **opts):
+    #    return Object._inputs(cls, value, item, **opts)
 
     def _inputs(self, value, item=None, with_inner=False, **opts):
         """
@@ -201,7 +196,7 @@ class Object(Type):
             return ChainMap(*[set([f'{k}.{i}' for i in Object._inputs(self, value, k, with_inner=False, **opts)]) for k in value.keys()])
         return set()
 
-    def call_order(self, value, with_inputs=True, **opts):
+    def _call_order(self, value, with_inputs=True, **opts):
         """Generate a call order according to schema dependencies and inputs detected in values."""
         from ngoschema.protocols import ObjectProtocol
         if isinstance(value, ObjectProtocol) and isinstance(value, self._py_type):
@@ -241,7 +236,7 @@ class Object(Type):
                 for i in unordered:
                     yield i
 
-    def print_order(self, value, excludes=[], only=[], no_defaults=False, no_read_only=False, **opts):
+    def _print_order(self, value, excludes=[], only=[], no_defaults=False, no_read_only=False, **opts):
         """Generate a print order according to schema and inherited schemas properties order
         and additonal properties detected in values.
 

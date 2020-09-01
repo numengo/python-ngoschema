@@ -27,12 +27,12 @@ from collections import Mapping, ChainMap
 #from ..decorators import SCH_PATH_FILE
 from ..types import PathDir, PathFile, String
 from ..decorators import assert_arg, depend_on_prop
-from ..protocols import ObjectMetaclass
+from ..protocols import SchemaMetaclass
 from ..query import Query
 from ..resolver import UriResolver
 
 
-class Document(with_metaclass(ObjectMetaclass)):
+class Document(with_metaclass(SchemaMetaclass)):
     """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided

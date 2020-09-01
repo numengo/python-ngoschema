@@ -107,42 +107,80 @@ class TypeProxy(TypeProtocol):
     _proxy_uri = None
     _proxy_type = None
 
-    def __init__(self, uri):
-        self._proxy_uri = uri
+    @staticmethod
+    def build(uri, schema=None):
+        from ..managers.namespace_manager import default_ns_manager
+        from ..managers.type_builder import TypeBuilder
+        from .object_protocol import ObjectProtocol
+        from .array_protocol import ArrayProtocol
+        schema = schema or {}
+        sch, bases, attrs = TypeBuilder._on_construction[uri]
+        clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(uri)
+        protocol = {'object': ObjectProtocol, 'array': ArrayProtocol}.get(sch['type'], TypeProtocol)
+        bases += (protocol, TypeProxy) if not issubclass(protocol, bases) else ()
+        return type(clsname, bases, {
+            '_proxy_uri': uri,
+            '_schema': schema,
+            '__doc__': 'reference to %s' % clsname})
+
+    def __init__(self, *args, **kwargs):
+        self.proxy_type.__init__(*args, **kwargs)
+        pass
 
     def __call__(self, *args, **kwargs):
         return self.proxy_type(*args, **kwargs)
 
+    @classmethod
+    def proxy_type_cls(cls):
+        if not cls._proxy_type:
+            from ..managers.type_builder import TypeBuilder
+            cls._proxy_type = cls._py_type = TypeBuilder.get(cls._proxy_uri)
+        return cls._proxy_type
+
     @property
     def proxy_type(self):
         if not self._proxy_type:
-            from ..managers.type_builder import TypeBuilder
-            self._proxy_type = self._py_type = TypeBuilder.get(self._proxy_uri)
+            self._proxy_type = self._py_type = self.proxy_type_cls()
         return self._proxy_type
 
-    def check(self, value, **opts):
-        return self.proxy_type and self.proxy_type.check(value, **opts)
+    @classmethod
+    def check(cls, value, **opts):
+        return cls.proxy_type_cls() and cls.proxy_type_cls().check(value, **opts)
 
-    def convert(self, value, **opts):
-        return self.proxy_type.convert(value, **opts)
+    @classmethod
+    def convert(cls, value, **opts):
+        return cls.proxy_type_cls().convert(value, **opts)
 
-    def evaluate(self, value, **opts):
-        return self.proxy_type.evaluate(value, **opts)
+    @classmethod
+    def evaluate(cls, value, **opts):
+        return cls.proxy_type_cls().evaluate(value, **opts)
 
-    def serialize(self, value, **opts):
-        return self.proxy_type.serialize(value, **opts)
+    @classmethod
+    def serialize(cls, value, **opts):
+        return cls.proxy_type_cls().serialize(value, **opts)
 
-    def inputs(self, value, **opts):
-        return self.proxy_type.inputs(value, **opts)
+    @classmethod
+    def inputs(cls, value, **opts):
+        return cls.proxy_type_cls().inputs(value, **opts)
 
-    def validate(self, value, **opts):
-        return self.proxy_type.validate(value, **opts)
+    @classmethod
+    def validate(cls, value, **opts):
+        return cls.proxy_type_cls().validate(value, **opts)
 
-    def __instancecheck__(self, instance):
-        return self.proxy_type and isinstance(instance, self.proxy_type)
+    @classmethod
+    def __instancecheck__(cls, instance):
+        return cls.proxy_type_cls() and isinstance(instance, cls.proxy_type_cls())
 
-    def __subclasscheck__(self, subclass):
-        return self.proxy_type and issubclass(subclass, self.proxy_type)
+    def __subclasscheck__(cls, subclass):
+        return cls.proxy_type_cls() and issubclass(subclass, cls.proxy_type_cls())
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return cls.proxy_type_cls() and issubclass(subclass, cls.proxy_type_cls())
+
+    @classmethod
+    def __hash__(cls):
+        return hash(cls._proxy_uri)
 
     def __repr__(self):
         rc = self.proxy_type

@@ -3,10 +3,10 @@ from abc import abstractmethod
 from future.utils import with_metaclass
 #from ngoschema import utils, get_builder, SchemaMetaclass, ProtocolBase
 from ngoschema.utils import GenericClassRegistry
-from ..protocols import ObjectMetaclass
+from ..protocols import SchemaMetaclass
 
 
-class ObjectTransform(with_metaclass(ObjectMetaclass)):
+class ObjectTransform(with_metaclass(SchemaMetaclass)):
     """
     Class to do simple model to model transformation
     """

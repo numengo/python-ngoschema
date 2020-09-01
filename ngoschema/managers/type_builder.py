@@ -81,7 +81,7 @@ class TypeBuilder:
         if TypeBuilder.contains(id):
             return TypeBuilder.get(id)
         if id in TypeBuilder._on_construction:
-            return TypeProxy(id)
+            return TypeProxy.build(id)()
         if schema is None:
             schema = resolve_uri(id)
         if schema is True:
@@ -111,7 +111,7 @@ class TypeBuilder:
         from ..protocols import TypeProxy
         if id not in TypeBuilder._registry:
             if id in TypeBuilder._on_construction:
-                return TypeProxy(id)
+                return TypeProxy.build(id)
             TypeBuilder._registry[id] = TypeBuilder.build(id)
         return TypeBuilder._registry[id]
 
