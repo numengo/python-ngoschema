@@ -159,6 +159,15 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def _make_context(self, context=None, *extra_contexts):
         TypeProtocol._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
 
+    def _items_evaluate(self, item, **opts):
+        ctx = self._context
+        v = self._data
+        for n in item.split('.'):
+            t = self.items_type(n)
+            v = t(v[n], context=ctx, **opts)
+            ctx = getattr(v, 'context', ctx)
+        return v
+
     def _items_touch(self, item):
         CollectionProtocol._items_touch(self, item)
         for d, s in self._dependencies.items():
@@ -351,7 +360,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def __repr__(self):
         if self._repr is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self._print_order(no_defaults=True, no_read_only=True))
+            ks = list(self._print_order(self._data, no_defaults=True, no_read_only=True, with_inputs=False))
             hidden = max(0, len(ks) - m)
             a = ['%s=%s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
@@ -361,7 +370,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def __str__(self):
         if self._str is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self._print_order(no_defaults=False, no_read_only=False))
+            ks = list(self._print_order(self._data, no_defaults=False, no_read_only=False, with_inputs=False))
             hidden = max(0, len(ks) - m)
             a = ['%s: %s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []

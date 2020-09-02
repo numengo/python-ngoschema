@@ -71,7 +71,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                             ok = False
                 if ok:
                     cls._items_type_cache = cls._items
-        return Array.items_type(cls, item)
+        return Array._items_type(cls, item)
 
     #def _set_data(self, index, value):
     #    from ..models import Entity

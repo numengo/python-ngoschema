@@ -48,10 +48,6 @@ class Array(Type):
     def is_array(cls):
         return True
 
-    #@classmethod
-    #def check(cls, value, **opts):
-    #    return Array._check(cls, value, **opts)
-
     def _check(self, value, with_string=True, **opts):
         if String.check(value):
             if not with_string:
@@ -74,10 +70,6 @@ class Array(Type):
         # better later including dependencies
         return range(len(value))
 
-    #@classmethod
-    #def convert(cls, value, **opts):
-    #    return Array._convert(cls, value, **opts)
-
     def _convert(self, value, convert=False, **opts):
         if String.check(value, **opts):
             value = [s.strip() for s in value.split(self._str_delimiter)]
@@ -89,16 +81,16 @@ class Array(Type):
             items[i] = v if not convert else t(v, **opts)
         return self._py_type(items) if convert else items
 
-    def _convert(self, value, items=False, **opts):
-        if String.check(value, **opts):
+    def _convert(self, value, items=True, **opts):
+        if String.check(value):
             value = [s.strip() for s in value.split(self._str_delimiter)]
         value = value if isinstance(value, (Sequence, deque)) else [value]
         lv = len(value)
-        typed = list(value)
-        typed += [None] * max(0, self._min_items - len(typed))
-        for i, (t, v) in enumerate(zip(Array._items_types(self, typed), typed)):
-            typed[i] = v if not items else t.evaluate(v, **opts)
-        return self._coll_type(typed) if items else self._py_type(typed)
+        ret = list(value)
+        ret += [None] * max(0, self._min_items - len(ret))
+        for i, (t, v) in enumerate(zip(Array._items_types(self, ret), ret)):
+            ret[i] = v if not items else t(v, **opts)
+        return self._coll_type(ret)
 
     def _items_types(self, value):
         return self._items if self._items_list else [self._items] * len(value)
@@ -106,16 +98,12 @@ class Array(Type):
     def _items_type(self, index):
         return self._items[index] if self._items_list else self._items
 
-    #@classmethod
-    #def inputs(cls, value, item=None, **opts):
-    #    return Array._inputs(cls, value, item, **opts)
-
     def _inputs(self, value, item=None, with_inner=False, **opts):
         if String.check(value):
             value = Array.convert(value or [], convert=False)
         if item is not None:
             try:
-                t = Array.items_type(self, item)
+                t = Array._items_type(self, item)
                 return t.inputs(value[item], **opts)
             except Exception as er:
                 self._logger.error('%i %s' % (item, value))
@@ -123,10 +111,6 @@ class Array(Type):
         if with_inner:
             return set().union(*[Array.inputs(self, value, i, with_inner=False, **opts) for i, v in enumerate(value)])
         return set()
-
-    #@classmethod
-    #def validate(cls, value, **opts):
-    #    return Array._validate(cls, value, **opts)
 
     def _validate(self, value, items=True, as_dict=False, **opts):
         errors = {}
@@ -140,18 +124,10 @@ class Array(Type):
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
-    def _has_default(self):
-        return True
-
-    def _default(self, **opts):
+    def _default(self, items=True, **opts):
         if self._default_cache is None:
-            self._default_cache = Array._convert(self, self._schema.get('default', []), convert=True, **opts)
+            self._default_cache = Array._convert(self, self._schema.get('default', []), items=items, **opts)
         return self._default_cache
-
-    #def _default(self, **opts):
-    #    ret = TypeProtocol._default(self)
-    #    size = self._min_items if self._min_items else len(ret or [])
-    #    return self.convert(ret, **opts) if ret else [self._items.default(**opts) if self._items and size else None] * size
 
     def _serialize(self, value, as_string=False, **opts):
         if as_string:

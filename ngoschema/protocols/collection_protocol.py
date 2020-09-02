@@ -29,21 +29,20 @@ class CollectionProtocol(TypeProtocol):
     _items_type_cache = None
 
     def __init__(self, *args, validate=False, lazy_loading=None, context=None, session=None, **kwargs):
-        # prepare data
-        kwargs.pop('$schema', None)
-        data = args[0] if len(args) == 1 else (args or kwargs)
-        opts = kwargs
-        #data = args[0] if args else kwargs
         self._lazy_loading = lz = self._lazy_loading if lazy_loading is None else lazy_loading
         self._session = session = session or self._session
-        #
-        self._data = self.evalute(data, items=not lz, **opts)
+        # prepare data
+        kwargs.pop('$schema', None)
+        value = args[0] if args else kwargs or None
+        opts = kwargs if args else {}
+        TypeProtocol.__init__(self, value, items=False, validate=False, **opts)
         self._touch()
         self._make_context(context)
-        if not lz:
-            enumerate(self)
         if validate:
-            self.validate(items=not lz)
+            # not lz all elements have been evaluated and validated. does not need to check items
+            self.do_validate(items=not lz)
+        elif not lz:
+            self._coll_type(self)
 
     def _make_context(self, context=None, *extra_contexts):
         from .object_protocol import ObjectProtocol
@@ -60,35 +59,19 @@ class CollectionProtocol(TypeProtocol):
     def convert(cls, value, **opts):
         return value if isinstance(value, cls) else cls._convert(cls, value, **opts)
 
-    def _evaluate(self, value, convert=True, validate=True, **opts):
-        typed = value
-        if typed is None and self.has_default():
-            typed = self.default()
-            typed = typed.copy() if hasattr(typed, 'copy') else typed
-        if not isinstance(value, self._py_type) or convert:
-            typed = self._convert(typed, items=not self._lazy_loading, **opts)
-        if validate:
-            self._validate(typed, items=not self._lazy_loading)
-        return typed
-
     def call_order(self, **opts):
         return self._call_order(self, self._data, **opts)
 
-    @abstractmethod
-    def _call_order(self, value, with_inputs=True, **opts):
-        pass
-        return self.call_order(self._data, with_inputs=True, **opts)
+    #@abstractmethod
+    #def _call_order(self, value, with_inputs=True, **opts):
+    #    pass
 
-    #@classmethod
-    #def print_order(cls, value, with_inputs=True, **opts):
-    #    return cls._print_order(cls, value, with_inputs, **opts)
+    def print_order(self, **opts):
+        return self._print_order(self._data, **opts)
 
-    def print_order(self, with_inputs=True, **opts):
-        return self._print_order(self._data, with_inputs, **opts)
-
-    @abstractmethod
-    def _print_order(self, value, with_inputs=True, **opts):
-        pass
+   # @abstractmethod
+    #def _print_order(self, value, with_inputs=True, **opts):
+    #    pass
 
     @abstractmethod
     def items_type(self, name):
@@ -105,22 +88,14 @@ class CollectionProtocol(TypeProtocol):
         self._items_inputs[item] = {}
 
     def _items_inputs_evaluate(self, item):
-        inputs = self.inputs(self._data, item, with_inner=False)
-        print(inputs)
-        ret = {k: self._items_evaluate(k, convert=True, validate=False) for k in inputs}
-        return ret
+        inputs = self.inputs(self._data, item=item, with_inner=False)
+        return {k: self[k] for k in inputs}
         return {k: self[k] for k in self.inputs(self._data, item, with_inner=False)}
 
     def _items_evaluate(self, item, **opts):
-        ctx = self._context
-        v = self._data
-        for n in item.split('.'):
-            t = self.items_type(n)
-            v = t.evaluate(v[n], context=ctx, **opts)
-            ctx = getattr(v, 'context', None)
-        return v
+        v = self._data[item]
         t = self.items_type(item)
-        return t.evaluate(self._data[item], context=self._context, **opts)
+        return t(self._data[item], context=self._context, **opts)
 
     def __setitem__(self, item, value):
         self._data[item] = value
@@ -177,16 +152,6 @@ class CollectionProtocol(TypeProtocol):
 
     def do_validate(self, **opts):
         return self.validate(self, items=True, **opts)
-
-    @classmethod
-    def _format_error(cls, value, errors):
-        if errors:
-            msg = '\n'.join([f"Problem validating {cls._id} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
-            raise InvalidValue(msg)
-
-    @classmethod
-    def serialize(cls, value, **opts):
-        return cls._serialize(cls, value, **opts)
 
     def do_serialize(self, **opts):
         return self.serialize(self, **opts)

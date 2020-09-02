@@ -152,10 +152,6 @@ class TypeProxy(TypeProtocol):
         return cls.proxy_type_cls().convert(value, **opts)
 
     @classmethod
-    def evaluate(cls, value, **opts):
-        return cls.proxy_type_cls().evaluate(value, **opts)
-
-    @classmethod
     def serialize(cls, value, **opts):
         return cls.proxy_type_cls().serialize(value, **opts)
 

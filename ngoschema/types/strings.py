@@ -85,8 +85,8 @@ class Expr(String):
         return String.check(value) and value.startswith("`")
 
     def _convert(self, value, context=None, **opts):
-        TypeProtocol._make_context(self, context, opts)
-        typed = eval(str(value)[1:], dict(self._context))
+        ctx = dict(context if context else self._context)
+        typed = eval(str(value)[1:], ctx)
         return TypeProtocol._convert(self, typed, **opts)
 
     def _inputs(self, value, **opts):
@@ -99,8 +99,7 @@ class Pattern(String):
         return String.check(value) and ("{{" in value or "{%" in value)
 
     def _convert(self, value, context=None, **opts):
-        String._make_context(self, context, opts)
-        ctx = self._context.merged
+        ctx = context.merged if context else self._context.merged
         ctx.setdefault('this', ctx)
         return TemplatedString(value)(ctx)
 

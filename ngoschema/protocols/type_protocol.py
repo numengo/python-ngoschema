@@ -62,6 +62,13 @@ class TypeProtocol:
         attrs['_mro_type'] = [b for b in bases + extra_bases if issubclass(b, TypeProtocol)]
         return type(clsname, bases + extra_bases, attrs)
 
+    def __init__(self, *args, validate=True, context=None, **kwargs):
+        # prepare data
+        value = args[0] if args else kwargs or None
+        opts = kwargs if args else {}
+        self._data = typed = self.__call__(value, convert=False, validate=validate, context=context, **opts)
+        TypeProtocol._make_context(self, context, opts)
+
     def _make_context(self, context=None, *extra_contexts):
         ctx = context if context is not None else self._context
         self._context = ctx.create_child(*extra_contexts)
@@ -112,35 +119,35 @@ class TypeProtocol:
         except Exception as er:
             raise ConversionError("Impossible to convert %r to %s" % (value, self._py_type))
 
-    @classmethod
-    def evaluate(cls, value, convert=True, validate=True, **opts):
-        #### OVERWRITTEN BELOW
-        typed = value
-        if typed is None:
-            if not cls.has_default():
-                return None
-            typed = cls.default()
-            typed = typed.copy() if hasattr(typed, 'copy') else typed
-        if not cls.check(typed) or convert:
-            typed = cls.convert(typed, convert=convert, **opts)
-        if validate:
-            cls.validate(typed)
-        return typed
-
-    @classmethod
-    def evaluate(cls, value, validate=True, convert=True, context=None, **opts):
-        #### OVERWRITTEN BELOW
-        typed = value
-        if typed is None:
-            if not cls.has_default():
-                return None
-            typed = cls.default()
-            typed = typed.copy() if hasattr(typed, 'copy') else typed
-        if not cls.check(typed) or convert:
-            typed = cls.convert(typed, convert=convert, **opts)
-        if validate:
-            cls.validate(typed)
-        return typed
+    #@classmethod
+    #def evaluate(cls, value, validate=True, **opts):
+    #    #### OVERWRITTEN BELOW
+    #    typed = value
+    #    if typed is None:
+    #        if not cls.has_default():
+    #            return None
+    #        typed = cls.default()
+    #        typed = typed.copy() if hasattr(typed, 'copy') else typed
+    #    if not cls.check(typed):
+    #        typed = cls.convert(typed, **opts)
+    #    if validate:
+    #        cls.validate(typed)
+    #    return typed
+    #
+    #@classmethod
+    #def evaluate(cls, value, validate=True, convert=True, context=None, **opts):
+    #    #### OVERWRITTEN BELOW
+    #    typed = value
+    #    if typed is None:
+    #        if not cls.has_default():
+    #            return None
+    #        typed = cls.default()
+    #        typed = typed.copy() if hasattr(typed, 'copy') else typed
+    #    if not cls.check(typed) or convert:
+    #        typed = cls.convert(typed, convert=convert, **opts)
+    #    if validate:
+    #        cls.validate(typed)
+    #    return typed
 
     #def _evaluate(self, value, validate=True, convert=True, context=None, **opts):
     #    typed = value
@@ -184,12 +191,11 @@ class TypeProtocol:
             msg = '\n'.join([f"Problem validating {cls._type} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
             raise InvalidValue(msg)
 
-    #@classmethod
-    #def validate(cls, value, **opts):
-    #    #return cls._validate(cls, value, **opts)
+    @classmethod
+    def validate(cls, value, **opts):
+        return cls._validate(cls, value, **opts)
 
-    #def _validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
-    def validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
+    def _validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
         """
         Validate the value according to schema
         Return dictionnary of errors or raise ngoschema.InvalidValue
@@ -219,9 +225,9 @@ class TypeProtocol:
 
     @classmethod
     def inputs(cls, value, **opts):
-        #    return cls._inputs(cls, value, **opts)
+        return cls._inputs(cls, value, **opts)
 
-        #def _inputs(self, value, **opts):
+    def _inputs(self, value, **opts):
         return set()
 
     @classmethod

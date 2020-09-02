@@ -38,7 +38,7 @@ class Type(TypeProtocol):
                 self._py_type = TypeBuilder.get_type(ty)._py_type
         self._make_context(context)
 
-    def __call__(self, *args, serialize=False, **kwargs):
+    def __call__(self, value, convert=True, validate=True, serialize=False, context=None, **opts):
         """
         Instanciating the type for a given value, evaluating the value using the context with the convert method,
         and optionally validating the instance.
@@ -49,10 +49,20 @@ class Type(TypeProtocol):
         :return: typed instance
         """
         from .strings import Expr, Pattern
-        value = args[0] if args else kwargs
-        opts = kwargs if args else {}
-        typed = TypeProtocol.evaluate(self, value, **opts)
-        return TypeProtocol._serialize(self, typed, **opts) if serialize else typed
+        TypeProtocol._make_context(self, context, opts)
+        if value is None:
+            if self.has_default():
+                return None
+            value = self.default()
+            value = value.copy() if hasattr(value, 'copy') else value
+        typed = value if self.check(value, convert=False, context=self._context) else self.convert(value, context=self._context, **opts)
+        if not self._check(typed, convert=convert, context=self._context):
+            self._validate(typed, with_type=True, **opts)
+        if convert:
+            typed = self._convert(typed, context=self._context, **opts)
+        if validate:
+            self._validate(typed, with_type=False, **opts)
+        return self.serialize(typed, **opts) if serialize else typed
 
     def _convert(self, value, **opts):
         from .strings import Expr, Pattern
@@ -68,8 +78,8 @@ class Type(TypeProtocol):
                 logger.warning('impossible to convert %s: %s', shorten(inline(str(value))), er)
                 logger.error(er, exc_info=True)
                 typed = value
-            return TypeProtocol._convert(self, typed, **opts)
-        return typed
+        # only convert if not raw literals
+        return typed if raw_literals else TypeProtocol._convert(self, typed, **opts)
 
     def _inputs(self, value, context=None, **opts):
         from .strings import Expr, Pattern

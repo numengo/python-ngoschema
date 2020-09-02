@@ -8,14 +8,17 @@ from ..managers.type_builder import register_type
 
 class Constant(TypeProtocol):
 
+    def __init__(self):
+        pass
+
     def __call__(self, value, serialize=False, **opts):
-        if self.check(value):
+        if self.check(value, convert=True):
             return value
-        self._format_error(value, f'{value} is not {self._py_type}')
+        return self._format_error(value, {'type': f'{value} is not {self._py_type}'})
 
     @classmethod
     def check(cls, value, **opts):
-        return value is cls._py_type
+        return value is None or cls._py_type
 
     @classmethod
     def convert(cls, value, **opts):
@@ -44,10 +47,6 @@ class _True(Constant):
     _py_type = True
 
     @classmethod
-    def check(cls, value, **opts):
-        return True
-
-    @classmethod
     def convert(cls, value, **opts):
         return value
 
@@ -59,3 +58,4 @@ class _True(Constant):
 @register_type('false')
 class _False(Constant):
     _py_type = False
+

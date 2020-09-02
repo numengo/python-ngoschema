@@ -86,14 +86,17 @@ class Object(Type):
                 sch_repr['additionalProperties'] = True
         return self._sch_repr
 
-    def _default(self, **opts):
-        if self._default_cache is None:
-            self._default_cache = Object._convert(self, self._schema.get('default', {}), convert=True, **opts)
-        return self._default_cache
+    def __call__(self, *args, **kwargs):
+        kwargs.pop('$schema', None)
+        value = args[0] if args else kwargs or None
+        opts = kwargs if args else {}
+        opts.setdefault('items', True)
+        return Type.__call__(self, value, **opts)
 
-    #@classmethod
-    #def check(cls, value, **opts):
-    #    return Object._check(cls, value, **opts)
+    def _default(self, items=True, **opts):
+        if self._default_cache is None:
+            self._default_cache = Object._convert(self, self._schema.get('default', {}), items=True, **opts)
+        return self._default_cache
 
     def _check(self, value, **opts):
         if not isinstance(value, Mapping):
@@ -101,7 +104,7 @@ class Object(Type):
         keys = set(value.keys())
         if self._required.difference(keys):
             return False
-        for k in self._properties_allowed.difference(keys):
+        for k in keys.difference(self._properties_allowed):
             for reg, _ in self._properties_pattern:
                 if reg.search(k):
                     break
@@ -110,40 +113,18 @@ class Object(Type):
                     return False
         return True
 
-    #@classmethod
-    #def convert(cls, value, **opts):
-    #    return Object._convert(cls, value, **opts)
-
-    def _convert(self, value, convert=False, **opts):
-        avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
-        navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
-        ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=convert))
-        for k in ret.keys():
-            t = self.items_type(k)
-            v = value.get(k) or avs.get(k) or navs.get(k)
-            if v is None and (t.has_default() or k in self._required):
-                v = t.default(**opts)
-            ret[k] = v if v is None or not convert else t(v, **opts)
-        if issubclass(self._py_type, TypeProtocol) and convert:
-            ret['context'] = self._context
-        return self._py_type(ret) if convert else ret
-
     def _convert(self, value, items=False, **opts):
         avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
         navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
-        ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=items))
+        ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=items, **opts))
         for k in ret.keys():
             t = self.items_type(k)
             v = value.get(k) or avs.get(k) or navs.get(k)
-            # should be done in t.evaluate
-            #if v is None and (t.has_default() or k in self._required):
-            #    v = t.default(**opts)
-            ret[k] = v if not items else t.evaluate(v, **opts)
-        return self._coll_type(ret) if items else self._py_type(items)
-
-    #@classmethod
-    #def validate(cls, value, **opts):
-    #    return Object._validate(cls, value, **opts)
+            # initialize default even if items is not selected
+            if not items and v is None and (t.has_default() or k in self._required):
+                v = t.default(raw_literals=True, **opts)
+            ret[k] = v if not items else t(v, **opts)
+        return self._coll_type(ret)
 
     def _validate(self, value, items=True, excludes=[], as_dict=False, **opts):
         errors = {}
@@ -158,10 +139,6 @@ class Object(Type):
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
-    #@classmethod
-    #def serialize(cls, value, **opts):
-    #    return Object._serialize(cls, value, **opts)
-
     def _serialize(self, value, excludes=[], only=[], attr_prefix='', **opts):
         # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
@@ -171,18 +148,14 @@ class Object(Type):
                              for k, t in ptypes])
         return ret if not no_defaults else OrderedDict([(k, v) for k, v in ret.items() if v is not None])
 
-    #@classmethod
-    #def inputs(cls, value, item=None, **opts):
-    #    return Object._inputs(cls, value, item, **opts)
-
     def _inputs(self, value, item=None, with_inner=False, **opts):
         """
         Create object dependency tree according to class declared dependencies and expression inputs.
         Make all property names raw and keep only first level
         """
         if value is None:
-            if self._has_default():
-                return self._inputs(self._default(), item, with_inner, **opts)
+            if self.has_default():
+                return self._inputs(self.default(raw_literals=True), item, with_inner, **opts)
             return set()
         if item is not None:
             v = value[item]

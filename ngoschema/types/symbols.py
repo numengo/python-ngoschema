@@ -7,7 +7,7 @@ import inspect
 import types
 import re
 
-from ..exceptions import InvalidValue
+from ..exceptions import ConversionError
 from ..utils import qualname
 from ..managers.type_builder import register_type
 from .type import TypeProtocol, Primitive
@@ -39,13 +39,13 @@ class Symbol(Primitive):
                             continue
                         ret = getattr(ret, a, None)
                         if not ret:
-                            raise InvalidValue("%s is not an importable object" % value)
+                            raise ConversionError("%s is not an importable object" % value)
                     typed = ret
                     break
                 except Exception as er:
                     continue
         if typed is not None and not self.check_symbol(typed):
-            raise InvalidValue("%s is not a %s" % (value, self._type))
+            raise ConversionError("%s is not a %s" % (value, self._type))
         return typed
 
     @classmethod
