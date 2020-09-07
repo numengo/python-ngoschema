@@ -83,8 +83,8 @@ def inspect_function_call(value):
                 p.value = a
             if len(function_call['arguments']) < len(d_args_val):
                 function_call['varargs']['valueLiteral'] = d_args_val[len(function_call['arguments']):]
-            if function_call['keywords']:
-                function_call['keywords']['valueLiteral'] = d_kwargs_val
+            if function_call['kwargs']:
+                function_call['kwargs']['valueLiteral'] = d_kwargs_val
 
     node_iter = ast.NodeVisitor()
     node_iter.visit_FunctionDef = _visit_function_def
@@ -130,7 +130,7 @@ def inspect_class(value, with_inherited=False):
     ds = inspect.getmembers(symbol, inspect.isdatadescriptor)
     properties = [inspect_descriptor(d, name=n) for n, d in ds]
     if properties:
-        cls['properties'] = properties
+        cls['descriptors'] = properties
 
     ds2 = inspect.getmembers(symbol, lambda x: not (Function.check(x) or Callable.check(x) or Class.check(x)))
     attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__')]

@@ -28,13 +28,13 @@ class VariableValue(with_metaclass(SchemaMetaclass)):
 class Argument(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
 
-    def convert(self, value, **opts):
+    def _convert(self, value, **opts):
         from ...inspect.doc_rest_parser import parse_docstring
-        data = Variable.convert(value, **opts)
+        data = Variable._convert(self, value, **opts)
         doctype = data.pop('doctype', None)
         if doctype:
             data.update({k: v for k, v in parse_docstring(doctype).items() if v})
-        return Object.convert(self, data, **opts)
+        return Object._convert(self, data, **opts)
 
 
 class Function(with_metaclass(SchemaMetaclass)):
@@ -57,6 +57,7 @@ class FunctionCall(with_metaclass(SchemaMetaclass)):
 
 class Class(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/symbols/$defs/Class'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Class'
 
     @staticmethod
     def inspect(value):
@@ -96,6 +97,7 @@ class Class(with_metaclass(SchemaMetaclass)):
 
 class Module(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/symbols/$defs/Module'
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/modules/$defs/Module'
 
     @staticmethod
     def inspect(value):

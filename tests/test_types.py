@@ -113,7 +113,7 @@ def test_object():
     assert obj2(o)['a'] == 1
     with pytest.raises(InvalidValue) as e_info:
         assert 'c' in Object(required=['c'])(o)
-    assert Object(required=['c'])._default() == OrderedDict(c=None)
+    assert Object(required=['c']).default() == OrderedDict(c=None)
 
 
 def test_canonical_name():

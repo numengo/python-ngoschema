@@ -59,6 +59,10 @@ class CollectionProtocol(TypeProtocol):
         self._root = next((m for m in reversed(ctx.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
 
     @classmethod
+    def __ring_key__(cls):
+        return cls._id
+
+    @classmethod
     def check(cls, value, **opts):
         return isinstance(value, cls) or cls._check(cls, value)
 
@@ -74,7 +78,8 @@ class CollectionProtocol(TypeProtocol):
     def convert(cls, value, **opts):
         if cls._lazy_loading:
             opts.setdefault('items', False)
-        return value if isinstance(value, cls) else cls(cls._convert(cls, value, **opts), **opts)
+        return value if isinstance(value, cls) else cls(value, **opts)
+        #return value if isinstance(value, cls) else cls(cls._convert(cls, value, **opts), **opts)
 
     @classmethod
     def serialize(cls, value, **opts):

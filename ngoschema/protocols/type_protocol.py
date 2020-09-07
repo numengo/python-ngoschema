@@ -8,7 +8,7 @@ from abc import abstractmethod
 from collections import OrderedDict, Mapping, Sequence
 
 from .. import DEFAULT_CONTEXT
-from ..utils import ReadOnlyChainMap, apply_through_collection
+from ..utils import ReadOnlyChainMap, shorten
 from ..resolver import resolve_uri, scope, UriResolver
 from ..exceptions import InvalidValue, ValidationError, ConversionError
 from .. import settings
@@ -153,7 +153,7 @@ class TypeProtocol:
     @classmethod
     def _format_error(cls, value, errors):
         if errors:
-            msg = '\n'.join([f"Problem validating {cls} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
+            msg = '\n'.join([f"Problem validating {cls} with {shorten(value, 128)}:"] + [f'\t{k}: {errors[k]}' for k in errors])
             raise InvalidValue(msg)
 
     def _do_validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
@@ -177,7 +177,9 @@ class TypeProtocol:
                 return None
             value = self._default()
             value = value.copy() if hasattr(value, 'copy') else value
-        typed = value if self.check(value, convert=False, context=ctx) else self.convert(value, context=ctx, **opts)
+        typed = value
+        #if not self.check(value, convert=False, context=ctx):
+        #    typed = self.convert(value, context=ctx, **opts)
         if not self._check(typed, convert=convert, context=ctx):
             self._do_validate(typed, with_type=True, **opts)
         if convert:

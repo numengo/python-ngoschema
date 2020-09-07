@@ -75,7 +75,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                             ok = False
                 if ok:
                     cls._items_type_cache = cls._items
-        return Array._items_type(cls, item)
+        return Array.items_type(cls, item)
 
     @classmethod
     def check(cls, value, **opts):

@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from ...protocols import SchemaMetaclass, with_metaclass
+from ..metadata import NamedObject
 
 
 class Array(with_metaclass(SchemaMetaclass)):

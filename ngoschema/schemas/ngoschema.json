@@ -723,7 +723,8 @@
             "Descriptor": {
               "type": "object",
               "extends": [
-                "#/$defs/metadata/$defs/Annotation"
+                "#/$defs/metadata/$defs/Annotation",
+                "#/$defs/metadata/$defs/NamedObject"
               ],
               "properties": {
                 "fget": {
@@ -777,7 +778,8 @@
               "type": "string"
             },
             "reverse": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
           }
         },
@@ -839,7 +841,8 @@
               "$ref": "#/$defs/variables/$defs/Scope"
             },
             "const": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
           }
         },
@@ -879,7 +882,7 @@
         "Callable": {
           "type": "object",
           "extends": [
-            "#/$defs/types/$defs/symbols/$defs/Symbol"
+            "#/$defs/symbols/$defs/Symbol"
           ]
         },
         "functions": {
@@ -900,7 +903,7 @@
                     "$ref": "#/$defs/symbols/$defs/functions/$defs/Argument"
                   }
                 },
-                "vargs": {
+                "varargs": {
                   "type": "string"
                 },
                 "kwargs": {
@@ -942,7 +945,8 @@
                   "type": "string"
                 },
                 "required": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "default": false
                 }
               }
             },
@@ -968,7 +972,6 @@
             "Class": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/collections/$defs/Definition",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "additionalProperties": true,
@@ -979,7 +982,7 @@
                 "mro": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/types/$defs/symbols/$defs/Class"
+                    "$ref": "#/$defs/symbols/$defs/classes/$defs/Class"
                   }
                 },
                 "abstract": {
@@ -992,21 +995,24 @@
                   }
                 },
                 "descriptors": {
-                  "$ref": "#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
+                  }
                 },
                 "init": {
-                  "$ref": "#/$defs/types/$defs/symbols/$defs/Method"
+                  "$ref": "#/$defs/symbols/$defs/classes/$defs/Method"
                 },
                 "methods": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/types/$defs/symbols/$defs/Method"
+                    "$ref": "#/$defs/symbols/$defs/classes/$defs/Method"
                   }
                 },
                 "classes": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/types/$defs/symbols/$defs/Class"
+                    "$ref": "#/$defs/symbols/$defs/classes/$defs/Class"
                   }
                 }
               }
@@ -1034,28 +1040,28 @@
             "ClassMethod": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Method"
+                "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "class": true
             },
             "StaticMethod": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Method"
+                "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "static": true
             },
             "VirtualMethod": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Method"
+                "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "virtual": true
             },
             "Instance": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Class"
+                "#/$defs/symbols/$defs/classes/$defs/Class"
               ]
             }
           }
@@ -1066,7 +1072,6 @@
             "Module": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/collections/$defs/Definition",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
@@ -1196,7 +1201,8 @@
               "type": "path"
             },
             "binary": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             },
             "mimetype": {
               "type": "string",
@@ -1268,7 +1274,7 @@
             },
             "order_by": true,
             "reverse": {
-              "type": "string"
+              "type": "boolean"
             },
             "result": {
               "type": "array"
@@ -1351,7 +1357,8 @@
               }
             },
             "many": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             },
             "no_defaults": {
               "type": "boolean",
@@ -1385,7 +1392,8 @@
               }
             },
             "recursive": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             },
             "aliases": {
               "type": "object",
@@ -1418,7 +1426,8 @@
               "$ref": "#/$defs/documents/$defs/Document"
             },
             "overwrite": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
           }
         },

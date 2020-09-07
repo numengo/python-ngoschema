@@ -102,7 +102,7 @@ def visit_function_def(node):
         p['defaultValue'] = d
 
     varargs = {'name': ast_name(vargs)} if vargs else None
-    keywords = {'name': ast_name(kwargs)} if kwargs else None
+    kwargs = {'name': ast_name(kwargs)} if kwargs else None
 
     decorators = []
     for n in node.decorator_list:
@@ -126,9 +126,9 @@ def visit_function_def(node):
             if len(dec.get('arguments', [])) < len(d_args_val):
                 dec['varargs'] = copy.deepcopy(dec['varargs'])
                 dec['varargs']['valueLiteral'] = d_args_val[len(dec.get('arguments', [])):]
-            if 'keywords' in dec:
-                dec['keywords'] = copy.deepcopy(dec['keywords'])
-                dec['keywords']['valueLiteral'] = d_kwargs_val
+            if 'kwargs' in dec:
+                dec['kwargs'] = copy.deepcopy(dec['kwargs'])
+                dec['kwargs']['valueLiteral'] = d_kwargs_val
         elif Class.check_symbol(symbol):
             dec = inspect_class(symbol).copy()
             if d_args_val or d_kwargs_val:
@@ -149,7 +149,7 @@ def visit_function_def(node):
                 param['type'] = arg_schema
 
     _set_not_null(ret, 'arguments', params)
-    _set_not_null(ret, 'keywords', keywords)
+    _set_not_null(ret, 'kwargs', kwargs)
     _set_not_null(ret, 'varargs', varargs)
     _set_not_null(ret, 'decorators', decorators)
     return ret

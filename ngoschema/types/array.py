@@ -97,7 +97,7 @@ class Array(Type):
     def _items_types(self, value):
         return self._items if self._items_list else [self._items] * len(value)
 
-    def _items_type(self, index):
+    def items_type(self, index):
         return self._items[index] if self._items_list else self._items
 
     def _inputs(self, value, item=None, with_inner=False, **opts):
@@ -106,7 +106,7 @@ class Array(Type):
         if item is not None:
             try:
                 #t = Array._items_type(self, item)
-                t = Array._items_type(self, item)
+                t = Array.items_type(self, item)
                 return t.inputs(value[item], **opts)
             except Exception as er:
                 self._logger.error('%i %s' % (item, value))

@@ -122,7 +122,7 @@ class Object(Type):
         raw_literals = opts.pop('raw_literals', False)
         for k in ret.keys():
             try:
-                t = Object._items_type(self, k)
+                t = Object.items_type(self, k)
                 v = value.get(k, avs.get(k, navs.get(k)))
                 # initialize default even if items is not selected
                 if not items and v is None and (t.has_default() or k in self._required):
@@ -138,7 +138,7 @@ class Object(Type):
             if items:
                 for k in Object._call_order(self, value, with_inputs=True):
                     if k not in self._not_validated and k not in excludes and value.get(k) is not None:
-                        t = Object._items_type(self, k)
+                        t = Object.items_type(self, k)
                         errors.update(t.validate(value[k], **opts, as_dict=True))
             errors.update(TypeProtocol._do_validate(self, value, excludes=excludes+['properties', 'patternProperties', 'additionalProperties'], as_dict=True, **opts))
         except Exception as er:
@@ -149,7 +149,7 @@ class Object(Type):
         # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
         opts.setdefault('context', getattr(value, '_context', self._context))  # should we even use the value context?
-        ptypes = [(k, Object._items_type(self, k)) for k in Object._print_order(self, value, **opts)]
+        ptypes = [(k, Object.items_type(self, k)) for k in Object._print_order(self, value, **opts)]
         try:
             ret = OrderedDict([((attr_prefix if t.is_primitive() else '') + k,
                                  t.serialize(value[k], attr_prefix=attr_prefix, **opts))
@@ -170,7 +170,7 @@ class Object(Type):
         if item is not None:
             v = value[item]
             try:
-                i = set() if not v else Object._items_type(self, item).inputs(v, **opts)
+                i = set() if not v else Object.items_type(self, item).inputs(v, **opts)
             except Exception as er:
                 self._logger.error(f'{item} {str(v)[:40]}...: {str(er)}', exc_info=True)
                 raise er
@@ -204,7 +204,7 @@ class Object(Type):
                         k = self._properties_translation.get(k)
                     if k in to_unalias:
                         k = self._aliases.get(k)
-                    t = Object._items_type(self, k)
+                    t = Object.items_type(self, k)
                     if v is None and t.has_default():
                         v = t.default(**opts)
                     inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
@@ -246,13 +246,13 @@ class Object(Type):
                 continue
             if only and k not in only:
                 continue
-            v = value.get(k) or avs.get(k) or navs.get(k)
+            v = value.get(k, avs.get(k, navs.get(k)))
             if no_defaults and k not in rq:
                 if v is None:
                     continue
                 if isinstance(v, Mapping) and not v:
                     continue
-                t = Object._items_type(self, k)
+                t = self.items_type(k)
                 if t.has_default():
                     d = t.default(**opts)
                     v = neg(v) if k in self._aliases_negated else v
@@ -262,8 +262,10 @@ class Object(Type):
                         continue
             yield k
 
-    def _items_type(self, name):
+    def items_type(self, name):
         """Returns the type of a property by its name."""
+        name = self._aliases.get(name, name)
+        name = self._aliases_negated.get(name, name)
         pt = self._properties.get(name)
         if pt is not None:
             return pt

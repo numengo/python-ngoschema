@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from ..protocols import TypeProtocol
 from ..managers.type_builder import register_type
+from ..exceptions import InvalidValue
 
 
 class Constant(TypeProtocol):
@@ -43,7 +44,7 @@ class Constant(TypeProtocol):
 
     @classmethod
     def default(cls, **opts):
-        return cls._py_type
+        return None
 
     @staticmethod
     def inputs(value, **opts):
@@ -67,8 +68,15 @@ class _True(Constant):
     def serialize(cls, value, **opts):
         return value.do_serialize(**opts) if hasattr(value, 'do_serialize') else value
 
+    @classmethod
+    def validate(cls, value, **opts):
+        return {}
+
 
 @register_type('false')
 class _False(Constant):
     _py_type = False
 
+    @classmethod
+    def validate(cls, value, **opts):
+        raise InvalidValue(value)

@@ -9,6 +9,8 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
+import sys
+import six
 import logging
 from abc import abstractmethod
 
@@ -28,7 +30,7 @@ from ruamel import yaml
 from ruamel.yaml import YAML
 from ngoschema.utils import xmltodict, file_link_format
 
-from .exceptions import InvalidOperation
+from .exceptions import InvalidOperation, InvalidValue
 from .query import Query
 #from .protocol_base import ProtocolBase
 from .models.documents import Document
@@ -174,6 +176,13 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositor
         data = self.filter_data(data)
         return data
 
+    def load(self):
+        try:
+            Repository.load(self)
+        except Exception as er:
+            self._logger.error(er, exc_info=True)
+            raise InvalidValue(f"Problem loading '{self.document.filepath}': {er}")
+
     @abstractmethod
     def serialize_data(self, data):
         pass
@@ -231,7 +240,8 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
         FileRepository.__init__(self, **kwargs)
 
     def deserialize_data(self):
-        data = self.document._deserialize(json.loads, **{k: v for k, v in self.do_validate().items() if k not in self._properties})
+        data = self.document._deserialize(json.loads, **self._data_additional)
+        #data = self.document._deserialize(json.loads, **{k: v for k, v in self.do_validate().items() if k not in self._properties})
         return data
 
     def serialize_data(self, data):

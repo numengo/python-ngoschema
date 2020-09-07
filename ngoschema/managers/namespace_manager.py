@@ -60,8 +60,8 @@ class NamespaceManager(Registry):
         return self._current_ns_uri
 
     def get_id_cname(self, ref):
-        cname = self._get_id_cname(ref)
         rcn = self._current_ns
+        cname = self._get_id_cname(ref, rcn)
         if rcn and cname.startswith(rcn):
             local_cn = cname[len(rcn):].split('.')
             if local_cn and not local_cn[0]:
@@ -69,7 +69,7 @@ class NamespaceManager(Registry):
             return rcn
         return cname
 
-    def _get_id_cname_cached(self, ref):
+    def _get_id_cname_cached(self, ref, current_ns):
         from ..types.uri import Uri
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         ns_uri, frag = urldefrag(ref)
@@ -90,9 +90,9 @@ class NamespaceManager(Registry):
                 rcn.pop()
                 cname = cname[1:]
             cname = '.'.join(rcn + [cname])
-        return self._get_cname_id(cname)
+        return self._get_cname_id(cname, self._current_ns)
 
-    def _get_cname_id_cached(self, cname):
+    def _get_cname_id_cached(self, cname, current_ns):
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         # iterate on namespace sorted from the longest to get the most qualified
         ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)

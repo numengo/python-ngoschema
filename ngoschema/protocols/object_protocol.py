@@ -8,8 +8,6 @@ from collections import OrderedDict, defaultdict
 import re
 from operator import neg
 import copy
-import sys
-import six
 
 from ..exceptions import InvalidValue
 from ..decorators import assert_arg
@@ -207,21 +205,34 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def __iter__(self):
         return iter(self._data_validated.keys())
 
+    __properties_raw_trans = None
     @classmethod
     def _properties_raw_trans(cls, name):
+        if cls.__properties_raw_trans is None:
+            cls.__properties_raw_trans  = {}
+        cached = cls.__properties_raw_trans.get(name)
+        if cached:
+            return cached
         for trans, raw in cls._properties_translation.items():
             if name in (raw, trans):
+                cls.__properties_raw_trans[name] = (raw, trans)
                 return raw, trans
         if name in cls._properties:
+            cls.__properties_raw_trans[name] = (name, name)
             return name, name
         alias = cls._aliases.get(name)
         if alias:
+            cls.__properties_raw_trans[name] = (alias, name)
             return alias, name
         alias = cls._aliases_negated.get(name)
         if alias:
+            cls.__properties_raw_trans[name] = (alias, name)
             return alias, name
         if cls._properties_additional:
-            return name, clean_js_name(name)
+            trans = clean_js_name(name)
+            cls.__properties_raw_trans[name] = (name, trans)
+            return name, trans
+        cls.__properties_raw_trans[name] = (None, None)
         return None, None
 
     def __getattr__(self, name):
@@ -302,7 +313,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         try:
             self[name] = value
         except KeyError as er:
-            self._logger.error(er, exc_info=True)
+            #self._logger.error(er, exc_info=True)
             raise AttributeError("'{0}' is not a valid property of {1}".format(
                                  name, self.__class__.__name__))
 
@@ -341,10 +352,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         if not self._properties_additional:
             raise KeyError(key)
         v = op(value)
-        self._set_data(key, v)
-        self._data_additional[key] = v
-        if not self._lazy_loading:
-            self._set_data_validated(key, v)
+        self._data[key] = self._data_additional[key] = self._data_validated[key] = v
 
     def __delitem__(self, key):
         for trans, raw in self._properties_translation.items():
@@ -400,7 +408,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             cls._items_type_cache = {}
         t = cls._items_type_cache.get(item)
         if t is None:
-            t = Object._items_type(cls, item)
+            t = Object.items_type(cls, item)
             cls._items_type_cache[item] = t
             if t and isinstance(t, TypeProxy):
                 if t.proxy_type:
