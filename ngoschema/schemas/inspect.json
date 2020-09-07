@@ -48,8 +48,7 @@
             },
             "VariableType": {
               "aliases": {
-                "default": "defaultValueLiteral",
-                "_type": "type"
+                "default": "defaultValueLiteral"
               },
               "properties": {
                 "type": {

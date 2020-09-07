@@ -177,6 +177,11 @@ def slugify(string):
     return _slugify(string)
 
 
+@filters_registry.register()
+def split(value, index, char = ','):
+    return value.split(char)[index]
+
+
 class ModulePrefixedJinja2Environment(jinja2.Environment):
     logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")
     _extra_opts = {

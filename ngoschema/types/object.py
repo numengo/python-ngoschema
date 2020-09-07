@@ -86,16 +86,18 @@ class Object(Type):
                 sch_repr['additionalProperties'] = True
         return self._sch_repr
 
-    def __call__(self, *args, **kwargs):
+    def _evaluate(self, *args, **kwargs):
         kwargs.pop('$schema', None)
-        value = args[0] if args else kwargs or None
+        value = args[0] if args else kwargs
         opts = kwargs if args else {}
         opts.setdefault('items', True)
-        return Type.__call__(self, value, **opts)
+        return Type._evaluate(self, value, **opts)
 
-    def _default(self, items=True, **opts):
+    def _default(self, **opts):
         if self._default_cache is None:
-            self._default_cache = Object._convert(self, self._schema.get('default', {}), items=True, **opts)
+            opts.setdefault('items', False)
+            opts.setdefault('raw_literals', False)
+            self._default_cache = Object._convert(self, self._schema.get('default', {}), **opts)
         return self._default_cache
 
     def _check(self, value, **opts):
@@ -117,35 +119,43 @@ class Object(Type):
         avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in value}
         navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in value}
         ret = OrderedDict((k, None) for k in Object._call_order(self, value, with_inputs=items, **opts))
+        raw_literals = opts.pop('raw_literals', False)
         for k in ret.keys():
-            t = self.items_type(k)
-            v = value.get(k) or avs.get(k) or navs.get(k)
-            # initialize default even if items is not selected
-            if not items and v is None and (t.has_default() or k in self._required):
-                v = t.default(raw_literals=True, **opts)
-            ret[k] = v if not items else t(v, **opts)
+            try:
+                t = Object._items_type(self, k)
+                v = value.get(k, avs.get(k, navs.get(k)))
+                # initialize default even if items is not selected
+                if not items and v is None and (t.has_default() or k in self._required):
+                    v = t.default(raw_literals=True, **opts)
+                ret[k] = v if not items else t.evaluate(v, raw_literals=raw_literals, **opts)
+            except Exception as er:
+                raise
         return self._coll_type(ret)
 
-    def _validate(self, value, items=True, excludes=[], as_dict=False, **opts):
+    def _do_validate(self, value, items=True, excludes=[], as_dict=False, **opts):
         errors = {}
         try:
             if items:
                 for k in Object._call_order(self, value, with_inputs=True):
                     if k not in self._not_validated and k not in excludes and value.get(k) is not None:
-                        t = self.items_type(k)
+                        t = Object._items_type(self, k)
                         errors.update(t.validate(value[k], **opts, as_dict=True))
-            errors.update(TypeProtocol._validate(self, value, excludes=excludes+['properties', 'patternProperties', 'additionalProperties'], as_dict=True, **opts))
+            errors.update(TypeProtocol._do_validate(self, value, excludes=excludes+['properties', 'patternProperties', 'additionalProperties'], as_dict=True, **opts))
         except Exception as er:
             raise er
         return errors if as_dict else self._format_error(value, errors)
 
-    def _serialize(self, value, excludes=[], only=[], attr_prefix='', **opts):
+    def _serialize(self, value, attr_prefix='', **opts):
         # separate excludes/only from opts as they apply to the first component and might be applied to its properties
         no_defaults = opts.get('no_defaults', False)
-        ptypes = [(k, self.items_type(k)) for k in Object._print_order(self, value, excludes=excludes, only=only, **opts)]
-        ret = OrderedDict([((attr_prefix if t.is_primitive() else '') + k,
-                             t.serialize(value[k], attr_prefix=attr_prefix, **opts))
-                             for k, t in ptypes])
+        opts.setdefault('context', getattr(value, '_context', self._context))  # should we even use the value context?
+        ptypes = [(k, Object._items_type(self, k)) for k in Object._print_order(self, value, **opts)]
+        try:
+            ret = OrderedDict([((attr_prefix if t.is_primitive() else '') + k,
+                                 t.serialize(value[k], attr_prefix=attr_prefix, **opts))
+                                 for k, t in ptypes])
+        except Exception as er:
+            raise er
         return ret if not no_defaults else OrderedDict([(k, v) for k, v in ret.items() if v is not None])
 
     def _inputs(self, value, item=None, with_inner=False, **opts):
@@ -160,7 +170,7 @@ class Object(Type):
         if item is not None:
             v = value[item]
             try:
-                i = set() if not v else self.items_type(item).inputs(v, **opts)
+                i = set() if not v else Object._items_type(self, item).inputs(v, **opts)
             except Exception as er:
                 self._logger.error(f'{item} {str(v)[:40]}...: {str(er)}', exc_info=True)
                 raise er
@@ -194,7 +204,7 @@ class Object(Type):
                         k = self._properties_translation.get(k)
                     if k in to_unalias:
                         k = self._aliases.get(k)
-                    t = self.items_type(k)
+                    t = Object._items_type(self, k)
                     if v is None and t.has_default():
                         v = t.default(**opts)
                     inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
@@ -226,8 +236,9 @@ class Object(Type):
         rq = self._required.union(getattr(value, '_required', []))
         ns = self._not_serialized.union(getattr(value, '_not_serialized', []))
         ro = self._read_only.union(getattr(value, '_read_only', []))
-        avs = {k2: self[k1] for k1, k2 in self._aliases.items() if k1 in all_ordered}
-        navs = {k2: - self[k1] for k1, k2 in self._aliases_negated.items() if k1 in all_ordered}
+        avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in all_ordered}
+        navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in all_ordered}
+        opts.setdefault('context', getattr(value, '_context', self._context))
         for k in all_ordered:
             if k in ns or k in excludes:
                 continue
@@ -241,17 +252,17 @@ class Object(Type):
                     continue
                 if isinstance(v, Mapping) and not v:
                     continue
-                t = self.items_type(k)
+                t = Object._items_type(self, k)
                 if t.has_default():
-                    d = t.default()
+                    d = t.default(**opts)
                     v = neg(v) if k in self._aliases_negated else v
                     if v == d:
                         continue
-                    if Pattern.check(d) and v == t.convert(d, **opts):
+                    if Pattern.check(d) and v == t.evaluate(d, **opts):
                         continue
             yield k
 
-    def items_type(self, name):
+    def _items_type(self, name):
         """Returns the type of a property by its name."""
         pt = self._properties.get(name)
         if pt is not None:

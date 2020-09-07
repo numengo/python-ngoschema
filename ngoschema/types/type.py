@@ -32,37 +32,38 @@ class Type(TypeProtocol):
         self._type = ty = schema.get('type')
         self._py_type = schema.get('pyType')
         self._raw_literals = schema.get('rawLiterals', self._raw_literals)
+        self._validate = schema.get('validate', self._validate)
         self._validator = DefaultValidator(schema, resolver=UriResolver.create(uri=self._id, schema=schema))
         if not self._py_type:
             if 'type' in schema:
                 self._py_type = TypeBuilder.get_type(ty)._py_type
-        self._make_context(context)
+        self.set_context(context)
 
-    def __call__(self, value, convert=True, validate=True, serialize=False, context=None, **opts):
-        """
-        Instanciating the type for a given value, evaluating the value using the context with the convert method,
-        and optionally validating the instance.
-
-        :param value: data to instanciate
-        :param validate: activate validation
-        :param context: evaluation context
-        :return: typed instance
-        """
-        from .strings import Expr, Pattern
-        TypeProtocol._make_context(self, context, opts)
-        if value is None:
-            if self.has_default():
-                return None
-            value = self.default()
-            value = value.copy() if hasattr(value, 'copy') else value
-        typed = value if self.check(value, convert=False, context=self._context) else self.convert(value, context=self._context, **opts)
-        if not self._check(typed, convert=convert, context=self._context):
-            self._validate(typed, with_type=True, **opts)
-        if convert:
-            typed = self._convert(typed, context=self._context, **opts)
-        if validate:
-            self._validate(typed, with_type=False, **opts)
+    def __call__(self, *args, **kwargs):
+        value = args[0] if args else kwargs or None
+        opts = kwargs if args else {}
+        serialize = opts.pop('serialize', False)
+        typed = self.evaluate(value, **opts)
         return self.serialize(typed, **opts) if serialize else typed
+
+    def has_default(self):
+        return self._has_default()
+
+    def default(self, **opts):
+        return self._default(**opts)
+
+    def evaluate(self, value, **opts):
+        return self._evaluate(value, **opts)
+
+    def inputs(self, value, context=None, **opts):
+        from .strings import Expr, Pattern
+        raw_literals = opts.pop('raw_literals', self._raw_literals)
+        if not raw_literals:
+            if Pattern.check(value):
+                return Pattern.inputs(value, **opts)
+            if Expr.check(value):
+                return Expr.inputs(value, **opts)
+        return set()
 
     def _convert(self, value, **opts):
         from .strings import Expr, Pattern
@@ -81,15 +82,11 @@ class Type(TypeProtocol):
         # only convert if not raw literals
         return typed if raw_literals else TypeProtocol._convert(self, typed, **opts)
 
-    def _inputs(self, value, context=None, **opts):
-        from .strings import Expr, Pattern
-        raw_literals = opts.pop('raw_literals', self._raw_literals)
-        if not raw_literals:
-            if Pattern.check(value):
-                return Pattern.inputs(value, **opts)
-            if Expr.check(value):
-                return Expr.inputs(value, **opts)
-        return set()
+    def validate(self, value, **opts):
+        return self._do_validate(value, **opts)
+
+    def serialize(self, value, **opts):
+        return self._serialize(value, **opts)
 
 
 class Primitive(Type):
@@ -127,7 +124,9 @@ class Enum(Primitive):
         raise ConversionError('Impossible to convert %s to enum %r' % (value, enum))
 
     def _default(self, **opts):
-        return TypeProtocol._default(self, **opts) or self._enum[0]
+        if TypeProtocol._has_default(self):
+            return TypeProtocol._default(self, **opts)
+        return self._enum[0]
 
     def _has_default(self):
         return bool(self._enum) or TypeProtocol._has_default(self)

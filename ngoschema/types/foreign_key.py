@@ -22,7 +22,7 @@ ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 @register_type('$ref')
 class Ref(String):
 
-    def _validate(self, value, resolve=True, **opts):
+    def _do_validate(self, value, resolve=True, **opts):
         String.validate(value, **opts)
         if resolve:
             try:
@@ -35,10 +35,10 @@ class Ref(String):
     def resolve(value):
         return resolve_uri(value)
 
-    def __call__(self, value, validate=True, resolve=False, **opts):
-        value = String.__call__(self, value, validate=False, **opts)
+    def _evaluate(self, value, validate=True, resolve=False, **opts):
+        value = String._evaluate(self, value, validate=False, **opts)
         if validate:
-            self._validate(value, resolve=False)
+            self._do_validate(value, resolve=False)
         return self.resolve(value) if resolve else value
 
 
@@ -71,17 +71,17 @@ class ForeignKey(Ref):
         else:
             self._foreign_class = ObjectProtocol
 
-    def __call__(self, value, validate=True, resolve=False, context=None, **opts):
-        context = TypeProtocol._make_context(self, context)
-        value = self.convert(value, context=context, **opts)
+    def _evaluate(self, value, validate=True, resolve=False, context=None, **opts):
+        ctx = TypeProtocol.create_context(self, context)
+        value = self.convert(value, context=ctx, **opts)
         if validate:
-            self.validate(value, resolve=False, context=context)  # resolve False to avoid double resolution
+            self.validate(value, resolve=False, context=ctx)  # resolve False to avoid double resolution
         if resolve:
-            return self.resolve(value, context=context)
+            return self.resolve(value, context=ctx)
         return value
 
-    def _validate(self, value, resolve=False, **opts):
-        TypeProtocol._validate(self, value, **opts)
+    def _do_validate(self, value, resolve=False, **opts):
+        TypeProtocol._do_validate(self, value, **opts)
         if resolve:
             raise InvalidValue()
         pass

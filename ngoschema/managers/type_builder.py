@@ -111,7 +111,7 @@ class TypeBuilder:
         from ..protocols import TypeProxy
         if id not in TypeBuilder._registry:
             if id in TypeBuilder._on_construction:
-                return TypeProxy.build(id)
+                return TypeProxy.build(id)()
             TypeBuilder._registry[id] = TypeBuilder.build(id)
         return TypeBuilder._registry[id]
 

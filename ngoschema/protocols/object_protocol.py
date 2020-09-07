@@ -32,7 +32,7 @@ ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 ADD_LOGGING = settings.DEFAULT_ADD_LOGGING
 ASSERT_ARGS = settings.DEFAULT_ASSERT_ARGS
 LOGGER_LEVEL = settings.DEFAULT_LOGGER_LEVEL
-ATTRIBUTE_BY_NAME = settings.DEFAULT_ATTRIBUTE_BY_NAME
+ATTRIBUTE_BY_NAME = settings.DEFAULT_COLLECTION_ATTRIBUTE_BY_NAME
 SCHEMA_DEF_KEYS = settings.SCHEMA_DEF_KEYS
 PROP_PREF = {
     'get': settings.GETTER_PREFIX,
@@ -69,11 +69,12 @@ class PropertyDescriptor:
         try:
             key = self.pname
             outdated = obj._is_outdated(key)
-            if outdated or self.fget or self.fset:
-                inputs = obj._items_inputs_evaluate(key)
+            if outdated or self.fget: # or self.fset:
+                inputs = obj._item_inputs_evaluate(key)
                 if self.fget:
                     obj._set_data(key, self.fget(obj))
-                obj._set_data_validated(key, obj._items_evaluate(key, validate=not obj._lazy_loading and key not in obj._not_validated))
+                iopts = {'validate': False} if key in obj._not_validated else {}
+                obj._set_data_validated(key, obj._item_evaluate(key, **iopts))
                 obj._items_inputs[key] = inputs  # after set_validated_data as it touches inputs data
             value = obj._data_validated[key]
             if outdated and self.fset:
@@ -91,8 +92,9 @@ class PropertyDescriptor:
                 raise AttributeError("'%s' is read only" % key)
             obj._set_data(key, value)
             if not obj._lazy_loading:
-                obj._items_inputs[key] = obj._items_inputs_evaluate(key)
-                obj._set_data_validated(key, obj._items_evaluate(key, validate=not obj._lazy_loading and key not in obj._not_validated))
+                obj._items_inputs[key] = obj._item_inputs_evaluate(key)
+                iopts = {'validate': False} if key in obj._not_validated else {}
+                obj._set_data_validated(key, obj._item_evaluate(key, **iopts))
                 if self.fset:
                     self.fset(obj, obj._data_validated[key])
         except Exception as er:
@@ -134,6 +136,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     _extends = []
     _properties_translation = {}
     _primary_keys = []
+    _attributes_orig = set()
 
     def __new__(cls, *args, **kwargs):
         from ..managers import TypeBuilder
@@ -151,28 +154,44 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         return new(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop('$schema', None)
         CollectionProtocol.__init__(self, *args, **kwargs)
         for k in self._has_pk:
             self[k]
 
-    def _make_context(self, context=None, *extra_contexts):
-        TypeProtocol._make_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
+    @classmethod
+    def default(cls, **opts):
+        if cls._default_cache is None:
+            cls._default_cache = cls(cls._default(cls, **opts))
+        return cls._default_cache
 
-    def _items_evaluate(self, item, **opts):
+    def create_context(self, context=None, *extra_contexts):
+        return CollectionProtocol.create_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
+
+    def set_context(self, context=None, *extra_contexts):
+        CollectionProtocol.set_context(self, context, *extra_contexts)
         ctx = self._context
-        v = self._data
-        for n in item.split('.'):
-            t = self.items_type(n)
-            v = t(v[n], context=ctx, **opts)
-            ctx = getattr(v, 'context', ctx)
-        return v
+        # only do validated data as data will be evaluated with the proper context if needed
+        #for k, v in self._data_validated.items():
+        #    if k not in self._not_validated and isinstance(v, TypeProtocol):
+        #        v.set_context(ctx)
 
-    def _items_touch(self, item):
-        CollectionProtocol._items_touch(self, item)
+    #def _item_evaluate(self, item, **opts):
+    #    t = self.items_type(item)
+    #    v = self._data[item]
+    #    opts.setdefault('context', self._context)
+    #    #if v is None and not t.has_default():
+    #    #    return None
+    #    #if isinstance(t, type) and isinstance(v, t):
+    #    #    v.set_context(self._context)
+    #    #    return v
+    #    return t._evaluate(v, **opts) if t.is_primitive() else t.evaluate(v, **opts)
+    #    return t.evaluate(v, **opts)
+
+    def _item_touch(self, item):
+        CollectionProtocol._item_touch(self, item)
         for d, s in self._dependencies.items():
             if item in s:
-                self._items_touch(d)
+                self._item_touch(d)
 
     def _touch(self):
         CollectionProtocol._touch(self)
@@ -207,7 +226,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     def __getattr__(self, name):
         # private and protected attributes at accessed directly
-        if name.startswith('_'):
+        if name.startswith('_') or name in self._attributes_orig:
             return MutableMapping.__getattribute__(self, name)
         op = lambda x: neg(x) if name in self._aliases_negated else x
         name = self._aliases_negated.get(name, name)
@@ -217,7 +236,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         if desc:
             return op(desc.__get__(self))
         if self._properties_additional and name in self._data:
-            self._items_inputs[raw] = self._items_inputs_evaluate(name)
+            self._items_inputs[raw] = self._item_inputs_evaluate(name)
             self._data_additional[raw] = v = op(self[name])
             return v
         if self._attribute_by_name:
@@ -278,7 +297,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     def __setattr__(self, name, value):
         # private and protected attributes at accessed directly
-        if name.startswith('_'):
+        if name.startswith('_') or name in self._attributes_orig:
             return MutableMapping.__setattr__(self, name, value)
         try:
             self[name] = value
@@ -297,9 +316,9 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         desc = self._properties_descriptor.get(raw)
         if desc:
             return op(desc.__get__(self))
-        parts = split_cname(key)
-        # case: canonical name such as a[0][1].b[0].c
-        if len(parts) > 1:
+        if '.' in key:
+            parts = split_cname(key)
+            # case: canonical name such as a[0][1].b[0].c
             cur = self
             for p in parts:
                 cur = cur[p]
@@ -308,8 +327,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             return op(cur)
         if key in self._data:
             if self._lazy_loading or self._is_outdated(key):
-                self._items_inputs[key] = self._items_inputs_evaluate(key)
-                self._set_data_validated(key, self._items_evaluate(key, validate=not self._lazy_loading and key not in self._not_validated))
+                self._items_inputs[key] = self._item_inputs_evaluate(key)
+                self._set_data_validated(key, self._item_evaluate(key))
             return op(self._data_validated[key])
         raise KeyError(key)
 
@@ -337,12 +356,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             del self._items_inputs[key]
             del self._data_validated[key]
 
-    #def print_order(self, **opts):
-    #    return Object.print_order(self, self._data, **opts)
-
-    #def call_order(self, **opts):
-    #    return Object.call_order(self, self._data, **opts)
-
     def _serialize(self, value, **opts):
         ret = Object._serialize(self, value, **opts)
         for alias, raw in self._aliases.items():
@@ -356,6 +369,9 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                 if v is not None:
                     ret[alias] = - v
         return ret
+
+    def serialize_item(self, item, **opts):
+        return self.item_serialize(self, item, **opts)
 
     def __repr__(self):
         if self._repr is None:
@@ -384,10 +400,13 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             cls._items_type_cache = {}
         t = cls._items_type_cache.get(item)
         if t is None:
-            t = Object.items_type(cls, item)
-            if t and isinstance(t, TypeProxy) and t.proxy_type:
-                t = t.proxy_type
+            t = Object._items_type(cls, item)
             cls._items_type_cache[item] = t
+            if t and isinstance(t, TypeProxy):
+                if t.proxy_type:
+                    cls._items_type_cache[item] = t = t.proxy_type
+                else:
+                    cls._items_type_cache[item] = None
         return t
 
     @property
@@ -408,6 +427,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         logger = logging.getLogger(cname)
         level = logging.getLevelName(attrs.get('_log_level', LOGGER_LEVEL))
         logger.setLevel(level)
+        attributes_orig = set([k for k in attrs.keys() if not k.startswith('__')])
 
         if schema.get('$schema'):
             ms_uri = schema['$schema']
@@ -530,7 +550,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                 attr = schema.get(pname)
             if attr is not None:
                 if ptype.check(attr, convert=True):
-                    v = ptype.serialize(ptype.convert(attr))
+                    v = ptype.serialize(ptype(attr, items=False, raw_literals=True), no_defaults=True, raw_literals=True)
+                    #v = ptype.serialize(ptype.convert(attr, items=False, raw_literals=True), no_defaults=True, raw_literals=True)
                     extra_schema_properties[pname] = dict(ptype._schema)
                     extra_schema_properties[pname]['default'] = v
                     has_default.add(pname)
@@ -589,6 +610,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
         # set the attributes
         attrs['_primary_keys'] = primary_keys
+        attrs['_attributes_orig'] = set().union(attributes_orig, *[b._attributes_orig for b in pbases])
         attrs['_properties_translation'] = dict(ChainMap(properties_translation, *[b._properties_translation for b in pbases]))
         attrs['_aliases'] = dict(ChainMap(aliases, *[b._aliases for b in pbases]))
         attrs['_aliases_negated'] = dict(ChainMap(negated_aliases, *[b._aliases_negated for b in pbases]))
@@ -616,6 +638,10 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         attrs['_id'] = id
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_mro_type'] = pbases
+        if 'lazyLoading' in schema:
+            attrs['_lazy_loading'] = schema['lazyLoading']
+        if 'validate' in schema:
+            attrs['_validate'] = schema['validate']
         # add inner definitions
         for k, d in defs.items():
             attrs[k] = d

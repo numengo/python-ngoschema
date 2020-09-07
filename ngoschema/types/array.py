@@ -89,7 +89,9 @@ class Array(Type):
         ret = list(value)
         ret += [None] * max(0, self._min_items - len(ret))
         for i, (t, v) in enumerate(zip(Array._items_types(self, ret), ret)):
-            ret[i] = v if not items else t(v, **opts)
+            if not items and v is None and t.has_default():
+                v = t.default(raw_literals=True, **opts)
+            ret[i] = v if not items else t.evaluate(v, **opts)
         return self._coll_type(ret)
 
     def _items_types(self, value):
@@ -103,6 +105,7 @@ class Array(Type):
             value = Array.convert(value or [], convert=False)
         if item is not None:
             try:
+                #t = Array._items_type(self, item)
                 t = Array._items_type(self, item)
                 return t.inputs(value[item], **opts)
             except Exception as er:
@@ -112,17 +115,20 @@ class Array(Type):
             return set().union(*[Array.inputs(self, value, i, with_inner=False, **opts) for i, v in enumerate(value)])
         return set()
 
-    def _validate(self, value, items=True, as_dict=False, **opts):
+    def _do_validate(self, value, items=True, as_dict=False, **opts):
         errors = {}
         # to evaluate items, enumerating will call __getitem__ and validate each item
         try:
             if items:
                 for i, t in enumerate(Array._items_types(self, value)):
                     errors.update(t.validate(value[i], as_dict=True, **opts))
-            errors.update(TypeProtocol._validate(self, value, excludes=['items'], as_dict=True, **opts))
+            errors.update(TypeProtocol._do_validate(self, value, excludes=['items'], as_dict=True, **opts))
         except Exception as er:
             raise er
         return errors if as_dict else self._format_error(value, errors)
+
+    def _has_default(self):
+        return True  # default is empty list
 
     def _default(self, items=True, **opts):
         if self._default_cache is None:

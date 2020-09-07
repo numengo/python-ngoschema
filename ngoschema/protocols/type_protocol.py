@@ -11,7 +11,9 @@ from .. import DEFAULT_CONTEXT
 from ..utils import ReadOnlyChainMap, apply_through_collection
 from ..resolver import resolve_uri, scope, UriResolver
 from ..exceptions import InvalidValue, ValidationError, ConversionError
+from .. import settings
 
+PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class TypeProtocol:
     _str = None
     _dependencies = {}
     _mro_type = ()
+    _validate = PRIMITIVE_VALIDATE
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
@@ -57,21 +60,31 @@ class TypeProtocol:
         attrs['_schema'] = schema = dict(ReadOnlyChainMap(schema, *[b._schema for b in bases + extra_bases if hasattr(b, '_schema')]))
         if 'rawLiterals' in schema:
             attrs['_raw_literals'] = schema['rawLiterals']
+        if 'validate' in schema:
+            attrs['_validate'] = schema['validate']
+        attrs['_id'] = id
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
-        attrs['_mro_type'] = [b for b in bases + extra_bases if issubclass(b, TypeProtocol)]
+        attrs['_mro_type'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
         return type(clsname, bases + extra_bases, attrs)
 
-    def __init__(self, *args, validate=True, context=None, **kwargs):
+    def __init__(self, value=None, context=None, **kwargs):
         # prepare data
-        value = args[0] if args else kwargs or None
-        opts = kwargs if args else {}
-        self._data = typed = self.__call__(value, convert=False, validate=validate, context=context, **opts)
-        TypeProtocol._make_context(self, context, opts)
+        opts = kwargs
+        if value is None:
+            value = kwargs
+            opts = {}
+        validate = opts.pop('validate', self._validate)
+        self._data = self._evaluate(value, validate=validate, context=context, **opts)
+        self.set_context(context, opts)
 
-    def _make_context(self, context=None, *extra_contexts):
+    def create_context(self, context=None, *extra_contexts):
         ctx = context if context is not None else self._context
-        self._context = ctx.create_child(*extra_contexts)
+        return ctx.create_child(*extra_contexts)
+
+    def set_context(self, context=None, *extra_contexts):
+        ctx = self.create_context(context, *extra_contexts)
+        self._context = ctx
 
     @classmethod
     def check(cls, value, **opts):
@@ -100,6 +113,24 @@ class TypeProtocol:
         return False
 
     @classmethod
+    def has_default(cls):
+        return cls._has_default(cls)
+
+    def _has_default(self):
+        return 'default' in self._schema
+
+    @classmethod
+    def default(cls, **opts):
+        return cls._default(cls, **opts)
+
+    def _default(self, **opts):
+        if 'default' in self._schema:
+            return self._schema['default']
+            #self._default_cache = self.convert(self._schema['default'], **opts)
+        else:
+            return self._py_type() if self._py_type else None
+
+    @classmethod
     def convert(cls, value, **opts):
         return cls._convert(cls, value, **opts)
 
@@ -119,98 +150,42 @@ class TypeProtocol:
         except Exception as er:
             raise ConversionError("Impossible to convert %r to %s" % (value, self._py_type))
 
-    #@classmethod
-    #def evaluate(cls, value, validate=True, **opts):
-    #    #### OVERWRITTEN BELOW
-    #    typed = value
-    #    if typed is None:
-    #        if not cls.has_default():
-    #            return None
-    #        typed = cls.default()
-    #        typed = typed.copy() if hasattr(typed, 'copy') else typed
-    #    if not cls.check(typed):
-    #        typed = cls.convert(typed, **opts)
-    #    if validate:
-    #        cls.validate(typed)
-    #    return typed
-    #
-    #@classmethod
-    #def evaluate(cls, value, validate=True, convert=True, context=None, **opts):
-    #    #### OVERWRITTEN BELOW
-    #    typed = value
-    #    if typed is None:
-    #        if not cls.has_default():
-    #            return None
-    #        typed = cls.default()
-    #        typed = typed.copy() if hasattr(typed, 'copy') else typed
-    #    if not cls.check(typed) or convert:
-    #        typed = cls.convert(typed, convert=convert, **opts)
-    #    if validate:
-    #        cls.validate(typed)
-    #    return typed
-
-    #def _evaluate(self, value, validate=True, convert=True, context=None, **opts):
-    #    typed = value
-    #    if typed is None:
-    #        if self._has_default():
-    #            typed = self._default(context=self._context, raw_literals=True)
-    #            typed = typed.copy() if hasattr(typed, 'copy') else typed
-    #        else:
-    #            return typed
-    #    if not self._check(typed, convert=convert, **opts):
-    #        # will throw the error
-    #        self.validate(typed, with_type=True, **opts)
-    #    if convert:
-    #        typed = self.convert(typed, **opts)
-    #    if validate:
-    #        TypeProtocol.validate(self, typed, with_type=False, **opts)
-    #    return typed
-
-    @classmethod
-    def has_default(cls):
-        return cls._has_default(cls)
-
-    def _has_default(self):
-        return 'default' in self._schema
-
-    @classmethod
-    def default(cls, **opts):
-        return cls._default(cls, **opts)
-
-    def _default(self, **opts):
-        if self._default_cache is None:
-            if 'default' in self._schema:
-                self._default_cache = self.convert(self._schema['default'], **opts)
-            else:
-                self._default_cache = self._py_type() if self._py_type else None
-        return self._default_cache
-
     @classmethod
     def _format_error(cls, value, errors):
         if errors:
-            msg = '\n'.join([f"Problem validating {cls._type} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
+            msg = '\n'.join([f"Problem validating {cls} with {value}:"] + [f'\t{k}: {errors[k]}' for k in errors])
             raise InvalidValue(msg)
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return cls._validate(cls, value, **opts)
-
-    def _validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
+    def _do_validate(self, value, excludes=[], with_type=True, as_dict=False, **opts):
         """
         Validate the value according to schema
         Return dictionnary of errors or raise ngoschema.InvalidValue
         """
         if not with_type:
-            excludes += ['type']
+            excludes = list(excludes) + ['type']
         errors = {
             '/'.join(e.schema_path): e.message
             for e in self._validator.iter_errors(value, {k: self._schema[k]
                                                          for k in self._schema if k not in excludes})}
         return errors if as_dict else self._format_error(value, errors)
 
-    @classmethod
-    def serialize(cls, value, **opts):
-        return cls._serialize(cls, value, **opts)
+    def _evaluate(self, value, convert=True, context=None, **opts):
+        validate = opts.get('validate', self._validate)
+        ctx = self.create_context(context, opts)
+        if value is None:
+            if not self._has_default():
+                return None
+            value = self._default()
+            value = value.copy() if hasattr(value, 'copy') else value
+        typed = value if self.check(value, convert=False, context=ctx) else self.convert(value, context=ctx, **opts)
+        if not self._check(typed, convert=convert, context=ctx):
+            self._do_validate(typed, with_type=True, **opts)
+        if convert:
+            typed = self._convert(typed, context=ctx, **opts)
+        if validate:
+            opts.pop('items', None)
+            self._do_validate(typed, items=False, with_type=False, **opts)
+        return typed
 
     def _serialize(self, value, **opts):
         """
@@ -222,10 +197,6 @@ class TypeProtocol:
         :return: json friendly object
         """
         return value
-
-    @classmethod
-    def inputs(cls, value, **opts):
-        return cls._inputs(cls, value, **opts)
 
     def _inputs(self, value, **opts):
         return set()

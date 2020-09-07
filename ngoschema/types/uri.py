@@ -8,10 +8,16 @@ import pathlib
 import urllib.parse
 
 from ..exceptions import ValidationError, InvalidValue
-from .type import Primitive
 from ..managers.type_builder import register_type
-from .strings import String
+from ..resolver import scope
 from .. import settings
+from .type import Primitive
+from .strings import String
+
+
+def find_ns_mgr(context):
+    from ..managers.namespace_manager import NamespaceManager, default_ns_manager
+    return next((m for m in context.maps if isinstance(m, NamespaceManager)), default_ns_manager)
 
 
 @register_type('uri')
@@ -55,6 +61,7 @@ class Uri(Primitive):
 @register_type('id')
 class Id(String):
     _doc_id = ''
+    _ns_mgr = None
 
     def __init__(self, **schema):
         String.__init__(self, **schema)
@@ -62,28 +69,28 @@ class Id(String):
     def _check(self, value, **opts):
         return Uri._check(self, value, **opts) and '#' in str(value)
 
-    def _make_context(self, context=None, *extra_contexts):
-        from ..managers.namespace_manager import NamespaceManager, default_ns_manager
-        String._make_context(self, context, *extra_contexts)
-        self._ns_mgr = next((m for m in self._context.maps if isinstance(m, NamespaceManager)), default_ns_manager)
+    def set_context(self, context=None, *extra_contexts):
+        String.set_context(self, context, *extra_contexts)
+        self._ns_mgr = find_ns_mgr(self._context)
 
     def _convert(self, value, context=None, **opts):
         uri = value
         if value:
-            String._make_context(context, opts)
+            ns_mgr = find_ns_mgr(context)
             if '/' not in uri:
-                uri = self._ns_mgr.get_cname_id(uri)
+                uri = ns_mgr.get_cname_id(uri)
             if '#' not in uri:
                 uri = uri + '#'
+            uri = scope(uri, ns_mgr.currentNsUri)
         return uri
 
     def _serialize(self, value, canonical=False, context=None, **opts):
-        Id._make_context(self, context)
+        ns_mgr = find_ns_mgr(context)
         if canonical:
-            return self._ns_mgr.get_id_cname(value)
+            return ns_mgr.get_id_cname(value)
         else:
-            doc_id = self._ns_mgr._current_ns_uri
-            if value.startswith(doc_id):
+            doc_id = ns_mgr.currentNsUri.split('#')[0]
+            if value.startswith(doc_id + '#'):
                 value = value[len(doc_id):]
             return value
 
@@ -94,11 +101,13 @@ class Path(Uri):
     Add additional 'path' to json-schema associated in python to pathlib.Path
     """
     _py_type = pathlib.Path
+    #_expand_user = False
+    #_resolve = False
 
     def __init__(self, **schema):
         Primitive.__init__(self, **schema)
-        self._expand_user = schema.get('expandUser', False)
-        self._resolve = schema.get('resolve', False)
+        self._expand_user = self._schema.get('expandUser', False)
+        self._resolve = self._schema.get('resolve', False)
 
     def _convert(self, value, **opts):
         """
@@ -110,9 +119,13 @@ class Path(Uri):
         elif typed:
             # cast to str to make sure the path is converted
             typed = pathlib.Path(String.convert(str(typed), **opts))
+        if self._expand_user:
+            typed = typed.expanduser()
+        if self._resolve:
+            typed = typed.resolve()
         return typed
 
-    def __call__(self, value, expand_user=None, resolve=None, validate=True, **opts):
+    def _evaluate___(self, value, expand_user=None, resolve=None, **opts):
         """
         convert and eventually resolve path from from urllib.parse.ParsedResult, unquoting the url.
 
@@ -121,11 +134,12 @@ class Path(Uri):
         :param resolve: boolean to resolve the path
         :return: pathlib.Path instance
         """
+        validate = opts.pop('validate', self._validate)
         if expand_user is None:
             expand_user = self._expand_user
         if resolve is None:
             resolve = self._resolve
-        typed = Uri.__call__(self, value, validate=False, **opts)
+        typed = Uri._evaluate(self, value, validate=False, **opts)
         if expand_user:
             typed = typed.expanduser()
         if resolve:

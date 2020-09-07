@@ -54,7 +54,7 @@ class ProtocolJSONEncoder(json.JSONEncoder):
     def default_(self, obj):
         from ..models.entities import Entity
         from ..protocols import ArrayProtocol, ObjectProtocol, TypeProtocol
-        from ..types import Literal, Array
+        from ..types import Primitive, Array
         #from ..literals import LiteralValue
         #from ..utils import is_string, is_literal
         from ..validators.pjo import format_date, format_datetime, format_time, format_path

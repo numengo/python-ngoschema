@@ -13,10 +13,8 @@ import arrow
 
 def test_base():
     i = types.Integer(maximum=0)
-    print(repr(types.Integer))
-    print(str(types.Integer))
-    print(repr(i))
-    print(str(i))
+    assert repr(i) == "ngoschema.types.numerics.Integer(type='integer', maximum=0)"
+    assert str(i) == "<ngoschema.types.numerics.Integer type='integer' maximum=0>"
     assert types.Integer()(1) == 1
     assert types.Integer()("1") == 1
     assert types.Integer()("`1+1") == 2
@@ -46,8 +44,8 @@ def test_base():
         assert types.Number(maximum=2)(2.3)
 
     t = types.Type(type='string')
-    print(repr(t))
-    print(str(t))
+    assert repr(t) == "ngoschema.types.type.Type(type='string')"
+    assert str(t) == "<ngoschema.types.type.Type type='string'>"
     assert types.Type(type='string')(1) == '1', types.Type(type='string')(1)
     assert types.Type(type='integer', minimum=0)(1) == 1
     assert types.Type(type='number')(1) == 1
@@ -92,14 +90,16 @@ def test_array():
     ArrayString = types.Array(items={'type': 'string'})
     ArrayInteger = types.Array(items={'type': 'integer'})
     ArrayInteger5 = types.Array(items={'type': 'integer'}, minItems=5, maxItems=5)
-    print(repr(ArrayString))
-    print(str(ArrayString))
+    assert repr(ArrayString) == "ngoschema.types.array.Array(type='array', items={'type': 'string'})"
+    assert str(ArrayString) == "<ngoschema.types.array.Array type='array' items{1}>"
     assert repr(ArrayInteger5) == "ngoschema.types.array.Array(type='array', items={'type': 'integer'}, minItems=5, maxItems=5)", repr(ArrayInteger5)
     assert ArrayInteger([1, '2', '{{a}}', '`a'], a=1) == [1, 2, 1, 1], ArrayInteger([1, '2', '{{a}}', '`a'], a=1)
     assert ArrayString([1, '2', '{{a}}', '`a'], a=1) == ['1', '2', '1', '1']
     with pytest.raises(InvalidValue) as e_info:
         ArrayInteger5([1, '2', '{{a}}', '`a'], a=1)
-    assert ArrayInteger5._default() == [0, 0, 0, 0, 0], ArrayInteger5._default()
+    assert ArrayInteger5._default() == [None, None, None, None, None], ArrayInteger5._default()
+    # below should be the result if the integer had a default value set to 0
+    #assert ArrayInteger5._default() == [0, 0, 0, 0, 0], ArrayInteger5._default()
 
 
 def test_object():

@@ -51,6 +51,14 @@ class NamespaceManager(Registry):
         self._current_ns = cname
         self._current_ns_uri = self._local[''] = self._registry[cname]
 
+    @property
+    def currentNs(self):
+        return self._current_ns
+
+    @property
+    def currentNsUri(self):
+        return self._current_ns_uri
+
     def get_id_cname(self, ref):
         cname = self._get_id_cname(ref)
         rcn = self._current_ns

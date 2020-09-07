@@ -39,6 +39,6 @@ class Number(Primitive):
         self._dcm_context = decimal.Context(prec=precision)
         super().__init__(**schema)
 
-    def __call__(self, value, **opts):
+    def _evaluate(self, value, **opts):
         decimal.setcontext(self._dcm_context)
-        return Primitive.__call__(self, value, **opts)
+        return Primitive._evaluate(self, value, **opts)

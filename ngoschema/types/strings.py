@@ -85,11 +85,12 @@ class Expr(String):
         return String.check(value) and value.startswith("`")
 
     def _convert(self, value, context=None, **opts):
-        ctx = dict(context if context else self._context)
+        ctx = String.create_context(self, context, opts).merged
         typed = eval(str(value)[1:], ctx)
         return TypeProtocol._convert(self, typed, **opts)
 
-    def _inputs(self, value, **opts):
+    @staticmethod
+    def inputs(value, **opts):
         return set(Expr._expr_regex.findall(str(value))).difference(builtins.__dict__)
 
 
@@ -99,11 +100,17 @@ class Pattern(String):
         return String.check(value) and ("{{" in value or "{%" in value)
 
     def _convert(self, value, context=None, **opts):
-        ctx = context.merged if context else self._context.merged
-        ctx.setdefault('this', ctx)
+        ctx = String.create_context(self, context, opts).merged
+        ctx.setdefault('this', None)
+        #ctx.setdefault('this', ctx) # cannot work for accessing members
         return TemplatedString(value)(ctx)
 
-    def _inputs(self, value, **opts):
+    @staticmethod
+    def inputs(value, **opts):
         from ngoschema.utils.jinja2 import get_jinja2_variables
         return set(get_jinja2_variables(value))
+
+    #def _inputs(self, value, **opts):
+    #    from ngoschema.utils.jinja2 import get_jinja2_variables
+    #    return set(get_jinja2_variables(value))
 

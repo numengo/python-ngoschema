@@ -16,7 +16,8 @@ from ..managers.namespace_manager import default_ns_manager
 from .. import settings, DEFAULT_CONTEXT
 from .. import settings
 
-LAZY_LOADING = settings.DEFAULT_LAZY_LOADING
+
+LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
 TRUE = _True()
 
 
@@ -34,16 +35,19 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _data_validated = []
     _items_inputs = []
 
-    #def __init__(self, *args, **kwargs):
-    #    data = args[0] if len(args)==1 else args
-    #    opts = kwargs
-    #    CollectionProtocol.__init__(self, data, **kwargs)
+    def set_context(self, context=None, *extra_contexts):
+        CollectionProtocol.set_context(self, context, *extra_contexts)
+        ctx = self._context
+        # only do validated data as data will be evaluated with the proper context if needed
+        #for v in self._data_validated:
+        #    if isinstance(v, TypeProtocol):
+        #        v.set_context(ctx)
 
-    def _items_touch(self, item):
-        CollectionProtocol._items_touch(item)
+    def _item_touch(self, item):
+        CollectionProtocol._item_touch(item)
         for d, s in self._dependencies.items():
             if item in s:
-                self._items_touch(d)
+                self._item_touch(d)
 
     def _touch(self):
         CollectionProtocol._touch(self)
@@ -73,6 +77,15 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                     cls._items_type_cache = cls._items
         return Array._items_type(cls, item)
 
+    @classmethod
+    def check(cls, value, **opts):
+        if isinstance(value, cls) or cls._check(cls, value):
+            return True
+        if cls._items is not None and cls._items.check(value):
+            # this is for arrays not properly initialized by loading xml for ex
+            return True
+        return False
+
     #def _set_data(self, index, value):
     #    from ..models import Entity
     #    itype = Array.items_type(self, index)
@@ -92,11 +105,11 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         self._data_validated.insert(item, None)
         self._data.insert(item, value)
         if not self._lazy_loading:
-            self._items_inputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item, validate=not self._lazy_loading))
+            self._items_inputs[item] = self._item_inputs_evaluate(item)
+            self._set_data_validated(item, self._item_evaluate(item))
         elif isinstance(value, TypeProtocol):
-            value._make_context(self._context)
-        self.validate(items=False)
+            value.set_context(self._context)
+        self.do_validate(items=False)
 
     def _str_list(self):
         if self._str is None:
@@ -129,10 +142,12 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                 items = TypeBuilder.build(f'{id}/items', items)
         else:
             items = TRUE
-        attrs.setdefault('_lazy_loading', LAZY_LOADING)
         if not any([issubclass(b, ArrayProtocol) for b in bases]):
             bases = list(bases) + [ArrayProtocol]
-        attrs['_lazy_loading'] = getattr(items, '_lazy_loading', LAZY_LOADING)
+        if 'validate' in schema:
+            attrs['_validate'] = schema['validate']
+        if 'lazyLoading' in schema:
+            attrs['_lazy_loading'] = schema.get('lazyLoading')
         attrs['_items'] = items
         attrs['_min_items'] = schema.get('minItems', 0)
         attrs['_max_items'] = schema.get('maxItems')

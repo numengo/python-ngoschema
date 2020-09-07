@@ -68,7 +68,7 @@ class Symbol(Primitive):
         if value and not String.check(value):
             m = getattr(value, '__module__', None)
             value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
-        return String.serialize(value, **opts)
+        return String._serialize(self, value, **opts)
 
 
 @register_type('module')

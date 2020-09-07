@@ -97,13 +97,13 @@
             "default": "defaultValue"
           },
           "notSerialized": [
-            "_py_type",
+            "pyType",
             "_type",
             "refCanonicalName",
             "defaultValue"
           ],
           "properties": {
-            "_py_type": {
+            "pyType": {
               "type": "importable"
             },
             "_type": {
@@ -127,9 +127,21 @@
               "type": "boolean"
             },
             "foreignKey": {
-              "$ref": "https://numengo.org/ngoschema#/$defs/relationships/$defs/ForeignKey"
+              "$ref": "#/$defs/relationships/$defs/ForeignKey"
+            },
+            "rawLiterals": {
+              "type": "boolean"
+            },
+            "defaultValueLiteral": {
+              "type": "string"
             }
           }
+        },
+        "Primitive": {
+          "type": "object",
+          "extends": [
+            "#/$defs/types/$defs/Type"
+          ]
         },
         "NamedType": {
           "type": "object",
@@ -169,346 +181,464 @@
             }
           }
         },
-        "Literal": {
+        "boolean": {
           "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Type"
-          ],
-          "properties": {
-            "rawLiterals": {
-              "type": "boolean"
-            },
-            "enum": {
-              "type": "array",
-              "items": true
-            },
-            "defaultValueLiteral": {
-              "$ref": "#/$defs/types/$defs/RawString"
-            }
-          },
-          "_type": "string"
-        },
-        "Number": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "properties": {
-            "minimum": {
-              "type": "number"
-            },
-            "exclusiveMinimum": {
-              "type": "number"
-            },
-            "maximum": {
-              "type": "number"
-            },
-            "exclusiveMaximum": {
-              "type": "number"
-            },
-            "defaultValue": {
-              "type": "number"
-            }
-          },
-          "_type": "number"
-        },
-        "Integer": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Number"
-          ],
-          "properties": {
-            "minimum": {
-              "type": "integer"
-            },
-            "exclusiveMinimum": {
-              "type": "integer"
-            },
-            "maximum": {
-              "type": "integer"
-            },
-            "exclusiveMaximum": {
-              "type": "integer"
-            },
-            "defaultValue": {
-              "type": "integer"
-            }
-          },
-          "_type": "integer"
-        },
-        "String": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "properties": {
-            "length": {
-              "type": "integer"
-            },
-            "minLength": {
-              "type": "integer"
-            },
-            "maxLength": {
-              "type": "integer"
-            },
-            "pattern": {
-              "type": "string"
-            },
-            "format": {
-              "type": "string"
-            }
-          },
-          "_type": "string"
-        },
-        "RawString": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/String"
-          ],
-          "rawLiterals": true
-        },
-        "Id": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/String"
-          ],
-          "properties": {
-            "uri": {
-              "type": "string"
-            },
-            "canonicalName": {
-              "type": "string"
-            }
-          },
-          "_type": "id"
-        },
-        "Boolean": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "properties": {
-            "defaultValue": {
-              "type": "boolean"
-            }
-          },
-          "_type": "boolean"
-        },
-        "Uri": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "_type": "uri"
-        },
-        "Path": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Uri"
-          ],
-          "properties": {
-            "expandUser": {
-              "type": "boolean"
-            },
-            "resolve": {
-              "type": "boolean"
-            }
-          },
-          "_type": "path"
-        },
-        "Date": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "_type": "date"
-        },
-        "Time": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Literal"
-          ],
-          "_type": "time"
-        },
-        "Datetime": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Date",
-            "#/$defs/types/$defs/Time"
-          ],
-          "_type": "datetime"
-        },
-        "Array": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Type"
-          ],
-          "properties": {
-            "minItems": {
-              "type": "integer"
-            },
-            "maxItems": {
-              "type": "integer"
-            },
-            "items": true,
-            "uniqueItems": {
-              "type": "boolean"
-            },
-            "defaultValue": {
-              "type": "array"
-            }
-          },
-          "_type": "array"
-        },
-        "Object": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Type"
-          ],
-          "properties": {
-            "required": {
-              "type": "array"
-            },
-            "additionalProperties": {
-              "$ref": "#/$defs/types/$defs/Type"
-            },
-            "properties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "patternProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "defaultValue": {
-              "type": "object"
-            }
-          },
-          "_type": "object"
-        },
-        "Definition": {
-          "type": "object",
-          "extends": [
-            "#/$defs/types/$defs/Object",
-            "#/$defs/metadata/$defs/NamedObject"
-          ],
-          "aliases": {
-            "$defs": "definitions"
-          },
-          "notSerialized": [
-            "_parentDefinition"
-          ],
-          "notValidated": [
-            "_parentDefinition"
-          ],
-          "properties": {
-            "abstract": {
-              "type": "boolean"
-            },
-            "examples": {
-              "type": "array",
-              "items": {
-                "type": "object"
-              }
-            },
-            "extends": {
-              "type": "array",
-              "items": {
-                "type": "id"
-              }
-            },
-            "dependencies": {
+          "$defs": {
+            "Boolean": {
               "type": "object",
-              "additionalProperties": {
-                "type": "array",
-                "items": {
-                  "type": "string"
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "properties": {
+                "defaultValue": {
+                  "type": "boolean"
                 }
-              }
-            },
-            "aliases": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
-            },
-            "negatedAliases": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
-            },
-            "notSerialized": {
-              "type": "array"
-            },
-            "notValidated": {
-              "type": "array"
-            },
-            "readOnly": {
-              "type": "array"
-            },
-            "definitions": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/types/$defs/Definition"
-              }
-            },
-            "_parentDefinition": {
-              "$ref": "#/$defs/types/$defs/Definition"
+              },
+              "_type": "boolean"
             }
           }
+        },
+        "numerics": {
+          "type": "object",
+          "$defs": {
+            "Number": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "number"
+                },
+                "exclusiveMinimum": {
+                  "type": "number"
+                },
+                "maximum": {
+                  "type": "number"
+                },
+                "exclusiveMaximum": {
+                  "type": "number"
+                },
+                "defaultValue": {
+                  "type": "number"
+                }
+              },
+              "_type": "number"
+            },
+            "Integer": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/numerics/$defs/Number"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "integer"
+                },
+                "exclusiveMinimum": {
+                  "type": "integer"
+                },
+                "maximum": {
+                  "type": "integer"
+                },
+                "exclusiveMaximum": {
+                  "type": "integer"
+                },
+                "defaultValue": {
+                  "type": "integer"
+                }
+              },
+              "_type": "integer"
+            },
+            "Complex": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/numerics/$defs/Number"
+              ],
+              "properties": {
+                "real": {
+                  "type": "number"
+                },
+                "imag": {
+                  "type": "number"
+                }
+              },
+              "_type": "complex"
+            },
+            "Octal": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/numerics/$defs/Integer"
+              ],
+              "_type": "octal"
+            },
+            "Hexadecimal": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/numerics/$defs/Integer"
+              ],
+              "_type": "hexa"
+            }
+          }
+        },
+        "strings": {
+          "type": "object",
+          "$defs": {
+            "String": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "properties": {
+                "length": {
+                  "type": "integer"
+                },
+                "minLength": {
+                  "type": "integer"
+                },
+                "maxLength": {
+                  "type": "integer"
+                },
+                "pattern": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                }
+              },
+              "_type": "string"
+            },
+            "RawString": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/strings/$defs/String"
+              ],
+              "rawLiterals": true
+            },
+            "Expr": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/strings/$defs/String"
+              ]
+            },
+            "Pattern": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/strings/$defs/String"
+              ]
+            }
+          }
+        },
+        "uri": {
+          "type": "object",
+          "$defs": {
+            "Uri": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/strings/$defs/String"
+              ],
+              "_type": "uri"
+            },
+            "Id": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/uri/$defs/Uri"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "id"
+                },
+                "canonicalName": {
+                  "type": "string"
+                }
+              },
+              "_type": "id"
+            },
+            "Path": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/uri/$defs/Uri"
+              ],
+              "properties": {
+                "expandUser": {
+                  "type": "boolean"
+                },
+                "resolve": {
+                  "type": "boolean"
+                }
+              },
+              "_type": "path"
+            }
+          }
+        },
+        "datetime": {
+          "type": "object",
+          "$defs": {
+            "Date": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "_type": "date"
+            },
+            "Time": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "_type": "time"
+            },
+            "Datetime": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/datetime/$defs/Date",
+                "#/$defs/types/$defs/datetime/$defs/Time"
+              ],
+              "_type": "datetime"
+            }
+          }
+        },
+        "collections": {
+          "type": "object",
+          "$defs": {
+            "Array": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Type"
+              ],
+              "properties": {
+                "minItems": {
+                  "type": "integer"
+                },
+                "maxItems": {
+                  "type": "integer"
+                },
+                "items": true,
+                "uniqueItems": {
+                  "type": "boolean"
+                },
+                "defaultValue": {
+                  "type": "array"
+                },
+                "strDelimiter": {
+                  "type": "string",
+                  "default": ","
+                }
+              },
+              "_type": "array"
+            },
+            "Tuple": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/collections/$defs/Array"
+              ],
+              "_type": "tuple"
+            },
+            "Set": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/collections/$defs/Array"
+              ],
+              "uniqueItems": true
+            },
+            "Object": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Type"
+              ],
+              "properties": {
+                "required": {
+                  "type": "array"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/types/$defs/Type"
+                },
+                "properties": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/types/$defs/NamedType"
+                  }
+                },
+                "patternProperties": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/types/$defs/NamedType"
+                  }
+                },
+                "defaultValue": {
+                  "type": "object"
+                }
+              },
+              "_type": "object"
+            },
+            "Definition": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/collections/$defs/Object",
+                "#/$defs/metadata/$defs/NamedObject"
+              ],
+              "aliases": {
+                "$defs": "definitions"
+              },
+              "notSerialized": [
+                "_parentDefinition"
+              ],
+              "notValidated": [
+                "_parentDefinition"
+              ],
+              "properties": {
+                "abstract": {
+                  "type": "boolean"
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "extends": {
+                  "type": "array",
+                  "items": {
+                    "type": "id"
+                  }
+                },
+                "dependencies": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array"
+                  }
+                },
+                "aliases": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "negatedAliases": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "notSerialized": {
+                  "type": "array"
+                },
+                "notValidated": {
+                  "type": "array"
+                },
+                "readOnly": {
+                  "type": "array"
+                },
+                "definitions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
+                  }
+                },
+                "_parentDefinition": {
+                  "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
+                }
+              }
+            }
+          }
+        },
+        "symbols": {
+          "type": "object",
+          "$defs": {
+            "Symbol": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/Primitive"
+              ],
+              "_type": "importable"
+            },
+            "Module": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Symbol"
+              ],
+              "_type": "module"
+            },
+            "Function": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Symbol"
+              ],
+              "_type": "function"
+            },
+            "Class": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Symbol"
+              ],
+              "_type": "class"
+            },
+            "Method": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Function"
+              ],
+              "_type": "method"
+            },
+            "StaticMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "_type": "staticmethod"
+            },
+            "ClassMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "_type": "classmethod"
+            },
+            "Instance": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Class"
+              ],
+              "properties": {
+                "objectClass": {
+                  "type": "importable"
+                }
+              },
+              "_type": "instance"
+            },
+            "Callable": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Symbol"
+              ],
+              "_type": "callable"
+            }
+          }
+        }
+      }
+    },
+    "managers": {
+      "type": "object",
+      "$defs": {
+        "TypeBuilder": {
+          "type": "object"
+        },
+        "NamespaceManager": {
+          "type": "object"
+        },
+        "Context": {
+          "type": "object"
         }
       }
     },
     "protocols": {
       "type": "object",
       "$defs": {
-        "descriptors": {
-          "type": "object",
-          "$defs": {
-            "Descriptor": {
-              "type": "object",
-              "extends": [
-                "#/$defs/metadata/$defs/Annotation"
-              ],
-              "properties": {
-                "fget": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function"
-                },
-                "fset": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function"
-                },
-                "fdel": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Function"
-                }
-              }
-            },
-            "PropertyDescriptor": {
-              "type": "object",
-              "extends": [
-                "#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
-              ],
-              "properties": {
-                "pname": {
-                  "type": "string"
-                },
-                "ptype": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/types/$defs/Type"
-                }
-              }
-            }
-          }
-        },
         "TypeProtocol": {
           "type": "object",
           "properties": {
             "metaclass": {
               "type": "importable",
-              "default": "ngoschema.protocols.SchemaMetaclass"
+              "default": "ngoschema.protocols.type_protocol.SchemaMetaclass"
             },
             "$id": {
               "type": "id"
@@ -524,6 +654,12 @@
             },
             "attrs": {
               "type": "object"
+            },
+            "validate": {
+              "type": "boolean"
+            },
+            "context": {
+              "$ref": "#/$defs/managers/$defs/Context"
             }
           }
         },
@@ -560,7 +696,7 @@
           "type": "object",
           "extends": [
             "#/$defs/protocols/$defs/CollectionProtocol",
-            "#/$defs/types/$defs/Definition"
+            "#/$defs/types/$defs/collections/$defs/Definition"
           ],
           "properties": {
             "attributeByName": {
@@ -569,7 +705,7 @@
             "propertiesDescriptor": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/$defs/protocols/$defs/descriptors/$defs/PropertyDescriptor"
               }
             }
           }
@@ -580,6 +716,42 @@
             "#/$defs/protocols/$defs/CollectionProtocol",
             "#/$defs/types/$defs/Array"
           ]
+        },
+        "descriptors": {
+          "type": "object",
+          "$defs": {
+            "Descriptor": {
+              "type": "object",
+              "extends": [
+                "#/$defs/metadata/$defs/Annotation"
+              ],
+              "properties": {
+                "fget": {
+                  "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
+                },
+                "fset": {
+                  "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
+                },
+                "fdel": {
+                  "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
+                }
+              }
+            },
+            "PropertyDescriptor": {
+              "type": "object",
+              "extends": [
+                "#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
+              ],
+              "properties": {
+                "pname": {
+                  "type": "string"
+                },
+                "ptype": {
+                  "$ref": "#/$defs/types/$defs/Type"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -592,7 +764,8 @@
           "additionalProperties": false,
           "properties": {
             "$schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uri-reference"
             },
             "fkeys": {
               "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
@@ -618,7 +791,8 @@
           "additionalProperties": false,
           "properties": {
             "$schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uri-reference"
             },
             "key": {
               "type": "string"
@@ -684,14 +858,15 @@
         "Symbol": {
           "type": "object",
           "extends": [
-            "#/$defs/metadata/$defs/Annotation"
+            "#/$defs/metadata/$defs/Annotation",
+            "#/$defs/metadata/$defs/NamedObject"
           ],
           "properties": {
             "longDescription": {
               "type": "string"
             },
             "access": {
-              "$ref": "https://numengo.org/ngoschema#/$defs/variables/$defs/Scope"
+              "$ref": "#/$defs/variables/$defs/Scope"
             },
             "symbol": {
               "type": "importable"
@@ -700,6 +875,12 @@
               "type": "module"
             }
           }
+        },
+        "Callable": {
+          "type": "object",
+          "extends": [
+            "#/$defs/types/$defs/symbols/$defs/Symbol"
+          ]
         },
         "functions": {
           "type": "object",
@@ -716,7 +897,7 @@
                 "arguments": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/symbols/$defs/functions/$defs/Argument"
                   }
                 },
                 "vargs": {
@@ -738,12 +919,12 @@
                   "type": "string"
                 },
                 "returns": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/types/$defs/Type"
+                  "$ref": "#/$defs/types/$defs/Type"
                 },
                 "decorators": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/symbols/$defs/functions/$defs/FunctionCall"
                   }
                 }
               }
@@ -774,7 +955,7 @@
                 "arguments": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/variables/$defs/VariableValue"
                   }
                 }
               }
@@ -787,7 +968,7 @@
             "Class": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/Definition",
+                "#/$defs/types/$defs/collections/$defs/Definition",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "additionalProperties": true,
@@ -798,7 +979,7 @@
                 "mro": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/types/$defs/symbols/$defs/Class"
                   }
                 },
                 "abstract": {
@@ -807,25 +988,25 @@
                 "attributes": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/variables/$defs/VariableValue"
                   }
                 },
                 "descriptors": {
-                  "$ref": "https://numengo.org/ngoschema#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
+                  "$ref": "#/$defs/protocols/$defs/descriptors/$defs/Descriptor"
                 },
                 "init": {
-                  "$ref": "#/$defs/symbols/$defs/classes/$defs/Method"
+                  "$ref": "#/$defs/types/$defs/symbols/$defs/Method"
                 },
                 "methods": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/types/$defs/symbols/$defs/Method"
                   }
                 },
                 "classes": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/types/$defs/symbols/$defs/Class"
                   }
                 }
               }
@@ -849,6 +1030,33 @@
                   "type": "boolean"
                 }
               }
+            },
+            "ClassMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "class": true
+            },
+            "StaticMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "static": true
+            },
+            "VirtualMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "virtual": true
+            },
+            "Instance": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Class"
+              ]
             }
           }
         },
@@ -858,7 +1066,7 @@
             "Module": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/Definition",
+                "#/$defs/types/$defs/collections/$defs/Definition",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
@@ -871,25 +1079,25 @@
                 "variables": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/variables/$defs/Variable"
                   }
                 },
                 "functions": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
                   }
                 },
                 "classes": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/symbols/$defs/classes/$defs/Class"
                   }
                 },
                 "modules": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/symbols/$defs/modules/$defs/Module"
                   }
                 }
               }
@@ -960,7 +1168,7 @@
           "type": "object",
           "extends": [
             "#/$defs/entities/$defs/CanonicalNamedEntity",
-            "https://numengo.org/ngoschema2#/$defs/metadata/$defs/Metadata"
+            "#/$defs/metadata/$defs/Metadata"
           ],
           "additionalProperties": true
         }
@@ -1207,7 +1415,7 @@
           "additionalProperties": false,
           "properties": {
             "document": {
-              "$ref": "https://numengo.org/ngoschema#/$defs/documents/$defs/Document"
+              "$ref": "#/$defs/documents/$defs/Document"
             },
             "overwrite": {
               "type": "boolean"
