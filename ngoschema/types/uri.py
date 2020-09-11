@@ -66,6 +66,10 @@ class Id(String):
     def __init__(self, **schema):
         String.__init__(self, **schema)
 
+    def __repr__(self):
+        uri = self._data_validated.get('uri') or self._data.get('uri')
+        return f'<id {uri}>'
+
     def _check(self, value, **opts):
         return Uri._check(self, value, **opts) and '#' in str(value)
 

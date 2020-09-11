@@ -162,5 +162,10 @@ DELETER_PREFIX = 'del_'
 # code inspection
 INSPECT_EXCLUDED_MODULES = [
     None, str.__class__.__module__, "future.types.newobject", "__builtin__",
-    '_abcoll', 'abc', 'collections.abc', 'itertools'
+    '_abcoll', 'abc', 'collections.abc', 'itertools', 'errno', 'sys', 'os'
 ]
+
+
+INSPECT_EXCLUDED_DESCRIPTORS = ['__weakref__']
+
+INSPECT_EXCLUDED_ATTRIBUTES = ['_abc_cache', '_abc_negative_cache', '_abc_negative_cache_version', '_abc_registry']

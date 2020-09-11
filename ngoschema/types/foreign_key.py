@@ -67,7 +67,7 @@ class ForeignKey(Ref):
         if fc:
             self._foreign_class = fc
             self._foreign_keys = fk = fc._schema.get('primaryKeys')
-            self._foreign_keys_type = [fc.items_type(k) for k in fk]
+            self._foreign_keys_type = [fc.item_type(k) for k in fk]
         else:
             self._foreign_class = ObjectProtocol
 

@@ -2,8 +2,11 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import ast
 import inspect
+from collections import Mapping, Sequence, Set
+from inspect import ismethod, ismodule, isfunction, isclass, isdatadescriptor, iscoroutine, isroutine, isbuiltin
 from functools import lru_cache
 
 from .doc_rest_parser import parse_docstring
@@ -11,6 +14,15 @@ from .. import settings
 from .ast import visit_function_def, set_visit_module, ast_name, ast_eval, reindent
 
 EXCLUDED_MODULES = settings.INSPECT_EXCLUDED_MODULES
+EXCLUDED_DESCRIPTORS = settings.INSPECT_EXCLUDED_DESCRIPTORS
+EXCLUDED_ATTRIBUTES = settings.INSPECT_EXCLUDED_ATTRIBUTES
+
+logger = logging.getLogger(__name__)
+
+
+def isattr(obj):
+    return not (isclass(obj) or ismethod(obj) or isfunction(obj) or ismodule(obj) or isdatadescriptor(obj)
+                or isroutine(obj) or isinstance(obj, type))
 
 
 @lru_cache(maxsize=512)
@@ -35,9 +47,23 @@ def inspect_module(value):
     value = Module.convert(value)
     module = inspect_symbol(value).copy()
     mn = value.__name__
-    module['modules'] = [m for n, m in inspect.getmembers(value, inspect.ismodule)]
-    module['classes'] = [inspect_class(m) for n, m in inspect.getmembers(value, inspect.isclass) if m.__module__ == mn]
-    module['functions'] = [inspect_function(m) for n, m in inspect.getmembers(value, inspect.isfunction) if m.__module__ == mn]
+    module['modules'] = [m for n, m in inspect.getmembers(value, inspect.ismodule) if n not in EXCLUDED_MODULES]
+    module['classes'] = []
+    for n, m in inspect.getmembers(value, inspect.isclass):
+        if m.__module__ == mn:
+            try:
+                module['classes'].append(inspect_class(m))
+            except Exception as er:
+                logger.error('Problem processing inspection of class %s' % m)
+                logger.error(er) #, exc_info=True)
+    module['functions'] = []
+    for n, m in inspect.getmembers(value, inspect.isfunction):
+        if m.__module__ == mn:
+            try:
+                module['functions'].append(inspect_function(m))
+            except Exception as er:
+                logger.error('Problem processing inspection of function %s' % m)
+                logger.error(er)  #, exc_info=True)
     return module
 
 
@@ -120,7 +146,6 @@ def inspect_class(value, with_inherited=False):
     if 'arguments' in cls:
         del cls['arguments']
     symbol = cls['symbol']
-    cls['name'] = symbol.__name__
     cls['name'] = getattr(symbol, '__name__', None)
     module = symbol.__module__
     cls['module'] = Module()(module)
@@ -128,12 +153,12 @@ def inspect_class(value, with_inherited=False):
         return cls
 
     ds = inspect.getmembers(symbol, inspect.isdatadescriptor)
-    properties = [inspect_descriptor(d, name=n) for n, d in ds]
-    if properties:
-        cls['descriptors'] = properties
+    descriptors = [inspect_descriptor(d, name=n) for n, d in ds if n not in EXCLUDED_DESCRIPTORS]
+    if descriptors:
+        cls['descriptors'] = descriptors
 
-    ds2 = inspect.getmembers(symbol, lambda x: not (Function.check(x) or Callable.check(x) or Class.check(x)))
-    attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__')]
+    ds2 = inspect.getmembers(symbol, lambda x: isattr(x))
+    attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__') and n not in EXCLUDED_ATTRIBUTES]
     if attributes:
         cls['attributes'] = attributes
 
@@ -144,7 +169,7 @@ def inspect_class(value, with_inherited=False):
         if Function.check(cls_symbol) or Method.check(cls_symbol):
             mi = visit_function_def(node)
             decs = mi.get('decorators', [])
-            mi['name'] = node.name
+            #mi['name'] = node.name
             # only testing decorators, but what to do?
             if 'staticmethod' in [f['name'] for f in decs]:
                 mi['static'] = True
@@ -153,8 +178,8 @@ def inspect_class(value, with_inherited=False):
             # remove first argument if not static
             if not mi.get('static') and len(mi.get('arguments', [])):
                 mi['arguments'].pop(0)
-            if 'arguments' in mi and not mi['arguments']:
-                del mi['arguments']
+            #if 'arguments' in mi and not mi['arguments']:
+            #    del mi['arguments']
             methods.append(mi)
 
     node_iter = ast.NodeVisitor()
@@ -163,13 +188,19 @@ def inspect_class(value, with_inherited=False):
     # avoid builtin
     def is_builtin(obj):
         mn = obj.__module__
-        return not hasattr(obj, '_id') or (mn in EXCLUDED_MODULES)
+        return not (hasattr(obj, '_id') or mn not in EXCLUDED_MODULES)
 
     if not is_builtin(symbol):
-        node = ast.parse(reindent(inspect.getsource(symbol)))
-        node_iter.visit(node)
+        try:
+            node = ast.parse(reindent(inspect.getsource(symbol)))
+            node_iter.visit(node)
+        except Exception as er:
+            logger.error('Problem processing class %s.' % symbol)
+            logger.error(er, exc_info=True)
 
     if methods:
+        if '__init__' in methods:
+            cls['init'] = methods.pop('__init__')
         cls['methods'] = methods
 
     mro = []

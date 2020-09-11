@@ -76,7 +76,7 @@ class Array(Type):
         value = value if isinstance(value, (Sequence, deque)) else [value]
         lv = len(value)
         items = [None] * max(len(value), self._min_items)
-        for i, t in enumerate(Array._items_types(self, items)):
+        for i, t in enumerate(Array._item_types(self, items)):
             v = value[i] if i < lv else t.default(**opts)
             items[i] = v if not convert else t(v, **opts)
         return self._py_type(items) if convert else items
@@ -88,16 +88,16 @@ class Array(Type):
         lv = len(value)
         ret = list(value)
         ret += [None] * max(0, self._min_items - len(ret))
-        for i, (t, v) in enumerate(zip(Array._items_types(self, ret), ret)):
+        for i, (t, v) in enumerate(zip(Array._item_types(self, ret), ret)):
             if not items and v is None and t.has_default():
                 v = t.default(raw_literals=True, **opts)
             ret[i] = v if not items else t.evaluate(v, **opts)
         return self._coll_type(ret)
 
-    def _items_types(self, value):
+    def _item_types(self, value):
         return self._items if self._items_list else [self._items] * len(value)
 
-    def items_type(self, index):
+    def item_type(self, index):
         return self._items[index] if self._items_list else self._items
 
     def _inputs(self, value, item=None, with_inner=False, **opts):
@@ -105,8 +105,8 @@ class Array(Type):
             value = Array.convert(value or [], convert=False)
         if item is not None:
             try:
-                #t = Array._items_type(self, item)
-                t = Array.items_type(self, item)
+                #t = Array._item_type(self, item)
+                t = Array.item_type(self, item)
                 return t.inputs(value[item], **opts)
             except Exception as er:
                 self._logger.error('%i %s' % (item, value))
@@ -120,7 +120,7 @@ class Array(Type):
         # to evaluate items, enumerating will call __getitem__ and validate each item
         try:
             if items:
-                for i, t in enumerate(Array._items_types(self, value)):
+                for i, t in enumerate(Array._item_types(self, value)):
                     errors.update(t.validate(value[i], as_dict=True, **opts))
             errors.update(TypeProtocol._do_validate(self, value, excludes=['items'], as_dict=True, **opts))
         except Exception as er:
@@ -139,7 +139,7 @@ class Array(Type):
         if as_string:
             return self._str_delimiter.join([String.serialize(v, **opts) for v in value])
         else:
-            return [t.serialize(v, **opts) for t, v in zip(Array._items_types(self, value), value)]
+            return [t.serialize(v, **opts) for t, v in zip(Array._item_types(self, value), value)]
 
 
 ArrayString = Array.extend_type('ArrayString', items=String)

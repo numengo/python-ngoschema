@@ -61,5 +61,5 @@ class Relationship(with_metaclass(SchemaMetaclass)):
     def resolve(self, keys):
         return self._foreign_class.resolve_by_keys(keys)
 
-    def __get__(self):
-        return self.resolve(self.fkeys)
+    #def __get__(self, instance, owner):
+     #   return self.resolve(self.fkeys)

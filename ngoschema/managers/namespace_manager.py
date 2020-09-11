@@ -72,13 +72,14 @@ class NamespaceManager(Registry):
     def _get_id_cname_cached(self, ref, current_ns):
         from ..types.uri import Uri
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
-        ns_uri, frag = urldefrag(ref)
-        ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)
-                    if ref.startswith(uri)]
+        ns_names = sorted([k for k, uri in ns.items() if ref.startswith(uri)], reverse=True)
+        ns_uri = ns.get(ns_names[0]) if ns_names else urldefrag(ref)[0]
         ns_cn = ns_names[0] if ns_names else Uri.convert(ref).path.replace('/', '.')
         cn = ns_cn
+        frag = ref[len(ns_uri):] if ref.startswith(ns_uri) else ref
+        #ns_uri, frag = urldefrag(ref)
         if frag:
-            f_cn = NamespaceManager._fragment_to_cname(frag)
+            f_cn = NamespaceManager._fragment_to_cname(frag.strip('#'))
             return '%s.%s' % (ns_cn, f_cn)
         return ns_cn
 
@@ -95,8 +96,7 @@ class NamespaceManager(Registry):
     def _get_cname_id_cached(self, cname, current_ns):
         ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         # iterate on namespace sorted from the longest to get the most qualified
-        ns_names = [k for k, uri in sorted(ns.items(), key=lambda x: len(x[1]), reverse=True)
-                    if cname.startswith(k+'.') or k == cname]
+        ns_names = sorted([k for k, uri in ns.items() if cname.startswith(k+'.') or k == cname], reverse=True)
         ns_name = ns_names[0] if ns_names else ''
         ns_uri = ns[ns_name]
         fragment_cname = cname[len(ns_name):]

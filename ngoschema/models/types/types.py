@@ -30,7 +30,7 @@ class Type(with_metaclass(SchemaMetaclass)):
         if Object_t.check(data):
             for k, v in list(data.items()):
                 raw, trans = self._properties_raw_trans(k)
-                t = self.items_type(raw)
+                t = self.item_type(raw)
                 if t.is_array() and Object_t.check(v):
                     del data[k] # remove previous entry in case it s an alias (eg $defs)
                     vs = []
@@ -47,11 +47,8 @@ class Type(with_metaclass(SchemaMetaclass)):
         return Object_t._convert(self, data, **opts)
 
     def __init__(self, *args, **kwargs):
-        #data = args[0] if args else kwargs
-        #kwargs = kwargs if args else {}
-        # check for items which are declared as arrays but given as named mappings
         ObjectProtocol.__init__(self, *args, **kwargs)
-        if self.defaultValue:
+        if self.defaultValue is not None and self.defaultValue != []:
             self.hasDefault = True
 
     def _json_schema(self, cls=None, excludes=[], only=[], **opts):
@@ -65,15 +62,25 @@ class Type(with_metaclass(SchemaMetaclass)):
                 .difference(excludes).difference(['name', 'hasDefault', '_type'])\
                 .union(['type', 'default', 'rawLiterals'])
             cps = list(cps.intersection(only)) if only else list(cps)
-            ret = self.do_serialize(only=cps, no_defaults=True, **opts)
-            #ret = OrderedDict(cls.serialize(self, only=cps, no_defaults=True, **opts))
-            ret.setdefault('type', self.type)
+            ret = OrderedDict()
+            for n in cps:
+                p = self[n]
+                t = self.item_type(n)
+                if p is not None and p != t.default():
+                    if hasattr(p, 'json_schema'):
+                        ret[n] = p.json_schema
+                    else:
+                        ret[n] = self.serialize_item(n, no_defaults=True, **opts)
             if self.hasDefault:
                 dft = self.defaultValue
                 if hasattr(dft, 'do_serialize'):
                     dft = dft.do_serialize()
                 ret['default'] = dft
             ret.move_to_end('type', False)
+            if ret['type'] == 'None':
+                del ret['type']
+            if 'description' in ret:
+                ret.move_to_end('description', False)
             if 'title' in ret:
                 ret.move_to_end('title', False)
             return ret

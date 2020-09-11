@@ -52,11 +52,11 @@ class Repository(with_metaclass(SchemaMetaclass)):
     """
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/Repository'
 
-    def __init__(self, **kwargs):
+    def __init__(self, value=None, **kwargs):
         self._catalog = Registry()
         self._pkeys = None
         self._session = None
-        ObjectProtocol.__init__(self, **kwargs)
+        ObjectProtocol.__init__(self, value, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = tuple(self.primaryKeys)
@@ -72,11 +72,11 @@ class Repository(with_metaclass(SchemaMetaclass)):
             raise Exception("%r is not an instance of %r" % (instance, self.objectClass))
         if self._pkeys:
             def get_pk_value(pk):
-                t = instance.items_type(pk)
+                t = instance.item_type(pk)
                 if instance.get(pk) is None and t._type in ['integer', 'number']:
                     return max(0, *self._catalog.keys()) + 1
                 return t.serialize(instance[pk])
-            return tuple([instance.items_type(pk).serialize(instance[pk]) for pk in self._pkeys])
+            return tuple([instance.item_type(pk).serialize(instance[pk]) for pk in self._pkeys])
         return (id(instance), )
 
     def register(self, instance):
@@ -158,11 +158,11 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterReposit
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
 
-    def __init__(self, filepath=None, document=None, **kwargs):
+    def __init__(self, value=None, filepath=None, document=None, **kwargs):
         if filepath is not None:
             document = document or Document()
             document.filepath = filepath
-        Repository.__init__(self, document=document, **kwargs)
+        Repository.__init__(self, value, document=document, **kwargs)
 
     @abstractmethod
     def deserialize_data(self):
@@ -236,8 +236,8 @@ def serialize_object_to_file(obj, fp, repo=None, session=None, **kwargs):
 class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/JsonFileRepository'
 
-    def __init__(self, **kwargs):
-        FileRepository.__init__(self, **kwargs)
+    def __init__(self, value=None, **kwargs):
+        FileRepository.__init__(self, value, **kwargs)
 
     def deserialize_data(self):
         data = self.document._deserialize(json.loads, **self._data_additional)
@@ -286,8 +286,8 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/XmlFileRepository'
 
-    def __init__(self, tag=None, postprocessor=None, **kwargs):
-        FileRepository.__init__(self, **kwargs)
+    def __init__(self, value=None, tag=None, postprocessor=None, **kwargs):
+        FileRepository.__init__(self, value, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             use_entity_ref=self.use_entity_ref)
         self._tag = tag

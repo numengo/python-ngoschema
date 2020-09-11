@@ -27,7 +27,7 @@ class CollectionProtocol(TypeProtocol):
     _items_inputs = None
     _parent = None
     _root = None
-    _items_type_cache = None
+    _item_type_cache = None
     _validate = COLLECTION_VALIDATE
 
     def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
@@ -40,7 +40,7 @@ class CollectionProtocol(TypeProtocol):
             value = kwargs
             opts = {}
         validate = opts.pop('validate', self._validate)
-        TypeProtocol.__init__(self, value, items=False, validate=False, **opts)
+        TypeProtocol.__init__(self, value, items=False, validate=False, context=context, **opts)
         # touch allocates storage for data, need to call create_context again
         self._touch()
         self.set_context(context, opts)
@@ -134,14 +134,14 @@ class CollectionProtocol(TypeProtocol):
 
     def _item_evaluate(self, item, **opts):
         v = self._data[item]
-        t = self.items_type(item)
+        t = self.item_type(item)
         opts.setdefault('context', self._context)
         return t.evaluate(v, **opts)
 
     @classmethod
     def item_serialize(cls, value, item, **opts):
         v = value[item]
-        t = cls.items_type(item)
+        t = cls.item_type(item)
         ctx = getattr(value, '_context', cls._context)
         opts.setdefault('context', ctx)
         return t.serialize(v, **opts)
@@ -165,7 +165,7 @@ class CollectionProtocol(TypeProtocol):
         self.do_validate(items=False)
 
     def _set_data(self, item, value):
-        t = self.items_type(item)
+        t = self.item_type(item)
         orig = self._data[item]
         # to avoid comparison of objects (often equality which is the longest to validate), only touch for changed primitives
         if t.is_primitive():
@@ -176,7 +176,7 @@ class CollectionProtocol(TypeProtocol):
         self._data[item] = value
 
     def _set_data_validated(self, item, value):
-        t = self.items_type(item)
+        t = self.item_type(item)
         if t.is_primitive():
             orig = self._data[item]
             if not Pattern.check(orig) and not Expr.check(orig):

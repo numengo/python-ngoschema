@@ -65,8 +65,8 @@ class TypeBuilder:
             return cls._ref_class_registry()._properties_raw_trans(name)
 
         @classmethod
-        def items_type(cls, name):
-            return cls._ref_class_registry().items_type(name)
+        def item_type(cls, name):
+            return cls._ref_class_registry().item_type(name)
 
         @property
         def ref_class(self):

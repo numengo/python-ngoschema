@@ -1,5 +1,6 @@
 from .type_builder import *
 from .namespace_manager import *
+from .context import *
 
 __all__ = [
     'TypeBuilder',
@@ -8,4 +9,6 @@ __all__ = [
     # namespace
     'NamespaceManager',
     'default_ns_manager',
+    # context
+    'Context'
 ]

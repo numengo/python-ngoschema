@@ -112,7 +112,11 @@ def parse_docstring(docstring):
         short_description = lines[0]
 
         if len(lines) > 1:
-            long_description = lines[1].strip()
+            if lines[1].split("\n")[0].strip():
+                long_description = short_description + '\n'
+                short_description = ''
+
+            long_description += lines[1].strip()
 
             params_returns_desc = None
 
@@ -147,7 +151,10 @@ def parse_docstring(docstring):
     if long_description.startswith('`'):
         long_description = ' ' + long_description
     _set_not_null(ret, 'description', short_description)
-    _set_not_null(ret, 'longDescription', long_description)
+    if not short_description:
+        _set_not_null(ret, 'description', long_description)
+    else:
+        _set_not_null(ret, 'longDescription', long_description)
     _set_not_null(ret, 'arguments', list(arguments.values()))
     _set_not_null(ret, 'returns', returns)
     return ret

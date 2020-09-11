@@ -95,6 +95,11 @@ class ReadOnlyChainMap(Mapping):
 
     @property
     def merged(self):
+        ret = dict()
+        for m in self.maps:
+            for k in set(m.keys()).difference(ret.keys()):
+                ret[k] = m[k]
+        return ret
         return dict(self)
 
 

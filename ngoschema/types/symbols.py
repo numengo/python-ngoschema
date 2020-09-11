@@ -48,15 +48,6 @@ class Symbol(Primitive):
             raise ConversionError("%s is not a %s" % (value, self._type))
         return typed
 
-    @classmethod
-    def check_old(cls, value, convert=False, **opts):
-        if String.check(value, convert=False) and convert:
-            try:
-                value = cls.convert(value, **opts)
-            except (Exception, InvalidValue) as er:
-                return False
-        return cls.check_symbol(value)
-
     def _check(self, value, **opts):
         return self.check_symbol(value) or TypeProtocol._check(self, value, **opts)
 
@@ -78,7 +69,7 @@ class Module(Symbol):
     def _serialize(self, value, **opts):
         if value and not String.check(value):
             value = value.__name__
-        return String.serialize(value, **opts)
+        return String._serialize(self, value, **opts)
 
 
 @register_type('function')

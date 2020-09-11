@@ -89,6 +89,12 @@
       "$defs": {
         "Type": {
           "type": "object",
+          "notSerialized": [
+            "pyType",
+            "_type",
+            "refCanonicalName",
+            "defaultValue"
+          ],
           "extends": [
             "#/$defs/metadata/$defs/Annotation",
             "#/$defs/metadata/$defs/IdentifiedObject"
@@ -96,12 +102,6 @@
           "aliases": {
             "default": "defaultValue"
           },
-          "notSerialized": [
-            "pyType",
-            "_type",
-            "refCanonicalName",
-            "defaultValue"
-          ],
           "properties": {
             "pyType": {
               "type": "importable"
@@ -472,6 +472,12 @@
             },
             "Definition": {
               "type": "object",
+              "notSerialized": [
+                "_parentDefinition"
+              ],
+              "notValidated": [
+                "_parentDefinition"
+              ],
               "extends": [
                 "#/$defs/types/$defs/collections/$defs/Object",
                 "#/$defs/metadata/$defs/NamedObject"
@@ -479,12 +485,6 @@
               "aliases": {
                 "$defs": "definitions"
               },
-              "notSerialized": [
-                "_parentDefinition"
-              ],
-              "notValidated": [
-                "_parentDefinition"
-              ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
@@ -593,6 +593,13 @@
               ],
               "_type": "classmethod"
             },
+            "VirtualMethod": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method"
+              ],
+              "_type": "virtualmethod"
+            },
             "Instance": {
               "type": "object",
               "extends": [
@@ -665,9 +672,6 @@
         },
         "CollectionProtocol": {
           "type": "object",
-          "extends": [
-            "#/$defs/protocols/$defs/TypeProtocol"
-          ],
           "notSerialized": [
             "_parentObject",
             "_rootObject"
@@ -675,6 +679,9 @@
           "notValidated": [
             "_parentObject",
             "_rootObject"
+          ],
+          "extends": [
+            "#/$defs/protocols/$defs/TypeProtocol"
           ],
           "readOnly": [
             "_parentObject",
@@ -714,7 +721,7 @@
           "type": "object",
           "extends": [
             "#/$defs/protocols/$defs/CollectionProtocol",
-            "#/$defs/types/$defs/Array"
+            "#/$defs/types/$defs/collections/$defs/Array"
           ]
         },
         "descriptors": {
@@ -841,8 +848,7 @@
               "$ref": "#/$defs/variables/$defs/Scope"
             },
             "const": {
-              "type": "boolean",
-              "default": false
+              "type": "boolean"
             }
           }
         },
@@ -861,8 +867,7 @@
         "Symbol": {
           "type": "object",
           "extends": [
-            "#/$defs/metadata/$defs/Annotation",
-            "#/$defs/metadata/$defs/NamedObject"
+            "#/$defs/types/$defs/symbols/$defs/Symbol"
           ],
           "properties": {
             "longDescription": {
@@ -882,7 +887,8 @@
         "Callable": {
           "type": "object",
           "extends": [
-            "#/$defs/symbols/$defs/Symbol"
+            "#/$defs/symbols/$defs/Symbol",
+            "#/$defs/types/$defs/symbols/$defs/Callable"
           ]
         },
         "functions": {
@@ -891,6 +897,7 @@
             "Function": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Function",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
@@ -903,12 +910,8 @@
                     "$ref": "#/$defs/symbols/$defs/functions/$defs/Argument"
                   }
                 },
-                "varargs": {
-                  "type": "string"
-                },
-                "kwargs": {
-                  "type": "string"
-                },
+                "varargs": true,
+                "kwargs": true,
                 "imports": {
                   "type": "array",
                   "items": {
@@ -953,7 +956,7 @@
             "FunctionCall": {
               "type": "object",
               "extends": [
-                "#/$defs/symbols/$defs/Symbol"
+                "#/$defs/symbols/$defs/functions/$defs/Function"
               ],
               "properties": {
                 "arguments": {
@@ -972,6 +975,7 @@
             "Class": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Class",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "additionalProperties": true,
@@ -1020,6 +1024,7 @@
             "Method": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Method",
                 "#/$defs/symbols/$defs/functions/$defs/Function"
               ],
               "properties": {
@@ -1040,6 +1045,7 @@
             "ClassMethod": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/ClassMethod",
                 "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "class": true
@@ -1047,6 +1053,7 @@
             "StaticMethod": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/StaticMethod",
                 "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "static": true
@@ -1061,6 +1068,7 @@
             "Instance": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Instance",
                 "#/$defs/symbols/$defs/classes/$defs/Class"
               ]
             }
@@ -1072,9 +1080,13 @@
             "Module": {
               "type": "object",
               "extends": [
+                "#/$defs/types/$defs/symbols/$defs/Module",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
+                "symbol": {
+                  "type": "module"
+                },
                 "imports": {
                   "type": "array",
                   "items": {
@@ -1102,7 +1114,7 @@
                 "modules": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/symbols/$defs/modules/$defs/Module"
+                    "type": "module"
                   }
                 }
               }
@@ -1116,13 +1128,13 @@
       "$defs": {
         "Entity": {
           "title": "Entity",
-          "type": "object",
-          "extends": [
-            "#/$defs/metadata/$defs/IdentifiedObject"
-          ],
           "description": "Protocol for persistent entities with primary keys",
+          "type": "object",
           "notSerialized": [
             "primaryKeys"
+          ],
+          "extends": [
+            "#/$defs/metadata/$defs/IdentifiedObject"
           ],
           "readOnly": [
             "primaryKeys"
@@ -1148,13 +1160,13 @@
           "properties": {
             "primaryKeys": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "uniqueItems": true,
               "default": [
                 "name"
-              ]
+              ],
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
             }
           },
           "primaryKeys": "name"
@@ -1316,11 +1328,11 @@
       "$defs": {
         "ObjectTransform": {
           "type": "object",
-          "abstract": true,
           "notSerialized": [
             "fromClass",
             "toClass"
           ],
+          "abstract": true,
           "properties": {
             "fromClass": {
               "type": "importable"
@@ -1338,10 +1350,10 @@
         "Repository": {
           "title": "Repository",
           "type": "object",
-          "abstract": true,
           "notValidated": [
             "instances"
           ],
+          "abstract": true,
           "readOnly": [
             "instances"
           ],

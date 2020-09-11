@@ -55,16 +55,16 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         self._items_inputs = [{}] * len(self._data)
 
     @classmethod
-    def items_type(cls, item):
+    def item_type(cls, item):
         from .type_proxy import TypeProxy
-        if cls._items_type_cache is None:
+        if cls._item_type_cache is None:
             if not cls._items_list:
                 if isinstance(cls._items, TypeProxy):
                     if cls._items.proxy_type:
                         cls._items = cls._items.proxy_type
-                        cls._items_type_cache = cls._items
+                        cls._item_type_cache = cls._items
                 else:
-                    cls._items_type_cache = cls._items
+                    cls._item_type_cache = cls._items
             else:
                 ok = True
                 for i, t in enumerate(cls._items):
@@ -74,8 +74,8 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                         else:
                             ok = False
                 if ok:
-                    cls._items_type_cache = cls._items
-        return Array.items_type(cls, item)
+                    cls._item_type_cache = cls._items
+        return Array.item_type(cls, item)
 
     @classmethod
     def check(cls, value, **opts):
@@ -88,7 +88,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     #def _set_data(self, index, value):
     #    from ..models import Entity
-    #    itype = Array.items_type(self, index)
+    #    itype = Array.item_type(self, index)
     #    if issubclass(itype, Entity) and value is not None and not Object.check(value):
     #        obj = self.session.resolve_fkey(value, itype)
     #        assert obj
@@ -114,7 +114,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def _str_list(self):
         if self._str is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr) for i, t in enumerate(self._items_types(self))
+            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr) for i, t in enumerate(self._item_types(self))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
             self._str = '[%s]' % (', '.join(a))
         return self._str

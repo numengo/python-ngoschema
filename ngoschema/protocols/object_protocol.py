@@ -77,8 +77,8 @@ class PropertyDescriptor:
             value = obj._data_validated[key]
             if outdated and self.fset:
                 self.fset(obj, value)
-
-            return value
+            # value can change in setter
+            return obj._data_validated[key]
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
@@ -151,15 +151,31 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             return new(cls)
         return new(cls, *args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        CollectionProtocol.__init__(self, *args, **kwargs)
+    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
+        opts = kwargs
+        if value is None:
+            value = kwargs
+            opts = {}
+        # translate items
+        if Object.check(value):
+            for k in set(self._properties_translation).intersection(value):
+                value[self._properties_translation[k]] = value.pop(k)
+            for k in set(self._aliases).intersection(value):
+                value[self._aliases[k]] = value.pop(k)
+            for k in set(self._aliases_negated).intersection(value):
+                value[self._aliases_negated[k]] = neg(value.pop(k))
+            # required with default
+            for k in self._required.difference(value).intersection(self._properties_with_default):
+                value[k] = self.item_type(k).default()
+        CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
         for k in self._has_pk:
             self[k]
 
     @classmethod
     def default(cls, **opts):
         if cls._default_cache is None:
-            cls._default_cache = cls(cls._default(cls, **opts))
+            dft = cls(cls._default(cls, **opts))
+            cls._default_cache = dft
         return cls._default_cache
 
     def create_context(self, context=None, *extra_contexts):
@@ -174,7 +190,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         #        v.set_context(ctx)
 
     #def _item_evaluate(self, item, **opts):
-    #    t = self.items_type(item)
+    #    t = self.item_type(item)
     #    v = self._data[item]
     #    opts.setdefault('context', self._context)
     #    #if v is None and not t.has_default():
@@ -402,19 +418,19 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         return self._str
 
     @classmethod
-    def items_type(cls, item):
+    def item_type(cls, item):
         from .type_proxy import TypeProxy
-        if cls._items_type_cache is None:
-            cls._items_type_cache = {}
-        t = cls._items_type_cache.get(item)
+        if cls._item_type_cache is None:
+            cls._item_type_cache = {}
+        t = cls._item_type_cache.get(item)
         if t is None:
-            t = Object.items_type(cls, item)
-            cls._items_type_cache[item] = t
+            t = Object.item_type(cls, item)
+            cls._item_type_cache[item] = t
             if t and isinstance(t, TypeProxy):
                 if t.proxy_type:
-                    cls._items_type_cache[item] = t = t.proxy_type
+                    cls._item_type_cache[item] = t = t.proxy_type
                 else:
-                    cls._items_type_cache[item] = None
+                    cls._item_type_cache[item] = None
         return t
 
     @property
@@ -520,9 +536,13 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                         f = decorators.log_init(f)
                 if assert_args and f.__doc__:
                     fi = inspect_function(f)
+                    if 'assert_arg' in [d['name'] for d in fi.get('decorators', [])]:
+                        # function is already using assert_arg
+                        continue
                     for pos, a in enumerate(fi['arguments']):
-                        t = a.get('variableType')
+                        t = a.get('type', False)
                         if t:
+                            # only assert args which are defined
                             sch = {'type': t, 'description': a.get('description')}
                             logger.debug(
                                 "decorate <%s>.%s with argument %i validity check.",
@@ -642,7 +662,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         attrs['_logger'] = logger
         attrs['_schema_chained'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
         attrs['_schema'] = dict(attrs['_schema_chained'])
-        attrs['_items_type_cache'] = None
+        attrs['_item_type_cache'] = None
         attrs['_id'] = id
         attrs['_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_mro_type'] = pbases
