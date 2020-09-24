@@ -85,8 +85,8 @@ class Type(TypeProtocol):
     def validate(self, value, **opts):
         return self._do_validate(value, **opts)
 
-    def serialize(self, value, **opts):
-        return self._serialize(value, **opts)
+    #def serialize(self, value, **opts):
+    #    return self._serialize(value, **opts)
 
 
 class Primitive(Type):
@@ -112,8 +112,10 @@ class Enum(Primitive):
         from .numerics import Integer
         from .strings import String
         enum = self._enum
-        if Integer.check(value, **opts):
-            i = Integer.convert(value, **opts)
+        if Integer.check(value, convert=True):
+            i = Integer.convert(value)
+            if i in enum:
+                return i
             if i > len(enum):
                 raise ConversionError('Index %i exceeds enum size of %r' % (i, enum))
             return enum[i]
@@ -121,6 +123,8 @@ class Enum(Primitive):
             s = String.convert(value, **opts)
             if s in enum:
                 return s
+        if not s:
+            return self._enum[0]
         raise ConversionError('Impossible to convert %s to enum %r' % (value, enum))
 
     def _default(self, **opts):

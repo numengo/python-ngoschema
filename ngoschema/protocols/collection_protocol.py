@@ -82,10 +82,6 @@ class CollectionProtocol(TypeProtocol):
         #return value if isinstance(value, cls) else cls(cls._convert(cls, value, **opts), **opts)
 
     @classmethod
-    def serialize(cls, value, **opts):
-        return cls._serialize(cls, value, **opts)
-
-    @classmethod
     def inputs(cls, value, **opts):
         return cls._inputs(cls, value, **opts)
 
@@ -136,6 +132,9 @@ class CollectionProtocol(TypeProtocol):
         v = self._data[item]
         t = self.item_type(item)
         opts.setdefault('context', self._context)
+        if hasattr(t, '_lazy_loading'):
+            if t._lazy_loading:
+                opts.setdefault('validate', False)
         return t.evaluate(v, **opts)
 
     @classmethod
@@ -205,6 +204,10 @@ class CollectionProtocol(TypeProtocol):
 
     def do_validate(self, items=True, **opts):
         return self.validate(self, items=items, **opts)
+
+    @classmethod
+    def serialize(cls, value, **opts):
+        return cls._serialize(cls, value, **opts)
 
     def do_serialize(self, **opts):
         return self.serialize(self, **opts)

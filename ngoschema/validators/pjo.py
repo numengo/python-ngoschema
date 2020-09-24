@@ -406,8 +406,8 @@ def format_datetime(value, type_data=None):
 @formatter_registry.register(name="importable")
 def format_importable(value, type_data):
     if not utils.is_string(value) and utils.is_imported(value):
-        if hasattr(value, '__schema_uri__'):
-            return value.__schema_uri__
+        if hasattr(value, '_id'):
+            return value._id
         return utils.fullname(value)
     return value
 

@@ -89,8 +89,8 @@ def properties_ngo_draft2(validator, properties, instance, schema):
     if not validator.is_type(instance, "object"):
         return
 
-    if "__schema_uri__" in instance:
-        scope, schema = validator.resolver.resolve(instance["__schema_uri__"])
+    if "_id" in instance:
+        scope, schema = validator.resolver.resolve(instance["_id"])
         validator.resolver.push_scope(scope)
         properties = schema.get("properties")
 
@@ -114,7 +114,7 @@ def properties_ngo_draft2(validator, properties, instance, schema):
                     schema_path=property):
                 yield error
 
-    if "__schema_uri__" in instance:
+    if "_id" in instance:
         validator.resolver.pop_scope()
 
 
@@ -141,8 +141,8 @@ def ref_ngo_draft1(validator, ref, instance, schema):
 
 def ref_ngo_draft2(validator, ref, instance, schema):
     # override reference with schema defined in instance
-    if isinstance(instance, collections.Iterable) and "__schema_uri__" in instance:
-        ref = instance["__schema_uri__"]
+    if isinstance(instance, collections.Iterable) and "_id" in instance:
+        ref = instance["_id"]
 
     resolve = getattr(validator.resolver, "resolve", None)
     if resolve is None:

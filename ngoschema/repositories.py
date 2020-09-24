@@ -141,7 +141,7 @@ class FilterRepositoryMixin(object):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FilterRepositoryMixin'
 
     def filter_data(self, data):
-        return filter_collection(data, self.only, self.but, self.recursive)
+        return filter_collection(data, self.only, self.excludes, self.recursive)
 
 
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):

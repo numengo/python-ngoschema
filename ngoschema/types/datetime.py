@@ -20,7 +20,7 @@ def _dt_serialize(cls, value, **opts):
             return value.strftime(format)
         else:
             return value.format(format)
-    return value.isoformat()
+    return value.isoformat() if value else None
 
 
 @register_type('date')
@@ -128,5 +128,5 @@ class Datetime(Date, Time):
         except Exception as er:
             raise InvalidValue("{0} is not detected as a datetime: {1}".format(value, str(er)))
 
-    def serialize(self, value, **opts):
+    def _serialize(self, value, **opts):
         return _dt_serialize(self, value, **opts)

@@ -134,24 +134,26 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         logger = logging.getLogger(cname)
         items = schema.get('items')
         items_list = False
+        lz = schema.get('lazyLoading', False)
         if items:
             if Array.check(items):
                 items_list = True
                 items = [TypeBuilder.build(f'{id}/items/{i}', item) for i, item in enumerate(items)]
             else:
                 items = TypeBuilder.build(f'{id}/items', items)
+                lz = lz or getattr(items, '_lazy_loading', False)
         else:
             items = TRUE
         if not any([issubclass(b, ArrayProtocol) for b in bases]):
             bases = list(bases) + [ArrayProtocol]
         if 'validate' in schema:
             attrs['_validate'] = schema['validate']
-        if 'lazyLoading' in schema:
-            attrs['_lazy_loading'] = schema.get('lazyLoading')
+        attrs.setdefault('_lazy_loading', lz)
         attrs['_items'] = items
         attrs['_min_items'] = schema.get('minItems', 0)
         attrs['_max_items'] = schema.get('maxItems')
         attrs['_unique_items'] = schema.get('uniqueItems', False)
+        attrs['_default_cache'] = None
         attrs['_has_pk'] = bool(any(len(getattr(t, '_primary_keys', [])) for t in items)\
                                     if items_list else len(getattr(items, '_primary_keys', [])))
         attrs['_items_list'] = items_list

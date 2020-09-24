@@ -152,7 +152,15 @@ class Path(Uri):
             self.validate(typed)
         return typed
 
-    def _serialize(self, value, **opts):
+    def _serialize(self, value, context=None, relative=False, **opts):
+        if relative:
+            from ..repositories import FileRepository
+            ctx = self.create_context(context)
+            fr = ctx.find_file_repository()
+            if fr and fr.document:
+                fp = fr.document.filepath
+                from pathlib import Path
+                p = value.relative_to(fp)
         return str(value)
 
 

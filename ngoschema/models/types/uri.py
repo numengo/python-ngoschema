@@ -40,9 +40,7 @@ class Id(with_metaclass(SchemaMetaclass)):
         ref = self._data_validated['uri']
         if ref:
             return self._ns_mgr.get_id_cname(ref) if getattr(self, '_ns_mgr') else None
-        return getattr(self, 'name', None)
 
-    @memoized_property
     def json_schema(self):
         return self.uri
 

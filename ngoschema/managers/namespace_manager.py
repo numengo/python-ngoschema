@@ -31,6 +31,7 @@ def clean_for_uri(name):
 class NamespaceManager(Registry):
     _current_ns = ''
     _current_ns_uri = '#'
+    _builder_ns = {}
 
     def __init__(self, *parents, **local):
         self._get_id_cname = lru_cache(1024)(self._get_id_cname_cached)
@@ -59,6 +60,36 @@ class NamespaceManager(Registry):
     def currentNsUri(self):
         return self._current_ns_uri
 
+    def _find_ns_by_cname(self, cname):
+        reg = ChainMap(self._registry, self._builder_ns)
+        ns_names = sorted([c for c, u in reg.items() if cname.startswith(c+'.') or c == cname], reverse=True)
+        if ns_names:
+            cn = ns_names[0]
+            return cn, reg[cn]
+        for u in UriResolver._doc_store.keys():
+            c = NamespaceManager._uri_to_cname(u)
+            if cname.startswith(c+'.') or c == cname:
+                return c, u
+        return None, None
+
+    def _find_ns_by_uri(self, uri):
+        reg = ChainMap(self._registry, self._builder_ns)
+        ns_names = sorted([c for c, u in reg.items() if uri.startswith(u)], reverse=True)
+        if ns_names:
+            cn = ns_names[0]
+            return cn, reg[cn]
+        uri_ns = uri.split('#')[0] if '#' in uri else uri
+        if uri_ns in UriResolver._doc_store.keys():
+            return NamespaceManager._uri_to_cname(uri_ns), uri_ns
+        return None, None
+
+    def __contains__(self, item):
+        from ..types.symbols import Module
+        if Module.check(item):
+            item = item.__module__
+        n, u = self._find_ns_by_cname(item)
+        return bool(n and u)
+
     def get_id_cname(self, ref):
         rcn = self._current_ns
         cname = self._get_id_cname(ref, rcn)
@@ -71,16 +102,17 @@ class NamespaceManager(Registry):
 
     def _get_id_cname_cached(self, ref, current_ns):
         from ..types.uri import Uri
-        ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
-        ns_names = sorted([k for k, uri in ns.items() if ref.startswith(uri)], reverse=True)
-        ns_uri = ns.get(ns_names[0]) if ns_names else urldefrag(ref)[0]
-        ns_cn = ns_names[0] if ns_names else Uri.convert(ref).path.replace('/', '.')
-        cn = ns_cn
-        frag = ref[len(ns_uri):] if ref.startswith(ns_uri) else ref
+        ns_cn, ns_uri = self._find_ns_by_uri(ref)
+        #ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
+        #ns_names = sorted([k for k, uri in ns.items() if ref.startswith(uri)], reverse=True)
+        #ns_uri = ns.get(ns_names[0]) if ns_names else urldefrag(ref)[0]
+        #ns_cn = ns_names[0] if ns_names else Uri.convert(ref).path.replace('/', '.')
+        cn = ns_cn or current_ns
+        frag = ref[len(ns_uri):] if ns_uri and ref.startswith(ns_uri) else ref
         #ns_uri, frag = urldefrag(ref)
         if frag:
             f_cn = NamespaceManager._fragment_to_cname(frag.strip('#'))
-            return '%s.%s' % (ns_cn, f_cn)
+            return f'{ns_cn}.{f_cn}' if ns_cn else f_cn
         return ns_cn
 
     def get_cname_id(self, cname):
@@ -91,15 +123,20 @@ class NamespaceManager(Registry):
                 rcn.pop()
                 cname = cname[1:]
             cname = '.'.join(rcn + [cname])
-        return self._get_cname_id(cname, self._current_ns)
+        id = self._get_cname_id(cname, self._current_ns)
+        u = self._current_ns_uri.split('#')[0] + '#'
+        #if u and id.startswith(u):
+        #    id = id[len(u.strip('#')):]
+        return id
 
     def _get_cname_id_cached(self, cname, current_ns):
-        ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
+        #ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         # iterate on namespace sorted from the longest to get the most qualified
-        ns_names = sorted([k for k, uri in ns.items() if cname.startswith(k+'.') or k == cname], reverse=True)
-        ns_name = ns_names[0] if ns_names else ''
-        ns_uri = ns[ns_name]
-        fragment_cname = cname[len(ns_name):]
+        #ns_names = sorted([k for k, uri in ns.items() if cname.startswith(k+'.') or k == cname], reverse=True)
+        #ns_name = ns_names[0] if ns_names else ''
+        #ns_uri = ns[ns_name]
+        ns_name, ns_uri = self._find_ns_by_cname(cname)
+        fragment_cname = cname[len(ns_name):] if ns_name else cname
         cns = fragment_cname.split('.')
         if cns and not cns[0]:
             cns = cns[1:]
@@ -118,6 +155,7 @@ class NamespaceManager(Registry):
             for c in cns[:-1]:
                 fragment_parts += ['$defs', c]
             fragment_parts += (['properties', cns[-1]] if len(cns) > 2 and cns[-2][0].isupper() and cns[-1][0].islower() else ['$defs', cns[-1]])
+        ns_uri = ns_uri or self._find_ns_by_cname(current_ns)[1]
         return '/'.join([ns_uri + ('#' if '#' not in ns_uri else '')] + fragment_parts)
 
     @staticmethod
@@ -140,11 +178,18 @@ class NamespaceManager(Registry):
         return ns_name + NamespaceManager._fragment_to_cname(u.fragment) if u.fragment else ns_name
 
     @staticmethod
-    def builder_namespaces():
-        from .type_builder import TypeBuilder
-        return {NamespaceManager._uri_to_cname(uri): uri
-                for uri in {k.split('#')[0] for k in TypeBuilder._registry.keys()}}
+    def register_ns(uri, cname=None):
+        ns_uri = uri.split('#')[0] if '#' in uri else uri
+        cname = cname or NamespaceManager._uri_to_cname(ns_uri)
+        if cname not in NamespaceManager._builder_ns:
+            NamespaceManager._builder_ns[cname] = ns_uri
 
+    #@staticmethod
+    #def builder_namespaces():
+    #    from .type_builder import TypeBuilder
+    #    return {NamespaceManager._uri_to_cname(uri): uri
+    #            for uri in {k.split('#')[0] for k in TypeBuilder._registry.keys()}}
+    #
     @staticmethod
     def available_namespaces():
         from ..resolver import UriResolver
@@ -155,7 +200,7 @@ class NamespaceManager(Registry):
         return TypeBuilder.load(self.get_cname_id(cname))
 
     def namespaces(self, contains=None):
-        ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
+        ns = ChainMap(self._registry, self._builder_ns, NamespaceManager.available_namespaces())
         nsk = list(ns.keys())
         if contains:
             nsk = [n for n in nsk if contains in n]

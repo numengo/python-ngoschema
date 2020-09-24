@@ -28,6 +28,7 @@ class TypeProxy(TypeProtocol):
         bases += (protocol, ) if not issubclass(protocol, bases) else ()
         attrs = {k: v for k, v in attrs.items() if not k.startswith('__')}
         attrs['_proxy_uri'] = uri
+        attrs['_id'] = uri
         attrs['_schema'] = schema
         attrs['__doc__'] = 'reference to %s' % clsname
         return type(clsname, (TypeProxy, ) + bases, attrs)
@@ -82,14 +83,16 @@ class TypeProxy(TypeProtocol):
 
     @classmethod
     def __instancecheck__(cls, instance):
-        return cls.proxy_type_cls() and isinstance(instance, cls.proxy_type_cls())
+        kls = cls.proxy_type_cls()
+        return isinstance(instance, kls) if kls else False
 
-    def __subclasscheck__(cls, subclass):
-        return cls.proxy_type_cls() and issubclass(subclass, cls.proxy_type_cls())
+    #def __subclasscheck__(cls, subclass):
+    #    return issubclass(subclass, cls.proxy_type_cls())
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return cls.proxy_type_cls() and issubclass(subclass, cls.proxy_type_cls())
+        kls = cls.proxy_type_cls()
+        return issubclass(subclass, kls) if kls else False
 
     @classmethod
     def __hash__(cls):

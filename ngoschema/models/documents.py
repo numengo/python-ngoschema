@@ -58,7 +58,6 @@ class Document(with_metaclass(SchemaMetaclass)):
     def get_identifier(self):
         if self._identifier is None:
             self._identifier = self.filepath or self.uri
-        assert self._identifier
         return self._identifier
 
     def load(self):

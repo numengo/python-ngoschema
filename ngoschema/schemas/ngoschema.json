@@ -53,16 +53,17 @@
         "NamedObject": {
           "title": "Named Object",
           "type": "object",
-          "notSerialized": [
+          "readOnly": [
             "canonicalName",
-            "namePlural",
             "_parentNamed"
           ],
           "notValidated": [
+            "canonicalName",
             "_parentNamed"
           ],
-          "readOnly": [
+          "notSerialized": [
             "canonicalName",
+            "namePlural",
             "_parentNamed"
           ],
           "additionalProperties": false,
@@ -89,12 +90,6 @@
       "$defs": {
         "Type": {
           "type": "object",
-          "notSerialized": [
-            "pyType",
-            "_type",
-            "refCanonicalName",
-            "defaultValue"
-          ],
           "extends": [
             "#/$defs/metadata/$defs/Annotation",
             "#/$defs/metadata/$defs/IdentifiedObject"
@@ -102,6 +97,12 @@
           "aliases": {
             "default": "defaultValue"
           },
+          "notSerialized": [
+            "pyType",
+            "_type",
+            "refCanonicalName",
+            "defaultValue"
+          ],
           "properties": {
             "pyType": {
               "type": "importable"
@@ -169,15 +170,13 @@
               "type": "object",
               "extends": [
                 "#/$defs/types/$defs/constants/$defs/Constant"
-              ],
-              "_type": true
+              ]
             },
             "False_": {
               "type": "object",
               "extends": [
                 "#/$defs/types/$defs/constants/$defs/Constant"
-              ],
-              "_type": false
+              ]
             }
           }
         },
@@ -472,12 +471,6 @@
             },
             "Definition": {
               "type": "object",
-              "notSerialized": [
-                "_parentDefinition"
-              ],
-              "notValidated": [
-                "_parentDefinition"
-              ],
               "extends": [
                 "#/$defs/types/$defs/collections/$defs/Object",
                 "#/$defs/metadata/$defs/NamedObject"
@@ -485,6 +478,12 @@
               "aliases": {
                 "$defs": "definitions"
               },
+              "notValidated": [
+                "_parentDefinition"
+              ],
+              "notSerialized": [
+                "_parentDefinition"
+              ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
@@ -533,6 +532,9 @@
                   "items": {
                     "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
                   }
+                },
+                "wraps": {
+                  "type": "importable"
                 },
                 "_parentDefinition": {
                   "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
@@ -672,7 +674,10 @@
         },
         "CollectionProtocol": {
           "type": "object",
-          "notSerialized": [
+          "extends": [
+            "#/$defs/protocols/$defs/TypeProtocol"
+          ],
+          "readOnly": [
             "_parentObject",
             "_rootObject"
           ],
@@ -680,10 +685,7 @@
             "_parentObject",
             "_rootObject"
           ],
-          "extends": [
-            "#/$defs/protocols/$defs/TypeProtocol"
-          ],
-          "readOnly": [
+          "notSerialized": [
             "_parentObject",
             "_rootObject"
           ],
@@ -772,8 +774,7 @@
           "additionalProperties": false,
           "properties": {
             "$schema": {
-              "type": "string",
-              "format": "uri-reference"
+              "type": "id"
             },
             "fkeys": {
               "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
@@ -786,7 +787,7 @@
             },
             "reverse": {
               "type": "boolean",
-              "default": false
+              "default": "False"
             }
           }
         },
@@ -799,13 +800,6 @@
           "$comment": "to define a relationship to another instance",
           "additionalProperties": false,
           "properties": {
-            "$schema": {
-              "type": "string",
-              "format": "uri-reference"
-            },
-            "key": {
-              "type": "string"
-            },
             "backPopulates": {
               "$ref": "#/$defs/relationships/$defs/Relationship"
             },
@@ -867,7 +861,7 @@
         "Symbol": {
           "type": "object",
           "extends": [
-            "#/$defs/types/$defs/symbols/$defs/Symbol"
+            "#/$defs/metadata/$defs/Annotation"
           ],
           "properties": {
             "longDescription": {
@@ -887,8 +881,7 @@
         "Callable": {
           "type": "object",
           "extends": [
-            "#/$defs/symbols/$defs/Symbol",
-            "#/$defs/types/$defs/symbols/$defs/Callable"
+            "#/$defs/symbols/$defs/Symbol"
           ]
         },
         "functions": {
@@ -897,7 +890,6 @@
             "Function": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Function",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
@@ -930,7 +922,7 @@
                 "decorators": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/symbols/$defs/functions/$defs/FunctionCall"
+                    "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
                   }
                 }
               }
@@ -975,8 +967,10 @@
             "Class": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Class",
                 "#/$defs/symbols/$defs/Symbol"
+              ],
+              "notValidated": [
+                "mro"
               ],
               "additionalProperties": true,
               "properties": {
@@ -986,7 +980,7 @@
                 "mro": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/symbols/$defs/classes/$defs/Class"
+                    "type": "class"
                   }
                 },
                 "abstract": {
@@ -1024,7 +1018,6 @@
             "Method": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Method",
                 "#/$defs/symbols/$defs/functions/$defs/Function"
               ],
               "properties": {
@@ -1045,7 +1038,6 @@
             "ClassMethod": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/ClassMethod",
                 "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "class": true
@@ -1053,7 +1045,6 @@
             "StaticMethod": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/StaticMethod",
                 "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
               "static": true
@@ -1068,7 +1059,6 @@
             "Instance": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Instance",
                 "#/$defs/symbols/$defs/classes/$defs/Class"
               ]
             }
@@ -1080,7 +1070,6 @@
             "Module": {
               "type": "object",
               "extends": [
-                "#/$defs/types/$defs/symbols/$defs/Module",
                 "#/$defs/symbols/$defs/Symbol"
               ],
               "properties": {
@@ -1130,13 +1119,13 @@
           "title": "Entity",
           "description": "Protocol for persistent entities with primary keys",
           "type": "object",
-          "notSerialized": [
-            "primaryKeys"
-          ],
           "extends": [
             "#/$defs/metadata/$defs/IdentifiedObject"
           ],
           "readOnly": [
+            "primaryKeys"
+          ],
+          "notSerialized": [
             "primaryKeys"
           ],
           "additionalProperties": false,
@@ -1160,16 +1149,16 @@
           "properties": {
             "primaryKeys": {
               "type": "array",
-              "default": [
-                "name"
-              ],
-              "uniqueItems": true,
               "items": {
                 "type": "string"
-              }
+              },
+              "default": "name",
+              "uniqueItems": true
             }
           },
-          "primaryKeys": "name"
+          "primaryKeys": [
+            "name"
+          ]
         },
         "CanonicalNamedEntity": {
           "title": "Canonical Named Entity",
@@ -1178,7 +1167,9 @@
             "#/$defs/entities/$defs/NamedEntity"
           ],
           "additionalProperties": false,
-          "primaryKeys": "canonicalName"
+          "primaryKeys": [
+            "canonicalName"
+          ]
         },
         "EntityWithMetadata": {
           "title": "Entity With Metadata",
@@ -1212,9 +1203,12 @@
             "filepath": {
               "type": "path"
             },
+            "uri": {
+              "type": "uri"
+            },
             "binary": {
               "type": "boolean",
-              "default": false
+              "default": "False"
             },
             "mimetype": {
               "type": "string",
@@ -1240,7 +1234,9 @@
               "type": "integer"
             }
           },
-          "primaryKeys": "identifier"
+          "primaryKeys": [
+            "identifier"
+          ]
         }
       }
     },
@@ -1268,14 +1264,17 @@
         },
         "Query": {
           "type": "object",
-          "notSerialized": [
-            "iterable"
+          "extends": [
+            "#/$defs/queries/$defs/Filter"
+          ],
+          "readOnly": [
+            "result"
           ],
           "notValidated": [
             "iterable"
           ],
-          "readOnly": [
-            "result"
+          "notSerialized": [
+            "iterable"
           ],
           "properties": {
             "iterable": {
@@ -1292,6 +1291,23 @@
               "type": "array"
             }
           }
+        },
+        "EntityQuery": {
+          "type": "object",
+          "extends": [
+            "#/$defs/queries/$defs/Query"
+          ],
+          "readOnly": [
+            "iterable"
+          ],
+          "properties": {
+            "entity": {
+              "type": "importable"
+            },
+            "field": {
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -1305,15 +1321,15 @@
           "properties": {
             "autoflush": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "expire_on_commit": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "autocommit": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "bind": {
               "type": "object",
@@ -1328,11 +1344,11 @@
       "$defs": {
         "ObjectTransform": {
           "type": "object",
+          "abstract": true,
           "notSerialized": [
             "fromClass",
             "toClass"
           ],
-          "abstract": true,
           "properties": {
             "fromClass": {
               "type": "importable"
@@ -1350,13 +1366,13 @@
         "Repository": {
           "title": "Repository",
           "type": "object",
+          "readOnly": [
+            "instances"
+          ],
           "notValidated": [
             "instances"
           ],
           "abstract": true,
-          "readOnly": [
-            "instances"
-          ],
           "additionalProperties": false,
           "properties": {
             "objectClass": {
@@ -1370,15 +1386,15 @@
             },
             "many": {
               "type": "boolean",
-              "default": false
+              "default": "False"
             },
             "no_defaults": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "use_entity_ref": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "instances": {
               "type": "array"
@@ -1405,7 +1421,7 @@
             },
             "recursive": {
               "type": "boolean",
-              "default": false
+              "default": "False"
             },
             "aliases": {
               "type": "object",
@@ -1439,7 +1455,7 @@
             },
             "overwrite": {
               "type": "boolean",
-              "default": false
+              "default": "False"
             }
           }
         },
@@ -1469,7 +1485,7 @@
           "properties": {
             "pretty": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "tag": {
               "type": "string"
@@ -1484,7 +1500,7 @@
             },
             "short_empty_elements": {
               "type": "boolean",
-              "default": true
+              "default": "True"
             },
             "indent": {
               "type": "string",

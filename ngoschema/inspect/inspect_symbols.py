@@ -25,6 +25,12 @@ def isattr(obj):
                 or isroutine(obj) or isinstance(obj, type))
 
 
+# avoid builtin
+def is_builtin(obj):
+    mn = obj.__module__
+    return not (hasattr(obj, '_id') or mn not in EXCLUDED_MODULES)
+
+
 @lru_cache(maxsize=512)
 def inspect_symbol(value):
     from ..types.symbols import Symbol
@@ -126,7 +132,7 @@ def inspect_descriptor(value, name=None):
     if name:
         desc['name'] = name
     if isinstance(value, PropertyDescriptor):
-        desc['$schema'] = 'https://numengo.org/ngoschema2#/$defs/protocols/$defs/PropertyDescriptor'
+        desc['$schema'] = 'https://numengo.org/ngoschema#/$defs/protocols/$defs/descriptors/$defs/PropertyDescriptor'
         if desc['name'] != value.pname:
             desc['pname'] = value.pname
         desc['ptype'] = dict(value.ptype._schema)
@@ -152,13 +158,27 @@ def inspect_class(value, with_inherited=False):
     if module in EXCLUDED_MODULES:
         return cls
 
+    mro = []
+    for m in inspect.getmro(symbol)[1:]:
+        if is_builtin(m):
+            continue
+        mro.append(m)
+        #mro.append(inspect_class(m))
+    if mro:
+        cls['mro'] = mro
+    mro_i = [inspect_class(m) for m in mro]
+    mro_attributes = {a['name']: a for m in mro_i for a in m.get('attributes', [])}
+    mro_descriptors = {d['name']: d for m in mro_i for d in m.get('descriptors', [])}
+
     ds = inspect.getmembers(symbol, inspect.isdatadescriptor)
     descriptors = [inspect_descriptor(d, name=n) for n, d in ds if n not in EXCLUDED_DESCRIPTORS]
+    descriptors = [d for d in descriptors if d not in mro_descriptors.values()]
     if descriptors:
         cls['descriptors'] = descriptors
 
     ds2 = inspect.getmembers(symbol, lambda x: isattr(x))
     attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__') and n not in EXCLUDED_ATTRIBUTES]
+    attributes = [a for a in attributes if a not in mro_attributes.values()]
     if attributes:
         cls['attributes'] = attributes
 
@@ -185,30 +205,21 @@ def inspect_class(value, with_inherited=False):
     node_iter = ast.NodeVisitor()
     node_iter.visit_FunctionDef = _visit_function_def_class
 
-    # avoid builtin
-    def is_builtin(obj):
-        mn = obj.__module__
-        return not (hasattr(obj, '_id') or mn not in EXCLUDED_MODULES)
-
     if not is_builtin(symbol):
         try:
             node = ast.parse(reindent(inspect.getsource(symbol)))
             node_iter.visit(node)
         except Exception as er:
-            logger.error('Problem processing class %s.' % symbol)
-            logger.error(er, exc_info=True)
+            logger.error('Problem processing class %s: %s' % (symbol, er))
+            #logger.error(er, exc_info=True)
 
-    if methods:
-        if '__init__' in methods:
-            cls['init'] = methods.pop('__init__')
-        cls['methods'] = methods
+        for m in methods:
+            if m['name'] == '__init__':
+                cls['init'] = m
+                methods.remove(m)
+                break
+        if methods:
+            cls['methods'] = methods
 
-    mro = []
-    for m in inspect.getmro(symbol)[1:]:
-        if is_builtin(m):
-            continue
-        mro.append(inspect_class(m))
-    if mro:
-        cls['mro'] = mro
     return cls
 

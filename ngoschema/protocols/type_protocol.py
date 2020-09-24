@@ -36,6 +36,7 @@ class TypeProtocol:
     def build(id, schema, bases=(), attrs=None):
         from ..managers.type_builder import TypeBuilder, untype_schema, DefaultValidator
         from ..managers.namespace_manager import default_ns_manager
+        from ..types import Type
         attrs = attrs or {}
         ref = schema.get('$ref')
         cname = default_ns_manager.get_id_cname(ref or id)
@@ -56,7 +57,7 @@ class TypeProtocol:
         # filter bases to remove duplicates
         extra_bases = tuple(b for b in extra_bases if not issubclass(b, bases))
         if not bases and not extra_bases:
-            extra_bases = (TypeProtocol, )
+            extra_bases = (Type, )
         attrs['_schema'] = schema = dict(ReadOnlyChainMap(schema, *[b._schema for b in bases + extra_bases if hasattr(b, '_schema')]))
         if 'rawLiterals' in schema:
             attrs['_raw_literals'] = schema['rawLiterals']
@@ -78,6 +79,7 @@ class TypeProtocol:
         self._data = self._evaluate(value, validate=validate, context=context, **opts)
         self.set_context(context, opts)
 
+    #@staticmethod
     def create_context(self, context=None, *extra_contexts):
         ctx = context if context is not None else self._context
         return ctx.create_child(*extra_contexts)
@@ -126,9 +128,13 @@ class TypeProtocol:
     def _default(self, **opts):
         if 'default' in self._schema:
             return self._schema['default']
-            #self._default_cache = self.convert(self._schema['default'], **opts)
+        if 'minimum' in self._schema:
+            return self._schema['minimum']
         else:
-            return self._py_type() if self._py_type else None
+            try:
+                return self._py_type() if self._py_type else None
+            except Exception as er:
+                return
 
     @classmethod
     def convert(cls, value, **opts):
@@ -188,6 +194,10 @@ class TypeProtocol:
             opts.pop('items', None)
             self._do_validate(typed, items=False, with_type=False, **opts)
         return typed
+
+    @classmethod
+    def serialize(cls, value, **opts):
+        return cls._serialize(cls, value, **opts)
 
     def _serialize(self, value, **opts):
         """

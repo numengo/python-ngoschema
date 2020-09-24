@@ -16,7 +16,7 @@ class ObjectTransform(with_metaclass(SchemaMetaclass)):
     #    ProtocolBase.__init__(self, **kwargs)
 
     @abstractmethod
-    def __call__(self, src, *args):
+    def __call__(self, src, *args, **kwargs):
         raise Exception("must be overloaded")
 
     @classmethod

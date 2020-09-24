@@ -24,8 +24,6 @@ class NamedObject(with_metaclass(SchemaMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
     """
-    _id = "https://numengo.org/ngoschema#/$defs/NamedObject"
-    _id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/NamedObject"
     _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/NamedObject"
 
     def __str__(self):
@@ -52,6 +50,4 @@ class Metadata(with_metaclass(SchemaMetaclass)):
     """
     Class to deal with metadata and parents/children relationships
     """
-    _id = "https://numengo.org/ngoschema#/$defs/ObjectMetadata"
-    _id = "https://numengo.org/ngoschema2#/$defs/metadata/$defs/Metadata"
     _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"

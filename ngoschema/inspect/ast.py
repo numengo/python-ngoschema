@@ -29,13 +29,17 @@ def set_visit_module(module):
     # parse module to get its symbols
     m = importlib.import_module(module)
     source = Path(m.__file__).read_text(encoding='utf-8')
+    if Path(m.__file__).name != '__init__.py':
+        module = module.rsplit('.', 1)[0]
     parsed = ast.parse(source)
     for node in parsed.body:
         if isinstance(node, ast.ImportFrom):
             for n in node.names:
+                if isinstance(n, ast.alias):
+                    n.name
                 im_name = '.' * node.level + (node.module or '')
                 try:
-                    im = importlib.import_module(im_name, module.rsplit('.', 1)[0] if node.level else None)
+                    im = importlib.import_module(im_name, module if node.level else None)
                 except Exception as er:
                     logger.error('%i %s %s' % (node.level, node.module, n))
                     logger.error(er)
@@ -82,7 +86,7 @@ def ast_eval(node, module=None):
 def visit_function_def(node):
     """ ast node visitor """
     from ..types.strings import String
-    from ..types.symbols import Function, Class
+    from ..types.symbols import Symbol, Function, Class
     from .inspect_symbols import inspect_function, inspect_function_call, inspect_class
     module = _module
     ret = {'name': node.name}
@@ -111,6 +115,8 @@ def visit_function_def(node):
     for d, p in zip(reversed(defaults), reversed(params)):
         p['hasDefault'] = True
         p['defaultValue'] = d
+        if Class.check(d) or Function.check(d):
+            p['defaultValue'] = Symbol.serialize(d)
 
     varargs = {'name': ast_name(vargs)} if vargs else None
     kwargs = {'name': ast_name(kwargs)} if kwargs else None

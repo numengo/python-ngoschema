@@ -100,7 +100,6 @@ class ReadOnlyChainMap(Mapping):
             for k in set(m.keys()).difference(ret.keys()):
                 ret[k] = m[k]
         return ret
-        return dict(self)
 
 
 class _KeyModifierMapping(MutableMapping):

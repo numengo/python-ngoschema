@@ -51,7 +51,8 @@ def default_jinja2_env():
     global _default_jinja_env
     if _default_jinja_env is None:
         from ..query import Query
-        _default_jinja_env = ModulePrefixedJinja2Environment(extensions=['jinja2.ext.loopcontrols'])
+        extensions = ['jinja2.ext.loopcontrols', 'jinja2.ext.i18n']
+        _default_jinja_env = ModulePrefixedJinja2Environment(extensions=extensions)
         _default_jinja_env.globals.update(**_jinja2_globals,
                                           Query=Query)
     return _default_jinja_env
@@ -178,8 +179,18 @@ def slugify(string):
 
 
 @filters_registry.register()
-def split(value, index, char = ','):
-    return value.split(char)[index]
+def split(string, sep=',', maxsplit=-1):
+    return (string or '').split(sep, maxsplit)
+
+
+@filters_registry.register()
+def rsplit(string, sep=',', maxsplit=-1):
+    return (string or '').rsplit(sep, maxsplit)
+
+
+@filters_registry.register()
+def last(any):
+    return any[-1]
 
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):

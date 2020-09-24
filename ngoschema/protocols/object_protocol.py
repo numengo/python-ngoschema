@@ -158,8 +158,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             opts = {}
         # translate items
         if Object.check(value):
-            for k in set(self._properties_translation).intersection(value):
-                value[self._properties_translation[k]] = value.pop(k)
             for k in set(self._aliases).intersection(value):
                 value[self._aliases[k]] = value.pop(k)
             for k in set(self._aliases_negated).intersection(value):
@@ -173,10 +171,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     @classmethod
     def default(cls, **opts):
-        if cls._default_cache is None:
-            dft = cls(cls._default(cls, **opts))
-            cls._default_cache = dft
-        return cls._default_cache
+        return cls(cls._default(cls, **opts))
 
     def create_context(self, context=None, *extra_contexts):
         return CollectionProtocol.create_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
@@ -229,13 +224,13 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         cached = cls.__properties_raw_trans.get(name)
         if cached:
             return cached
+        if name in cls._properties:
+            cls.__properties_raw_trans[name] = (name, name)
+            return name, name
         for trans, raw in cls._properties_translation.items():
             if name in (raw, trans):
                 cls.__properties_raw_trans[name] = (raw, trans)
                 return raw, trans
-        if name in cls._properties:
-            cls.__properties_raw_trans[name] = (name, name)
-            return name, name
         alias = cls._aliases.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
@@ -275,6 +270,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         if not self._properties_additional:
             # additional properties not allowed, raise exception
             raise AttributeError("'{0}' is not a valid property of {1}".format(
+                                name, self.__class__.__name__))
+        raise AttributeError("'{0}' has not been set to {1}".format(
                                 name, self.__class__.__name__))
 
     def resolve_cname_path(self, cname):
@@ -498,6 +495,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                 outputs[s].update([k])
 
         primary_keys = schema.get('primaryKeys', [])
+        #primary_keys = primary_keys if Array.check(primary_keys, with_string=False) else [primary_keys]
         if not primary_keys:
             for b in pbases:
                 primary_keys += b._primary_keys
@@ -652,6 +650,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                                                                                  for b in pbases]))
         attrs['_not_serialized'] = not_serialized
         attrs['_not_validated'] = not_validated
+        attrs['_default_cache'] = None
         attrs['_required'] = required
         attrs['_read_only'] = read_only
         attrs['_properties_allowed'] = set(attrs['_properties']).union(attrs['_aliases'])\

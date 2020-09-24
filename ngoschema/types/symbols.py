@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 import importlib
 import inspect
 import types
@@ -13,6 +14,8 @@ from ..managers.type_builder import register_type
 from .type import TypeProtocol, Primitive
 from .strings import String
 from .object import Object
+
+logger = logging.getLogger(__name__)
 
 
 @register_type('importable')
@@ -44,6 +47,9 @@ class Symbol(Primitive):
                     break
                 except Exception as er:
                     continue
+            else:
+                logger.error("%s is not an importable object" % value)
+                #raise ConversionError("%s is not an importable object" % value)
         if typed is not None and not self.check_symbol(typed):
             raise ConversionError("%s is not a %s" % (value, self._type))
         return typed
@@ -56,9 +62,13 @@ class Symbol(Primitive):
         return isinstance(value, cls._py_type) if cls._py_type else True
 
     def _serialize(self, value, **opts):
-        if value and not String.check(value):
-            m = getattr(value, '__module__', None)
-            value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
+        if value:
+            if not String.check(value):
+                if isinstance(value, types.ModuleType):
+                    value = value.__name__
+                else:
+                    m = getattr(value, '__module__', None)
+                    value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
         return String._serialize(self, value, **opts)
 
 
@@ -66,10 +76,10 @@ class Symbol(Primitive):
 class Module(Symbol):
     _py_type = types.ModuleType
 
-    def _serialize(self, value, **opts):
-        if value and not String.check(value):
-            value = value.__name__
-        return String._serialize(self, value, **opts)
+    #def _serialize(self, value, **opts):
+    #    if value and not String.check(value):
+    #        value = value.__name__
+    #    return String._serialize(self, value, **opts)
 
 
 @register_type('function')

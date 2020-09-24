@@ -48,6 +48,13 @@ class Array(Type):
     def is_array(cls):
         return True
 
+    @classmethod
+    def is_array_primitive(cls):
+        if cls._items_list:
+            return all([it.is_primitive() for it in cls._items])
+        else:
+            return cls._items.is_primitive()
+
     def _check(self, value, with_string=True, **opts):
         if String.check(value):
             if not with_string:

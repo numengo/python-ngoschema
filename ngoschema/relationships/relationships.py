@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 from ..decorators import classproperty
 from ..protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
+from ..types import String
 
 
 class ForeignKey(with_metaclass(SchemaMetaclass)):
@@ -24,6 +25,11 @@ class ForeignKey(with_metaclass(SchemaMetaclass)):
         if new is object.__new__:
             return new(cls)
         return new(cls, *args, **kwargs)
+
+    def _convert(self, value, **opts):
+        if String.check(value):
+            return {'$schema': value}
+        return value
 
 
 class Relationship(with_metaclass(SchemaMetaclass)):

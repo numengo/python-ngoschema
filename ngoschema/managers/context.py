@@ -36,3 +36,25 @@ class Context(ReadOnlyChainMap):
         if local:
             parents = (local, ) + parents
         return Context(*parents, *self._maps)
+
+    def prepend(self, mapping):
+        self._maps.insert(0, mapping)
+
+    def append(self, mapping):
+        self._maps.append(mapping)
+
+    def find_instance(self, cls, default=None, exclude=None, reverse=False):
+        gen = (m for m in self.maps if isinstance(m, cls) and m is not exclude)
+        if reverse:
+            gen = reversed(gen)
+        return next(gen, default)
+
+    def find_file_repository(self):
+        from ..protocols import CollectionProtocol
+        from ..repositories import FileRepository
+        for m in self.maps:
+            if isinstance(m, CollectionProtocol):
+                repo = getattr(m, '_repo')
+                if isinstance(repo, FileRepository):
+                    return repo
+

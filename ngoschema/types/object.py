@@ -251,8 +251,12 @@ class Object(Type):
             if no_defaults and k not in rq:
                 if v is None:
                     continue
-                if isinstance(v, Mapping) and not v:
-                    continue
+                try:
+                    if Object.check(v) and not v:
+                        continue
+                except Exception as er:
+                    self._logger.error(er, exc_info=True)
+                    raise
                 t = self.item_type(k)
                 if t.has_default():
                     d = t.default(**opts)

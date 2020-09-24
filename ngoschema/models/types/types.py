@@ -8,7 +8,8 @@ from ...protocols import SchemaMetaclass, with_metaclass, ObjectProtocol, ArrayP
 from ...managers import NamespaceManager, default_ns_manager
 from ...types import String as String_t, Boolean as Boolean_t, Object as Object_t
 from ...types import symbols
-from ...decorators import memoized_property, depend_on_prop
+from ...relationships import ForeignKey
+from ...decorators import memoized_property, depend_on_prop, log_exceptions
 from ..metadata import NamedObject
 
 
@@ -64,11 +65,12 @@ class Type(with_metaclass(SchemaMetaclass)):
             cps = list(cps.intersection(only)) if only else list(cps)
             ret = OrderedDict()
             for n in cps:
-                p = self[n]
+                p = self.get(n, None)
                 t = self.item_type(n)
                 if p is not None and p != t.default():
                     if hasattr(p, 'json_schema'):
-                        ret[n] = p.json_schema
+                        hasattr(p, 'json_schema')
+                        ret[n] = p.json_schema()
                     else:
                         ret[n] = self.serialize_item(n, no_defaults=True, **opts)
             if self.hasDefault:
@@ -85,7 +87,7 @@ class Type(with_metaclass(SchemaMetaclass)):
                 ret.move_to_end('title', False)
             return ret
 
-    @memoized_property
+    @log_exceptions
     def json_schema(self):
         return self._json_schema()
 

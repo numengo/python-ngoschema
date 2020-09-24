@@ -76,6 +76,7 @@ class TypeBuilder:
 
     @staticmethod
     def build(id, schema=None, bases=(), attrs=None):
+        from .namespace_manager import NamespaceManager
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
         from ..types.constants import _True, _False
         if TypeBuilder.contains(id):
@@ -104,6 +105,7 @@ class TypeBuilder:
             cls = TypeProtocol.build(id, schema, bases, attrs)()
         TypeBuilder._on_construction.pop(id)
         TypeBuilder._registry[id] = cls
+        NamespaceManager.register_ns(id)
         return cls
 
     @staticmethod
