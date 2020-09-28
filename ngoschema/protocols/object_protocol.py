@@ -533,7 +533,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         for i, s in zip(not_ready_yet, not_ready_yet_sch):
             for k, v in s.get('properties', {}).items():
                 properties[k] = TypeBuilder.build(f'{id}/properties/{k}', v)
-        all_properties = ChainMap(properties, *[b._properties for b in pbases])
+        all_properties = ChainMap(properties, *[b._properties_chained for b in pbases])
         pattern_properties = set([(re.compile(k),
                                    TypeBuilder.build(f'{id}/patternProperties/{k}', v))
                                    for k, v in schema.get('patternProperties', {}).items()])

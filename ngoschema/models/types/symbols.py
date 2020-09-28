@@ -10,6 +10,7 @@ from ...protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 from ...types.symbols import Function as Function_t, Class as Class_t, Module as Module_t, Symbol as Symbol_t
 from .types import Type
 from .collections import Object
+from .variables import Variable, VariableValue
 
 
 class Symbol(with_metaclass(SchemaMetaclass)):
@@ -27,27 +28,8 @@ class Symbol(with_metaclass(SchemaMetaclass)):
         data = inspect_symbol(value)
         return Symbol(data, **opts)
 
-    def to_json_schema(self):
-        return self.do_serialize(excludes=['name'], no_defaults=True) or True
-
-
-class Value(with_metaclass(SchemaMetaclass)):
-    _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Value'
-
-    def json_schema(self):
-        ret = self._json_schema(excludes=['value'])
-        return ret
-
-
-class Variable(with_metaclass(SchemaMetaclass)):
-    _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/Variable'
-
-
-class VariableValue(with_metaclass(SchemaMetaclass)):
-    _id = 'https://numengo.org/ngoschema#/$defs/variables/$defs/VariableValue'
-
-    def json_schema(self):
-        return self.valueLiteral
+    #def to_json_schema(self):
+    #    return self.do_serialize(excludes=['name'], no_defaults=True) or True
 
 
 class Argument(with_metaclass(SchemaMetaclass)):

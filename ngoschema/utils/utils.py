@@ -60,6 +60,20 @@ class ReadOnlyChainMap(Mapping):
     def __contains__(self, key):
         return any(key in m or {} for m in self._maps)
 
+    def reversed_keys(self):
+        viewed = set()
+        for m in reversed(self._maps):
+            if isinstance(m, ReadOnlyChainMap):
+                for k in m.reversed_keys():
+                    if k not in viewed:
+                        viewed.update([k])
+                        yield k
+            else:
+                for k in m or {}:
+                    if k not in viewed:
+                        viewed.update([k])
+                        yield k
+
     def __iter__(self):
         viewed = set()
         for m in self._maps:

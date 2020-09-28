@@ -106,11 +106,13 @@ class CollectionProtocol(TypeProtocol):
             cls.validate(typed, with_type=False, **opts)
         return typed
 
-    def call_order(self, **opts):
-        return self._call_order(self, self._data, **opts)
+    @classmethod
+    def call_order(cls, value, **opts):
+        return cls._call_order(cls, value, **opts)
 
-    def print_order(self, **opts):
-        return self._print_order(self._data, **opts)
+    @classmethod
+    def print_order(cls, value, **opts):
+        return cls._print_order(cls, value, **opts)
 
     def _touch(self):
         self._is_validated = False

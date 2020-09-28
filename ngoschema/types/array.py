@@ -138,9 +138,7 @@ class Array(Type):
         return True  # default is empty list
 
     def _default(self, items=True, **opts):
-        if self._default_cache is None:
-            self._default_cache = Array._convert(self, self._schema.get('default', []), items=items, **opts)
-        return self._default_cache
+        return Array._convert(self, self._schema.get('default', []), items=items, **opts)
 
     def _serialize(self, value, as_string=False, **opts):
         if as_string:
