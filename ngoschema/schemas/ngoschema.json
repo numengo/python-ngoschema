@@ -90,6 +90,12 @@
       "$defs": {
         "Type": {
           "type": "object",
+          "notSerialized": [
+            "pyType",
+            "_type",
+            "refCanonicalName",
+            "defaultValue"
+          ],
           "extends": [
             "#/$defs/metadata/$defs/Annotation",
             "#/$defs/metadata/$defs/IdentifiedObject"
@@ -97,12 +103,6 @@
           "aliases": {
             "default": "defaultValue"
           },
-          "notSerialized": [
-            "pyType",
-            "_type",
-            "refCanonicalName",
-            "defaultValue"
-          ],
           "properties": {
             "pyType": {
               "type": "importable"
@@ -308,10 +308,10 @@
             },
             "RawString": {
               "type": "object",
+              "rawLiterals": true,
               "extends": [
                 "#/$defs/types/$defs/strings/$defs/String"
-              ],
-              "rawLiterals": true
+              ]
             },
             "Expr": {
               "type": "object",
@@ -471,6 +471,12 @@
             },
             "Definition": {
               "type": "object",
+              "notValidated": [
+                "_parentDefinition"
+              ],
+              "notSerialized": [
+                "_parentDefinition"
+              ],
               "extends": [
                 "#/$defs/types/$defs/collections/$defs/Object",
                 "#/$defs/metadata/$defs/NamedObject"
@@ -478,12 +484,6 @@
               "aliases": {
                 "$defs": "definitions"
               },
-              "notValidated": [
-                "_parentDefinition"
-              ],
-              "notSerialized": [
-                "_parentDefinition"
-              ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
@@ -522,6 +522,9 @@
                   "type": "array"
                 },
                 "notValidated": {
+                  "type": "array"
+                },
+                "primaryKeys": {
                   "type": "array"
                 },
                 "readOnly": {
@@ -674,9 +677,6 @@
         },
         "CollectionProtocol": {
           "type": "object",
-          "extends": [
-            "#/$defs/protocols/$defs/TypeProtocol"
-          ],
           "readOnly": [
             "_parentObject",
             "_rootObject"
@@ -688,6 +688,9 @@
           "notSerialized": [
             "_parentObject",
             "_rootObject"
+          ],
+          "extends": [
+            "#/$defs/protocols/$defs/TypeProtocol"
           ],
           "properties": {
             "lazyLoading": {
@@ -794,10 +797,10 @@
         "ForeignKey": {
           "title": "Foreign Key",
           "type": "object",
+          "$comment": "to define a relationship to another instance",
           "extends": [
             "#/$defs/relationships/$defs/Relationship"
           ],
-          "$comment": "to define a relationship to another instance",
           "additionalProperties": false,
           "properties": {
             "backPopulates": {
@@ -966,11 +969,11 @@
           "$defs": {
             "Class": {
               "type": "object",
-              "extends": [
-                "#/$defs/symbols/$defs/Symbol"
-              ],
               "notValidated": [
                 "mro"
+              ],
+              "extends": [
+                "#/$defs/symbols/$defs/Symbol"
               ],
               "additionalProperties": true,
               "properties": {
@@ -1119,14 +1122,14 @@
           "title": "Entity",
           "description": "Protocol for persistent entities with primary keys",
           "type": "object",
-          "extends": [
-            "#/$defs/metadata/$defs/IdentifiedObject"
-          ],
           "readOnly": [
             "primaryKeys"
           ],
           "notSerialized": [
             "primaryKeys"
+          ],
+          "extends": [
+            "#/$defs/metadata/$defs/IdentifiedObject"
           ],
           "additionalProperties": false,
           "properties": {
@@ -1149,11 +1152,11 @@
           "properties": {
             "primaryKeys": {
               "type": "array",
+              "uniqueItems": true,
               "items": {
                 "type": "string"
               },
-              "default": "name",
-              "uniqueItems": true
+              "default": "name"
             }
           },
           "primaryKeys": [
@@ -1188,12 +1191,12 @@
         "Document": {
           "title": "Document",
           "type": "object",
+          "readOnly": [
+            "identifier"
+          ],
           "extends": [
             "#/$defs/entities/$defs/Entity",
             "#/$defs/metadata/$defs/Metadata"
-          ],
-          "readOnly": [
-            "identifier"
           ],
           "additionalProperties": false,
           "properties": {
@@ -1264,9 +1267,6 @@
         },
         "Query": {
           "type": "object",
-          "extends": [
-            "#/$defs/queries/$defs/Filter"
-          ],
           "readOnly": [
             "result"
           ],
@@ -1275,6 +1275,9 @@
           ],
           "notSerialized": [
             "iterable"
+          ],
+          "extends": [
+            "#/$defs/queries/$defs/Filter"
           ],
           "properties": {
             "iterable": {
@@ -1294,11 +1297,11 @@
         },
         "EntityQuery": {
           "type": "object",
-          "extends": [
-            "#/$defs/queries/$defs/Query"
-          ],
           "readOnly": [
             "iterable"
+          ],
+          "extends": [
+            "#/$defs/queries/$defs/Query"
           ],
           "properties": {
             "entity": {
@@ -1443,11 +1446,11 @@
         "FileRepository": {
           "title": "File Repository",
           "type": "object",
+          "abstract": true,
           "extends": [
             "#/$defs/repositories/$defs/Repository",
             "#/$defs/repositories/$defs/FilterRepositoryMixin"
           ],
-          "abstract": true,
           "additionalProperties": false,
           "properties": {
             "document": {

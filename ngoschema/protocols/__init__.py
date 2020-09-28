@@ -12,4 +12,5 @@ __all__ = [
     'ObjectProtocol',
     'SchemaMetaclass',
     'with_metaclass',
+    'value_opts'
 ]

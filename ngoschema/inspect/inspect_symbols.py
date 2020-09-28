@@ -25,6 +25,45 @@ def isattr(obj):
                 or isroutine(obj) or isinstance(obj, type))
 
 
+def infer_type(value):
+    from ..protocols import ObjectProtocol
+    if value is None:
+        return {}
+    if isinstance(value, str):
+        return {'type': 'string'}
+    if isinstance(value, (Sequence, Set)):
+        ret = {'type': 'array'}
+        if isinstance(value, Set):
+            ret['uniqueItems'] = True
+        vt = [infer_type(v) for v in value]
+        if vt:
+            vt0 = vt[0]
+            if all([v == vt0 for v in vt]):
+                ret['items'] = vt0
+            else:
+                ret['items'] = vt
+        return ret
+    if isinstance(value, bool):
+        return {'type': 'boolean'}
+    if isinstance(value, int):
+        return {'type': 'integer'}
+    if isinstance(value, float):
+        return {'type': 'number'}
+    if isinstance(value, type):
+        return {'type': 'importable'}
+    if isinstance(value, Mapping) and not isinstance(value, ObjectProtocol):
+        return {'type': 'object'}
+    c = value.__class__
+    mro = c.__mro__
+    for m in mro:
+        if inspect.isabstract(m):
+            c = m
+            break
+    if not isbuiltin(c) and issubclass(c, ObjectProtocol):
+        return {'$ref': c._id}
+    return {'type': 'object'}
+
+
 # avoid builtin
 def is_builtin(obj):
     mn = obj.__module__
@@ -48,7 +87,7 @@ def inspect_symbol(value):
 
 
 @lru_cache(maxsize=512)
-def inspect_module(value):
+def inspect_module(value, with_functions=True):
     from ..types.symbols import Module
     value = Module.convert(value)
     module = inspect_symbol(value).copy()
@@ -58,18 +97,21 @@ def inspect_module(value):
     for n, m in inspect.getmembers(value, inspect.isclass):
         if m.__module__ == mn:
             try:
-                module['classes'].append(inspect_class(m))
+                module['classes'].append(inspect_class(m, with_functions=with_functions))
             except Exception as er:
                 logger.error('Problem processing inspection of class %s' % m)
-                logger.error(er) #, exc_info=True)
-    module['functions'] = []
-    for n, m in inspect.getmembers(value, inspect.isfunction):
-        if m.__module__ == mn:
-            try:
-                module['functions'].append(inspect_function(m))
-            except Exception as er:
-                logger.error('Problem processing inspection of function %s' % m)
-                logger.error(er)  #, exc_info=True)
+                logger.error(er, exc_info=True)
+    if with_functions:
+        module['functions'] = []
+        for n, m in inspect.getmembers(value, inspect.isfunction):
+            if m.__module__ == mn:
+                try:
+                    module['functions'].append(inspect_function(m))
+                except Exception as er:
+                    logger.error('Problem processing inspection of function %s' % m)
+                    logger.error(er)  #, exc_info=True)
+        if not module['functions']:
+            del module['functions']
     return module
 
 
@@ -146,7 +188,7 @@ def inspect_descriptor(value, name=None):
 
 
 @lru_cache(maxsize=128)
-def inspect_class(value, with_inherited=False):
+def inspect_class(value, with_functions=True):
     from ..types.symbols import Module, Function, Method, Callable, Class
     cls = inspect_symbol(value).copy()
     if 'arguments' in cls:
@@ -166,21 +208,38 @@ def inspect_class(value, with_inherited=False):
         #mro.append(inspect_class(m))
     if mro:
         cls['mro'] = mro
-    mro_i = [inspect_class(m) for m in mro]
+    mro_i = [inspect_class(m, with_functions=with_functions) for m in mro]
     mro_attributes = {a['name']: a for m in mro_i for a in m.get('attributes', [])}
     mro_descriptors = {d['name']: d for m in mro_i for d in m.get('descriptors', [])}
 
     ds = inspect.getmembers(symbol, inspect.isdatadescriptor)
     descriptors = [inspect_descriptor(d, name=n) for n, d in ds if n not in EXCLUDED_DESCRIPTORS]
-    descriptors = [d for d in descriptors if d not in mro_descriptors.values()]
-    if descriptors:
-        cls['descriptors'] = descriptors
+    descriptors = [d for d in descriptors if d['name'] not in mro_descriptors]
+    _descriptors = {d['name']: d for d in descriptors}
 
     ds2 = inspect.getmembers(symbol, lambda x: isattr(x))
     attributes = [{'name': n, 'valueLiteral': d} for n, d in ds2 if not n.startswith('__') and n not in EXCLUDED_ATTRIBUTES]
     attributes = [a for a in attributes if a not in mro_attributes.values()]
+    # infer attribute types:
+    to_pop = []
+    for i, a in enumerate(attributes):
+        an = a['name']
+        at = infer_type(a['valueLiteral'])
+        at['default'] = a['valueLiteral']
+        if at:
+            d = dict(mro_descriptors[an]) if an in mro_descriptors else {'name': an}
+            d.setdefault('ptype', {})
+            d['ptype'].update(at)
+            descriptors.append(d)
+            to_pop.append(i)
+
+    for i in reversed(to_pop):
+        attributes.pop(i)
     if attributes:
         cls['attributes'] = attributes
+
+    if descriptors:
+        cls['descriptors'] = descriptors
 
     methods = []
     def _visit_function_def_class(node):
@@ -206,20 +265,26 @@ def inspect_class(value, with_inherited=False):
     node_iter.visit_FunctionDef = _visit_function_def_class
 
     if not is_builtin(symbol):
-        try:
-            node = ast.parse(reindent(inspect.getsource(symbol)))
-            node_iter.visit(node)
-        except Exception as er:
-            logger.error('Problem processing class %s: %s' % (symbol, er))
-            #logger.error(er, exc_info=True)
+        if with_functions:
+            try:
+                node = ast.parse(reindent(inspect.getsource(symbol)))
+                node_iter.visit(node)
+            except Exception as er:
+                logger.error('Problem processing class %s: %s' % (symbol, er))
+                #logger.error(er, exc_info=True)
+        else:
+            si = getattr(symbol, '__init__', None)
+            if si and isfunction(si):
+                node = ast.parse(reindent(inspect.getsource(si)))
+                node_iter.visit(node)
 
-        for m in methods:
-            if m['name'] == '__init__':
-                cls['init'] = m
-                methods.remove(m)
-                break
-        if methods:
-            cls['methods'] = methods
+    for m in methods:
+        if m['name'] == '__init__':
+            cls['init'] = m
+            methods.remove(m)
+            break
+    if methods:
+        cls['methods'] = methods
 
     return cls
 

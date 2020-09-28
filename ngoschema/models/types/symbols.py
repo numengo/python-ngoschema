@@ -2,12 +2,13 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import OrderedDict
+from collections import OrderedDict, MutableMapping
 from functools import lru_cache
 
 from ...decorators import memoized_property, log_exceptions
 from ...protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 from ...types.symbols import Function as Function_t, Class as Class_t, Module as Module_t, Symbol as Symbol_t
+from .types import Type
 from .collections import Object
 
 
@@ -102,6 +103,31 @@ class FunctionCall(with_metaclass(SchemaMetaclass)):
         return FunctionCall(inspect_function_call(value))
 
 
+class Descriptor(with_metaclass(SchemaMetaclass)):
+    _id = 'https://numengo.org/ngoschema#/$defs/protocols/$defs/descriptors/$defs/Descriptor'
+    _lazy_loading = True
+
+    def __new__(cls, *args, **kwargs):
+        data = args[0] if args else kwargs
+        if 'ptype' in data:
+            cls = PropertyDescriptor
+        new = super(ObjectProtocol, cls).__new__
+        if new is object.__new__:
+            return new(cls)
+        return new(cls, *args, **kwargs)
+
+    def json_schema(self):
+        return True
+
+
+class PropertyDescriptor(with_metaclass(SchemaMetaclass)):
+    _id = 'https://numengo.org/ngoschema#/$defs/protocols/$defs/descriptors/$defs/PropertyDescriptor'
+    _lazy_loading = True
+
+    def json_schema(self):
+        return self.ptype.json_schema() if hasattr(self, 'ptype') else True
+
+
 class Method(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/classes/$defs/Method'
     _lazy_loading = True
@@ -113,13 +139,13 @@ class Class(with_metaclass(SchemaMetaclass)):
 
     @memoized_property
     def mroClasses(self):
-        return [Class.inspect(m) for m in self.mro]
+        return [Class.inspect(m, context=self._context) for m in self.mro]
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def inspect(value, **opts):
+    def inspect(value, with_functions=True, **opts):
         from ...inspect.inspect_symbols import inspect_class
-        data = inspect_class(value)
+        data = inspect_class(value, with_functions=with_functions)
         return Class(data, **opts)
 
     @memoized_property
@@ -159,7 +185,7 @@ class Class(with_metaclass(SchemaMetaclass)):
         if self.abstract:
             sch['abstract'] = True
         if self.mroClasses:
-            mro = [m for m in self.mro if isinstance(m.symbol, ObjectProtocol) or m.symbol.__module__ in self._ns_mgr]
+            mro = [m for m in self.mroClasses if isinstance(m.symbol, ObjectProtocol) or m.symbol.__module__ in self._ns_mgr]
             sch['extends'] = [m.schema_id() for m in mro]
             if not with_protected:
                 for e in list(sch['extends']):
@@ -168,11 +194,24 @@ class Class(with_metaclass(SchemaMetaclass)):
         if not isinstance(self.symbol, ObjectProtocol):
             sch['wraps'] = Symbol_t.serialize(self.symbol)
         sch.update({a.name: a.json_schema() or True for a in self.attributes if not a.name.startswith('__')})
+        required = [k for k, d in self.descriptorsInherited.items() if getattr(d, 'required', False)]
+        if required:
+            sch['required'] = required
         sch['properties'] = properties = {}
+        for d in self.descriptors:
+            sch['properties'][d.name] = d.json_schema()
         if self.init:
-            properties.update({a.name: a.json_schema() or True for a in self.init.arguments})
+            for a in self.init.arguments:
+                an = a.name
+                if an in properties:
+                    p = properties[an]
+                    if isinstance(p, MutableMapping):
+                        p.update(Type.json_schema(a))
+                else:
+                    properties[an] = Type.json_schema(a)
+                properties[an] = properties[an] or True
         #properties.update({n: p.json_schema() or True for n, p in self.descriptorsInherited.items() if not n.startswith('__')})
-        properties.update({d.name: d.json_schema() or True for d in self.descriptors if not d.name.startswith('__')})
+        #properties.update({d.name: d.json_schema() or True for d in self.descriptors if not d.name.startswith('__')})
         if not with_protected:
             to_remove = [k for k in sch['properties'].keys() if k[0] == '_']
             for k in to_remove:
@@ -181,10 +220,6 @@ class Class(with_metaclass(SchemaMetaclass)):
             del sch['properties']
         if 'required' in sch:
             sch['properties']['required'] = {'default': sch.pop('required')}
-
-        # not sure methods should be jsonschema / TODO make a corresponding .openapi method returning schema and available methods
-        #sch['methods'] = {n: p.json_schema or {'arguments': []} for n, p in self.methodsInherited.items() if not n.startswith('__')}
-
         return sch
 
     def schema_id(self):
@@ -196,12 +231,12 @@ class Module(with_metaclass(SchemaMetaclass)):
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def inspect(value, **opts):
+    def inspect(value, with_functions=True, **opts):
         from ...inspect.inspect_symbols import inspect_module
-        data = inspect_module(value)
+        data = inspect_module(value, with_functions=with_functions)
         return Module(data, **opts)
 
-    def json_schema(self, with_protected=False):
+    def json_schema(self, with_modules=False, with_functions=False, with_protected=False):
         sch = {'type': 'object'}
         if not isinstance(self.symbol, ObjectProtocol):
             sch['wraps'] = Symbol_t.serialize(self.symbol)
@@ -215,11 +250,16 @@ class Module(with_metaclass(SchemaMetaclass)):
             to_remove = [k for k in sch['$defs'].keys() if k[0] == '_']
             for k in to_remove:
                 del sch['$defs'][k]
-        #sch['functions'] = {c.name: c.json_schema() or True for c in self.functions}
-        for m in self.modules:
-            if m.__name__.startswith(self.symbol.__name__):
-                mm = Module.inspect(m, context=self._context)
-                sch['$defs'][mm.name.split('.')[-1]] = mm.json_schema(with_protected=with_protected)
+        if not with_functions and 'functions' in sch['$defs']:
+            del sch['$defs']['functions']
+        if with_modules:
+            for m in self.modules:
+                if m.__name__.startswith(self.symbol.__name__):
+                    mn = mm.name.split('.')[-1]
+                    if not mn[0] == '_' or with_protected:
+                        mm = Module.inspect(m, with_functions=False, context=self._context)
+                        sch['$defs'][mn] = mm.json_schema(with_protected=with_protected,
+                                                          with_functions=with_functions)
         if not sch['$defs']:
             del sch['$defs']
         return sch

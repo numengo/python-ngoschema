@@ -27,13 +27,14 @@ class Type(with_metaclass(SchemaMetaclass)):
         return True
 
     def _convert(self, value, **opts):
-        data = value
-        if Object_t.check(data):
+        if Object_t.check(value):
+            data = value.copy()
+            data.pop('$schema', None)
             for k, v in list(data.items()):
                 raw, trans = self._properties_raw_trans(k)
                 t = self.item_type(raw)
                 if t.is_array() and Object_t.check(v):
-                    del data[k] # remove previous entry in case it s an alias (eg $defs)
+                    del data[k]  # remove previous entry in case it s an alias (eg $defs)
                     vs = []
                     for i, (n, d) in enumerate(v.items()):
                         d = {'booleanValue': d} if Boolean_t.check(d) else dict(d)
@@ -41,10 +42,10 @@ class Type(with_metaclass(SchemaMetaclass)):
                         vs.append(d)
                     data[raw] = vs
         # transform a boolean input
-        elif Boolean_t.check(data, convert=True):
-            data = {'booleanValue': Boolean_t.convert(data)}
-        elif String_t.check(data):
-            data = {'$ref': data}
+        elif Boolean_t.check(value, convert=True):
+            data = {'booleanValue': Boolean_t.convert(value)}
+        elif String_t.check(value):
+            data = {'$ref': value}
         return Object_t._convert(self, data, **opts)
 
     def __init__(self, *args, **kwargs):
@@ -52,15 +53,16 @@ class Type(with_metaclass(SchemaMetaclass)):
         if self.defaultValue is not None and self.defaultValue != []:
             self.hasDefault = True
 
-    def _json_schema(self, cls=None, excludes=[], only=[], **opts):
+    @log_exceptions
+    def json_schema(self, type_model=None, excludes=[], only=[], **opts):
         if self.ref:
             return {'$ref': self.serialize_item('$ref', context=self._context)}
         elif self.booleanValue is not None:
             return self.booleanValue
         else:
-            cls = cls or self.__class__
+            cls = type_model or self.__class__
             cps = set(cls._properties).difference(cls._not_validated).difference(cls._not_serialized)\
-                .difference(excludes).difference(['name', 'hasDefault', '_type'])\
+                .difference(excludes).difference(['name', 'hasDefault', '_type', 'required'])\
                 .union(['type', 'default', 'rawLiterals'])
             cps = list(cps.intersection(only)) if only else list(cps)
             ret = OrderedDict()
@@ -86,10 +88,6 @@ class Type(with_metaclass(SchemaMetaclass)):
             if 'title' in ret:
                 ret.move_to_end('title', False)
             return ret
-
-    @log_exceptions
-    def json_schema(self):
-        return self._json_schema()
 
 
 class Primitive(with_metaclass(SchemaMetaclass)):

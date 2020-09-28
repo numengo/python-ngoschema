@@ -64,7 +64,7 @@ class TypeBuilder:
 
     @staticmethod
     def get_type(id):
-        return TypeBuilder._type_registry.get(id)
+        return TypeBuilder._type_registry[id]
 
     @staticmethod
     def get(id):

@@ -18,6 +18,16 @@ PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
 logger = logging.getLogger(__name__)
 
 
+def value_opts(*args, **kwargs):
+    value = kwargs
+    opts = {}
+    if args:
+        assert len(args) == 1
+        value = args[0]
+        opts = kwargs
+    return value, opts
+
+
 class TypeProtocol:
     _id = None
     _type = None
@@ -71,10 +81,7 @@ class TypeProtocol:
 
     def __init__(self, value=None, context=None, **kwargs):
         # prepare data
-        opts = kwargs
-        if value is None:
-            value = kwargs
-            opts = {}
+        value, opts = value_opts(value, **kwargs)
         validate = opts.pop('validate', self._validate)
         self._data = self._evaluate(value, validate=validate, context=context, **opts)
         self.set_context(context, opts)
@@ -127,9 +134,9 @@ class TypeProtocol:
 
     def _default(self, **opts):
         if 'default' in self._schema:
-            return self._schema['default']
+            return self.convert(self._schema['default'], **opts)
         if 'minimum' in self._schema:
-            return self._schema['minimum']
+            return self.convert(self._schema['minimum'], **opts)
         else:
             try:
                 return self._py_type() if self._py_type else None

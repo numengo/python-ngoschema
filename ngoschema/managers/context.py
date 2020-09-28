@@ -58,3 +58,5 @@ class Context(ReadOnlyChainMap):
                 if isinstance(repo, FileRepository):
                     return repo
 
+    def __hash__(self):
+        return hash(repr(sorted(self.merged.items())))

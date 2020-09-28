@@ -11,6 +11,8 @@ __all__ = [
     'get_document_registry',
     'DocumentRegistry',
     # metadata
+    'Annotation',
+    'IdentifiedObject',
     'NamedObject',
     'Metadata',
     # entity

@@ -105,8 +105,8 @@ class Path(Uri):
     Add additional 'path' to json-schema associated in python to pathlib.Path
     """
     _py_type = pathlib.Path
-    #_expand_user = False
-    #_resolve = False
+    _expand_user = False
+    _resolve = False
 
     def __init__(self, **schema):
         Primitive.__init__(self, **schema)

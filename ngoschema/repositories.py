@@ -39,7 +39,7 @@ from .utils.json import ProtocolJSONEncoder
 from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entities import Entity, NamedEntity
 from .types import Array, Tuple
-from .protocols import SchemaMetaclass, ObjectProtocol
+from .protocols import SchemaMetaclass, ObjectProtocol, value_opts
 
 logger = logging.getLogger(__name__)
 
@@ -158,11 +158,13 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterReposit
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
 
-    def __init__(self, value=None, filepath=None, document=None, **kwargs):
+    def __init__(self, value=None, filepath=None, document=None, **opts):
+        value = value or {}
         if filepath is not None:
             document = document or Document()
             document.filepath = filepath
-        Repository.__init__(self, value, document=document, **kwargs)
+            value['document'] = document
+        Repository.__init__(self, value, **opts)
 
     @abstractmethod
     def deserialize_data(self):

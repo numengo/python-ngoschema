@@ -9,7 +9,7 @@ from ..exceptions import InvalidValue
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from .. import settings
-from .type_protocol import TypeProtocol
+from .type_protocol import TypeProtocol, value_opts
 from ..types.strings import Pattern, Expr
 from ..types.object import Object
 
@@ -34,11 +34,9 @@ class CollectionProtocol(TypeProtocol):
         self._lazy_loading = lz = self._lazy_loading if items is None else not items
         self._session = session = session or self._session
         # prepare data
-        kwargs.pop('$schema', None)
-        opts = kwargs
-        if value is None:
-            value = kwargs
-            opts = {}
+        value, opts = value_opts(value, **kwargs)
+        #if value and '$schema' in value:
+        #    value.pop('$schema')
         validate = opts.pop('validate', self._validate)
         TypeProtocol.__init__(self, value, items=False, validate=False, context=context, **opts)
         # touch allocates storage for data, need to call create_context again
@@ -125,8 +123,14 @@ class CollectionProtocol(TypeProtocol):
         self._items_inputs[item] = {}
 
     def _item_inputs_evaluate(self, item):
-        inputs = self.inputs(self._data, item=item, with_inner=False)
-        return {k: self[k] for k in inputs}
+        ret = {}
+        for k in self.inputs(self._data, item=item, with_inner=False):
+            try:
+                ret[k] = self[k]
+            except Exception as er:
+                self._logger.error(er, exc_info=True)
+                pass
+        return ret
 
     def _item_evaluate(self, item, **opts):
         v = self._data[item]
@@ -186,7 +190,7 @@ class CollectionProtocol(TypeProtocol):
 
     def _is_outdated(self, item):
         return (self._data_validated[item] is None and self._data[item] is not None
-                ) or (self._items_inputs[item] != self._item_inputs_evaluate(item))
+                ) or (self._items_inputs.get(item, []) != self._item_inputs_evaluate(item))
 
     @classmethod
     def validate(cls, value, as_dict=False, **opts):

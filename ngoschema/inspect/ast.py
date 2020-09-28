@@ -103,7 +103,7 @@ def visit_function_def(node):
     doctypes = [doc_params[a]["type"]
                 if a in doc_params and "type" in doc_params[a] else None
                 for a in args_name]
-    params = [{'name': a, 'description': doc, 'type': doctype}
+    params = [{'name': a, 'description': doc, 'type': doctype, 'required': True}
               for a, doc, doctype in zip(args_name, docs, doctypes)]
     # remove empty descriptions
     for p in params:
@@ -112,9 +112,12 @@ def visit_function_def(node):
                 del p[t]
 
     defaults = [ast_eval(d) for d in defs]
+    from .inspect_symbols import infer_type
     for d, p in zip(reversed(defaults), reversed(params)):
         p['hasDefault'] = True
         p['defaultValue'] = d
+        p['required'] = False
+        p.update(infer_type(d))
         if Class.check(d) or Function.check(d):
             p['defaultValue'] = Symbol.serialize(d)
 

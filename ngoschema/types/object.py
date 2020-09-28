@@ -2,15 +2,16 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import OrderedDict, defaultdict, Mapping
+from collections import OrderedDict, defaultdict, Mapping, MutableMapping
 import re
 from operator import neg
 
 from ..exceptions import InvalidValue
 from ..decorators import log_exceptions
 from ..utils import ReadOnlyChainMap as ChainMap
-from .type import Type, TypeProtocol
 from ..managers.type_builder import register_type, TypeBuilder
+from ..protocols import TypeProtocol, value_opts
+from .type import Type
 from .constants import _True, _False
 from .array import Array
 from .strings import Pattern
@@ -87,9 +88,9 @@ class Object(Type):
         return self._sch_repr
 
     def _evaluate(self, *args, **kwargs):
-        kwargs.pop('$schema', None)
-        value = args[0] if args else kwargs
-        opts = kwargs if args else {}
+        value, opts = value_opts(*args, **kwargs)
+        #if isinstance(value, MutableMapping) and '$schema' in value:
+        #    value.pop('$schema')
         opts.setdefault('items', True)
         return Type._evaluate(self, value, **opts)
 
@@ -104,7 +105,11 @@ class Object(Type):
         if not isinstance(value, Mapping):
             return False
         keys = set(value.keys())
-        if self._required.difference(keys):
+        for k1, k2 in ChainMap(self._properties_translation, self._aliases, self._aliases_negated).items():
+            if k1 in keys:
+                keys.remove(k1)
+                keys.add(k2)
+        if self._required.difference(keys).difference(self._properties_with_default):
             return False
         for k in keys.difference(self._properties_allowed):
             for reg, _ in self._properties_pattern:

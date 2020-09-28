@@ -23,7 +23,7 @@ from ..resolver import scope
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from .. import settings
-from .type_protocol import TypeProtocol
+from .type_protocol import TypeProtocol, value_opts
 from .collection_protocol import CollectionProtocol
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
@@ -151,13 +151,11 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             return new(cls)
         return new(cls, *args, **kwargs)
 
-    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
-        opts = kwargs
-        if value is None:
-            value = kwargs
-            opts = {}
-        # translate items
+    def _convert(self, value, **opts):
         if Object.check(value):
+            for k in set(value).difference(self._properties).intersection(self._properties_translation):
+                # deals with conflicting properties with identical translated names
+                value[self._properties_translation[k]] = value.pop(k)
             for k in set(self._aliases).intersection(value):
                 value[self._aliases[k]] = value.pop(k)
             for k in set(self._aliases_negated).intersection(value):
@@ -165,6 +163,27 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             # required with default
             for k in self._required.difference(value).intersection(self._properties_with_default):
                 value[k] = self.item_type(k).default()
+        return Object._convert(self, value, **opts)
+
+    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
+        opts = kwargs
+        if value is None:
+            value = kwargs
+            opts = {}
+        #if value is None:
+        #    value = {}
+        ## translate items
+        #if Object.check(value):
+        #    for k in set(value).difference(self._properties).intersection(self._properties_translation):
+        #        # deals with conflicting properties with identical translated names
+        #        value[self._properties_translation[k]] = value.pop(k)
+        #    for k in set(self._aliases).intersection(value):
+        #        value[self._aliases[k]] = value.pop(k)
+        #    for k in set(self._aliases_negated).intersection(value):
+        #        value[self._aliases_negated[k]] = neg(value.pop(k))
+        #    # required with default
+        #    for k in self._required.difference(value).intersection(self._properties_with_default):
+        #        value[k] = self.item_type(k).default()
         CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
         for k in self._has_pk:
             self[k]
@@ -224,13 +243,13 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         cached = cls.__properties_raw_trans.get(name)
         if cached:
             return cached
-        if name in cls._properties:
-            cls.__properties_raw_trans[name] = (name, name)
-            return name, name
         for trans, raw in cls._properties_translation.items():
             if name in (raw, trans):
                 cls.__properties_raw_trans[name] = (raw, trans)
                 return raw, trans
+        if name in cls._properties:
+            cls.__properties_raw_trans[name] = (name, name)
+            return name, name
         alias = cls._aliases.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
@@ -533,6 +552,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                     if k == '__init__':
                         f = decorators.log_init(f)
                 if assert_args and f.__doc__:
+                    from ..types import Type
                     fi = inspect_function(f)
                     if 'assert_arg' in [d['name'] for d in fi.get('decorators', [])]:
                         # function is already using assert_arg
@@ -541,11 +561,10 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                         t = a.get('type', False)
                         if t:
                             # only assert args which are defined
-                            sch = {'type': t, 'description': a.get('description')}
                             logger.debug(
                                 "decorate <%s>.%s with argument %i validity check.",
                                 clsname, k, pos)
-                            f = decorators.assert_arg(pos, TypeProtocol, **sch)(f)
+                            f = decorators.assert_arg(pos, Type, **a)(f)
                 # add exception logging
                 if add_logging and not k.startswith("__"):
                     logger.debug("decorate <%s>.%s with exception logger", clsname, k)

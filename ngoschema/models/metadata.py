@@ -20,6 +20,18 @@ from ..protocols import SchemaMetaclass, ObjectProtocol
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 
+class Annotation(with_metaclass(SchemaMetaclass)):
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Annotation"
+
+
+class IdentifiedObject(with_metaclass(SchemaMetaclass)):
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/IdentifiedObject"
+
+
+class Metadata(with_metaclass(SchemaMetaclass)):
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"
+
+
 class NamedObject(with_metaclass(SchemaMetaclass)):
     """
     Object referenced by a list of keys of a foreign schema
@@ -28,7 +40,7 @@ class NamedObject(with_metaclass(SchemaMetaclass)):
 
     def __str__(self):
         if self._str is None:
-            cn = self._data_validated.get('canonicalName') or self._data.get('canonicalName')
+            cn = self._canonicalName
             a = ([cn] if cn else []) + [f'{k}={str(self._data_validated[k] or self._data[k])}' for k in self._required]
             self._str = '<%s %s>' % (self.qualname(), ' '.join(a))
         return self._str
@@ -38,16 +50,20 @@ class NamedObject(with_metaclass(SchemaMetaclass)):
         ctx = self._context
         self._set_data_validated('_parentNamed', next((m for m in ctx.maps if isinstance(m, NamedObject) and m is not self), None))
 
-    @depend_on_prop('name')
+    @property
+    def _canonicalName(self):
+        # one that does not trigger lazyloading
+        pn = self._data_validated.get('_parentNamed')
+        pn = pn if pn is not self else None
+        n = self._data_validated.get('name') or self._data.get('name')
+        return f'{pn._canonicalName}.{n}' if pn else n
+
+    @depend_on_prop('name', '_parentNamed')
     def get_canonicalName(self):
-        p = self._parentNamed
-        pcn = p.canonicalName if p else None
-        n = self.name
-        return f'{pcn}.{n}' if pcn else n
+        return self._canonicalName
+    #    p = self._parentNamed
+    #    pcn = p.canonicalName if p else None
+    #    n = self._data_validated.get('name') or self._data.get('name')
+    #    n = self.name
+    #    return f'{pcn}.{n}' if pcn else n
 
-
-class Metadata(with_metaclass(SchemaMetaclass)):
-    """
-    Class to deal with metadata and parents/children relationships
-    """
-    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Metadata"

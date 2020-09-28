@@ -39,11 +39,11 @@ def _state_session(state):
 
 
 class Session(with_metaclass(SchemaMetaclass)):
-    _id = "https://numengo.org/ngoschema/session#/$defs/Session"
+    _id = "https://numengo.org/ngoschema#/$defs/session/$defs/Session"
 
     def __init__(self, bind=None, **kwargs):
         self._resolve_cname = functools.lru_cache(1024)(self._resolve_cname_cached)
-        ObjectProtocol.__init__(self, **kwargs)
+        ObjectProtocol.__init__(self, value=kwargs)
         self._repos = []
         if bind is not None:
             for bind in Array.convert(bind):
