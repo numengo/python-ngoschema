@@ -895,7 +895,17 @@
           "type": "object",
           "extends": [
             "#/$defs/symbols/$defs/Symbol"
-          ]
+          ],
+          "properties": {
+            "arguments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/symbols/$defs/functions/$defs/Argument"
+              }
+            },
+            "varargs": true,
+            "kwargs": true
+          }
         },
         "functions": {
           "type": "object",
@@ -903,20 +913,12 @@
             "Function": {
               "type": "object",
               "extends": [
-                "#/$defs/symbols/$defs/Symbol"
+                "#/$defs/symbols/$defs/Callable"
               ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
                 },
-                "arguments": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/symbols/$defs/functions/$defs/Argument"
-                  }
-                },
-                "varargs": true,
-                "kwargs": true,
                 "imports": {
                   "type": "array",
                   "items": {
@@ -929,14 +931,14 @@
                 "pseudo": {
                   "type": "string"
                 },
-                "returns": {
-                  "$ref": "#/$defs/types/$defs/Type"
-                },
                 "decorators": {
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
                   }
+                },
+                "returns": {
+                  "$ref": "#/$defs/types/$defs/Type"
                 }
               }
             },
@@ -979,7 +981,7 @@
             "Class": {
               "type": "object",
               "extends": [
-                "#/$defs/symbols/$defs/Symbol"
+                "#/$defs/symbols/$defs/Callable"
               ],
               "notValidated": [
                 "mro"

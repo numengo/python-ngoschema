@@ -28,18 +28,16 @@ except ImportError:
 import json
 from ruamel import yaml
 from ruamel.yaml import YAML
-from ngoschema.utils import xmltodict, file_link_format
 
 from .exceptions import InvalidOperation, InvalidValue
 from .query import Query
-#from .protocol_base import ProtocolBase
 from .models.documents import Document
-#from .schema_metaclass import SchemaMetaclass
 from .utils.json import ProtocolJSONEncoder
+from .utils import xmltodict, file_link_format
 from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entities import Entity, NamedEntity
 from .types import Array, Tuple
-from .protocols import SchemaMetaclass, ObjectProtocol, value_opts
+from .protocols import SchemaMetaclass, ObjectProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +223,7 @@ def load_object_from_file(fp, repository_class=None, session=None, **kwargs):
 
 @assert_arg(1, Path)
 def serialize_object_to_file(obj, fp, repository_class=None, session=None, **kwargs):
+    from ngoschema.models.metadata import IdentifiedObject
     session = session or scoped_session(session_maker())()
     repository_class = repository_class or JsonFileRepository
     repo = repository_class(filepath=fp, **kwargs)
@@ -243,7 +242,6 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
     def deserialize_data(self):
         data = self.document._deserialize(json.loads, **self._data_additional)
-        #data = self.document._deserialize(json.loads, **{k: v for k, v in self.do_validate().items() if k not in self._properties})
         return data
 
     def serialize_data(self, data):

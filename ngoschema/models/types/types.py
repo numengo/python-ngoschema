@@ -55,42 +55,6 @@ class Type(with_metaclass(SchemaMetaclass)):
         if self.defaultValue is not None and self.defaultValue != []:
             self.hasDefault = True
 
-    #@log_exceptions
-    #def json_schema(self, type_model=None, excludes=[], only=[], **opts):
-    #    if self.ref:
-    #        return {'$ref': self.serialize_item('$ref', context=self._context)}
-    #    elif self.booleanValue is not None:
-    #        return self.booleanValue
-    #    else:
-    #        cls = type_model or self.__class__
-    #        cps = set(cls._properties).difference(cls._not_validated).difference(cls._not_serialized)\
-    #            .difference(excludes).difference(['name', 'hasDefault', '_type', 'required'])\
-    #            .union(['type', 'default', 'rawLiterals'])
-    #        cps = list(cps.intersection(only)) if only else list(cps)
-    #        ret = OrderedDict()
-    #        for n in cps:
-    #            p = self.get(n, None)
-    #            t = self.item_type(n)
-    #            if p is not None and p != t.default():
-    #                if hasattr(p, 'json_schema'):
-    #                    hasattr(p, 'json_schema')
-    #                    ret[n] = p.json_schema()
-    #                else:
-    #                    ret[n] = self.serialize_item(n, no_defaults=True, **opts)
-    #        if self.hasDefault:
-    #            dft = self.defaultValue
-    #            if hasattr(dft, 'do_serialize'):
-    #                dft = dft.do_serialize()
-    #            ret['default'] = dft
-    #        ret.move_to_end('type', False)
-    #        if ret['type'] == 'None':
-    #            del ret['type']
-    #        if 'description' in ret:
-    #            ret.move_to_end('description', False)
-    #        if 'title' in ret:
-    #            ret.move_to_end('title', False)
-    #        return ret
-
     @log_exceptions
     def json_schema(self, type_model=None, plain=False, excludes=[], **opts):
         if self.ref:

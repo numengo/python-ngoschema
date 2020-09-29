@@ -28,8 +28,10 @@ class Symbol(with_metaclass(SchemaMetaclass)):
         data = inspect_symbol(value)
         return Symbol(data, **opts)
 
-    #def to_json_schema(self):
-    #    return self.do_serialize(excludes=['name'], no_defaults=True) or True
+
+class Callable(with_metaclass(SchemaMetaclass)):
+    _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Callable'
+    _lazy_loading = True
 
 
 class Argument(with_metaclass(SchemaMetaclass)):

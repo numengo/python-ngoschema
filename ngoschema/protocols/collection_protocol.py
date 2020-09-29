@@ -235,12 +235,10 @@ class CollectionProtocol(TypeProtocol):
         return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._data_validated))))
 
     @staticmethod
-    @assert_arg(0, PathFileExists)
     def load(filepath, **opts):
         from ..repositories import load_object_from_file
         return load_object_from_file(filepath, **opts)
 
-    @assert_arg(1, PathFile)
     def save(self, filepath=None, **opts):
         from ..repositories import serialize_object_to_file
         if not filepath:

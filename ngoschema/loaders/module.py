@@ -31,7 +31,8 @@ class GenericModuleFileLoader(Registry):
         if subfolder.exists():
             if module not in self._registry:
                 self._registry[module] = []
-            self._registry[module].append(subfolder)
+            if subfolder not in self._registry[module]:
+                self._registry[module].append(subfolder)
             if self.update_function:
                 self.update_function()
         return subfolder

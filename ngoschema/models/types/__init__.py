@@ -30,6 +30,7 @@ __all__ = [
     # symbols
     'Symbol',
     'Module',
+    'Callable',
     'Function',
     'Class',
 ]

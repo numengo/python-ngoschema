@@ -8,8 +8,6 @@ licence: GNU GPLv3
 from __future__ import print_function
 from __future__ import unicode_literals
 
-#from future.utils import with_metaclass
-from collections import ChainMap
 import weakref
 import functools
 
@@ -342,7 +340,7 @@ class scoped_session(object):
         """
 
         if self.registry.has():
-            warn(
+            self._logger.warning(
                 "At least one scoped session is already present. "
                 " configure() can not affect sessions that have "
                 "already been created."
