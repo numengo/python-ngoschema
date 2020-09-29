@@ -31,6 +31,12 @@
             }
           }
         },
+        "Tag": {
+          "type": "object",
+          "extends": [
+            "#/$defs/metadata/$defs/Annotation"
+          ]
+        },
         "Metadata": {
           "title": "Object Metadata",
           "type": "object",
@@ -44,7 +50,7 @@
             "tags": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/$defs/metadata/$defs/Tag"
               }
             }
           },

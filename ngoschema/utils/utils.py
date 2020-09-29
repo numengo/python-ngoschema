@@ -210,59 +210,6 @@ class GenericClassRegistry(Registry):
         return f
 
 
-class GenericModuleFileLoader(Registry):
-    module_loaders_registry = {}
-
-    def __init__(self, subfolder_name, update_function=None):
-        Registry.__init__(self)
-        self.subfolderName = subfolder_name
-        self.update_function = update_function
-        GenericModuleFileLoader.module_loaders_registry[subfolder_name] = self
-
-    def register(self, module, subfolder_name=None):
-        m = importlib.import_module(module)
-        subfolder_name = subfolder_name or self.subfolderName
-        subfolder = pathlib.Path(
-            m.__file__).parent.joinpath(subfolder_name).resolve()
-        if subfolder.exists():
-            if module not in self._registry:
-                self._registry[module] = []
-            self._registry[module].append(subfolder)
-            if self.update_function:
-                self.update_function()
-        return subfolder
-
-    def preload(self,
-                includes=["*"],
-                excludes=[],
-                recursive=False,
-                serializers=[]):
-        from ..models.documents import get_document_registry
-        all_paths = list(sum(self._registry.values(), []))
-        for d in all_paths:
-            get_document_registry().\
-                register_from_directory(d,
-                                        includes=includes,
-                                        excludes=excludes,
-                                        recursive=recursive,
-                                        serializers=serializers)
-
-    def find_one(self, name):
-        """
-        find first name/pattern in loader's pathlist (module as "{module}/")
-
-        :param name: path or pattern
-        :rtype: path
-        """
-        name = name.replace('\\', '/')
-        if '/' in name:
-            module, path = name.split('/', 1)
-            if module in self._registry:
-                return PathList(*self._registry[module]).pick_first(path)
-        all_paths = list(sum(self._registry.values(), []))
-        return PathList(*all_paths).pick_first(name)
-
-
 def gcs(*classes):
     """
     Return the greatest common superclass of input classes

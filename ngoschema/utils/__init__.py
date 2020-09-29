@@ -1,17 +1,13 @@
 from .json import *
-from .utils import *
 from .jinja2 import *
+from .utils import *
 from .str_utils import *
-from .module_loaders import *
 from ._qualname import *
 from python_jsonschema_objects.util import resolve_ref_uri
 
 __all__ = [
     'resolve_ref_uri',
-    'TemplatedString',
     'qualname',
-    # module_loaders
-    'register_module',
     # utils
     'ReadOnlyChainMap',
     'CaseInsensitiveDict',
@@ -42,7 +38,7 @@ __all__ = [
     'set_json_defaults',
     'shorten',
     'inline',
-    # jinja2
-    'default_jinja2_env',
-    'get_jinja2_variables',
+    # jinja2,
+    'TemplatedString',
+    'default_jinja2_env'
 ]

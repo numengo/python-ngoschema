@@ -170,20 +170,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         if value is None:
             value = kwargs
             opts = {}
-        #if value is None:
-        #    value = {}
-        ## translate items
-        #if Object.check(value):
-        #    for k in set(value).difference(self._properties).intersection(self._properties_translation):
-        #        # deals with conflicting properties with identical translated names
-        #        value[self._properties_translation[k]] = value.pop(k)
-        #    for k in set(self._aliases).intersection(value):
-        #        value[self._aliases[k]] = value.pop(k)
-        #    for k in set(self._aliases_negated).intersection(value):
-        #        value[self._aliases_negated[k]] = neg(value.pop(k))
-        #    # required with default
-        #    for k in self._required.difference(value).intersection(self._properties_with_default):
-        #        value[k] = self.item_type(k).default()
         CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
         for k in self._has_pk:
             self[k]
@@ -197,23 +183,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     def set_context(self, context=None, *extra_contexts):
         CollectionProtocol.set_context(self, context, *extra_contexts)
-        ctx = self._context
-        # only do validated data as data will be evaluated with the proper context if needed
-        #for k, v in self._data_validated.items():
-        #    if k not in self._not_validated and isinstance(v, TypeProtocol):
-        #        v.set_context(ctx)
-
-    #def _item_evaluate(self, item, **opts):
-    #    t = self.item_type(item)
-    #    v = self._data[item]
-    #    opts.setdefault('context', self._context)
-    #    #if v is None and not t.has_default():
-    #    #    return None
-    #    #if isinstance(t, type) and isinstance(v, t):
-    #    #    v.set_context(self._context)
-    #    #    return v
-    #    return t._evaluate(v, **opts) if t.is_primitive() else t.evaluate(v, **opts)
-    #    return t.evaluate(v, **opts)
 
     def _item_touch(self, item):
         CollectionProtocol._item_touch(self, item)
@@ -451,9 +420,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     @property
     def session(self):
-        if not self._session and self._root and getattr(self._root, '_repo', None):
-            self._session = self._root._repo.session
-        return self._session
+        root = self._root
+        return root._repo.session if root and getattr(root, '_repo', None) else None
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):

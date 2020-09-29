@@ -81,7 +81,7 @@ class Object(Type):
             self._sch_repr = sch_repr = TypeProtocol._repr_schema(self)
             sch_repr['type'] = 'object'
             sch_repr['properties'] = {}
-            for k in Object.print_order(self, self._schema.get('properties', {}), no_read_only=True):
+            for k in Object._print_order(self, self._schema.get('properties', {}), no_read_only=True):
                 sch_repr['properties'][k] = self._schema['properties'].get('type')
             if self._schema.get('additionalProperties', False):
                 sch_repr['additionalProperties'] = True

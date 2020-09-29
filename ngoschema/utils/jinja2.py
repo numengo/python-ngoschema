@@ -19,7 +19,6 @@ import jinja2
 import jinja2.parser
 from slugify import slugify as _slugify
 
-from .module_loaders import templates_module_loader
 from .utils import GenericClassRegistry
 
 # default jinja2 environment instance
@@ -212,6 +211,7 @@ class ModulePrefixedJinja2Environment(jinja2.Environment):
             self.filters[k] = v
 
     def update_loader(self):
+        from ..loaders import templates_module_loader
         self.loader.mapping = {
             mname: jinja2.PackageLoader(mname, path.name)
             for mname, paths in templates_module_loader.items()

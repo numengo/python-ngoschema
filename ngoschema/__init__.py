@@ -8,11 +8,12 @@ __version__ = "__version__ = '0.3.0'"
 from simple_settings import LazySettings
 settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
 
-from .utils import register_module
+# register module and load schemas
+from .loaders import register_module
 register_module('ngoschema')
 
+# create a default context
 from .managers.context import Context
-
 DEFAULT_CONTEXT = Context(**{
     'True': True,
     'False': False,

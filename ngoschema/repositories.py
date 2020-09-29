@@ -212,26 +212,26 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositor
 
 
 @assert_arg(0, PathFile)
-def load_object_from_file(fp, repo=None, session=None, **kwargs):
+def load_object_from_file(fp, repository_class=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    repo = repo or JsonFileRepository
-    handler = repo(filepath=fp, **kwargs)
-    session.bind_repo(handler)
-    logger.info("LOAD %s from %s", handler.objectClass or '<class unknown>', file_link_format(fp))
-    handler.load()
-    instances = handler.instances
-    return instances if handler.many else instances[0]
+    repository_class = repository_class or JsonFileRepository
+    repo = repository_class(filepath=fp, **kwargs)
+    session.bind_repo(repo)
+    logger.info("LOAD %s from %s", repo.objectClass or '<class unknown>', file_link_format(fp))
+    repo.load()
+    instances = repo.instances
+    return instances if repo.many else instances[0]
 
 
 @assert_arg(1, Path)
-def serialize_object_to_file(obj, fp, repo=None, session=None, **kwargs):
+def serialize_object_to_file(obj, fp, repository_class=None, session=None, **kwargs):
     session = session or scoped_session(session_maker())()
-    repo = repo or JsonFileRepository
-    handler = repo(filepath=fp, **kwargs)
-    session.bind_repo(handler)
-    logger.info("DUMP %s from %s", handler.objectClass, file_link_format(fp))
-    handler.register(obj)
-    handler.commit()
+    repository_class = repository_class or JsonFileRepository
+    repo = repository_class(filepath=fp, **kwargs)
+    session.bind_repo(repo)
+    logger.info("DUMP %s from %s", repo.objectClass, file_link_format(fp))
+    repo.register(obj)
+    repo.commit()
 
 
 @repository_registry.register()
@@ -258,7 +258,7 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
 @assert_arg(0, PathFile)
 def load_json_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, repo=JsonFileRepository, session=session, **kwargs)
+    return load_object_from_file(fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
 
 @repository_registry.register()
@@ -281,7 +281,7 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 
 @assert_arg(0, PathFile)
 def load_yaml_from_file(fp, session=None, **kwargs):
-    return load_object_from_file(fp, repo=YamlFileRepository, session=session, **kwargs)
+    return load_object_from_file(fp, repository_class=YamlFileRepository, session=session, **kwargs)
 
 
 @repository_registry.register()
@@ -338,7 +338,7 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
 @assert_arg(0, PathFile)
 def load_xml_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp,
-                                 repo=XmlFileRepository,
+                                 repository_class=XmlFileRepository,
                                  session=session,
                                  **kwargs)
 

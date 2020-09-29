@@ -10,5 +10,5 @@ __all__ = [
     'NamespaceManager',
     'default_ns_manager',
     # context
-    'Context'
+    'Context',
 ]

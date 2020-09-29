@@ -5,12 +5,14 @@ from __future__ import unicode_literals
 import logging
 from abc import abstractmethod
 
-from ..exceptions import InvalidValue
+from ..exceptions import InvalidValue, InvalidOperation
+from ..decorators import assert_arg
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from .. import settings
 from .type_protocol import TypeProtocol, value_opts
 from ..types.strings import Pattern, Expr
+from ..types.uri import PathFile, PathFileExists
 from ..types.object import Object
 
 COLLECTION_VALIDATE = settings.DEFAULT_COLLECTION_VALIDATE
@@ -19,6 +21,7 @@ LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
 
 class CollectionProtocol(TypeProtocol):
     _session = None
+    _repo = None
     _lazy_loading = LAZY_LOADING
     _is_validated = False
     _data = None
@@ -35,8 +38,6 @@ class CollectionProtocol(TypeProtocol):
         self._session = session = session or self._session
         # prepare data
         value, opts = value_opts(value, **kwargs)
-        #if value and '$schema' in value:
-        #    value.pop('$schema')
         validate = opts.pop('validate', self._validate)
         TypeProtocol.__init__(self, value, items=False, validate=False, context=context, **opts)
         # touch allocates storage for data, need to call create_context again
@@ -106,13 +107,11 @@ class CollectionProtocol(TypeProtocol):
             cls.validate(typed, with_type=False, **opts)
         return typed
 
-    @classmethod
-    def call_order(cls, value, **opts):
-        return cls._call_order(cls, value, **opts)
+    def call_order(self, **opts):
+        return self._call_order(self._data, **opts)
 
-    @classmethod
-    def print_order(cls, value, **opts):
-        return cls._print_order(cls, value, **opts)
+    def print_order(self, **opts):
+        return self._print_order(self._data, **opts)
 
     def _touch(self):
         self._is_validated = False
@@ -235,3 +234,17 @@ class CollectionProtocol(TypeProtocol):
     def __hash__(self):
         return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._data_validated))))
 
+    @staticmethod
+    @assert_arg(0, PathFileExists)
+    def load(filepath, **opts):
+        from ..repositories import load_object_from_file
+        return load_object_from_file(filepath, **opts)
+
+    @assert_arg(1, PathFile)
+    def save(self, filepath=None, **opts):
+        from ..repositories import serialize_object_to_file
+        if not filepath:
+            if not self._repo:
+                raise InvalidOperation('Impossible to save file: no filepath and no repository associated to %s.' % self)
+            filepath = self._repo.document.filepath
+        serialize_object_to_file(self, filepath, **opts)

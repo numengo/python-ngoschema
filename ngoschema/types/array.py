@@ -35,10 +35,12 @@ class Array(Type):
         cls_name = f'{self.__class__.__name__}_{id(self)}'
         if isinstance(items, Mapping):
             self._items = TypeBuilder.build(f'{cls_name}/items', items)
-        if isinstance(items, Sequence):
+        elif isinstance(items, Sequence):
             self._items_list = True
             self._items = [TypeBuilder.build(f'{cls_name}/items/{i}', item)
                                for i, item in enumerate(items)]
+        else:
+            self._items = items
         self._min_items = schema.get('minItems', self._min_items)
         self._max_items = schema.get('maxItems', self._max_items)
         self._unique_items = schema.get('uniqueItems', self._unique_items)

@@ -23,7 +23,7 @@ def untype_schema(schema):
         if isinstance(v, TypeProtocol):
             schema[k] = dict(v._schema)
         elif isinstance(v, type) and issubclass(v, TypeProtocol):
-            schema[k] = dict(v._schema)
+            schema[k] = {'$ref': v._id}
         elif isinstance(v, Mapping):
             schema[k] = untype_schema(v)
     return schema
