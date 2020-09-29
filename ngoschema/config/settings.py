@@ -41,6 +41,12 @@ LOGGING = {
     }
 }
 
+DEFAULT_CONTEXT = {
+    'True': True,
+    'False': False,
+    'None': None,
+}
+
 # resolver
 URI_ID = '$id'
 CURRENT_DRAFT = 'draft-06'
@@ -158,14 +164,3 @@ DATETIME_FORMATS = {
 GETTER_PREFIX = 'get_'
 SETTER_PREFIX = 'set_'
 DELETER_PREFIX = 'del_'
-
-# code inspection
-INSPECT_EXCLUDED_MODULES = [
-    None, str.__class__.__module__, "future.types.newobject", "__builtin__",
-    '_abcoll', 'abc', 'collections.abc', 'itertools', 'errno', 'sys', 'os'
-]
-
-
-INSPECT_EXCLUDED_DESCRIPTORS = ['__weakref__']
-
-INSPECT_EXCLUDED_ATTRIBUTES = ['_abc_cache', '_abc_negative_cache', '_abc_negative_cache_version', '_abc_registry']

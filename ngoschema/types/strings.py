@@ -18,44 +18,6 @@ from ..utils.jinja2 import TemplatedString
 logger = logging.getLogger(__name__)
 
 
-#@register_type('literal')
-#class Literal(Type):
-#    _raw_literals = False
-#
-#    def __init__(self, **schema):
-#        Type.__init__(self, **schema)
-#        self._raw_literals = self._schema.get('rawLiterals', self._raw_literals)
-#
-#    @classmethod
-#    def is_primitive(cls):
-#        return True
-#
-#    def _convert(self, value, **opts):
-#        raw_literals = opts.pop('raw_literals', self._raw_literals)
-#        typed = value
-#        if value and not raw_literals:
-#            try:
-#                if Expr.check(value):
-#                    typed = Expr.convert(value, **opts)
-#                elif Pattern.check(value):
-#                    typed = Pattern.convert(value, **opts)
-#            except Exception as er:
-#                logger.warning('impossible to convert %s: %s', shorten(inline(str(value))), er)
-#                logger.error(er, exc_info=True)
-#                typed = value
-#            return TypeProtocol._convert(self, typed, **opts)
-#        return typed
-#
-#    def _inputs(self, value, context=None, **opts):
-#        raw_literals = opts.pop('raw_literals', self._raw_literals)
-#        if not raw_literals:
-#            if Pattern.check(value):
-#                return Pattern.inputs(value, **opts)
-#            if Expr.check(value):
-#                return Expr.inputs(value, **opts)
-#        return set()
-
-
 @register_type('string')
 class String(Primitive):
     """
@@ -76,10 +38,6 @@ class String(Primitive):
 
 class Expr(String):
     _expr_regex = re.compile(r"[a-zA-Z_]+[\w\.]*")
-
-    #@classmethod
-    #def check(cls, value, **opts):
-    #    return Expr._check(cls, value, **opts)
 
     def _check(self, value, **opts):
         return String.check(value) and value.startswith("`")
@@ -109,8 +67,4 @@ class Pattern(String):
     def inputs(value, **opts):
         from ngoschema.utils.jinja2 import get_jinja2_variables
         return set(get_jinja2_variables(value))
-
-    #def _inputs(self, value, **opts):
-    #    from ngoschema.utils.jinja2 import get_jinja2_variables
-    #    return set(get_jinja2_variables(value))
 

@@ -32,9 +32,6 @@ class Object(with_metaclass(SchemaMetaclass)):
 class Definition(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/types/$defs/collections/$defs/Definition'
 
-    def set_context(self, context=None, *extra_contexts):
-        NamedObject.set_context(self, context, *extra_contexts)
-
     def json_schema(self, **opts):
         ret = Object.json_schema(self, **opts)
         a = ret.pop('attributes', {})

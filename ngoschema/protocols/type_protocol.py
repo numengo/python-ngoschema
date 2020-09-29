@@ -7,10 +7,10 @@ import copy
 from abc import abstractmethod
 from collections import OrderedDict, Mapping, Sequence
 
-from .. import DEFAULT_CONTEXT
 from ..utils import ReadOnlyChainMap, shorten
 from ..resolver import resolve_uri, scope, UriResolver
 from ..exceptions import InvalidValue, ValidationError, ConversionError
+from ..contexts import ContextMixin
 from .. import settings
 
 PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
@@ -18,23 +18,23 @@ PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
 logger = logging.getLogger(__name__)
 
 
-def value_opts(*args, **kwargs):
-    value = kwargs
-    opts = {}
+def value_opts(*args, value=None, **kwargs):
+    opts = kwargs
     if args:
         assert len(args) == 1
         value = args[0]
-        opts = kwargs
+    if value is None:
+        value = kwargs
+        opts = {}
     return value, opts
 
 
-class TypeProtocol:
+class TypeProtocol(ContextMixin):
     _id = None
     _type = None
     _py_type = None
     _schema = {}
     _validator = None
-    _context = DEFAULT_CONTEXT
     _default_cache = None
     _repr = None
     _str = None
@@ -81,19 +81,10 @@ class TypeProtocol:
 
     def __init__(self, value=None, context=None, **kwargs):
         # prepare data
-        value, opts = value_opts(value, **kwargs)
+        value, opts = value_opts(value=value, **kwargs)
         validate = opts.pop('validate', self._validate)
         self._data = self._evaluate(value, validate=validate, context=context, **opts)
         self.set_context(context, opts)
-
-    #@staticmethod
-    def create_context(self, context=None, *extra_contexts):
-        ctx = context if context is not None else self._context
-        return ctx.create_child(*extra_contexts)
-
-    def set_context(self, context=None, *extra_contexts):
-        ctx = self.create_context(context, *extra_contexts)
-        self._context = ctx
 
     @classmethod
     def check(cls, value, **opts):
@@ -189,10 +180,7 @@ class TypeProtocol:
             if not self._has_default():
                 return None
             value = self._default()
-            value = value.copy() if hasattr(value, 'copy') else value
         typed = value
-        #if not self.check(value, convert=False, context=ctx):
-        #    typed = self.convert(value, context=ctx, **opts)
         if not self._check(typed, convert=convert, context=ctx):
             self._do_validate(typed, with_type=True, **opts)
         if convert:

@@ -9,7 +9,7 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoschema.inspect import inspect_class, inspect_function
+from ngoinsp.inspectors import inspect_class, inspect_function
 
 
 def function_example(a, b=1, *args):

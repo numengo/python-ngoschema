@@ -13,13 +13,9 @@ from .loaders import register_module
 register_module('ngoschema')
 
 # create a default context
-from .managers.context import Context
-DEFAULT_CONTEXT = Context(**{
-    'True': True,
-    'False': False,
-    'None': None,
-})
+from .contexts import Context
 
+DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
 APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
 
 from .exceptions import InvalidOperation, SchemaError, ValidationError

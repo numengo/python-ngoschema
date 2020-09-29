@@ -45,11 +45,6 @@ class NamedObject(with_metaclass(SchemaMetaclass)):
             self._str = '<%s %s>' % (self.qualname(), ' '.join(a))
         return self._str
 
-    def set_context(self, context=None, *extra_contexts):
-        ObjectProtocol.set_context(self, context, *extra_contexts)
-        ctx = self._context
-        self._set_data_validated('_parentNamed', next((m for m in ctx.maps if isinstance(m, NamedObject) and m is not self), None))
-
     @property
     def _canonicalName(self):
         # one that does not trigger lazyloading

@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import re
 import datetime
 import arrow
 import pathlib
@@ -58,10 +59,14 @@ class Uri(Primitive):
         return Uri.convert(value, **opts).geturl()
 
 
+# https://regex101.com/r/njslOV/2
+cn_re = re.compile(r"^[\.a-zA-Z_]+$")
+
+
 @register_type('id')
 class Id(String):
     _doc_id = ''
-    _ns_mgr = None
+    _canonical = False
 
     def __init__(self, **schema):
         String.__init__(self, **schema)
@@ -70,26 +75,32 @@ class Id(String):
         uri = self._data_validated.get('uri') or self._data.get('uri')
         return f'<id {uri}>'
 
-    def _check(self, value, **opts):
-        return Uri._check(self, value, **opts) and '#' in str(value)
-
-    def set_context(self, context=None, *extra_contexts):
-        String.set_context(self, context, *extra_contexts)
-        self._ns_mgr = find_ns_mgr(self._context)
+    def _check(self, value, canonical=True, context=None, **opts):
+        if Uri._check(self, value, **opts) and '#' in Uri.serialize(value, context=context):
+            return True
+        m = cn_re.search(String.convert(value, **opts))
+        if m and canonical:
+            try:
+                uri = find_ns_mgr(context).get_cname_id(m.group())
+                return True
+            except Exception as er:
+                pass
+        return False
 
     def _convert(self, value, context=None, **opts):
         uri = value
         if value:
             ns_mgr = find_ns_mgr(context)
-            if '/' not in uri:
+            if cn_re.search(uri):
                 uri = ns_mgr.get_cname_id(uri)
             if '#' not in uri:
                 uri = uri + '#'
             uri = scope(uri, ns_mgr.currentNsUri)
         return uri
 
-    def _serialize(self, value, canonical=False, context=None, **opts):
+    def _serialize(self, value, canonical=None, context=None, **opts):
         ns_mgr = find_ns_mgr(context)
+        canonical = self._canonical if canonical is None else canonical
         if canonical:
             return ns_mgr.get_id_cname(value)
         else:
@@ -97,6 +108,11 @@ class Id(String):
             if value.startswith(doc_id + '#'):
                 value = value[len(doc_id):]
             return value
+
+
+@register_type('canonical')
+class Canonical(Id):
+    _canonical = True
 
 
 @register_type('path')
@@ -127,29 +143,6 @@ class Path(Uri):
             typed = typed.expanduser()
         if self._resolve:
             typed = typed.resolve()
-        return typed
-
-    def _evaluate___(self, value, expand_user=None, resolve=None, **opts):
-        """
-        convert and eventually resolve path from from urllib.parse.ParsedResult, unquoting the url.
-
-        :param value: value to instanciate
-        :param expand_user: boolean to expand user path
-        :param resolve: boolean to resolve the path
-        :return: pathlib.Path instance
-        """
-        validate = opts.pop('validate', self._validate)
-        if expand_user is None:
-            expand_user = self._expand_user
-        if resolve is None:
-            resolve = self._resolve
-        typed = Uri._evaluate(self, value, validate=False, **opts)
-        if expand_user:
-            typed = typed.expanduser()
-        if resolve:
-            typed = typed.resolve()
-        if validate:
-            self.validate(typed)
         return typed
 
     def _serialize(self, value, context=None, relative=False, **opts):

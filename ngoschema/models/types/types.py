@@ -12,6 +12,7 @@ from ...types import symbols
 from ...relationships import ForeignKey
 from ...resolver import resolve_uri
 from ...decorators import memoized_property, depend_on_prop, log_exceptions
+from ...contexts import object_contexts
 from ..metadata import NamedObject, IdentifiedObject, Annotation
 
 
@@ -30,7 +31,7 @@ class Type(with_metaclass(SchemaMetaclass)):
 
     def _convert(self, value, **opts):
         if Object_t.check(value):
-            data = value.copy()
+            data = dict(value)
             data.pop('$schema', None)
             for k, v in list(data.items()):
                 raw, trans = self._properties_raw_trans(k)

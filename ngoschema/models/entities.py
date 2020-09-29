@@ -29,6 +29,10 @@ class Entity(with_metaclass(SchemaMetaclass)):
     """
     _id = "https://numengo.org/ngoschema#/$defs/entities/$defs/Entity"
 
+    def __init__(self, *args, **kwargs):
+        ObjectProtocol.__init__(self, *args, **kwargs)
+        self.identity_keys
+
     def get_primaryKeys(self):
         return self._primary_keys
 

@@ -8,7 +8,7 @@ import logging
 
 from ..exceptions import InvalidValue
 from ..types import Array
-from .collection_protocol import CollectionProtocol, TypeProtocol
+from .collection_protocol import CollectionProtocol, TypeProtocol, value_opts
 from ..types.constants import _True
 from ..decorators import classproperty
 from ..utils import shorten
@@ -35,13 +35,12 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _data_validated = []
     _items_inputs = []
 
-    def set_context(self, context=None, *extra_contexts):
-        CollectionProtocol.set_context(self, context, *extra_contexts)
-        ctx = self._context
-        # only do validated data as data will be evaluated with the proper context if needed
-        #for v in self._data_validated:
-        #    if isinstance(v, TypeProtocol):
-        #        v.set_context(ctx)
+    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
+        value, opts = value_opts(value, **kwargs)
+        CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
+        if self._has_pk:
+            for v in self:
+                v.identity_keys
 
     def _item_touch(self, item):
         CollectionProtocol._item_touch(item)
@@ -127,6 +126,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
+        from ..contexts import object_contexts
         from ..managers.type_builder import TypeBuilder
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)

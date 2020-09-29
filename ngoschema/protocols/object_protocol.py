@@ -14,11 +14,11 @@ from ..decorators import assert_arg
 from ..utils import ReadOnlyChainMap as ChainMap, shorten
 from .. import decorators
 from ..resolver import UriResolver, resolve_uri
-from ..inspect.inspect_symbols import inspect_function
 from ..types.strings import Expr, Pattern, String
 from ..types.array import Array, Tuple
 from ..types.object import Object
 from ..types.symbols import Symbol, Function, Method
+from ..types.uri import Id
 from ..resolver import scope
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
@@ -166,13 +166,8 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
         return Object._convert(self, value, **opts)
 
     def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
-        opts = kwargs
-        if value is None:
-            value = kwargs
-            opts = {}
+        value, opts = value_opts(value=value, **kwargs)
         CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
-        for k in self._has_pk:
-            self[k]
 
     @classmethod
     def default(cls, **opts):
@@ -180,9 +175,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     def create_context(self, context=None, *extra_contexts):
         return CollectionProtocol.create_context(self, context, self._data_validated, {'this': self}, self, *extra_contexts)
-
-    def set_context(self, context=None, *extra_contexts):
-        CollectionProtocol.set_context(self, context, *extra_contexts)
 
     def _item_touch(self, item):
         CollectionProtocol._item_touch(self, item)
@@ -321,13 +313,6 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
     def __getitem__(self, key):
         if not key:
             return self._parent
-        op = lambda x: neg(x) if key in self._aliases_negated else x
-        key = self._aliases_negated.get(key, key)
-        key = self._aliases.get(key, key)
-        raw, trans = self._properties_raw_trans(key)
-        desc = self._properties_descriptor.get(raw)
-        if desc:
-            return op(desc.__get__(self))
         if '.' in key:
             parts = split_cname(key)
             # case: canonical name such as a[0][1].b[0].c
@@ -336,13 +321,20 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                 cur = cur[p]
                 if cur is None:
                     return
-            return op(cur)
-        if key in self._data:
-            if self._lazy_loading or self._is_outdated(key):
-                self._items_inputs[key] = self._item_inputs_evaluate(key)
-                self._set_data_validated(key, self._item_evaluate(key))
-            return op(self._data_validated[key])
-        raise KeyError(key)
+            return cur
+        op = lambda x: neg(x) if key in self._aliases_negated else x
+        key = self._aliases_negated.get(key, key)
+        key = self._aliases.get(key, key)
+        raw, trans = self._properties_raw_trans(key)
+        if raw not in self._data:
+            raise KeyError(key)
+        desc = self._properties_descriptor.get(raw)
+        if desc:
+            return op(desc.__get__(self))
+        if self._lazy_loading or self._is_outdated(key):
+            self._items_inputs[key] = self._item_inputs_evaluate(key)
+            self._set_data_validated(key, self._item_evaluate(key))
+        return op(self._data_validated[key])
 
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._aliases_negated else x
@@ -365,7 +357,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             del self._items_inputs[key]
             del self._data_validated[key]
 
-    def _serialize(self, value, **opts):
+    def _serialize(self, value, schema=False, **opts):
         ret = Object._serialize(self, value, **opts)
         for alias, raw in self._aliases.items():
             if alias not in self._not_serialized:
@@ -377,6 +369,9 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
                 v = ret.get(raw)
                 if v is not None:
                     ret[alias] = - v
+        if schema:
+            ret['$schema'] = Id.serialize(self._id, context=self._context)
+            ret.move_to_end('$schema', False)
         return ret
 
     def serialize_item(self, item, **opts):
@@ -425,8 +420,14 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
+        from ..contexts import object_contexts
         from ..managers.type_builder import TypeBuilder, scope
         from ..protocols import TypeProxy
+        try:
+            from ngoinsp.inspectors.inspect_symbols import inspect_function
+        except Exception as er:
+            logging.warning(er)
+            inspect_function = lambda x: {'arguments': []}
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)
         clsname = attrs.pop('_clsname', None) or cname.split('.')[-1]
@@ -562,7 +563,7 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             if attr is None and pname not in SCHEMA_DEF_KEYS:
                 attr = schema.get(pname)
             if attr is not None:
-                if ptype.check(attr, convert=True):
+                if ptype.check(attr, raw_literals=True, convert=True):
                     v = ptype.serialize(ptype(attr, items=False, raw_literals=True), no_defaults=True, raw_literals=True)
                     #v = ptype.serialize(ptype.convert(attr, items=False, raw_literals=True), no_defaults=True, raw_literals=True)
                     extra_schema_properties[pname] = dict(ptype._schema)
@@ -670,7 +671,11 @@ class ObjectProtocol(CollectionProtocol, Object, MutableMapping):
             logger.warning('removing bases not ready %s' % not_ready_yet)
             bases = tuple(b for b in bases if b not in not_ready_yet)
 
-        cls = type(clsname, bases, attrs)
+        try:
+            cls = type(clsname, bases, attrs)
+        except Exception as er:
+            logger.error(f'Impossible to build {id}: {er}', exc_info=True)
+            raise
         cls._py_type = cls
         return cls
 

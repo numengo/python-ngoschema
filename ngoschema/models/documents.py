@@ -30,6 +30,7 @@ from ..decorators import assert_arg, depend_on_prop
 from ..protocols import SchemaMetaclass
 from ..query import Query
 from ..resolver import UriResolver
+from .entities import Entity
 
 
 class Document(with_metaclass(SchemaMetaclass)):
@@ -47,7 +48,6 @@ class Document(with_metaclass(SchemaMetaclass)):
     _identifier = None
 
     def __init__(self, *args, **props):
-        from .entities import Entity
         Entity.__init__(self, *args, **props)
 
     @property

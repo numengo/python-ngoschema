@@ -37,7 +37,7 @@ from .utils import xmltodict, file_link_format
 from .utils import Registry, GenericClassRegistry, filter_collection
 from .models.entities import Entity, NamedEntity
 from .types import Array, Tuple
-from .protocols import SchemaMetaclass, ObjectProtocol
+from .protocols import SchemaMetaclass, ObjectProtocol, value_opts
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +50,11 @@ class Repository(with_metaclass(SchemaMetaclass)):
     """
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/Repository'
 
-    def __init__(self, value=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._catalog = Registry()
         self._pkeys = None
         self._session = None
-        ObjectProtocol.__init__(self, value, **kwargs)
+        ObjectProtocol.__init__(self, *args, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults, use_entity_ref=self.use_entity_ref)
         if self.primaryKeys is not None and self.primaryKeys:
             self._pkeys = tuple(self.primaryKeys)
@@ -156,13 +156,11 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository, FilterReposit
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FilterRepositoryMixin)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
 
-    def __init__(self, value=None, filepath=None, document=None, **opts):
-        value = value or {}
+    def __init__(self, filepath=None, document=None, **kwargs):
         if filepath is not None:
             document = document or Document()
             document.filepath = filepath
-            value['document'] = document
-        Repository.__init__(self, value, **opts)
+        Repository.__init__(self, document=document, **kwargs)
 
     @abstractmethod
     def deserialize_data(self):
@@ -286,8 +284,8 @@ def load_yaml_from_file(fp, session=None, **kwargs):
 class XmlFileRepository(with_metaclass(SchemaMetaclass, FileRepository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/XmlFileRepository'
 
-    def __init__(self, value=None, tag=None, postprocessor=None, **kwargs):
-        FileRepository.__init__(self, value, **kwargs)
+    def __init__(self, tag=None, postprocessor=None, **kwargs):
+        FileRepository.__init__(self, **kwargs)
         self._encoder = ProtocolJSONEncoder(no_defaults=self.no_defaults,
                                             use_entity_ref=self.use_entity_ref)
         self._tag = tag

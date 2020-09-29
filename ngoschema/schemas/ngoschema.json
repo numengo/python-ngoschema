@@ -3,6 +3,98 @@
   "type": "object",
   "$comment": "automatically generated for ngoschema",
   "$defs": {
+    "contexts": {
+      "type": "object",
+      "$defs": {
+        "Context": {
+          "type": "object",
+          "properties": {
+            "local": {
+              "type": "string"
+            },
+            "parents": {
+              "type": "array"
+            }
+          }
+        },
+        "ContextMixin": {
+          "type": "object"
+        },
+        "NsManagerMixin": {
+          "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ContextMixin"
+          ],
+          "notSerialized": [
+            "_nsMgr"
+          ],
+          "notValidated": [
+            "_nsMgr"
+          ],
+          "properties": {
+            "_nsMgr": {
+              "type": "string"
+            }
+          }
+        },
+        "ObjectMixin": {
+          "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/NsManagerMixin"
+          ],
+          "notSerialized": [
+            "_parentObject",
+            "_rootObject"
+          ],
+          "notValidated": [
+            "_parentObject",
+            "_rootObject"
+          ],
+          "properties": {
+            "_parentObject": {
+              "type": "string"
+            },
+            "_rootObject": {
+              "type": "string"
+            }
+          }
+        },
+        "ParentNamedMixin": {
+          "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ObjectMixin"
+          ],
+          "notSerialized": [
+            "_parentNamed"
+          ],
+          "notValidated": [
+            "_parentNamed"
+          ],
+          "properties": {
+            "_parentNamed": {
+              "type": "string"
+            }
+          }
+        },
+        "ParentDefinitionMixin": {
+          "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ParentNamedMixin"
+          ],
+          "notSerialized": [
+            "_parentDefinition"
+          ],
+          "notValidated": [
+            "_parentDefinition"
+          ],
+          "properties": {
+            "_parentDefinition": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "metadata": {
       "type": "object",
       "$defs": {
@@ -59,25 +151,22 @@
         "NamedObject": {
           "title": "Named Object",
           "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ParentNamedMixin"
+          ],
           "notSerialized": [
             "canonicalName",
-            "namePlural",
-            "_parentNamed"
+            "namePlural"
           ],
           "notValidated": [
-            "canonicalName",
-            "_parentNamed"
+            "canonicalName"
           ],
           "readOnly": [
-            "canonicalName",
-            "_parentNamed"
+            "canonicalName"
           ],
           "properties": {
             "name": {
               "type": "string"
-            },
-            "_parentNamed": {
-              "$ref": "#/$defs/metadata/$defs/NamedObject"
             },
             "canonicalName": {
               "type": "string"
@@ -97,6 +186,7 @@
         "Type": {
           "type": "object",
           "extends": [
+            "#/$defs/contexts/$defs/ParentDefinitionMixin",
             "#/$defs/metadata/$defs/Annotation",
             "#/$defs/metadata/$defs/IdentifiedObject"
           ],
@@ -356,8 +446,19 @@
                 },
                 "canonicalName": {
                   "type": "string"
+                },
+                "canonical": {
+                  "type": "boolean"
                 }
               }
+            },
+            "CanonicalName": {
+              "type": "object",
+              "extends": [
+                "#/$defs/types/$defs/uri/$defs/Id"
+              ],
+              "_type": "canonical",
+              "canonical": true
             },
             "Path": {
               "type": "object",
@@ -485,12 +586,6 @@
               "aliases": {
                 "$defs": "definitions"
               },
-              "notSerialized": [
-                "_parentDefinition"
-              ],
-              "notValidated": [
-                "_parentDefinition"
-              ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
@@ -546,8 +641,11 @@
                     "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
                   }
                 },
-                "_parentDefinition": {
-                  "$ref": "#/$defs/types/$defs/collections/$defs/Definition"
+                "methods": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/symbols/$defs/functions/$defs/Function"
+                  }
                 }
               }
             }
@@ -691,9 +789,6 @@
         },
         "NamespaceManager": {
           "type": "object"
-        },
-        "Context": {
-          "type": "object"
         }
       }
     },
@@ -702,6 +797,9 @@
       "$defs": {
         "TypeProtocol": {
           "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ObjectMixin"
+          ],
           "properties": {
             "metaclass": {
               "type": "importable",
@@ -724,9 +822,6 @@
             },
             "validate": {
               "type": "boolean"
-            },
-            "context": {
-              "$ref": "#/$defs/managers/$defs/Context"
             }
           }
         },
@@ -735,27 +830,9 @@
           "extends": [
             "#/$defs/protocols/$defs/TypeProtocol"
           ],
-          "notSerialized": [
-            "_parentObject",
-            "_rootObject"
-          ],
-          "notValidated": [
-            "_parentObject",
-            "_rootObject"
-          ],
-          "readOnly": [
-            "_parentObject",
-            "_rootObject"
-          ],
           "properties": {
             "lazyLoading": {
               "type": "boolean"
-            },
-            "_parentObject": {
-              "$ref": "#/$defs/protocols/$defs/ObjectProtocol"
-            },
-            "_rootObject": {
-              "$ref": "#/$defs/protocols/$defs/ObjectProtocol"
             }
           }
         },
@@ -790,8 +867,9 @@
             "Descriptor": {
               "type": "object",
               "extends": [
-                "#/$defs/metadata/$defs/Annotation",
-                "#/$defs/metadata/$defs/NamedObject"
+                "#/$defs/metadata/$defs/NamedObject",
+                "#/$defs/contexts/$defs/ParentNamedMixin",
+                "#/$defs/metadata/$defs/Annotation"
               ],
               "properties": {
                 "fget": {
@@ -915,6 +993,15 @@
               "extends": [
                 "#/$defs/symbols/$defs/Callable"
               ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
+              ],
               "properties": {
                 "abstract": {
                   "type": "boolean"
@@ -986,6 +1073,15 @@
               "notValidated": [
                 "mro"
               ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
+              ],
               "properties": {
                 "metaclass": {
                   "type": "importable"
@@ -999,11 +1095,8 @@
                 "abstract": {
                   "type": "boolean"
                 },
-                "attributes": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/types/$defs/variables/$defs/VariableValue"
-                  }
+                "null": {
+                  "type": "array"
                 },
                 "descriptors": {
                   "type": "array",
@@ -1034,6 +1127,15 @@
               "extends": [
                 "#/$defs/symbols/$defs/functions/$defs/Function"
               ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
+              ],
               "properties": {
                 "const": {
                   "type": "boolean"
@@ -1054,12 +1156,30 @@
               "extends": [
                 "#/$defs/symbols/$defs/classes/$defs/Method"
               ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
+              ],
               "class": true
             },
             "StaticMethod": {
               "type": "object",
               "extends": [
                 "#/$defs/symbols/$defs/classes/$defs/Method"
+              ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
               ],
               "static": true
             },
@@ -1074,6 +1194,15 @@
               "type": "object",
               "extends": [
                 "#/$defs/symbols/$defs/classes/$defs/Class"
+              ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
               ]
             }
           }
@@ -1085,6 +1214,15 @@
               "type": "object",
               "extends": [
                 "#/$defs/symbols/$defs/Symbol"
+              ],
+              "methods": [
+                {
+                  "arguments": [
+                    {
+                      "name": "symbol"
+                    }
+                  ]
+                }
               ],
               "properties": {
                 "symbol": {
@@ -1359,6 +1497,9 @@
         "ObjectTransform": {
           "type": "object",
           "abstract": true,
+          "extends": [
+            "#/$defs/symbols/$defs/Callable"
+          ],
           "notSerialized": [
             "fromClass",
             "toClass"

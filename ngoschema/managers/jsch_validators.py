@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from jsonschema import _validators
 from jsonschema.validators import create
+from jsonschema._format import draft7_format_checker as format_checker
 
 from ..utils.utils import GenericClassRegistry
 from ..exceptions import ValidationError
@@ -49,23 +50,6 @@ jsch_validators_registry.register('uniqueItems')(_validators.uniqueItems)
 # draft 2019-09
 jsch_validators_registry.register('definitions')(_validators.properties)
 jsch_validators_registry.register('$defs')(_validators.properties)
-
-
-#@jsch_validators_registry.register('$ref')
-#def ref(validator, ref, instance, schema):
-#    resolve = getattr(validator.resolver, "resolve", None)
-#    if resolve is None:
-#        with validator.resolver.resolving(ref) as resolved:
-#            for error in validator.descend(instance, resolved):
-#                yield error
-#    else:
-#        scope, resolved = validator.resolver.resolve(ref)
-#
-#        try:
-#            for error in validator.descend(instance, resolved):
-#                yield error
-#        finally:
-#            pass
 
 
 @jsch_validators_registry.register('$recursiveRef')

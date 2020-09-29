@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import copy
 
 from ..utils.utils import ReadOnlyChainMap
+from .. import settings
 
 
 class Context(ReadOnlyChainMap):
@@ -60,3 +61,19 @@ class Context(ReadOnlyChainMap):
 
     def __hash__(self):
         return hash(repr(sorted(self.merged.items())))
+
+
+DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
+
+
+class ContextMixin:
+    _context = DEFAULT_CONTEXT
+
+    def create_context(self, context=None, *extra_contexts):
+        ctx = context if context is not None else self._context
+        return ctx.create_child(*extra_contexts)
+
+    def set_context(self, context=None, *extra_contexts):
+        ctx = self.create_context(context, *extra_contexts)
+        self._context = ctx
+

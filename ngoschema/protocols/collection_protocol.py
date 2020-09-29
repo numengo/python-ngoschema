@@ -28,8 +28,6 @@ class CollectionProtocol(TypeProtocol):
     _data_validated = None
     _dependencies = {}
     _items_inputs = None
-    _parent = None
-    _root = None
     _item_type_cache = None
     _validate = COLLECTION_VALIDATE
 
@@ -37,7 +35,7 @@ class CollectionProtocol(TypeProtocol):
         self._lazy_loading = lz = self._lazy_loading if items is None else not items
         self._session = session = session or self._session
         # prepare data
-        value, opts = value_opts(value, **kwargs)
+        value, opts = value_opts(value=value, **kwargs)
         validate = opts.pop('validate', self._validate)
         TypeProtocol.__init__(self, value, items=False, validate=False, context=context, **opts)
         # touch allocates storage for data, need to call create_context again
@@ -48,18 +46,6 @@ class CollectionProtocol(TypeProtocol):
             self.do_validate(items=not lz)
         elif not lz:
             self._coll_type(self)
-
-    def set_context(self, context=None, *extra_contexts):
-        from .object_protocol import ObjectProtocol
-        TypeProtocol.set_context(self, context, *extra_contexts)
-        ctx = self._context
-        # _parent and _root are declared readonly in inspect.mm and it raises an error
-        self._parent = next((m for m in ctx.maps if isinstance(m, ObjectProtocol) and m is not self), None)
-        self._root = next((m for m in reversed(ctx.maps) if isinstance(m, ObjectProtocol) and m is not self), None)
-
-    @classmethod
-    def __ring_key__(cls):
-        return cls._id
 
     @classmethod
     def check(cls, value, **opts):
@@ -216,6 +202,9 @@ class CollectionProtocol(TypeProtocol):
 
     def do_serialize(self, **opts):
         return self.serialize(self, **opts)
+
+    def copy(self):
+        return self.__class__(self._data, context=self._context)
 
     def __eq__(self, other):
         if other is None:

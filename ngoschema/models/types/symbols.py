@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict, MutableMapping
 from functools import lru_cache
 
+from ...utils import ReadOnlyChainMap as ChainMap
 from ...decorators import memoized_property, log_exceptions
 from ...protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 from ...types.symbols import Function as Function_t, Class as Class_t, Module as Module_t, Symbol as Symbol_t
@@ -16,15 +17,10 @@ from .variables import Variable, VariableValue
 class Symbol(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/Symbol'
 
-    def set_context(self, context=None, *extra_contexts):
-        from ...managers.namespace_manager import NamespaceManager, default_ns_manager
-        ObjectProtocol.set_context(self, context, *extra_contexts)
-        self._ns_mgr = next((m for m in self._context.maps if isinstance(m, NamespaceManager)), default_ns_manager)
-
     @staticmethod
     @lru_cache(maxsize=128)
     def inspect(value, **opts):
-        from ...inspect.inspect_symbols import inspect_symbol
+        from ngoinsp.inspectors.inspect_symbols import inspect_symbol
         data = inspect_symbol(value)
         return Symbol(data, **opts)
 
@@ -38,7 +34,7 @@ class Argument(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/symbols/$defs/functions/$defs/Argument'
 
     def _convert(self, value, **opts):
-        from ...inspect.doc_rest_parser import parse_docstring
+        from ngoinsp.inspectors.doc_rest_parser import parse_docstring
         data = Variable._convert(self, value, **opts)
         doctype = data.pop('doctype', None)
         if doctype:
@@ -46,7 +42,7 @@ class Argument(with_metaclass(SchemaMetaclass)):
         return Object._convert(self, data, **opts)
 
     def json_schema(self):
-        ret = self._json_schema()
+        ret = Type.json_schema(self)
         if 'varargs' in ret:
             ret.move_to_end('varargs')
         if 'kwargs' in ret:
@@ -61,13 +57,13 @@ class Function(with_metaclass(SchemaMetaclass)):
     @staticmethod
     @lru_cache(maxsize=128)
     def inspect(value, **opts):
-        from ...inspect.inspect_symbols import inspect_function
+        from ngoinsp.inspectors.inspect_symbols import inspect_function
         data = inspect_function(value)
         return Function(data, **opts)
 
     @log_exceptions
     def json_schema(self):
-        ret = self._json_schema(excludes=['decorators', 'imports', 'symbol', 'module'])
+        ret = Type.json_schema(self, excludes=['decorators', 'imports', 'symbol', 'module'])
         ret.pop('type', None)
         ret['arguments'] = [{'name': a.name} for a in self.arguments]
         for d, a in zip(ret['arguments'], self.arguments):
@@ -83,7 +79,7 @@ class FunctionCall(with_metaclass(SchemaMetaclass)):
     @staticmethod
     @lru_cache(maxsize=128)
     def inspect(value):
-        from ...inspect.inspect_symbols import inspect_function_call
+        from ngoinsp.inspectors.inspect_symbols import inspect_function_call
         return FunctionCall(inspect_function_call(value))
 
 
@@ -122,42 +118,39 @@ class Class(with_metaclass(SchemaMetaclass)):
     _lazy_loading = True
 
     @memoized_property
-    def mroClasses(self):
+    def _mro_classes(self):
         return [Class.inspect(m, context=self._context) for m in self.mro]
 
     @staticmethod
     @lru_cache(maxsize=128)
     def inspect(value, with_functions=True, **opts):
-        from ...inspect.inspect_symbols import inspect_class
+        from ngoinsp.inspectors.inspect_symbols import inspect_class
         data = inspect_class(value, with_functions=with_functions)
         return Class(data, **opts)
 
     @memoized_property
-    def attributesInherited(self):
-        ret = {}
-        for m in self.mroClasses:
-            ret.update(m.attributesInherited)
-        ret.update({p.name: p for p in self.attributes})
-        return ret
+    def _attributes(self):
+        return {p.name: p for p in self.attributes}
 
     @memoized_property
-    def descriptorsInherited(self):
-        ret = {}
-        for m in self.mroClasses:
-            ret.update(m.descriptorsInherited)
-        ret.update({p.name: p for p in self.descriptors})
-        return ret
+    def _attributes_inherited(self):
+        return ChainMap(self._attributes, *[m._attributes_inherited for m in self.mroClasses])
 
     @memoized_property
-    def methodsInherited(self):
-        try:
-            ret = {}
-            for m in self.mroClasses:
-                ret.update(m.methodsInherited)
-            ret.update({p.name: p for p in self.methods})
-            return ret
-        except Exception as er:
-            raise er
+    def _descriptors(self):
+        return {p.name: p for p in self.descriptors}
+
+    @memoized_property
+    def _descriptors_inherited(self):
+        return ChainMap(self._descriptors, *[m._descriptors_inherited for m in self.mroClasses])
+
+    @memoized_property
+    def _methods(self):
+        return {p.name: p for p in self.methods}
+
+    @memoized_property
+    def _methods_inherited(self):
+        return ChainMap(self._methods, *[m._methods_inherited for m in self.mroClasses])
 
     @log_exceptions
     def json_schema(self, with_protected=False):
@@ -178,7 +171,7 @@ class Class(with_metaclass(SchemaMetaclass)):
         if not isinstance(self.symbol, ObjectProtocol):
             sch['wraps'] = Symbol_t.serialize(self.symbol)
         sch.update({a.name: a.json_schema() or True for a in self.attributes if not a.name.startswith('__')})
-        required = [k for k, d in self.descriptorsInherited.items() if getattr(d, 'required', False)]
+        required = [k for k, d in self.descriptors_dict.items() if getattr(d, 'required', False)]
         if required:
             sch['required'] = required
         sch['properties'] = properties = {}
@@ -194,7 +187,7 @@ class Class(with_metaclass(SchemaMetaclass)):
                 else:
                     properties[an] = Type.json_schema(a)
                 properties[an] = properties[an] or True
-        #properties.update({n: p.json_schema() or True for n, p in self.descriptorsInherited.items() if not n.startswith('__')})
+        #properties.update({n: p.json_schema() or True for n, p in self.descriptors_dict.items() if not n.startswith('__')})
         #properties.update({d.name: d.json_schema() or True for d in self.descriptors if not d.name.startswith('__')})
         if not with_protected:
             to_remove = [k for k in sch['properties'].keys() if k[0] == '_']
@@ -216,7 +209,7 @@ class Module(with_metaclass(SchemaMetaclass)):
     @staticmethod
     @lru_cache(maxsize=128)
     def inspect(value, with_functions=True, **opts):
-        from ...inspect.inspect_symbols import inspect_module
+        from ngoinsp.inspectors.inspect_symbols import inspect_module
         data = inspect_module(value, with_functions=with_functions)
         return Module(data, **opts)
 

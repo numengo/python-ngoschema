@@ -205,14 +205,14 @@ class Object(Type):
                 # make a local copy
                 deps = defaultdict(set, **self._dependencies)
                 for k in unordered:
-                    v = value.get(k)
+                    v = value.get(k, None)
                     if k in to_untranslate:
                         k = self._properties_translation.get(k)
                     if k in to_unalias:
                         k = self._aliases.get(k)
                     t = Object.item_type(self, k)
                     if v is None and t.has_default():
-                        v = t.default(**opts)
+                        v = t.default(raw_literals=True, **opts)
                     inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
                     deps[k].update([i for i in inputs if i in self._properties])
             unordered = unordered.union([self._properties_translation.get(k) for k in to_untranslate]).union([self._aliases.get(k) for k in to_unalias])
@@ -225,7 +225,7 @@ class Object(Type):
                 for i in unordered:
                     yield i
 
-    def _print_order(self, value, excludes=[], only=[], no_defaults=False, no_read_only=False, **opts):
+    def _print_order(self, value, excludes=[], only=[], no_defaults=False, no_read_only=False, context=None, **opts):
         """Generate a print order according to schema and inherited schemas properties order
         and additonal properties detected in values.
 
@@ -234,6 +234,11 @@ class Object(Type):
         :param only: list of the only keys to return
         :param no_defaults: removes values equal to their default
         """
+        from ..protocols import ObjectProtocol
+        if isinstance(value, ObjectProtocol):
+            for k in value.print_order(excludes=excludes, no_defaults=no_defaults, no_read_only=no_read_only, **opts):
+                yield k
+            return
         keys = set((value or {}).keys())
         all_ordered = list(keys.intersection(self._required))
         all_ordered += [k for k in self._properties.keys() if k in keys and k not in self._required]
@@ -244,7 +249,7 @@ class Object(Type):
         ro = self._read_only.union(getattr(value, '_read_only', []))
         avs = {k2: value[k1] for k1, k2 in self._aliases.items() if k1 in all_ordered and k1 in value}
         navs = {k2: - value[k1] for k1, k2 in self._aliases_negated.items() if k1 in all_ordered and k1 in value}
-        opts.setdefault('context', getattr(value, '_context', self._context))
+        context = context or getattr(value, '_context', self._context)
         for k in all_ordered:
             if k in ns or k in excludes:
                 continue
@@ -264,12 +269,14 @@ class Object(Type):
                     raise
                 t = self.item_type(k)
                 if t.has_default():
-                    d = t.default(**opts)
+                    d = t.default(context=context, raw_literals=True)
                     v = neg(v) if k in self._aliases_negated else v
                     if v == d:
                         continue
-                    if Pattern.check(d) and v == t.evaluate(d, **opts):
-                        continue
+                    if t.is_primitive():
+                        d = t.serialize(d, raw_literals=True)
+                        if Pattern.check(d) and v == t.evaluate(d, context=context):
+                            continue
             yield k
 
     def item_type(self, name):

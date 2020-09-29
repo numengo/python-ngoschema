@@ -69,7 +69,7 @@ install_requires = [
     'future',
     'click',
     'jsonschema',
-    'python-jsonschema-objects',
+    #'rfc3987',
     'ngofile',
     'attrs',
     'dpath',

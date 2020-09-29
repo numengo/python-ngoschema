@@ -27,6 +27,9 @@ __all__ = [
     'Array',
     # object
     'Object',
+    'Definition',
+    'Descriptor',
+    'PropertyDescriptor',
     # symbols
     'Symbol',
     'Module',
