@@ -7,13 +7,12 @@ import six
 import logging
 
 from ..exceptions import InvalidValue
-from ..types import Array
-from .collection_protocol import CollectionProtocol, TypeProtocol, value_opts
+from ..types.array import Array, ArraySerializer, ArrayDeserializer
+from .collection_protocol import CollectionProtocol, TypeProtocol
 from ..types.constants import _True
 from ..decorators import classproperty
 from ..utils import shorten
 from ..managers.namespace_manager import default_ns_manager
-from .. import settings, DEFAULT_CONTEXT
 from .. import settings
 
 
@@ -31,70 +30,44 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
     """
+    _serializer = ArraySerializer
+    _deserializer = ArrayDeserializer
+    _collection = Array
     _data = []
     _data_validated = []
     _items_inputs = []
 
-    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
-        value, opts = value_opts(value, **kwargs)
-        CollectionProtocol.__init__(self, value, items=items, context=context, session=session, **opts)
-        if self._has_pk:
-            for v in self:
-                v.identity_keys
-
-    def _item_touch(self, item):
-        CollectionProtocol._item_touch(item)
-        for d, s in self._dependencies.items():
-            if item in s:
-                self._item_touch(d)
+    #def __init__(self, **opts):
+    #    Array.__init__(self, **opts)
+    #    CollectionProtocol.__init__(self, **opts)
 
     def _touch(self):
         CollectionProtocol._touch(self)
         self._data_validated = [None] * len(self._data)
         self._items_inputs = [{}] * len(self._data)
 
-    @classmethod
-    def item_type(cls, item):
+    @staticmethod
+    def _items_type(self, item):
         from .type_proxy import TypeProxy
-        if cls._item_type_cache is None:
-            if not cls._items_list:
-                if isinstance(cls._items, TypeProxy):
-                    if cls._items.proxy_type:
-                        cls._items = cls._items.proxy_type
-                        cls._item_type_cache = cls._items
+        if self._items_type_cache is None:
+            if not self._itemsIsList:
+                if isinstance(self._items, TypeProxy):
+                    if self._items.proxy_type:
+                        self._items = self._items.proxy_type
+                        self._items_type_cache = self._items
                 else:
-                    cls._item_type_cache = cls._items
+                    self._items_type_cache = self._items
             else:
                 ok = True
-                for i, t in enumerate(cls._items):
+                for i, t in enumerate(self._items):
                     if isinstance(t, TypeProxy):
                         if t.proxy_type:
-                            cls._items[i] = t.proxy_type
+                            self._items[i] = t.proxy_type
                         else:
                             ok = False
                 if ok:
-                    cls._item_type_cache = cls._items
-        return Array.item_type(cls, item)
-
-    @classmethod
-    def check(cls, value, **opts):
-        if isinstance(value, cls) or cls._check(cls, value):
-            return True
-        if cls._items is not None and cls._items.check(value):
-            # this is for arrays not properly initialized by loading xml for ex
-            return True
-        return False
-
-    #def _set_data(self, index, value):
-    #    from ..models import Entity
-    #    itype = Array.item_type(self, index)
-    #    if issubclass(itype, Entity) and value is not None and not Object.check(value):
-    #        obj = self.session.resolve_fkey(value, itype)
-    #        assert obj
-    #        value = obj
-    #    if Literal.check(value) and value != self._data.get(index):
-    #        self.touch(index)
-    #    self._data[index] = value
+                    self._items_type_cache = self._items
+        return Array._items_type(self, item)
 
     def __len__(self):
         return len(self._data)
@@ -103,17 +76,18 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         self._items_inputs.insert(item, {})
         self._data_validated.insert(item, None)
         self._data.insert(item, value)
-        if not self._lazy_loading:
-            self._items_inputs[item] = self._item_inputs_evaluate(item)
-            self._set_data_validated(item, self._item_evaluate(item))
+        if not self._lazyLoading:
+            self._items_inputs[item] = self._items_inputs_evaluate(item)
+            self._set_data_validated(item, self._items_evaluate(item))
         elif isinstance(value, TypeProtocol):
             value.set_context(self._context)
-        self.do_validate(items=False)
+        self._validate(items=False)
 
     def _str_list(self):
         if self._str is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr) for i, t in enumerate(self._item_types(self))
+            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr)
+                 for i, t in enumerate(self._items_types(self, self._data))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
             self._str = '[%s]' % (', '.join(a))
         return self._str
@@ -126,7 +100,6 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
-        from ..contexts import object_contexts
         from ..managers.type_builder import TypeBuilder
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)
@@ -134,34 +107,34 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         logger = logging.getLogger(cname)
         items = schema.get('items')
         items_list = False
-        lz = schema.get('lazyLoading', False)
+        lz = schema.get('lazyLoading', None)
         if items:
             if Array.check(items):
                 items_list = True
                 items = [TypeBuilder.build(f'{id}/items/{i}', item) for i, item in enumerate(items)]
             else:
                 items = TypeBuilder.build(f'{id}/items', items)
-                lz = lz or getattr(items, '_lazy_loading', False)
+                lz = lz or getattr(items, '_lazyLoading', None)
         else:
             items = TRUE
         if not any([issubclass(b, ArrayProtocol) for b in bases]):
             bases = list(bases) + [ArrayProtocol]
-        if 'validate' in schema:
-            attrs['_validate'] = schema['validate']
-        attrs.setdefault('_lazy_loading', lz)
+        #if 'validate' in schema:
+        #    attrs['_validate'] = schema['validate']
+        if lz is not None:
+            attrs.setdefault('_lazyLoading', lz)
         attrs['_items'] = items
-        attrs['_min_items'] = schema.get('minItems', 0)
-        attrs['_max_items'] = schema.get('maxItems')
-        attrs['_unique_items'] = schema.get('uniqueItems', False)
-        attrs['_default_cache'] = None
-        attrs['_has_pk'] = bool(any(len(getattr(t, '_primary_keys', [])) for t in items)\
-                                    if items_list else len(getattr(items, '_primary_keys', [])))
-        attrs['_items_list'] = items_list
+        attrs['_minItems'] = schema.get('minItems', 0)
+        attrs['_maxItems'] = schema.get('maxItems')
+        attrs['_uniqueItems'] = schema.get('uniqueItems', False)
+        attrs['_has_pk'] = bool(any(len(getattr(t, '_primaryKeys', [])) for t in items)\
+                                    if items_list else len(getattr(items, '_primaryKeys', [])))
+        attrs['_itemsIsList'] = items_list
         attrs['_schema'] = schema
         attrs['_logger'] = logger
         attrs['_id'] = id
         cls = type(clsname, tuple(bases), attrs)
-        cls._py_type = cls
+        cls._pyType = cls
         return cls
 
     @property
@@ -173,7 +146,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def get(self, *pks, default=None, **kwargs):
         from ..query import Query
         if pks:
-            kwargs.update({k: v for k, v in zip(self._items._primary_keys, pks)})
+            kwargs.update({k: v for k, v in zip(self._items._primaryKeys, pks)})
         try:
             return Query(self).next(**kwargs)
         except StopIteration as er:

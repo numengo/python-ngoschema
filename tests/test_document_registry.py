@@ -15,7 +15,7 @@ from ngofile.list_files import list_files
 #from ngoschema.canonical_name import _doc_cn_store
 from ngoschema.models.documents import Document
 from ngoschema.models.documents import get_document_registry
-from ngoschema.resolver import _uri_doc_store
+from ngoschema.resolvers.uri_resolver import _uri_doc_store
 
 dirpath = "/Users/cedric/Devel/python/python-ngomf/ngomf/models/Ngo"
 

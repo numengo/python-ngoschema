@@ -14,9 +14,9 @@ import functools
 from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 
 from . import utils
+from .decorators import assert_arg
 from .protocols import ObjectProtocol, ArrayProtocol, SchemaMetaclass, with_metaclass
 from .types import Tuple, Array
-from .decorators import assert_arg
 from .query import Query
 
 _sessions = weakref.WeakValueDictionary()
@@ -39,32 +39,27 @@ def _state_session(state):
 class Session(with_metaclass(SchemaMetaclass)):
     _id = "https://numengo.org/ngoschema#/$defs/session/$defs/Session"
 
-    def __init__(self, bind=None, **kwargs):
+    def __init__(self, **kwargs):
         self._resolve_cname = functools.lru_cache(1024)(self._resolve_cname_cached)
         ObjectProtocol.__init__(self, value=kwargs)
-        self._repos = []
-        if bind is not None:
-            for bind in Array.convert(bind):
-                self.bind_repo(bind)
-
         self._new = {}  # InstanceState->object, strong refs object
         self._deleted = {}  # same
         self._hash_key = _new_sessionid()
         _sessions[self._hash_key] = self
 
     def bind_repo(self, repo):
-        self._repos.append(repo)
+        self.repositories.append(repo)
         repo._session = self
 
     def resolve_cname(self, cname):
         return self._resolve_cname(cname)
 
     def _resolve_cname_cached(self, cname):
-        from .models.entities import NamedEntity
+        from .models.instances import Entity
         cns = cname.split('.')
         rn = cns[0]
         cn = cns[1:]
-        for repo in [r for r in self._repos if issubclass(r.objectClass, NamedEntity)]:
+        for repo in [r for r in self._repos if issubclass(r.instanceClass, Entity)]:
             if rn in repo._catalog:
                 v = repo.get_instance(rn)
                 return v if not cn else v.resolve_cname(cn)
@@ -72,7 +67,7 @@ class Session(with_metaclass(SchemaMetaclass)):
 
     @assert_arg(1, Tuple, strDelimiter=',')
     def resolve_fkey(self, keys, object_class):
-        for repo in [r for r in self._repos if issubclass(r.objectClass, object_class)]:
+        for repo in [r for r in self._repos if issubclass(r.instanceClass, object_class)]:
             if keys in repo._catalog:
                 return repo.get_instance(keys)
 

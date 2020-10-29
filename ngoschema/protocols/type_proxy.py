@@ -2,11 +2,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import logging
-import copy
-from collections import OrderedDict, Mapping
-
-from ..resolver import resolve_uri, scope
 from .type_protocol import TypeProtocol
 
 
@@ -44,13 +39,13 @@ class TypeProxy(TypeProtocol):
     def proxy_type_cls(cls):
         if not cls._proxy_type:
             from ..managers.type_builder import TypeBuilder
-            cls._proxy_type = cls._py_type = TypeBuilder.get(cls._proxy_uri)
+            cls._proxy_type = cls._pyType = TypeBuilder.get(cls._proxy_uri)
         return cls._proxy_type
 
     @property
     def proxy_type(self):
         if not self._proxy_type:
-            self._proxy_type = self._py_type = self.proxy_type_cls()
+            self._proxy_type = self._pyType = self.proxy_type_cls()
         return self._proxy_type
 
     @classmethod

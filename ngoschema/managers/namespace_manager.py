@@ -2,16 +2,14 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from urllib.parse import urlparse, urlsplit, urldefrag
+from urllib.parse import urlparse
 import inflection
 import re
 from collections import OrderedDict
 from functools import lru_cache
 
-from .. import settings
-from ..exceptions import InvalidValue
 from ..utils import ReadOnlyChainMap as ChainMap, Registry
-from ..resolver import resolve_uri, UriResolver
+from ngoschema.resolvers.uri_resolver import resolve_uri, UriResolver
 
 CLEAN_JS_NAME_REGEX = re.compile(r"[^a-zA-z0-9\.\-_]+")
 
@@ -101,7 +99,6 @@ class NamespaceManager(Registry):
         return cname
 
     def _get_id_cname_cached(self, ref, current_ns):
-        from ..types.uri import Uri
         ns_cn, ns_uri = self._find_ns_by_uri(ref)
         #ns = ChainMap(self._registry, NamespaceManager.builder_namespaces(), NamespaceManager.available_namespaces())
         #ns_names = sorted([k for k, uri in ns.items() if ref.startswith(uri)], reverse=True)
@@ -192,7 +189,7 @@ class NamespaceManager(Registry):
     #
     @staticmethod
     def available_namespaces():
-        from ..resolver import UriResolver
+        from ngoschema.resolvers.uri_resolver import UriResolver
         return {NamespaceManager._uri_to_cname(k): k for k in UriResolver._doc_store.keys()}
 
     def load(self, cname):

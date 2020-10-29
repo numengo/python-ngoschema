@@ -2,81 +2,71 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from ..protocols import TypeProtocol
+from ..protocols import TypeProtocol, Serializer
 from ..managers.type_builder import register_type
 from ..exceptions import InvalidValue
 
 
 class Constant(TypeProtocol):
-    _validate = False
 
-    def __init__(self):
+    def __init__(self, **opts):
         pass
 
-    def __call__(self, value, serialize=False, **opts):
-        return self.evaluate(value, **opts)
+    def _check(self, value, **opts):
+        if self._pyType:
+            return value
+        raise TypeError(value)
 
-    @classmethod
-    def check(cls, value, **opts):
-        return value is None or cls._py_type
-
-    @classmethod
-    def evaluate(cls, value, **opts):
-        if cls.check(value):
-            return cls.convert(value, **opts)
-        return cls._format_error(value, {'type': f'{value} is not {cls._py_type}'})
-
-    @classmethod
-    def convert(cls, value, **opts):
-        return cls._py_type
+    #def _evaluate(self, value, **opts):
+    #    if self.check(value):
+    #        return self.convert(value, **opts)
+    #    return self._format_errors(value, {'type': f'{value} is not {cls._pyType}'})
 
     @classmethod
     def __bool__(cls):
-        return bool(cls._py_type)
+        return bool(cls._pyType)
 
-    @classmethod
-    def serialize(cls, value, **opts):
-        return cls._py_type
+    def _serialize(self, value, **opts):
+        return value if self._pyType else None
 
-    @classmethod
-    def has_default(cls, **opts):
-        return False
-
-    @classmethod
-    def default(cls, **opts):
-        return None
-
-    @staticmethod
-    def inputs(value, **opts):
-        return set()
+    #def _has_default(self, **opts):
+    #    return False
+    #
+    #def _default(self, **opts):
+    #    return None
 
 
 @register_type('null')
 class Null(Constant):
-    _py_type = None
+    _pyType = None
 
 
 @register_type('true')
 class _True(Constant):
-    _py_type = True
+    _pyType = True
 
-    @classmethod
-    def convert(cls, value, **opts):
+    @staticmethod
+    def _convert(self, value, **opts):
+        from .strings import Expr, Pattern, Primitive
+        if Expr.check(value) or Pattern.check(value):
+            return Primitive.convert(value, **opts)
         return value
 
-    @classmethod
-    def serialize(cls, value, **opts):
-        return value.do_serialize(**opts) if hasattr(value, 'do_serialize') else value
+    @staticmethod
+    def _serialize(self, value, **opts):
+        if isinstance(value, Serializer):
+            return value._serialize(value, **opts)
+        return value
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return {}
+    @staticmethod
+    def _validate(self, value, **opts):
+        return value
 
 
 @register_type('false')
 class _False(Constant):
-    _py_type = False
+    _pyType = False
 
-    @classmethod
-    def validate(cls, value, **opts):
+    @staticmethod
+    def _validate(self, value, **opts):
         raise InvalidValue(value)

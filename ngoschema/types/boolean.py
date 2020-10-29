@@ -21,13 +21,11 @@ logger = logging.getLogger(__name__)
 
 @register_type('boolean')
 class Boolean(Primitive):
-    """
-    json-schema 'boolean' type
-    """
-    _py_type = bool
+    _pyType = bool
     _TRUES = settings.BOOLEAN_TRUE_STR_LIST
     _FALSES = settings.BOOLEAN_FALSE_STR_LIST
 
+    @staticmethod
     def _convert(self, value, **opts):
         """
         Converts to boolean.

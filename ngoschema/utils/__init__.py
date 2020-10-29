@@ -1,4 +1,3 @@
-from .json import *
 from .jinja2 import *
 from .utils import *
 from .str_utils import *
@@ -35,7 +34,6 @@ __all__ = [
     'multiple_replace',
     'split_string',
     'file_link_format',
-    'set_json_defaults',
     'shorten',
     'inline',
     # jinja2,

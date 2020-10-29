@@ -9,7 +9,7 @@ from jsonschema.validators import extend
 from jsonschema.exceptions import UndefinedTypeCheck
 
 from ..utils import ReadOnlyChainMap, apply_through_collection
-from ..resolver import resolve_uri, scope
+from ngoschema.resolvers.uri_resolver import resolve_uri, scope
 from .jsch_validators import Draft201909Validator, default_meta_validator
 
 logger = logging.getLogger(__name__)
@@ -21,9 +21,9 @@ def untype_schema(schema):
     schema = dict(schema)
     for k, v in list(schema.items()):
         if isinstance(v, TypeProtocol):
-            schema[k] = dict(v._schema)
+            schema[k] = {'$ref': v._id} if hasattr(v, '_id') else v.repr_schema()
         elif isinstance(v, type) and issubclass(v, TypeProtocol):
-            schema[k] = {'$ref': v._id}
+            schema[k] = {'$ref': v._id} if hasattr(v, '_id') else v.repr_schema()
         elif isinstance(v, Mapping):
             schema[k] = untype_schema(v)
     return schema
@@ -35,7 +35,7 @@ class TypeBuilder:
     _on_construction = {}
 
     @staticmethod
-    def register(type):
+    def register_type(type):
         """Decorator to register a protocol based class """
         def to_decorate(cls):
             TypeBuilder._type_registry[type] = cls
@@ -44,7 +44,14 @@ class TypeBuilder:
             #if not cls._schema:
             #    cls._schema = {'type': cls._type}
             if cls._validator is None:
-                cls._validator = DefaultValidator(cls._schema)
+                cls._js_validator = DefaultValidator(cls._schema)
+            return cls
+        return to_decorate
+
+    @staticmethod
+    def register(id):
+        def to_decorate(cls):
+            TypeBuilder._registry[id] = cls
             return cls
         return to_decorate
 
@@ -54,7 +61,7 @@ class TypeBuilder:
         t = TypeBuilder._type_registry.get(id)
         if not t:
             raise UndefinedTypeCheck(id)
-        return t.check(value)
+        return t.check(value, items=False, convert=False, validate=False)
 
     @staticmethod
     def detect_type(value):
@@ -82,7 +89,8 @@ class TypeBuilder:
         if TypeBuilder.contains(id):
             return TypeBuilder.get(id)
         if id in TypeBuilder._on_construction:
-            return TypeProxy.build(id)()
+            return TypeProxy.build(id)
+            #return TypeProxy.build(id)()
         if schema is None:
             schema = resolve_uri(id)
         if schema is True:
@@ -113,7 +121,8 @@ class TypeBuilder:
         from ..protocols import TypeProxy
         if id not in TypeBuilder._registry:
             if id in TypeBuilder._on_construction:
-                return TypeProxy.build(id)()
+                #return TypeProxy.build(id)()
+                return TypeProxy.build(id)
             TypeBuilder._registry[id] = TypeBuilder.build(id)
         return TypeBuilder._registry[id]
 
@@ -172,7 +181,8 @@ class TypeBuilder:
         return schema
 
 
-register_type = TypeBuilder.register
+register_type = TypeBuilder.register_type
+wrap = TypeBuilder.register
 
 
 DefaultValidator = extend(Draft201909Validator, type_checker=TypeBuilder)

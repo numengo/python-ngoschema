@@ -4,114 +4,111 @@ from __future__ import unicode_literals
 
 import logging
 from abc import abstractmethod
+from operator import neg
 
 from ..exceptions import InvalidValue, InvalidOperation
 from ..decorators import assert_arg
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from .. import settings
-from .type_protocol import TypeProtocol, value_opts
 from ..types.strings import Pattern, Expr
+from ..types.collection import Collection
 from ..types.uri import PathFile, PathFileExists
 from ..types.object import Object
+from ..contexts import InstanceContext
+from .type_protocol import TypeProtocol
 
-COLLECTION_VALIDATE = settings.DEFAULT_COLLECTION_VALIDATE
+#COLLECTION_VALIDATE = settings.DEFAULT_COLLECTION_VALIDATE
 LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
 
 
-class CollectionProtocol(TypeProtocol):
-    _session = None
-    _repo = None
-    _lazy_loading = LAZY_LOADING
-    _is_validated = False
+class CollectionProtocol(Collection):
+    _lazyLoading = LAZY_LOADING
+    _collection = None
+    #_validate = COLLECTION_VALIDATE
+
     _data = None
     _data_validated = None
-    _dependencies = {}
     _items_inputs = None
-    _item_type_cache = None
-    _validate = COLLECTION_VALIDATE
+    _items_type_cache = None
+    _repr = None
+    _str = None
 
-    def __init__(self, value=None, items=None, context=None, session=None, **kwargs):
-        self._lazy_loading = lz = self._lazy_loading if items is None else not items
-        self._session = session = session or self._session
-        # prepare data
-        value, opts = value_opts(value=value, **kwargs)
-        validate = opts.pop('validate', self._validate)
-        TypeProtocol.__init__(self, value, items=False, validate=False, context=context, **opts)
-        # touch allocates storage for data, need to call create_context again
+    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, **opts):
+        self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading
+        lz = self._lazyLoading if items is None else not items
+        #Collection.__init__(self, **opts)
+        value = opts if value is None else value  # to allow initialization by keywords
+        self._data = self._deserialize(self, value, items=False, evaluate=False, convert=False, **opts)
+        # touch allocates storage for data, need to call _create_context again
         self._touch()
-        self.set_context(context, opts)
+        self.set_context(opts)
+        if not lz:
+            self._collType(self)
         if validate:
-            # not lz all elements have been evaluated and validated. does not need to check items
-            self.do_validate(items=not lz)
-        elif not lz:
-            self._coll_type(self)
+            self._validate(self, self, items=False)
 
-    @classmethod
-    def check(cls, value, **opts):
-        return isinstance(value, cls) or cls._check(cls, value)
+    @staticmethod
+    def _create_context(self, *extra_contexts, **local):
+        return Collection._create_context(self, {'this': self}, *extra_contexts, **local)
 
-    @classmethod
-    def has_default(cls):
-        return cls._has_default(cls)
+    #@staticmethod
+    #def _call_order(self, value, excludes=[], **opts):
+    #    #excludes = list(self._notValidated.union(excludes))
+    #    return Collection._call_order(self, value, excludes=excludes, **opts)
 
-    @classmethod
-    def default(cls, **opts):
-        return cls._default(cls, **opts)
-
-    @classmethod
-    def convert(cls, value, **opts):
-        if cls._lazy_loading:
+    @staticmethod
+    def _convert(self, value, excludes=[], **opts):
+        excludes = list(self._notValidated.union(excludes))
+        if self._lazyLoading:
             opts.setdefault('items', False)
-        return value if isinstance(value, cls) else cls(value, **opts)
-        #return value if isinstance(value, cls) else cls(cls._convert(cls, value, **opts), **opts)
+        return self._collection._convert(self, value, excludes=excludes, **opts)
 
-    @classmethod
-    def inputs(cls, value, **opts):
-        return cls._inputs(cls, value, **opts)
+    @staticmethod
+    def _deserialize(self, value, items=False, **opts):
+        return self._collection._deserialize(self, value, items=items, **opts)
 
-    @classmethod
-    def validate(cls, value, **opts):
-        return cls._do_validate(cls, value, **opts)
+    @staticmethod
+    def _validate(self, value, items=False, excludes=[], **opts):
+        excludes = list(self._notValidated.union(excludes))
+        return self._collection._validate(self, value, items=items, excludes=excludes, **opts)
 
-    @classmethod
-    def evaluate(cls, value, convert=True, context=None, **opts):
-        validate = opts.get('validate', cls._validate)
-        if value is None:
-            if not cls.has_default():
-                return None
-            value = cls.default()
-            value = value.copy() if hasattr(value, 'copy') else value
-        if not cls.check(value, convert=convert, context=context):
-            cls.validate(value, with_type=True, **opts)
-        typed = value
-        if isinstance(value, cls):
-            typed.set_context(context, opts)
-        else:
-            typed = cls.convert(value, context=context, **opts)
-        if validate:
-            cls.validate(typed, with_type=False, **opts)
-        return typed
+    @staticmethod
+    def _evaluate(self, value, excludes=[], **opts):
+        excludes = list(self._notValidated.union(excludes))
+        if self._lazyLoading:
+            opts.setdefault('items', False)
+        return self._collection._evaluate(self, value, excludes=excludes, **opts)
 
-    def call_order(self, **opts):
-        return self._call_order(self._data, **opts)
+    #def print_order(self, **opts):
+    #    return self._print_order(self, self._data, **opts)
 
-    def print_order(self, **opts):
-        return self._print_order(self._data, **opts)
+    #@staticmethod
+    #def _print_order(self, value, excludes=[], **opts):
+    #    excludes = list(self._notSerialized.union(excludes))
+    #    return self._serializer._print_order(self, value, excludes=excludes, **opts)
+
+    @staticmethod
+    def _serialize(self, value, excludes=[], **opts):
+        excludes = list(self._notSerialized.union(excludes))
+        return self._collection._serialize(self, value, excludes=excludes, **opts)
 
     def _touch(self):
-        self._is_validated = False
         self._repr = None
         self._str = None
 
-    def _item_touch(self, item):
+    def _items_touch(self, item):
         CollectionProtocol._touch(self)
         self._data_validated[item] = None
         self._items_inputs[item] = {}
+        for d, s in self._dependencies.items():
+            if item in s:
+                self._items_touch(d)
 
-    def _item_inputs_evaluate(self, item):
+    def _items_inputs_evaluate(self, item):
         ret = {}
-        for k in self.inputs(self._data, item=item, with_inner=False):
+        t = self._items_type(self, item)
+        for k in t._inputs(t, self._data[item]):
             try:
                 ret[k] = self[k]
             except Exception as er:
@@ -119,54 +116,61 @@ class CollectionProtocol(TypeProtocol):
                 pass
         return ret
 
-    def _item_evaluate(self, item, **opts):
+    def _items_evaluate(self, item, **opts):
         v = self._data[item]
-        t = self.item_type(item)
+        t = self._items_type(self, item)
         opts.setdefault('context', self._context)
-        if hasattr(t, '_lazy_loading'):
-            if t._lazy_loading:
+        if hasattr(t, '_lazyLoading'):
+            if t._lazyLoading:
                 opts.setdefault('validate', False)
-        return t.evaluate(v, **opts)
+        if t.is_primitive():
+            opts['serialize'] = False
+        try:
+            ret = t(v, **opts)
+            return ret
+        except Exception as er:
+            raise er
+        return t._evaluate(t, v, **opts)
 
     @classmethod
-    def item_serialize(cls, value, item, **opts):
+    def items_serialize(cls, value, item, **opts):
         v = value[item]
-        t = cls.item_type(item)
+        t = cls._items_type(cls, item)
         ctx = getattr(value, '_context', cls._context)
         opts.setdefault('context', ctx)
-        return t.serialize(v, **opts)
+        return t._serialize(t, v, **opts)
 
     def __setitem__(self, item, value):
         self._data[item] = value
-        if not self._lazy_loading:
-            self._items_inputs[item] = self._item_inputs_evaluate(item)
-            self._set_data_validated(item, self._item_evaluate(item))
+        if not self._lazyLoading:
+            self._items_inputs[item] = self._items_inputs_evaluate(item)
+            self._set_data_validated(item, self._items_evaluate(item))
 
     def __getitem__(self, item):
         if self._data_validated[item] is None:
-            self._items_inputs[item] = self._item_inputs_evaluate(item)
-            self._set_data_validated(item, self._item_evaluate(item))
+            self._items_inputs[item] = self._items_inputs_evaluate(item)
+            self._set_data_validated(item, self._items_evaluate(item))
         return self._data_validated[item]
 
     def __delitem__(self, index):
         del self._data[index]
         del self._data_validated[index]
         del self._items_inputs[index]
-        self.do_validate(items=False)
+        self._validate(items=False)
 
     def _set_data(self, item, value):
-        t = self.item_type(item)
+        t = self._items_type(self, item)
         orig = self._data[item]
         # to avoid comparison of objects (often equality which is the longest to validate), only touch for changed primitives
         if t.is_primitive():
             if value != orig:
-                self._item_touch(item)
+                self._items_touch(item)
         else:
-            self._item_touch(item)
+            self._items_touch(item)
         self._data[item] = value
 
     def _set_data_validated(self, item, value):
-        t = self.item_type(item)
+        t = self._items_type(self, item)
         if t.is_primitive():
             orig = self._data[item]
             if not Pattern.check(orig) and not Expr.check(orig):
@@ -177,34 +181,20 @@ class CollectionProtocol(TypeProtocol):
 
     def _is_outdated(self, item):
         return (self._data_validated[item] is None and self._data[item] is not None
-                ) or (self._items_inputs.get(item, []) != self._item_inputs_evaluate(item))
+                ) or (self._items_inputs.get(item, []) != self._items_inputs_evaluate(item))
 
     @classmethod
-    def validate(cls, value, as_dict=False, **opts):
-        # check instances and set their validated flag if all items are validated
-        if not cls.check(value):
-            errors = {'type': '%s is not of type %s' % (value, cls._py_type)}
-        else:
-            items = opts.pop('items', not cls._lazy_loading)
-            if isinstance(value, cls) and value._is_validated:
-                return {}
-            errors = cls._do_validate(cls, value, items=items, as_dict=as_dict, **opts)
-            if items and isinstance(value, cls) and not opts.get('excludes') and not opts.get('only'):
-                value._is_validated = True
-        return errors if as_dict else cls._format_error(value, errors)
+    def create(cls, value=None, **opts):
+        return cls(value, **opts)
 
-    def do_validate(self, items=True, **opts):
-        return self.validate(self, items=items, **opts)
-
-    @classmethod
-    def serialize(cls, value, **opts):
-        return cls._serialize(cls, value, **opts)
+    def do_validate(self, **opts):
+        return self._validate(self, self, **opts)
 
     def do_serialize(self, **opts):
-        return self.serialize(self, **opts)
+        return self._serialize(self, self, deserialize=False, **opts)
 
     def copy(self):
-        return self.__class__(self._data, context=self._context)
+        return self.create(self._data, context=self._context)
 
     def __eq__(self, other):
         if other is None:
@@ -223,15 +213,3 @@ class CollectionProtocol(TypeProtocol):
     def __hash__(self):
         return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._data_validated))))
 
-    @staticmethod
-    def load(filepath, **opts):
-        from ..repositories import load_object_from_file
-        return load_object_from_file(filepath, **opts)
-
-    def save(self, filepath=None, **opts):
-        from ..repositories import serialize_object_to_file
-        if not filepath:
-            if not self._repo:
-                raise InvalidOperation('Impossible to save file: no filepath and no repository associated to %s.' % self)
-            filepath = self._repo.document.filepath
-        serialize_object_to_file(self, filepath, **opts)

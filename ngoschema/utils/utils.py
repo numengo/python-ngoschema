@@ -116,6 +116,46 @@ class ReadOnlyChainMap(Mapping):
         return ret
 
 
+class Context(ReadOnlyChainMap):
+
+    def __init__(self, *parents, **local):
+        self._local = local
+        self._parents = parents
+        ReadOnlyChainMap.__init__(self, local, *parents)
+
+    def __enter__(self):
+        return copy.deepcopy(self)
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def __repr__(self):
+        return repr(list(self._maps))
+
+    def create_child(self, *parents, **local):
+        'Make a child context, inheriting enable_nonlocal unless specified'
+        if not parents and not local:
+            return self
+        if local:
+            parents = (local, ) + parents
+        return Context(*parents, *self._maps)
+
+    def prepend(self, mapping):
+        self._maps.insert(0, mapping)
+
+    def append(self, mapping):
+        self._maps.append(mapping)
+
+    def find_instance(self, cls, default=None, exclude=None, reverse=False):
+        gen = (m for m in self.maps if isinstance(m, cls) and m is not exclude)
+        if reverse:
+            gen = reversed(gen)
+        return next(gen, default)
+
+    def __hash__(self):
+        return hash(repr(sorted(self.merged.items())))
+
+
 class _KeyModifierMapping(MutableMapping):
 
     @classmethod

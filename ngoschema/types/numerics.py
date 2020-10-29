@@ -16,29 +16,41 @@ from .. import settings
 logger = logging.getLogger(__name__)
 
 
-@register_type('integer')
-class Integer(Primitive):
-    """
-    json-schema 'integer' type
-    """
-    _py_type = int
+class Numeric(Primitive):
+    _minimum = None
+    _maximum = None
+    _exclusiveMinimum = None
+    _exclusiveMaximum = None
+
+    def __init__(self, **opts):
+        Primitive. __init__(self, **opts)
+        self._minimum = self._schema.get('minimum', self._minimum)
+        self._maximum = self._schema.get('maximum', self._maximum)
+        self._exclusiveMinimum = self._schema.get('exclusiveMinimum', self._exclusiveMinimum)
+        self._exclusiveMaximum = self._schema.get('exclusiveMaximum', self._exclusiveMaximum)
 
 
 @register_type('number')
-class Number(Primitive):
-    """
-    Associate json-schema 'number' to decimal.Decimal
-    """
-    _py_type = decimal.Decimal
-    _dcm_context = decimal.Context()
+class Number(Numeric):
+    _pyType = decimal.Decimal
+    _dcmContext = decimal.Context()
 
+    def __init__(self, precision=12, **opts):
+        Numeric. __init__(self, **opts)
+        self._dcmContext = decimal.Context(prec=precision)
+
+    @staticmethod
     def _check(self, value, **opts):
-        return isinstance(value, (numbers.Number, decimal.Decimal)) or TypeProtocol._check(Number, value, **opts)
+        if isinstance(value, (numbers.Number, decimal.Decimal, float, int)):
+            return value
+        raise TypeError('%s is not of type "number".' % value)
 
-    def __init__(self, precision=12, **schema):
-        self._dcm_context = decimal.Context(prec=precision)
-        super().__init__(**schema)
-
+    @staticmethod
     def _evaluate(self, value, **opts):
-        decimal.setcontext(self._dcm_context)
+        decimal.setcontext(self._dcmContext)
         return Primitive._evaluate(self, value, **opts)
+
+
+@register_type('integer')
+class Integer(Numeric):
+    _pyType = int

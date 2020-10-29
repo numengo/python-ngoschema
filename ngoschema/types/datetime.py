@@ -28,11 +28,15 @@ class Date(Primitive):
     """
     Add additional 'date' to json-schema associated in python to datetime.date
     """
-    _py_type = datetime.date
+    _pyType = datetime.date
 
+    @staticmethod
     def _check(self, value, **opts):
-        return isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts)
+        if isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts):
+            return value
+        raise TypeError('%s is not of type date.' % value)
 
+    @staticmethod
     def _convert(self, value, **opts):
         if value is None:
             return value
@@ -58,6 +62,7 @@ class Date(Primitive):
                     pass
         raise InvalidValue("{0} is not detected as a date: {1}".format(value))
 
+    @staticmethod
     def _serialize(self, value, **opts):
         return _dt_serialize(self, value, **opts)
 
@@ -67,11 +72,15 @@ class Time(Primitive):
     """
     Add additional 'time' to json-schema associated in python to datetime.time
     """
-    _py_type = datetime.time
+    _pyType = datetime.time
 
+    @staticmethod
     def _check(self, value, **opts):
-        return isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts)
+        if isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts):
+            return value
+        raise TypeError('%s is not of type date.' % value)
 
+    @staticmethod
     def _convert(self, value, **opts):
         if value is None:
             return value
@@ -93,6 +102,7 @@ class Time(Primitive):
                 pass
         raise InvalidValue("{0} is not detected as a time: {1}".format(value))
 
+    @staticmethod
     def _serialize(self, value, **opts):
         return _dt_serialize(self, value, **opts)
 
@@ -102,11 +112,15 @@ class Datetime(Date, Time):
     """
     Add additional 'datetime' to json-schema associated in python to arrow.Arrow
     """
-    _py_type = arrow.Arrow
+    _pyType = arrow.Arrow
 
+    @staticmethod
     def _check(self, value, **opts):
-        return isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts)
+        if isinstance(value, (arrow.Arrow, datetime.datetime)) or TypeProtocol._check(self, value, **opts):
+            return value
+        raise TypeError('%s is not of type date.' % value)
 
+    @staticmethod
     def _convert(self, value, **opts):
         if value is None:
             return value
@@ -128,5 +142,6 @@ class Datetime(Date, Time):
         except Exception as er:
             raise InvalidValue("{0} is not detected as a datetime: {1}".format(value, str(er)))
 
+    @staticmethod
     def _serialize(self, value, **opts):
         return _dt_serialize(self, value, **opts)

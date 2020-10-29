@@ -31,11 +31,12 @@ doc3 = {
     "keywords": ["schemas", "json"]
 }
 
-from ngoschema.repositories import MemoryRepository
+from ngoschema.repositories import Repository
 from ngoschema.models import Document
 
+
 def test_factory_and_query():
-    doc_loader = MemoryRepository(objectClass='ngoschema.models.Document', many=True)
+    doc_loader = Repository(instanceClass='ngoschema.models.Document', many=True)
     doc_loader.register(Document(**doc1))
     doc_loader.register(Document(**doc2))
     doc_loader.register(Document(**doc3))

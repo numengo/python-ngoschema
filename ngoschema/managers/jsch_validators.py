@@ -4,11 +4,10 @@ from __future__ import unicode_literals
 
 from jsonschema import _validators
 from jsonschema.validators import create
-from jsonschema._format import draft7_format_checker as format_checker
 
 from ..utils.utils import GenericClassRegistry
 from ..exceptions import ValidationError
-from ..resolver import resolve_doc, UriResolver
+from ngoschema.resolvers.uri_resolver import resolve_doc, UriResolver
 from .. import settings
 
 # create a registry for validators

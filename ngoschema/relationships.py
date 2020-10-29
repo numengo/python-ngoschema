@@ -9,9 +9,9 @@ created on 28/01/2019
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from ..decorators import classproperty
-from ..protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
-from ..types import String
+from .decorators import classproperty
+from .protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
+from .types import String
 
 
 class ForeignKey(with_metaclass(SchemaMetaclass)):
@@ -52,7 +52,7 @@ class Relationship(with_metaclass(SchemaMetaclass)):
     @classproperty
     def foreignClass(cls):
         from ..managers.type_builder import TypeBuilder
-        from ngoschema.models.entities import Entity
+        from ngoschema.models.instances import Entity
         if not cls._foreign_class and cls.foreignSchema:
             try:
                 cls._foreign_class = TypeBuilder.load(cls.foreignSchema)

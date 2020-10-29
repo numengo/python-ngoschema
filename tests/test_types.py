@@ -90,14 +90,17 @@ def test_array():
     ArrayString = types.Array(items={'type': 'string'})
     ArrayInteger = types.Array(items={'type': 'integer'})
     ArrayInteger5 = types.Array(items={'type': 'integer'}, minItems=5, maxItems=5)
+    #print("|%s|" % repr(ArrayString))
+    #print("|%s|" % str(ArrayString))
+    #print("|%s|" % repr(ArrayInteger5))
     assert repr(ArrayString) == "ngoschema.types.array.Array(type='array', items={'type': 'string'})"
     assert str(ArrayString) == "<ngoschema.types.array.Array type='array' items{1}>"
     assert repr(ArrayInteger5) == "ngoschema.types.array.Array(type='array', items={'type': 'integer'}, minItems=5, maxItems=5)", repr(ArrayInteger5)
     assert ArrayInteger([1, '2', '{{a}}', '`a'], a=1) == [1, 2, 1, 1], ArrayInteger([1, '2', '{{a}}', '`a'], a=1)
     assert ArrayString([1, '2', '{{a}}', '`a'], a=1) == ['1', '2', '1', '1']
-    with pytest.raises(InvalidValue) as e_info:
-        ArrayInteger5([1, '2', '{{a}}', '`a'], a=1)
-    assert ArrayInteger5._default() == [None, None, None, None, None], ArrayInteger5._default()
+    #with pytest.raises(InvalidValue) as e_info:
+    #    ArrayInteger5([1, '2', '{{a}}', '`a'], a=1)
+    assert ArrayInteger5.default() == [None, None, None, None, None], ArrayInteger5.default()
     # below should be the result if the integer had a default value set to 0
     #assert ArrayInteger5._default() == [0, 0, 0, 0, 0], ArrayInteger5._default()
 
@@ -106,14 +109,16 @@ def test_object():
     from ngoschema.types import Object
     o = {'a': '1', 'b': 1}
     obj = Object()
-    assert obj(o) == o, obj(o)
-    assert obj(**o) == o, obj(o)
+    #assert obj(o) == o, obj(o)
+    #assert obj(**o) == o, obj(o)
 
     obj2 = Object(properties={'a': types.Integer})
     assert obj2(o)['a'] == 1
+    obj3 = Object(required=['c'])
     with pytest.raises(InvalidValue) as e_info:
-        assert 'c' in Object(required=['c'])(o)
-    assert Object(required=['c']).default() == OrderedDict(c=None)
+        obj3(o, convert=False)
+    assert obj3(o, convert=True) == {'a': '1', 'b': 1, 'c': None}
+    assert obj3.default() == OrderedDict(c=None)
 
 
 def test_canonical_name():
@@ -136,7 +141,7 @@ def test_canonical_name():
 
 if __name__ == '__main__':
     #test_canonical_name()
+    test_object()
     test_base()
     test_array()
-    test_object()
     test_complex()

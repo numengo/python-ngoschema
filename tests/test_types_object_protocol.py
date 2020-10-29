@@ -2,7 +2,7 @@ import pytest
 
 from future.utils import with_metaclass
 from ngoschema.exceptions import InvalidValue
-from ngoschema.schemas_loader import load_schema
+from ngoschema.loaders.schemas import load_schema
 from ngoschema.protocols import SchemaMetaclass, split_cname
 
 split_cname('asd[1][2]')
@@ -44,7 +44,7 @@ def test_object_protocol():
         _id = 'B'
 
     class AB(with_metaclass(SchemaMetaclass, A, B)):
-        a = 1  # define a default in class, should be converted to string as required in schema
+        a = '1'
 
     a = A(a=1)
     assert a.a == '1'
@@ -74,6 +74,7 @@ def test_object_protocol():
 def test_call_order():
     # test smart lazy loading and property evaluation order
     class Foo(with_metaclass(SchemaMetaclass)):
+        _lazyLoading = True
         _schema = {
             'type': 'object',
             'additionalProperties': False,
@@ -104,7 +105,7 @@ def test_call_order():
     assert foo['b'] == foo.b == 1
     foo.do_validate()
     # create a json dict with filtering options
-    foo2 = foo.do_serialize(no_defaults=False, excludes=Foo._read_only)
+    foo2 = foo.do_serialize(no_defaults=False, excludes=Foo._readOnly)
     assert foo2['a'] == foo.a
     assert 'c' not in foo2
     assert 'c' in foo.do_serialize(no_defaults=False)
@@ -150,7 +151,7 @@ def test_repr():
     print(str(a1))
 
 if __name__ == "__main__":
-    test_repr()
-    test_call_order()
     test_object_protocol()
+    test_call_order()
+    test_repr()
     #test_schema_mro()

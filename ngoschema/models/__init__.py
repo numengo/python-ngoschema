@@ -1,22 +1,21 @@
-from .documents import *
 #from .inspect import *
 from .metadata import *
-from .entities import *
+from .instances import *
+from .files import *
 
 
 
 __all__ = [
-    # document
+    # metadata
+    'Annotation',
+    'Id',
+    'Plural',
+    # instances
+    'Instance',
+    'Entity',
+    'InstanceList',
+    # files
     'Document',
     'get_document_registry',
     'DocumentRegistry',
-    # metadata
-    'Annotation',
-    'IdentifiedObject',
-    'NamedObject',
-    'Metadata',
-    # entity
-    'Entity',
-    'NamedEntity',
-    'EntityWithMetadata',
 ]

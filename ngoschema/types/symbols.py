@@ -24,9 +24,10 @@ class Symbol(Primitive):
     Associate json-schema 'importable' to an imported symbol
     """
     DOT = re.compile(r"\.")
-    _py_type = None
+    _pyType = None
     _builtins = importlib.__builtins__
 
+    @staticmethod
     def _convert(self, value, **opts):
         typed = self._builtins.get(value, value)
         if String.check(typed):
@@ -54,13 +55,17 @@ class Symbol(Primitive):
             raise ConversionError("%s is not a %s" % (value, self._type))
         return typed
 
+    @staticmethod
     def _check(self, value, **opts):
-        return self.check_symbol(value) or TypeProtocol._check(self, value, **opts)
+        if self.check_symbol(value) or TypeProtocol._check(self, value, **opts):
+            return value
+        raise TypeError('%s is not of type symbol.' % value)
 
     @classmethod
     def check_symbol(cls, value):
-        return isinstance(value, cls._py_type) if cls._py_type else True
+        return isinstance(value, cls._pyType) if cls._pyType else True
 
+    @staticmethod
     def _serialize(self, value, **opts):
         if value:
             if not String.check(value):
@@ -74,7 +79,7 @@ class Symbol(Primitive):
 
 @register_type('module')
 class Module(Symbol):
-    _py_type = types.ModuleType
+    _pyType = types.ModuleType
 
     #def _serialize(self, value, **opts):
     #    if value and not String.check(value):
@@ -84,17 +89,17 @@ class Module(Symbol):
 
 @register_type('function')
 class Function(Symbol):
-    _py_type = types.FunctionType
+    _pyType = types.FunctionType
 
 
 @register_type('class')
 class Class(Symbol):
-    _py_type = type
+    _pyType = type
 
 
 @register_type('method')
 class Method(Function):
-    _py_type = types.MethodType
+    _pyType = types.MethodType
 
 
 @register_type('staticmethod')
@@ -115,7 +120,7 @@ class ClassMethod(Method):
 
 @register_type('instance')
 class Instance(Class):
-    _py_type = None
+    _pyType = None
 
     @classmethod
     def check_symbol(cls, value):
@@ -126,7 +131,7 @@ class Instance(Class):
 
 @register_type('callable')
 class Callable(Symbol):
-    _py_type = None
+    _pyType = None
 
     @classmethod
     def check_symbol(cls, value):

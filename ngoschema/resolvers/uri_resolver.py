@@ -25,23 +25,20 @@ import inflection
 from jsonschema.compat import urldefrag, lru_cache, urljoin
 from jsonschema.validators import RefResolver
 
-from .exceptions import InvalidValue
-from .utils import UriDict, ReadOnlyChainMap as ChainMap
-from .utils import apply_through_collection
-from .utils import is_string, is_sequence
-from . import settings
+from ..exceptions import InvalidValue
+from ..utils import UriDict, ReadOnlyChainMap as ChainMap
+from ..utils import apply_through_collection
+from ..utils import is_string, is_sequence
+#from ..protocols.resolver import Resolver
+from .. import settings
 
 logger = logging.getLogger(__name__)
 
 
 def domain_uri(name, domain=None):
-    from . import settings
     from ngoschema.managers.namespace_manager import clean_for_uri
     domain = domain or settings.MS_DOMAIN
     return "%s%s#" % (domain, clean_for_uri(name))
-
-
-_resolver = None
 
 
 @functools.lru_cache(128)
@@ -93,14 +90,6 @@ def relative_url(target, base):
 
 
 class UriResolver(RefResolver):
-    __doc__ = (""" 
-    Resolver expanding the resolved document according to the 'extends' field
-    (array of uri-reference). The returned document is a deep merge of all
-    corresponding documents.
-    The merge is done according to the order of 'extends' (properties can be
-    overwritten).The original resolved document is merged at the end.
-    """ + RefResolver.__doc__)
-
     _doc_store = UriDict()
 
     @staticmethod
@@ -197,6 +186,23 @@ class UriResolver(RefResolver):
             del schema['properties']
 
         return schema
+
+    @staticmethod
+    def _resolve(self, value, remote=False, **opts):
+        uri, frag = urldefrag(value)
+        doc = UriResolver._doc_store.get(uri)
+        if doc is not None:
+            return resolve_fragment(doc, frag) if frag else doc
+        try:
+            if remote:
+                # we could load the resource
+                if not frag:
+                    return requests.get(uri).content
+                doc = requests.get(uri).json()
+                UriResolver.register_doc(doc, uri)
+                return resolve_fragment(doc, frag)
+        except Exception as er:
+            raise InvalidValue("Impossible to resolve uri %s. %s" % (value, str(er)))
 
 
 def scope(uri, base_id):

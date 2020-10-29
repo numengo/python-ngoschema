@@ -13,16 +13,18 @@ from .loaders import register_module
 register_module('ngoschema')
 
 # create a default context
-from .contexts import Context
+#from .contexts import Context
 
-DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
-APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
+#DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
+#APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
 
 from .exceptions import InvalidOperation, SchemaError, ValidationError
 from .managers import *
 from .protocols import *
 from .repositories import *
 from .query import Query, Filter
+from .registries import serializers_registry, transformers_registry, repositories_registry
+
 
 __all__ = [
     'settings',
@@ -42,15 +44,5 @@ __all__ = [
     'Query',
     'Filter',
     # repository
-    'repository_registry',
-    'MemoryRepository',
-    'FileRepository',
-    'JsonFileRepository',
-    'YamlFileRepository',
-    'XmlFileRepository',
-    'load_object_from_file',
-    'load_json_from_file',
-    'load_yaml_from_file',
-    'load_xml_from_file',
-    'serialize_object_to_file',
+    'repositories_registry',
 ]

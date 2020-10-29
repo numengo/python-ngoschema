@@ -1,4 +1,4 @@
-from .relationships import *
+from ngoschema.relationships import *
 
 __all__ = [
     # relationship

@@ -11,7 +11,6 @@ from __future__ import unicode_literals
 import json
 import collections
 import pathlib
-import pkgutil
 import logging
 from builtins import str
 
@@ -38,7 +37,7 @@ def load_schema(schema, schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     """
-    from ..resolver import UriResolver
+    from ngoschema.resolvers.uri_resolver import UriResolver
     uri = _id_of(schema).rstrip('#')
     if not uri and "title" in schema:
         uri = inflection.parameterize(six.text_type(schema["title"]), "_")

@@ -24,47 +24,61 @@ class String(Primitive):
     json-schema 'string' type
     """
     _schema = {'type': 'string'}
-    _py_type = str
+    _pyType = str
+    _length = None
+    _minLength = None
+    _maxLength = None
+    _pattern = None
+    _format = None
 
-    def _serialize(self, value, **opts):
-        raw_literals = opts.get('raw_literals', self._raw_literals)
-        if Pattern.check(value) and not raw_literals:
-            try:
-                return String.convert(value, **opts)
-            except Exception as er:
-                pass
-        return value
+    def __init__(self, **opts):
+        Primitive.__init__(self, **opts)
+        self._length = self._schema.get('length', self._length)
+        self._minLength = self._schema.get('minLength', self._minLength)
+        self._maxLength = self._schema.get('maxLength', self._maxLength)
+        self._pattern = self._schema.get('pattern', self._pattern)
+        self._format = self._schema.get('format', self._format)
 
 
 class Expr(String):
     _expr_regex = re.compile(r"[a-zA-Z_]+[\w\.]*")
 
+    @staticmethod
     def _check(self, value, **opts):
-        return String.check(value) and value.startswith("`")
+        if String.check(value) and value.startswith("`"):
+            return value
+        raise TypeError('%s is not of type "expr".' % value)
 
+    @staticmethod
     def _convert(self, value, context=None, **opts):
-        ctx = String.create_context(self, context, opts).merged
+        context = context or self._context
+        ctx = context.merged
+        ctx.setdefault('this', self)
         typed = eval(str(value)[1:], ctx)
         return TypeProtocol._convert(self, typed, **opts)
 
     @staticmethod
-    def inputs(value, **opts):
+    def _inputs(self, value, **opts):
         return set(Expr._expr_regex.findall(str(value))).difference(builtins.__dict__)
 
 
 class Pattern(String):
 
+    @staticmethod
     def _check(self, value, **opts):
-        return String.check(value) and ("{{" in value or "{%" in value)
-
-    def _convert(self, value, context=None, **opts):
-        ctx = String.create_context(self, context, opts).merged
-        ctx.setdefault('this', None)
-        #ctx.setdefault('this', ctx) # cannot work for accessing members
-        return TemplatedString(value)(ctx)
+        if String.check(value) and ("{{" in value or "{%" in value):
+            return value
+        raise TypeError('%s is not of type "pattern".' % value)
 
     @staticmethod
-    def inputs(value, **opts):
+    def _convert(self, value, **opts):
+        ctx = self.create_context(**opts).merged
+        ctx.setdefault('this', None)
+        if value is not None:
+            return TemplatedString(value)(ctx)
+
+    @staticmethod
+    def _inputs(self, value, **opts):
         from ngoschema.utils.jinja2 import get_jinja2_variables
         return set(get_jinja2_variables(value))
 

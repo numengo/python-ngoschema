@@ -8,34 +8,33 @@ import arrow
 import pathlib
 import urllib.parse
 
-from ..exceptions import ValidationError, InvalidValue
 from ..managers.type_builder import register_type
-from ..resolver import scope
-from .. import settings
+from ..contexts.ns_manager_context import find_ns_mgr, NsManagerContext
+from ..resolvers.uri_resolver import resolve_uri, scope
+from ..protocols import Resolver, Context
 from .type import Primitive
 from .strings import String
 
 
-def find_ns_mgr(context):
-    from ..managers.namespace_manager import NamespaceManager, default_ns_manager
-    return next((m for m in context.maps if isinstance(m, NamespaceManager)), default_ns_manager)
-
-
 @register_type('uri')
-class Uri(Primitive):
+class Uri(Primitive, Resolver):
     """
     Add additional 'uri' to json-schema associated in python to urllib.parse.ParseResult
     """
-    _py_type = urllib.parse.ParseResult
+    _pyType = urllib.parse.ParseResult
 
+    @staticmethod
     def _check(self, value, **opts):
         """
         Checks value type against urllib.parse.ParseResult, pathlib.Path and String
         :param value: value to test
         :return: True if compatible
         """
-        return Primitive._check(self, value) or isinstance(value, pathlib.Path) or String.check(value, **opts)
+        if Primitive._check(self, value) or isinstance(value, pathlib.Path) or String.check(value, **opts):
+            return value
+        raise TypeError('%s is not type Uri.' % value)
 
+    @staticmethod
     def _convert(self, value, **opts):
         """
         Convert from pathlib.Path using as_uri of force to string before parsing using urllib.parse.urlparse
@@ -49,6 +48,7 @@ class Uri(Primitive):
             return urllib.parse.urlparse(s)
         return value
 
+    @staticmethod
     def _serialize(self, value, **opts):
         """
         returns for json using urllib.parse.ParsedResult.geturl
@@ -56,7 +56,11 @@ class Uri(Primitive):
         :param context: evaluation context
         :return: json data
         """
-        return Uri.convert(value, **opts).geturl()
+        return Uri._convert(self, value, **opts).geturl()
+
+    @staticmethod
+    def _resolve(self, value, **opts):
+        return resolve_uri(Uri._serialize(self, value, **opts), **opts)
 
 
 # https://regex101.com/r/njslOV/2
@@ -64,33 +68,31 @@ cn_re = re.compile(r"^[\.a-zA-Z_]+$")
 
 
 @register_type('id')
-class Id(String):
-    _doc_id = ''
+class Id(NsManagerContext, String):
     _canonical = False
 
-    def __init__(self, **schema):
-        String.__init__(self, **schema)
+    def __init__(self, **opts):
+        String.__init__(self, **opts)
+        self._canonical = self._schema.get('canonical', self._canonical)
 
     def __repr__(self):
         uri = self._data_validated.get('uri') or self._data.get('uri')
         return f'<id {uri}>'
 
+    @staticmethod
     def _check(self, value, canonical=True, context=None, **opts):
         if Uri._check(self, value, **opts) and '#' in Uri.serialize(value, context=context):
-            return True
+            return value
         m = cn_re.search(String.convert(value, **opts))
         if m and canonical:
-            try:
-                uri = find_ns_mgr(context).get_cname_id(m.group())
-                return True
-            except Exception as er:
-                pass
-        return False
+            uri = find_ns_mgr(context).get_cname_id(m.group())
+        return value
 
+    @staticmethod
     def _convert(self, value, context=None, **opts):
         uri = value
         if value:
-            ns_mgr = find_ns_mgr(context)
+            ns_mgr = find_ns_mgr(context or self._context)
             if cn_re.search(uri):
                 uri = ns_mgr.get_cname_id(uri)
             if '#' not in uri:
@@ -98,9 +100,10 @@ class Id(String):
             uri = scope(uri, ns_mgr.currentNsUri)
         return uri
 
-    def _serialize(self, value, canonical=None, context=None, **opts):
-        ns_mgr = find_ns_mgr(context)
-        canonical = self._canonical if canonical is None else canonical
+    @staticmethod
+    def _serialize(self, value, context=None, **opts):
+        ns_mgr = find_ns_mgr(context or self._context)
+        canonical = opts.get('canonical', self._canonical)
         if canonical:
             return ns_mgr.get_id_cname(value)
         else:
@@ -120,16 +123,22 @@ class Path(Uri):
     """
     Add additional 'path' to json-schema associated in python to pathlib.Path
     """
-    _py_type = pathlib.Path
-    _expand_user = False
-    _resolve = False
+    _pyType = pathlib.Path
+    _expandUser = False
+    _relative = None
+    _isPathExisting = False
+    _isPathDir = False
+    _isPathFile = False
 
-    def __init__(self, **schema):
-        Primitive.__init__(self, **schema)
-        self._expand_user = self._schema.get('expandUser', False)
-        self._resolve = self._schema.get('resolve', False)
+    def __init__(self, **opts):
+        Primitive.__init__(self, **opts)
+        self._expandUser = self._schema.get('expandUser', self._expandUser)
+        self._isPathEExisting = self._schema.get('isPathExisting', self._isPathExisting)
+        self._isPathDir = self._schema.get('isPathDir', self._isPathDir)
+        self._isPathFile = self._schema.get('isPathFile', self._isPathFile)
 
-    def _convert(self, value, **opts):
+    @staticmethod
+    def _convert(self, value, resolve=False, **opts):
         """
         convert from urllib.parse.ParsedResult, unquoting the url.
         """
@@ -139,22 +148,28 @@ class Path(Uri):
         elif typed:
             # cast to str to make sure the path is converted
             typed = pathlib.Path(String.convert(str(typed), **opts))
-        if self._expand_user:
+        expand_user = opts.get('expand_user', self._expandUser)
+        if expand_user:
             typed = typed.expanduser()
-        if self._resolve:
-            typed = typed.resolve()
+        if resolve:
+            typed = self._resolve(typed, **opts)
         return typed
 
-    def _serialize(self, value, context=None, relative=False, **opts):
+    @staticmethod
+    def _serialize(self, value, context=None, **opts):
+        relative = opts.get('relative', self._relative)
         if relative:
             from ..repositories import FileRepository
-            ctx = self.create_context(context)
+            ctx = self._create_context(self, context)
             fr = ctx.find_file_repository()
             if fr and fr.document:
                 fp = fr.document.filepath
                 from pathlib import Path
                 p = value.relative_to(fp)
         return str(value)
+
+    def _resolve(self, typed, **opts):
+        return typed.resolve(**opts)
 
 
 PathExists = Path.extend_type('PathExists', isPathExisting=True)

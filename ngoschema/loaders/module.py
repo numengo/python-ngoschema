@@ -71,7 +71,7 @@ class GenericModuleFileLoader(Registry):
 # loader to register module with a models folder where to look for templates
 templates_module_loader = GenericModuleFileLoader('templates', update_function=update_default_jinja2_env)
 
-# loader to register module with a transforms folder where to look for model transformations
+# loader to register module with a converters folder where to look for model transformations
 transforms_module_loader = GenericModuleFileLoader('transforms')
 
 # loader to register module with a models folder where to look for objects
@@ -98,7 +98,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     :type schemas_store: dict
     :rtype: dict
     """
-    from ..resolver import UriResolver
+    from ngoschema.resolvers.uri_resolver import UriResolver
     schema_folder = schemas_module_loader.register(module)
 
     logger = logging.getLogger(__name__)

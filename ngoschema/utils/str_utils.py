@@ -195,7 +195,7 @@ def file_link_format(fp):
     return pathlib.Path(fp).resolve().as_uri()
 
 
-def shorten(s, max_size=settings.PPRINT_MAX_STRL, str_fun=repr):
+def shorten(s, max_size=settings.PPRINT_MAX_STRL, str_fun=str):
     s = str_fun(s)
     if len(s) > max_size:
         return s[:max_size] + '...'

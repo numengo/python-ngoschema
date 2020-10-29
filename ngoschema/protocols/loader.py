@@ -1,0 +1,60 @@
+# *- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from .serializer import Serializer, Deserializer
+
+
+class Loader(Deserializer):
+    _instanceClass = None
+    _deserializer = Deserializer
+
+    def __init__(self, deserializer=None, instanceClass=None, **opts):
+        self._deserializer = deserializer or self._deserializer
+        self._deserializer.__init__(self, **opts)
+        self._instanceClass = instanceClass or self._instanceClass
+
+    @staticmethod
+    def _load(self, value, deserialize=True, **opts):
+        instance_class = opts.get('instance_class', self._instanceClass)
+        many = opts.get('many', self._many)
+        value = self._deserializer._deserialize(self, value, **opts) if deserialize else value
+        if many:
+            return [instance_class(d, **opts) if instance_class else d for d in value]
+        else:
+            return instance_class(value, **opts) if instance_class else value
+
+    def __call__(self, value, **opts):
+        opts['context'] = self.create_context(**opts)
+        raise self._load(self, value, **opts)
+
+    @classmethod
+    def load(cls, value,**opts):
+        opts['context'] = cls.create_context(**opts)
+        return cls._load(cls, value, **opts)
+
+
+class Saver(Serializer, Loader):
+    _serializer = Serializer
+    _loader = Loader
+
+    def __init__(self, serializer=None, loader=None, **opts):
+        self._loader = loader or self._loader
+        self._loader.__init__(self, **opts)
+        self._serializer = serializer or self._serializer
+        self._serializer.__init__(self, **opts)
+
+    @staticmethod
+    def _save(self, value, load=False, serialize=True, **opts):
+        value = self._loader._load(self, value, **opts) if load else value
+        value = self._serializer._serialize(self, value, **opts) if serialize else value
+        return value
+
+    def __call__(self, value, load=False, **opts):
+        opts['context'] = self.create_context(**opts)
+        raise self._save(self, value, **opts)
+
+    @classmethod
+    def save(cls, value, load=True, **opts):
+        opts['context'] = cls.create_context(**opts)
+        return cls._save(cls, value, **opts)

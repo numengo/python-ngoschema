@@ -8,9 +8,9 @@ import re
 from .. import settings
 from ..exceptions import InvalidValue
 from ..decorators import assert_arg
-from ..resolver import resolve_uri
+from ngoschema.resolvers.uri_resolver import resolve_uri
 from ..session import Session, scoped_session, session_maker
-from ..protocols import TypeProtocol
+from ..protocols import TypeProtocol, Resolver
 from ..managers.type_builder import register_type
 from .strings import String
 from .numerics import Integer
@@ -22,7 +22,8 @@ ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 @register_type('$ref')
 class Ref(String):
 
-    def _do_validate(self, value, resolve=True, **opts):
+    @staticmethod
+    def _validate(self, value, resolve=True, **opts):
         String.validate(value, **opts)
         if resolve:
             try:
@@ -32,14 +33,15 @@ class Ref(String):
                 return False
 
     @staticmethod
-    def resolve(value):
+    def _resolve(self, value):
         return resolve_uri(value)
 
+    @staticmethod
     def _evaluate(self, value, validate=True, resolve=False, **opts):
         value = String._evaluate(self, value, validate=False, **opts)
         if validate:
-            self._do_validate(value, resolve=False)
-        return self.resolve(value) if resolve else value
+            self._validate(self, value, resolve=False)
+        return self._resolve(self, value) if resolve else value
 
 
 @register_type('foreignKey')
@@ -49,47 +51,54 @@ class ForeignKey(Ref):
     _foreign_keys_type = [Integer]
     _back_populates = None
 
+    @staticmethod
     def _convert(self, value, **opts):
         if self._foreign_class and isinstance(value, self._foreign_class):
             value = [getattr(value, k) for k in self._foreign_keys]
-        return tuple(t.convert(v, **opts) for t, v in zip(self._foreign_keys_type, value))
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreign_keys_type, value))
 
+    @staticmethod
     @assert_arg(1, Array, strDelimiter=',')
     def _check(self, value, **opts):
-        return all(t.check(v, **opts) for t, v in zip(self._foreign_keys_type, Array.convert(value, **opts)))
+        if all(t._check(t, v, **opts) for t, v in zip(self._foreign_keys_type, Array.convert(value, **opts))):
+            return value
+        raise TypeError('%s is not of type foreignKey.' % value)
 
-    def __init__(self, **schema):
+    def __init__(self, **opts):
         from ..managers.type_builder import TypeBuilder
         from ..protocols.object_protocol import ObjectProtocol
-        TypeProtocol.__init__(self, **schema)
+        TypeProtocol.__init__(self, **opts)
         fc = TypeBuilder.load(self._schema['$schema']) if '$schema' in self._schema else None
         self._foreign_keys = self._schema.get('foreignKey', {}).get('fkeys') or self._foreign_keys
         if fc:
             self._foreign_class = fc
             self._foreign_keys = fk = fc._schema.get('primaryKeys')
-            self._foreign_keys_type = [fc.item_type(k) for k in fk]
+            self._foreign_keys_type = [fc._items_type(fc, k) for k in fk]
         else:
             self._foreign_class = ObjectProtocol
 
+    @staticmethod
     def _evaluate(self, value, validate=True, resolve=False, context=None, **opts):
-        ctx = TypeProtocol.create_context(self, context)
-        value = self.convert(value, context=ctx, **opts)
+        ctx = TypeProtocol._create_context(self, context)
+        value = self._convert(self, value, context=ctx, **opts)
         if validate:
-            self.validate(value, resolve=False, context=ctx)  # resolve False to avoid double resolution
+            self._validate(self, value, resolve=False, context=ctx)  # resolve False to avoid double resolution
         if resolve:
-            return self.resolve(value, context=ctx)
+            return self._resolve(self, value, context=ctx)
         return value
 
-    def _do_validate(self, value, resolve=False, **opts):
-        TypeProtocol._do_validate(self, value, **opts)
+    @staticmethod
+    def _validate(self, value, resolve=False, **opts):
+        TypeProtocol._validate(self, value, **opts)
         if resolve:
             raise InvalidValue()
         pass
 
+    @staticmethod
     @assert_arg(1, Tuple, strDelimiter=',')
-    def resolve(self, key, session=None, **opts):
+    def _resolve(self, key, session=None, **opts):
         session = session or scoped_session(session_maker())()
-        fc_repos = [r for r in session._repos if issubclass(r.objectClass, self._foreign_class)]
+        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self._foreign_class)]
         for r in fc_repos:
             v = r.get(key)
             if v is not None:
@@ -120,16 +129,18 @@ class CanonicalName(ForeignKey):
     _foreign_keys = ['canonicalName']
     _foreign_keys_type = [String]
 
+    @staticmethod
     def _convert(self, value, **opts):
         if self._foreign_class and isinstance(value, self._foreign_class):
             value = [getattr(value, k) for k in self._foreign_keys]
-        return tuple(t._convert(v, **opts) for t, v in zip(self._foreign_keys_type, value))[0]
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreign_keys_type, value))[0]
 
+    @staticmethod
     @assert_arg(1, Array, strDelimiter='.')
-    def resolve(self, cname, session=None, **opts):
-        from ..models.metadata import NamedObject
+    def _resolve(self, cname, session=None, **opts):
+        from ..models.instances import Instance
         session = session or scoped_session(session_maker())()
-        fc_repos = [r for r in session._repos if issubclass(r.objectClass, NamedObject)]
+        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, Instance)]
         root = cname[0]
         ns = cname[1:]
         for r in fc_repos:

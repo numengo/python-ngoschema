@@ -19,11 +19,11 @@ from ngoci.models.project import Project
 
 def test_json_handler():
     d1 = Document(filepath="/Users/cedric/Devel/python/python-ngomf/ngomf/models/Ngo/MoistAir/PhaseChange/MACND00.json")
-    h1  = JsonFileRepository(objectClass='ngosim.models.component.ComponentDefinition', document=d1)
+    h1  = JsonFileRepository(instanceClass='ngosim.models.component.ComponentDefinition', document=d1)
     c1 = h1.load()
 
     d2 = Document(filepath="/Users/cedric/Devel/python/python-ngoci/tests/fixtures/projects.ngoprj")
-    h2  = YamlFileRepository(objectClass=Project, document=d2, many=True)
+    h2  = YamlFileRepository(instanceClass=Project, document=d2, many=True)
     c2s = h2.load()
     print(len(c2s))
 

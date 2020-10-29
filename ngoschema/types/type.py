@@ -7,7 +7,7 @@ import logging
 from ..protocols.type_protocol import TypeProtocol
 from ..managers.type_builder import register_type
 from ..utils import ReadOnlyChainMap
-from ..resolver import resolve_uri, UriResolver
+from ..resolvers.uri_resolver import resolve_uri, UriResolver
 from ..exceptions import InvalidValue, ConversionError
 from ..utils import shorten, inline
 from .. import settings
@@ -16,48 +16,37 @@ logger = logging.getLogger(__name__)
 
 
 class Type(TypeProtocol):
-    _raw_literals = False
 
-    def __init__(self, context=None, **schema):
-        # create a chainmap of all schemas and validators of ancestors, reduce it and make it persistent
-        from ..managers.type_builder import TypeBuilder, untype_schema, DefaultValidator
-        schema = untype_schema(schema)
-        self._mro_type = [b for b in self.__class__.__mro__ if issubclass(b, TypeProtocol)]
-        self._schema_chained = ReadOnlyChainMap(schema,
-                                *[b._schema for b in self._mro_type],
-                                *[resolve_uri(e) for e in schema.get('extends', [])])
-        self._schema = schema = dict(self._schema_chained)
-        TypeBuilder.check_schema(schema)
-        self._id = schema.get('$id') or self._id
-        self._type = ty = schema.get('type')
-        self._py_type = schema.get('pyType')
-        self._raw_literals = schema.get('rawLiterals', self._raw_literals)
-        self._validate = schema.get('validate', self._validate)
-        self._validator = DefaultValidator(schema, resolver=UriResolver.create(uri=self._id, schema=schema))
-        if not self._py_type:
+    def __init__(self, **opts):
+        TypeProtocol.__init__(self, **opts)
+        from ..managers import TypeBuilder
+        schema = dict(self._schema)
+        if not self._pyType:
+            ty = schema.get('type')
             if 'type' in schema:
-                self._py_type = TypeBuilder.get_type(ty)._py_type
-        self.set_context(context)
+                self._pyType = TypeBuilder.get_type(ty)._pyType
 
-    def __call__(self, *args, **kwargs):
-        value = args[0] if args else kwargs or None
-        opts = kwargs if args else {}
-        serialize = opts.pop('serialize', False)
-        typed = self.evaluate(value, **opts)
-        return self.serialize(typed, **opts) if serialize else typed
+    def __call__(self, value, deserialize=True, serialize=False, **opts):
+        opts['context'] = self.create_context(**opts)
+        value = self._deserialize(self, value, **opts) if deserialize else value
+        return self._serialize(self, value, deserialize=False, **opts) if serialize else value
 
-    def has_default(self):
-        return self._has_default()
 
-    def default(self, **opts):
-        return self._default(**opts)
+class Primitive(Type):
+    _rawLiterals = False
 
-    def evaluate(self, value, **opts):
-        return self._evaluate(value, **opts)
+    @classmethod
+    def is_primitive(cls):
+        return True
 
-    def inputs(self, value, context=None, **opts):
+    def __init__(self, rawLiterals=False, **opts):
+        Type.__init__(self, **opts)
+        self._rawLiterals = self._schema.get('rawLiterals', rawLiterals)
+
+    @staticmethod
+    def _inputs(self, value, **opts):
         from .strings import Expr, Pattern
-        raw_literals = opts.pop('raw_literals', self._raw_literals)
+        raw_literals = opts.pop('raw_literals', self._rawLiterals)
         if not raw_literals:
             if Pattern.check(value):
                 return Pattern.inputs(value, **opts)
@@ -65,49 +54,40 @@ class Type(TypeProtocol):
                 return Expr.inputs(value, **opts)
         return set()
 
+    @staticmethod
     def _convert(self, value, **opts):
         from .strings import Expr, Pattern
-        raw_literals = opts.pop('raw_literals', self._raw_literals)
-        typed = value
+        raw_literals = opts.pop('raw_literals', self._rawLiterals)
         if value and not raw_literals:
             try:
                 if Expr.check(value):
-                    typed = Expr.convert(value, **opts)
+                    value = Expr.convert(value, **opts)
                 elif Pattern.check(value):
-                    typed = Pattern.convert(value, **opts)
+                    value = Pattern.convert(value, **opts)
             except Exception as er:
                 logger.warning('impossible to convert %s: %s', shorten(inline(str(value))), er)
-                logger.error(er, exc_info=True)
-                typed = value
+                #logger.error(er, exc_info=True)
         # only convert if not raw literals
-        return typed if raw_literals else TypeProtocol._convert(self, typed, **opts)
-
-    def validate(self, value, **opts):
-        return self._do_validate(value, **opts)
-
-    #def serialize(self, value, **opts):
-    #    return self._serialize(value, **opts)
-
-
-class Primitive(Type):
-
-    @classmethod
-    def is_primitive(cls):
-        return True
+        return value if raw_literals else Type._convert(self, value, **opts)
 
 
 @register_type('enum')
 class Enum(Primitive):
-    _schema = {'enum': []}
     _enum = []
 
-    def __init__(self, **schema):
-        Primitive.__init__(self, **schema)
-        self._enum = self._schema.get('enum', self._enum)
+    def __init__(self, **opts):
+        Primitive.__init__(self, **opts)
+        self._enum = self._schema.get('enum', [])
+        if self._enum and not self._default:
+            self._default = self._enum[0]
 
+    @staticmethod
     def _check(self, value, **opts):
-        return value in self._enum or TypeProtocol._check(self, value, **opts)
+        if value in self._enum or Primitive._check(self, value, **opts):
+            return value
+        raise TypeError('%s is not of type enum %s.' % (value, self._enum))
 
+    @staticmethod
     def _convert(self, value, context=None, **opts):
         from .numerics import Integer
         from .strings import String
@@ -126,12 +106,3 @@ class Enum(Primitive):
         if not s:
             return self._enum[0]
         raise ConversionError('Impossible to convert %s to enum %r' % (value, enum))
-
-    def _default(self, **opts):
-        if TypeProtocol._has_default(self):
-            return TypeProtocol._default(self, **opts)
-        return self._enum[0]
-
-    def _has_default(self):
-        return bool(self._enum) or TypeProtocol._has_default(self)
-
