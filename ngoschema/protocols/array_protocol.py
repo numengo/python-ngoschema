@@ -6,11 +6,9 @@ from collections import MutableSequence
 import six
 import logging
 
-from ..exceptions import InvalidValue
 from ..types.array import Array, ArraySerializer, ArrayDeserializer
 from .collection_protocol import CollectionProtocol, TypeProtocol
 from ..types.constants import _True
-from ..decorators import classproperty
 from ..utils import shorten
 from ..managers.namespace_manager import default_ns_manager
 from .. import settings
@@ -37,37 +35,38 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _data_validated = []
     _items_inputs = []
 
-    #def __init__(self, **opts):
-    #    Array.__init__(self, **opts)
-    #    CollectionProtocol.__init__(self, **opts)
+    @classmethod
+    def default(cls, value=None, **opts):
+        return cls(Array.default(cls, value, **opts))
 
     def _touch(self):
         CollectionProtocol._touch(self)
         self._data_validated = [None] * len(self._data)
         self._items_inputs = [{}] * len(self._data)
 
-    @staticmethod
-    def _items_type(self, item):
-        from .type_proxy import TypeProxy
-        if self._items_type_cache is None:
-            if not self._itemsIsList:
-                if isinstance(self._items, TypeProxy):
-                    if self._items.proxy_type:
-                        self._items = self._items.proxy_type
-                        self._items_type_cache = self._items
-                else:
-                    self._items_type_cache = self._items
-            else:
-                ok = True
-                for i, t in enumerate(self._items):
-                    if isinstance(t, TypeProxy):
-                        if t.proxy_type:
-                            self._items[i] = t.proxy_type
-                        else:
-                            ok = False
-                if ok:
-                    self._items_type_cache = self._items
-        return Array._items_type(self, item)
+    #@staticmethod
+    #def _items_type(self, item):
+    #    #from .type_proxy import TypeProxy
+    #    #if self._items_type_cache is None:
+    #    #    if not self._itemsIsList:
+    #    #        if hasattr(self._items, 'proxy_type'):
+    #    #            if self._items.proxy_type:
+    #    #                self._items = self._items.proxy_type
+    #    #                self._items_type_cache = self._items
+    #    #        else:
+    #    #            self._items_type_cache = self._items
+    #    #    else:
+    #    #        ok = True
+    #    #        for i, t in enumerate(self._items):
+    #    #            if hasattr(t, 'proxy_type'):
+    #    #                if t.proxy_type:
+    #    #                    self._items[i] = t.proxy_type
+    #    #                else:
+    #    #                    ok = False
+    #    #        if ok:
+    #    #            self._items_type_cache = self._items
+    #    #return self._items_type_cache[item] if self._itemsIsList else self._items_type_cache
+    #    return Array._items_type(self, item)
 
     def __len__(self):
         return len(self._data)
@@ -81,7 +80,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
             self._set_data_validated(item, self._items_evaluate(item))
         elif isinstance(value, TypeProtocol):
             value.set_context(self._context)
-        self._validate(items=False)
+        self._validate(self, value, items=False)
 
     def _str_list(self):
         if self._str is None:
@@ -97,6 +96,17 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     def __str__(self):
         return ArrayProtocol._str_list(self)
+
+    #def _items_inputs_evaluate(self, item):
+    #    ret = {}
+    #    t = self._items_type(self, item)
+    #    for k in t._inputs(t, self._data[item]):
+    #        try:
+    #            ret[k] = self[item][k]
+    #        except Exception as er:
+    #            self._logger.error(er, exc_info=True)
+    #            pass
+    #    return ret
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):

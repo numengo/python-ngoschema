@@ -19,23 +19,11 @@ PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
 logger = logging.getLogger(__name__)
 
 
-#def value_opts(*args, value=None, **kwargs):
-#    opts = kwargs
-#    if args:
-#        assert len(args) == 1
-#        value = args[0]
-#    if value is None:
-#        value = kwargs
-#        opts = {}
-#    return value, opts
-
-
 class TypeProtocol(Serializer):
     _serializer = Serializer
     _type = None
     _description = None
     _comment = None
-    _serializer = Serializer
 
     def __init__(self, serializer=None, **opts):
         self._serializer = serializer or self._serializer
@@ -75,8 +63,8 @@ class TypeProtocol(Serializer):
             attrs['_default'] = schema['default']
         attrs['_id'] = id
         attrs['_logger'] = logging.getLogger(cname)
-        attrs['_js_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
-        #attrs['_mro_type'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
+        attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
+        attrs['_mroType'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
         return type(clsname, bases + extra_bases, attrs)
 
     @staticmethod
@@ -95,8 +83,9 @@ class TypeProtocol(Serializer):
     def has_default(cls, **opts):
         return cls._has_default(cls, **opts)
 
-    def default(self, value=None, **opts):
-        return self._deserialize(self, value or self._default, evaluate=False, **opts)
+    @classmethod
+    def default(cls, value=None, **opts):
+        return cls._deserialize(cls, value or cls._default, evaluate=False, **opts)
 
     @classmethod
     def is_primitive(cls):

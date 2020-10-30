@@ -27,13 +27,13 @@
             "#/$defs/contexts/$defs/NsManagerContext"
           ],
           "notSerialized": [
-            "_parent"
+            "_parentObject"
           ],
           "notValidated": [
-            "_parent"
+            "_parentObject"
           ],
           "properties": {
-            "_parent": true
+            "_parentObject": true
           }
         },
         "InstanceContext": {
@@ -712,15 +712,15 @@
               "type": "boolean",
               "default": true
             },
-            "attr_prefix": {
+            "attrPrefix": {
               "type": "string",
               "default": "@"
             },
-            "cdata_key": {
+            "cdataKey": {
               "type": "string",
               "default": "#text"
             },
-            "short_empty_elements": {
+            "shortEmptyElements": {
               "type": "boolean",
               "default": true
             },

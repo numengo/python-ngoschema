@@ -39,9 +39,19 @@ class Primitive(Type):
     def is_primitive(cls):
         return True
 
-    def __init__(self, rawLiterals=False, **opts):
+    def __init__(self, **opts):
         Type.__init__(self, **opts)
-        self._rawLiterals = self._schema.get('rawLiterals', rawLiterals)
+        self._rawLiterals = self._schema.get('rawLiterals', self._rawLiterals)
+
+    @staticmethod
+    def _check(self, value, **opts):
+        from collections import Mapping, Sequence
+        if not self._pyType:
+            if isinstance(value, (Mapping, Sequence)) and not isinstance(value, str):
+                raise TypeError('%s is not a primitive.' % shorten(value, str_fun=repr))
+            return value
+        else:
+            return Type._check(self, value, **opts)
 
     @staticmethod
     def _inputs(self, value, **opts):

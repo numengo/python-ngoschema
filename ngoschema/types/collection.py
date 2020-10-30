@@ -58,13 +58,11 @@ class Collection(Type, CollectionSerializer):
     def __init__(self, items=None, notValidated=None, notSerialized=None, **opts):
         self._notValidated.update(notValidated or [])
         self._notSerialized.update(notSerialized or [])
-        #CollectionSerializer.__init__(self, **opts)
         Type.__init__(self, **opts)
         self._items = items or self._items
 
     @staticmethod
     def _check(self, value, items=True, **opts):
-        #value = value if isinstance(value, self._collType) else Type._check(self, value, **opts)
         value = self._deserializer._check(self, value, **opts)
         if items:
             for k, t in self._items_types(self, value):
@@ -76,25 +74,12 @@ class Collection(Type, CollectionSerializer):
 
     @staticmethod
     def _deserialize(self, value, evaluate=True, items=False, **opts):
-        value = self._collType(value or self._default)
-        ret = self._deserializer._deserialize(self, value, items=items, evaluate=False, **opts)
+        ret = self._deserializer._deserialize(self, value or self._default, items=items, evaluate=False, **opts)
         if items:
             for k, t in self._items_types(self, value):
                 if self._is_included(k, value, **opts):
                     ret[k] = t._deserialize(t, value[k], evaluate=evaluate, **opts)
         return self._evaluate(self, ret, items=False, **opts) if evaluate else ret
-
-    #@staticmethod
-    #def _call_order(self, value, items=False, **opts):
-    #    value = set(value).difference(self._notValidated)
-    #    return self._deserializer._call_order(self, value, **opts)
-
-    #@staticmethod
-    #def _print_order(self, value, excludes=[], **opts):
-    #    """Generate a print order according to schema and inherited schemas properties order
-    #    and additonal properties detected in values. """
-    #    excludes = list(self._notSerialized.union(excludes))
-    #    return self._deserializer._call_order(self, value, excludes=excludes, **opts)
 
     @staticmethod
     def _convert(self, value, items=True, **opts):
@@ -134,12 +119,7 @@ class Collection(Type, CollectionSerializer):
                 if self._is_included(k, value, **opts):
                     v = value[k]
                     ret[k] = t._serialize(t, v, **opts)
-            #ret = self.default(value, items=False, **opts)
-            #for k in self.print_order(value, **opts):
-            #    t = self._items_type(self, k)
-            #    ret[k] = t._serialize(t, value[k], deserialize=deserialize, **opts) if items else value[k]
         return ret
-        #return self._collType(Type._serialize(self, ret, deserialize=False, **opts))
 
     @classmethod
     def items_types(cls, value, **opts):

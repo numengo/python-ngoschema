@@ -18,7 +18,6 @@ from ..types.object import Object
 from ..contexts import InstanceContext
 from .type_protocol import TypeProtocol
 
-#COLLECTION_VALIDATE = settings.DEFAULT_COLLECTION_VALIDATE
 LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
 
 
@@ -52,11 +51,6 @@ class CollectionProtocol(Collection):
     def _create_context(self, *extra_contexts, **local):
         return Collection._create_context(self, {'this': self}, *extra_contexts, **local)
 
-    #@staticmethod
-    #def _call_order(self, value, excludes=[], **opts):
-    #    #excludes = list(self._notValidated.union(excludes))
-    #    return Collection._call_order(self, value, excludes=excludes, **opts)
-
     @staticmethod
     def _convert(self, value, excludes=[], **opts):
         excludes = list(self._notValidated.union(excludes))
@@ -78,15 +72,11 @@ class CollectionProtocol(Collection):
         excludes = list(self._notValidated.union(excludes))
         if self._lazyLoading:
             opts.setdefault('items', False)
+        if isinstance(value, self._pyType):
+            if opts.get('validate'):
+                self._validate(self, value, excludes=excludes, **opts)
+            return value
         return self._collection._evaluate(self, value, excludes=excludes, **opts)
-
-    #def print_order(self, **opts):
-    #    return self._print_order(self, self._data, **opts)
-
-    #@staticmethod
-    #def _print_order(self, value, excludes=[], **opts):
-    #    excludes = list(self._notSerialized.union(excludes))
-    #    return self._serializer._print_order(self, value, excludes=excludes, **opts)
 
     @staticmethod
     def _serialize(self, value, excludes=[], **opts):
@@ -108,12 +98,13 @@ class CollectionProtocol(Collection):
     def _items_inputs_evaluate(self, item):
         ret = {}
         t = self._items_type(self, item)
-        for k in t._inputs(t, self._data[item]):
-            try:
-                ret[k] = self[k]
-            except Exception as er:
-                self._logger.error(er, exc_info=True)
-                pass
+        if t.is_primitive():
+            for k in t._inputs(t, self._data[item]):
+                try:
+                    ret[k] = self[k]
+                except Exception as er:
+                    self._logger.error(er, exc_info=True)
+                    pass
         return ret
 
     def _items_evaluate(self, item, **opts):
@@ -125,10 +116,12 @@ class CollectionProtocol(Collection):
                 opts.setdefault('validate', False)
         if t.is_primitive():
             opts['serialize'] = False
+        return t.evaluate(v, **opts)
         try:
             ret = t(v, **opts)
             return ret
         except Exception as er:
+            self._logger.error(er, exc_info=True)
             raise er
         return t._evaluate(t, v, **opts)
 
@@ -157,6 +150,13 @@ class CollectionProtocol(Collection):
         del self._data_validated[index]
         del self._items_inputs[index]
         self._validate(items=False)
+
+    def get(self, key, default=None):
+        try:
+            v = self[key]
+            return default if v is None else v
+        except KeyError:
+            return default
 
     def _set_data(self, item, value):
         t = self._items_type(self, item)

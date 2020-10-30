@@ -12,28 +12,19 @@ class Constant(TypeProtocol):
     def __init__(self, **opts):
         pass
 
+    @staticmethod
     def _check(self, value, **opts):
         if self._pyType:
             return value
         raise TypeError(value)
 
-    #def _evaluate(self, value, **opts):
-    #    if self.check(value):
-    #        return self.convert(value, **opts)
-    #    return self._format_errors(value, {'type': f'{value} is not {cls._pyType}'})
-
     @classmethod
     def __bool__(cls):
         return bool(cls._pyType)
 
+    @staticmethod
     def _serialize(self, value, **opts):
         return value if self._pyType else None
-
-    #def _has_default(self, **opts):
-    #    return False
-    #
-    #def _default(self, **opts):
-    #    return None
 
 
 @register_type('null')
@@ -55,7 +46,7 @@ class _True(Constant):
     @staticmethod
     def _serialize(self, value, **opts):
         if isinstance(value, Serializer):
-            return value._serialize(value, **opts)
+            return value.serialize(value, **opts)
         return value
 
     @staticmethod

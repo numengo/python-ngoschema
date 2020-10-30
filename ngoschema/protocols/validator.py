@@ -20,7 +20,7 @@ class Validator(Converter, Context):
     _converter = Converter
     _default = None
     _schema = {}
-    _js_validator = DefaultValidator({})
+    _jsValidator = DefaultValidator({})
 
     def __init__(self, converter=None, schema=None, **opts):
         from ..managers.type_builder import untype_schema, TypeBuilder
@@ -32,7 +32,7 @@ class Validator(Converter, Context):
         sch = dict(self._schema)
         TypeBuilder.check_schema(sch)
         self._default = sch.get('default', self._default)
-        self._js_validator = DefaultValidator(sch)
+        self._jsValidator = DefaultValidator(sch)
 
     @staticmethod
     def _repr_schema(self, **opts):
@@ -55,7 +55,7 @@ class Validator(Converter, Context):
             excludes = list(excludes) + ['type']
         schema = {k: v for k, v in opts.get('schema', self._schema).items() if k not in excludes}
         return {'/'.join(e.schema_path): e.message
-                for e in self._js_validator.iter_errors(value, schema)}
+                for e in self._jsValidator.iter_errors(value, schema)}
 
     def _format_errors(self, value, **opts):
         errors = Validator._errors(self, value, **opts)
@@ -99,12 +99,9 @@ class Validator(Converter, Context):
             return False
 
     @classmethod
-    def evaluate(cls, value, convert=True, validate=True, **opts):
-        value = cls._evaluate(cls, value, validate=False, **opts) if convert else value
-        value = cls._validate(cls, value, convert=False, with_type=False, **opts) if validate else value
-        return value
+    def evaluate(cls, value, **opts):
+        return cls._evaluate(cls, value, **opts)
 
     @classmethod
-    def validate(cls, value, convert=False, with_type=True, **opts):
-        value = cls._convert(cls, value, validate=False, **opts) if convert else value
+    def validate(cls, value, with_type=True, **opts):
         return cls._validate(cls, value, with_type=with_type, **opts)

@@ -67,7 +67,6 @@ class ArraySerializer(CollectionSerializer, ArrayDeserializer):
     _deserializer = ArrayDeserializer
 
     def __init__(self, **opts):
-        #ArrayDeserializer.__init__(self, minItems=minItems, maxItems=maxItems, uniqueItems=uniqueItems, **opts)
         CollectionSerializer.__init__(self, **opts)
 
     @staticmethod
@@ -109,7 +108,6 @@ class Array(Collection, ArraySerializer):
                                for i, item in enumerate(items)]
         else:
             self._items = items
-        #ArraySerializer.__init__(self, minItems=minItems, maxItems=maxItems, uniqueItems=uniqueItems, **opts)
         Collection.__init__(self, **opts)
 
     def __call__(self, value=None, *values, **opts):
@@ -124,7 +122,9 @@ class Array(Collection, ArraySerializer):
 
     @staticmethod
     def _items_type(self, item):
-        return self._items[item] if self._itemsIsList else self._items
+        from ..protocols.type_proxy import TypeProxy
+        t = self._items[item] if self._itemsIsList else self._items
+        return t._proxy_type if getattr(t, '_proxy_type', None) else t
 
     @staticmethod
     def _repr_schema(self):
@@ -144,6 +144,10 @@ class Array(Collection, ArraySerializer):
             rs['uniqueItems'] = self._uniqueItems
         return rs
 
+    @staticmethod
+    def _has_default(self, **opts):
+        return True
+
     def default(self, value=None, **opts):
         value = value or self._default
         ret = [None] * len(value)
@@ -161,13 +165,6 @@ class Array(Collection, ArraySerializer):
             raise TypeError('%s is not a sequence or array.')
         return Collection._check(self, value, **opts)
 
-    #@staticmethod
-    #def _deserialize(self, value, items=True, evaluate=True, **opts):
-    #    value = self._collType(value or self._default)
-    #    value = ArrayDeserializer._deserialize(self, value, items=False, evaluate=evaluate, **opts)
-    #    value = Collection._deserialize(self, value, items=items, evaluate=evaluate, **opts)
-    #    return value
-
     @staticmethod
     def _validate(self, value, items=True, excludes=[], **opts):
         excludes = list(excludes) + ['minItems', 'maxItems', 'uniqueItems', 'items']
@@ -176,16 +173,6 @@ class Array(Collection, ArraySerializer):
         value = Collection._validate(self, value, items=items, excludes=excludes, **opts)
         return value
 
-    #@staticmethod
-    #def _serialize(self, value, items=True, deserialize=True, **opts):
-    #    value = ArraySerializer._serialize(self, value, items=items, deserialize=deserialize, **opts)
-    #    ret = [value[k] for k in self.print_order(value, **opts)]
-    #    return self._collType(Type._serialize(self, ret, deserialize=False, **opts))
-
-    #def _items_inputs(self, item, value, **opts):
-    #    t = Array._items_type(self, item)
-    #    return t.inputs(value[item], **opts)
-    #
     @staticmethod
     def _inputs(self, value, items=False, **opts):
         inputs = set()

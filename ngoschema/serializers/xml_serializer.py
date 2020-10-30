@@ -13,16 +13,21 @@ from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 @deserializers_registry.register('xml')
 class XmlDeserializer(Deserializer):
     _charset = 'utf-8'
-    _process_namespaces = False
-    _namespace_separator = ':'
-    _disable_entities = True
-    _process_comments = False
+    _processNamespaces = False
+    _namespaceSeparator = ':'
+    _disableEntities = True
+    _processComments = False
+    _forceList = ('xs:include', 'xs:import', 'xs:element', 'xs:unique', 'xs:simpleType', 'xs:attributeGroup',
+                  'xs:group', 'xs:complexType', 'xs:restriction',
+                  'include', 'import', 'element', 'unique', 'simpleType', 'attributeGroup', 'group',
+                  'complexType', 'restriction')
 
     def __init__(self, **opts):
-        self._process_namespaces = opts.get('process_namespaces', self._process_namespaces)
-        self._namespace_separator = opts.get('namespace_separator', self._namespace_separator)
-        self._disable_entities = opts.get('disable_entities', self._disable_entities)
-        self._process_comments = opts.get('process_comments', self._process_comments)
+        self._processNamespaces = opts.get('process_namespaces', self._processNamespaces)
+        self._namespaceSeparator = opts.get('namespace_separator', self._namespaceSeparator)
+        self._disableEntities = opts.get('disable_entities', self._disableEntities)
+        self._processComments = opts.get('process_comments', self._processComments)
+        self._forceList = opts.get('force_list', self._forceList)
 
     @staticmethod
     def _deserialize(self, value, **opts):
@@ -31,12 +36,14 @@ class XmlDeserializer(Deserializer):
     @staticmethod
     def _deserialize_xml(self, value, **opts):
         charset = opts.get('charset', self._charset)
-        process_namespaces = opts.get('attr_prefix', self._process_namespaces)
-        namespace_separator = opts.get('namespace_separator', self._namespace_separator)
-        disable_entities = opts.get('disable_entities', self._disable_entities)
-        process_comments = opts.get('attr_prefix', self._process_comments)
+        process_namespaces = opts.get('attr_prefix', self._processNamespaces)
+        namespace_separator = opts.get('namespace_separator', self._namespaceSeparator)
+        disable_entities = opts.get('disable_entities', self._disableEntities)
+        process_comments = opts.get('attr_prefix', self._processComments)
+        force_list = opts.get('force_list', self._forceList)
         value = xmltodict.parse(value,
                                  encoding=charset,
+                                 force_list=force_list,
                                  process_namespaces=process_namespaces,
                                  namespace_separator=namespace_separator,
                                  disable_entities=disable_entities,
@@ -60,28 +67,23 @@ class XmlSerializer(with_metaclass(SchemaMetaclass, Serializer, XmlDeserializer)
     _deserializer = XmlDeserializer
     _tag = None
     _postprocessor = None
-    _attr_prefix = '@'
-    _cdata_key = '#text'
-    _force_list = True
+    _attrPrefix = '@'
+    _cdataKey = '#text'
     _pretty = True
     _indent = '\t'
     _newl = '\n'
-    _short_empty_elements = True
-    _force_list = ('xs:include', 'xs:import', 'xs:element', 'xs:unique', 'xs:simpleType', 'xs:attributeGroup',
-                  'xs:group', 'xs:complexType', 'xs:restriction',
-                  'include', 'import', 'element', 'unique', 'simpleType', 'attributeGroup', 'group',
-                  'complexType', 'restriction')
+    _shortEmptyElements = True
 
     def __init__(self, **opts):
         Serializer.__init__(self, **opts)
         self._tag = tag = opts.get('tag', self._tag)
-        self._attr_prefix = attr_prefix = opts.get('attr_prefix', self._attr_prefix)
-        self._cdata_key = opts.get('cdata_key', self._cdata_key)
-        self._force_list = opts.get('force_list', self._force_list)
+        self._attrPrefix = attr_prefix = opts.get('attr_prefix', self._attrPrefix)
+        self._cdataKey = opts.get('cdata_key', self._cdataKey)
+        self._forceList = opts.get('force_list', self._forceList)
         self._pretty = opts.get('pretty', self._pretty)
         self._indent = opts.get('indent', self._indent)
         self._newl = opts.get('newl', self._newl)
-        self._short_empty_elements = opts.get('short_empty_elements', self._short_empty_elements)
+        self._shortEmptyElements = opts.get('short_empty_elements', self._shortEmptyElements)
         if not tag and self._instanceClass:
             self._tag = self._instanceClass.__name__
 
@@ -101,13 +103,13 @@ class XmlSerializer(with_metaclass(SchemaMetaclass, Serializer, XmlDeserializer)
     def _serialize_xml(self, value, **opts):
         value = Serializer._serialize(self, value, **opts)
         tag = opts.get('tag', self._tag)
-        attr_prefix = opts.get('attr_prefix', self._attr_prefix)
-        cdata_key = opts.get('cdata_key', self._cdata_key)
-        force_list = opts.get('force_list', self._force_list)
+        attr_prefix = opts.get('attr_prefix', self._attrPrefix)
+        cdata_key = opts.get('cdata_key', self._cdataKey)
+        force_list = opts.get('force_list', self._forceList)
         pretty = opts.get('pretty', self._pretty)
         indent = opts.get('indent', self._indent)
         newl = opts.get('newl', self._newl)
-        short_empty_elements = opts.get('short_empty_elements', self._short_empty_elements)
+        short_empty_elements = opts.get('short_empty_elements', self._shortEmptyElements)
         value = xmltodict.unparse({tag: value},
                                  attr_prefix=attr_prefix,
                                  cdata_key=cdata_key,

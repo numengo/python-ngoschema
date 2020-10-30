@@ -14,6 +14,7 @@ from ..utils import ReadOnlyChainMap as ChainMap, shorten
 from .. import decorators
 from ..resolvers.uri_resolver import UriResolver, resolve_uri
 from ..types.array import Array
+from ..types.type import Primitive
 from ..types.object import Object, ObjectSerializer, ObjectDeserializer
 from ..types.symbols import Function
 from ..types.uri import Id, scope
@@ -99,7 +100,7 @@ class PropertyDescriptor:
 
     def __delete__(self, obj):
         key = self.pname
-        if key in self._required:
+        if key in obj._required:
             raise AttributeError('%s is a required argument.' % key)
         if self.fdel:
             self.fdel(obj)
@@ -139,38 +140,17 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _propertiesAllowed = set()
     _propertiesTranslation = {}
     _aliases = {}
-    _aliasNegated = {}
+    _aliasesNegated = {}
 
     def __new__(cls, *args, **kwargs):
         from ..managers import TypeBuilder
         data = args[0] if args else kwargs
-        if isinstance(data, Mapping) and '$schema' in data:
+        if isinstance(data, Mapping) and data.get('$schema'):
             s_id = Id.convert(scope(data.pop('$schema'), cls._id), **kwargs)
             if s_id != cls._id:
                 cls = TypeBuilder.load(s_id)
                 return cls(*args, **kwargs)
         return super(ObjectProtocol, cls).__new__(cls)
-        return instance
-        return super(ObjectProtocol, cls).__new__(cls)
-        return cls._inst
-        new = super(CollectionProtocol, cls).__new__
-        if new is object.__new__:
-            return new(cls)
-        return new(cls, *args, **kwargs)
-
-    #def __init__(self, extends=None, notValidated=None, notSerialized=None, aliases=None, aliasNegated=None, **opts):
-    #    from ..managers.type_builder import TypeBuilder, scope
-    #    self._notValidated = self._notValidated.union(notValidated or [])
-    #    self._notSerialized = self._notSerialized.union(notSerialized or [])
-    #    self._extends = list(extends or []) + self._extends
-    #    self._aliases = dict(aliases or {}, **self._aliases)
-    #    self._aliasNegated = dict(aliasNegated or {}, **self._aliasNegated)
-    #    for e in reversed(self._extends):
-    #        ep = TypeBuilder.load(scope(e, self._id))
-    #        self._properties.update(ep._properties)
-    #        self._patternProperties.update(ep._patternProperties)
-    #    Object.__init__(self, **opts)
-    #    CollectionProtocol.__init__(self, **opts)
 
     @staticmethod
     def _check(self, value, **opts):
@@ -178,7 +158,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             raise TypeError('%s if not of type mapping.' % value)
         value = self._collType(value)
         keys = set(value)
-        for k1, k2 in ChainMap(self._propertiesTranslation, self._aliases, self._aliasNegated).items():
+        for k1, k2 in ChainMap(self._propertiesTranslation, self._aliases, self._aliasesNegated).items():
             if k1 in keys:
                 value[k2] = value.pop(k1)
         for k in self._notValidated:
@@ -208,8 +188,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     inputs = [i.split('.')[0] for i in t._inputs(t, v)] if v else []
                     if inputs:
                         dependencies[k].update([i for i in inputs if i in self._properties])
-        #value = set(value).union(self._properties).difference(self._notValidated)
-        #return self._deserializer._call_order(self, value, dependencies=dependencies, **opts)
         return self._deserializer.call_order(value, dependencies=dependencies, **opts)
 
     @staticmethod
@@ -219,7 +197,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             return value
         value = dict(value)
         # handle subclassing
-        if '$schema' in value:
+        if value.get('$schema'):
             s_id = Id.convert(scope(value.pop('$schema'), self._id), **opts)
             if s_id != self._id:
                 self = TypeBuilder.load(s_id)
@@ -228,11 +206,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             # deals with conflicting properties with identical translated names
             value[self._propertiesTranslation[k]] = value.pop(k)
         value.update({k2: value.pop(k1) for k1, k2 in self._aliases.items() if k1 in value})
-        value.update({k2: - value.pop(k1) for k1, k2 in self._aliasNegated.items() if k1 in value})
+        value.update({k2: - value.pop(k1) for k1, k2 in self._aliasesNegated.items() if k1 in value})
         # required with default
-        #for k in self._required.difference(value).intersection(self._propertiesWithDefault):
-        #    value[k] = self._items_type(self, k).default()
-        #value = Object._deserialize(self, value, **opts)
         return CollectionProtocol._deserialize(self, value, **opts)
 
     @classmethod
@@ -282,7 +257,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
             return alias, name
-        alias = cls._aliasNegated.get(name)
+        alias = cls._aliasesNegated.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
             return alias, name
@@ -297,8 +272,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # private and protected attributes at accessed directly
         if name.startswith('_') or name in self._attributesOrig:
             return MutableMapping.__getattribute__(self, name)
-        op = lambda x: neg(x) if name in self._aliasNegated else x
-        name = self._aliasNegated.get(name, name)
+        op = lambda x: neg(x) if name in self._aliasesNegated else x
+        name = self._aliasesNegated.get(name, name)
         name = self._aliases.get(name, name)
         raw = self._propertiesTranslation.get(name, name)
         desc = self._propertiesDescriptor.get(raw)
@@ -389,8 +364,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 if cur is None:
                     return
             return cur
-        op = lambda x: neg(x) if key in self._aliasNegated else x
-        key = self._aliasNegated.get(key, key)
+        op = lambda x: neg(x) if key in self._aliasesNegated else x
+        key = self._aliasesNegated.get(key, key)
         key = self._aliases.get(key, key)
         raw, trans = self._properties_raw_trans(key)
         if raw not in self._data:
@@ -404,7 +379,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return op(self._data_validated[key])
 
     def __setitem__(self, key, value):
-        op = lambda x: neg(x) if key in self._aliasNegated else x
+        op = lambda x: neg(x) if key in self._aliasesNegated else x
         raw, trans = self._properties_raw_trans(key)
         desc = self._propertiesDescriptor.get(raw)
         if desc:
@@ -435,7 +410,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 v = ret.get(raw)
                 if v is not None:
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = v
-        for alias, raw in self._aliasNegated.items():
+        for alias, raw in self._aliasesNegated.items():
             if alias not in excludes:
                 v = ret.get(raw)
                 if v is not None:
@@ -453,7 +428,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __repr__(self):
         if self._repr is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self._print_order(self, self._data, no_defaults=True, no_read_only=True))
+            ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=True))
             hidden = max(0, len(ks) - m)
             a = ['%s=%s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
@@ -463,7 +438,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __str__(self):
         if self._str is None:
             m = settings.PPRINT_MAX_EL
-            ks = list(self._print_order(self, self._data, no_defaults=True, no_read_only=False))
+            ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=False))
             hidden = max(0, len(ks) - m)
             a = ['%s: %s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
@@ -475,18 +450,18 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # add a cache to resolve type proxies and avoid property resolution
         from .type_proxy import TypeProxy
         item = self._aliases.get(item, item)
-        item = self._aliasNegated.get(item, item)
+        item = self._aliasesNegated.get(item, item)
         if self._items_type_cache is None:
             self._items_type_cache = {}
         t = self._items_type_cache.get(item)
         if t is None:
             t = Object._items_type(self, item)
             self._items_type_cache[item] = t
-            if t and isinstance(t, TypeProxy):
-                if t.proxy_type:
-                    self._items_type_cache[item] = t = t.proxy_type
+            if t and hasattr(t, '_proxy_type'):
+                if t._proxy_type:
+                    self._items_type_cache[item] = t = t._proxy_type
                 else:
-                    self._items_type_cache[item] = None
+                    self._items_type_cache[item] = None  # not ready yet
         return t
 
     @staticmethod
@@ -504,7 +479,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         # create/set logger
         logger = logging.getLogger(cname)
-        level = logging.getLevelName(attrs.get('_log_level', LOGGER_LEVEL))
+        level = logging.getLevelName(attrs.get('_logLevel', LOGGER_LEVEL))
         logger.setLevel(level)
         attributes_orig = set([k for k in attrs.keys() if not k.startswith('__')])
 
@@ -632,7 +607,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     v = ptype.serialize(
                         ptype(attr, items=False, raw_literals=True),
                         deserialize=False, no_defaults=True, raw_literals=True)
-                    #v = ptype.serialize(ptype.convert(attr, items=False, raw_literals=True), no_defaults=True, raw_literals=True)
                     extra_schema_properties[pname] = dict(ptype._schema)
                     extra_schema_properties[pname]['default'] = v
                     has_default.add(pname)
@@ -709,20 +683,16 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_attributesOrig'] = set().union(attributes_orig, *[b._attributesOrig for b in pbases])
         attrs['_propertiesTranslation'] = dict(ChainMap(properties_translation, *[b._propertiesTranslation for b in pbases]))
         attrs['_aliases'] = dict(ChainMap(aliases, *[b._aliases for b in pbases]))
-        attrs['_aliasNegated'] = dict(ChainMap(negated_aliases, *[b._aliasNegated for b in pbases]))
-        #attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases'])\
-        #    .union(attrs['_aliasNegated']).union(attrs['_propertiesTranslation']).difference(read_only)
+        attrs['_aliasesNegated'] = dict(ChainMap(negated_aliases, *[b._aliasesNegated for b in pbases]))
+        attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases'])\
+            .union(attrs['_aliasesNegated']).union(attrs['_propertiesTranslation']).difference(read_only)
         attrs['_propertiesWithDefault'] = has_default
         attrs['_logger'] = logger
-        #attrs['_schema_chained'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
-        #attrs['_schema'] = dict(attrs['_schema_chained'])
-        attrs['_js_validator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
+        attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_items_type_cache'] = None
-        #attrs['_mro_type'] = pbases
+        attrs['_mroType'] = pbases
         if 'lazyLoading' in schema:
             attrs['_lazyLoading'] = schema['lazyLoading']
-        #if 'validate' in schema:
-        #    attrs['_validate'] = schema['validate']
         # add inner definitions
         for k, d in defs.items():
             attrs[k] = d

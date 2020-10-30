@@ -80,11 +80,7 @@ Instance of these classes can be iterated and behave as standard collections.
 
 ``ngoschema`` aims at being a toolkit for Domain-Driven Design and Model-Driven Architecture.
 
-The library is build on top of `python-jsonschema-object
-<https://github.com/cwacek/python-jsonschema-objects>`_, with a lot of hacking,
-which allows to create classe from a JSON-schema.
-
-Both projects use the library `python-jsonchema
+The library is build on top of `python-jsonchema
 <http://python-jsonschema.readthedocs.io/en/latest/validate/>`_, a python
 implementation for JSON schema validation.
 

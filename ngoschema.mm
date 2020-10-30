@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -314,7 +314,7 @@
 <node TEXT="extends" ID="ID_1154168819" CREATED="1602052940361" MODIFIED="1602052944086">
 <node TEXT="Deserializer" ID="ID_233363843" CREATED="1602173042931" MODIFIED="1602173262113"/>
 </node>
-<node TEXT="extends" ID="ID_1825699114" CREATED="1603292585467" MODIFIED="1603292601330">
+<node TEXT="properties" ID="ID_1825699114" CREATED="1603292585467" MODIFIED="1604947049336">
 <node TEXT="deserializer" ID="ID_336542560" CREATED="1603292601545" MODIFIED="1603292606273">
 <node TEXT="Deserializer" ID="ID_1585974293" CREATED="1603292606492" MODIFIED="1603292610065"/>
 </node>

@@ -6,22 +6,25 @@ from .serializer import Serializer, Deserializer
 
 
 class Loader(Deserializer):
-    _instanceClass = None
     _deserializer = Deserializer
+    _instanceClass = None
 
     def __init__(self, deserializer=None, instanceClass=None, **opts):
+        from ..types.symbols import Symbol
         self._deserializer = deserializer or self._deserializer
         self._deserializer.__init__(self, **opts)
-        self._instanceClass = instanceClass or self._instanceClass
+        self._instanceClass = Symbol.convert(instanceClass or self._instanceClass)
 
     @staticmethod
-    def _load(self, value, deserialize=True, **opts):
-        instance_class = opts.get('instance_class', self._instanceClass)
+    def _load(self, value, many=False, deserialize=True, **opts):
+        from ..types.symbols import Symbol
+        instance_class = Symbol.convert(opts.get('instance_class', self._instanceClass))
         many = opts.get('many', self._many)
-        value = self._deserializer._deserialize(self, value, **opts) if deserialize else value
         if many:
+            value = [self._deserializer._deserialize(self, v, evaluate=False, **opts) if deserialize else v for v in value]
             return [instance_class(d, **opts) if instance_class else d for d in value]
         else:
+            value = self._deserializer._deserialize(self, value, evaluate=False, **opts) if deserialize else value
             return instance_class(value, **opts) if instance_class else value
 
     def __call__(self, value, **opts):
@@ -29,7 +32,7 @@ class Loader(Deserializer):
         raise self._load(self, value, **opts)
 
     @classmethod
-    def load(cls, value,**opts):
+    def load(cls, value, **opts):
         opts['context'] = cls.create_context(**opts)
         return cls._load(cls, value, **opts)
 

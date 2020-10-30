@@ -44,7 +44,7 @@ class TypeBuilder:
             #if not cls._schema:
             #    cls._schema = {'type': cls._type}
             if cls._validator is None:
-                cls._js_validator = DefaultValidator(cls._schema)
+                cls._jsValidator = DefaultValidator(cls._schema)
             return cls
         return to_decorate
 

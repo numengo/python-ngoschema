@@ -38,7 +38,7 @@ from ..serializers.xml_serializer import XmlSerializer
 from ..serializers.yaml_serializer import YamlSerializer
 from ..protocols import SchemaMetaclass, with_metaclass
 from ..protocols.object_protocol import ObjectProtocol
-from ..types.object import Serializer, ObjectSerializer, ObjectDeserializer
+from ..types.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
 #from .models.instances import InstanceList, Entity
@@ -50,37 +50,10 @@ logger = logging.getLogger(__name__)
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
-    _encoder = Serializer
 
-    def __init__(self, value=None, encoder=None, **opts):
+    def __init__(self, value=None, **opts):
         Repository.__init__(self, **opts)
-        self._encoder = encoder or self._encoder
-        self._encoder.__init__(self, **opts)
         ObjectProtocol.__init__(self, value, **opts)
-
-    #@abstractmethod
-    #def deserialize_data(self):
-    #    pass
-    #
-    #def _load(self):
-    #    doc = self.document
-    #    if not doc.loaded:
-    #        doc.load()
-    #    data = self.deserialize_data()
-    #    data = self.filter_data(data)
-    #    return data
-
-    #def load__(self):
-    #    try:
-    #
-    #        Repository.load(self)
-    #        return self
-    #    except Exception as er:
-    #        self._logger.error(er, exc_info=True)
-    #        raise InvalidValue(f"Problem loading repository: {er}")
-
-    #def serialize_data(self, data):
-    #    pass
 
     @staticmethod
     def _commit(self, value, **opts):
@@ -109,9 +82,7 @@ def load_object_from_file(fp, repository_class=None, session=None, **kwargs):
     repo = repository_class(filepath=fp, **kwargs)
     session.bind_repo(repo)
     logger.info("LOAD %s from %s", repo.instanceClass or '<class unknown>', file_link_format(fp))
-    repo._load()
-    instances = repo.instances
-    return instances if repo.many else instances[0]
+    return repo.load(fp)
 
 
 @assert_arg(1, Path)
@@ -158,9 +129,6 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = YamlSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
-    #class YamlFileRepository(with_metaclass(SchemaMetaclass)):
-    #_id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/YamlFileRepository'
-    #_yaml = YAML(typ="safe")
 
     def deserialize_data(self):
         data = self.document._serialize(self._yaml.load, **self._extended_properties)
@@ -193,10 +161,10 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass)):
         #                                  use_entity_keys=self.use_entity_keys)
         self._tag = tag
         if not tag and self._instanceClass:
-            self._tag = self.instanceClass.__name__
+            self._tag = self._instanceClass.__name__
 
         # this default post processor makes all non attribute be list
-        _prefix = str(self.attr_prefix)
+        _prefix = str(self._attrPrefix)
 
         def default_postprocessor(path, key, value):
             return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, Array.convert(value))

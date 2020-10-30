@@ -20,12 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class FileLoader(Loader):
+    _encoder = Serializer
     _filepath = None
     _binary = False
     _charset = 'utf-8'
 
-    def __init__(self, filepath=None, binary=False, charset='utf-8', **opts):
+    def __init__(self, encoder=None, filepath=None, binary=False, charset='utf-8', **opts):
         Loader.__init__(self, **opts)
+        self._encoder = encoder or self._encoder
+        self._encoder.__init__(self, **opts)
         self.set_filepath(filepath)
         self._binary = binary
         self._charset = charset
@@ -36,7 +39,7 @@ class FileLoader(Loader):
 
     @staticmethod
     def _open_file(self, filepath, mode='r', **opts):
-        filepath = self.set_filepath(filepath)
+        filepath = self.set_filepath(self, filepath)
         charset = opts.get('charset', self._charset)
         binary = opts.get('binary', self._binary)
         fp = str(filepath)
@@ -46,22 +49,22 @@ class FileLoader(Loader):
 
     @staticmethod
     def _read_file(self, filepath, **opts):
-        filepath = self.set_filepath(filepath)
         binary = opts.get('binary', self._binary)
         mode = 'rb' if binary else 'r'
         with FileLoader._open_file(self, filepath, mode=mode, **opts) as f:
             return f.read()
 
     @staticmethod
-    def _deserialize(self, value, **opts):
-        filepath = opts.get('filepath', self._filepath)
-        read = self._read_file(self, filepath, **opts)
-        return Serializer._deserialize(self, read, **opts)
+    def _deserialize(self, filepath, **opts):
+        #filepath = opts.get('filepath', self._filepath)
+        return self._read_file(self, filepath, **opts)
+        #return Serializer._deserialize(self, read, **opts)
 
     @staticmethod
     def _load_file(self, filepath, **opts):
-        filepath = self.set_filepath(filepath)
-        parsed = FileLoader._deserialize(filepath=filepath, **opts)
+        filepath = self.set_filepath(self, filepath)
+        content = FileLoader._deserialize(self, filepath, **opts)
+        parsed = self._encoder.deserialize(content, evaluate=False, **opts)
         return Loader._load(self, parsed, **opts)
 
     @staticmethod

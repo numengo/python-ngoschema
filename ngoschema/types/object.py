@@ -8,7 +8,7 @@ from operator import neg
 
 from ..exceptions import InvalidValue
 from ..decorators import log_exceptions
-from ..utils import ReadOnlyChainMap as ChainMap
+from ..utils import ReadOnlyChainMap as ChainMap, shorten
 from ..managers.type_builder import register_type, TypeBuilder, untype_schema
 from ..protocols.serializer import Serializer
 from .constants import _True, _False
@@ -52,13 +52,6 @@ class ObjectDeserializer(CollectionDeserializer):
         value = self._collType(value)
         return value
 
-    #@staticmethod
-    #def _deserialize(self, value, **opts):
-    #    value = CollectionDeserializer._deserialize(self, value, **opts)
-    #    for k in self._required:
-    #        value.setdefault(k, None)
-    #    return value
-
     @staticmethod
     def _convert(self, value, **opts):
         value = self._collType([(k, value.get(k)) for k in self._call_order(self, value, **opts)])
@@ -68,7 +61,7 @@ class ObjectDeserializer(CollectionDeserializer):
     def _validate(self, value, **opts):
         missing = self._required.difference(value)
         if missing:
-            raise InvalidValue('%s is missing required keys %s.' % (value, list(missing)))
+            raise InvalidValue('%s is missing required keys %s.' % (shorten(value), list(missing)))
         return CollectionDeserializer._validate(self, value, **opts)
 
 
@@ -80,7 +73,6 @@ class ObjectSerializer(CollectionSerializer, ObjectDeserializer):
     _noReadOnly = False
 
     def __init__(self, readOnly=None, attrPrefix='', noDefaults=True, noReadOnly=False, **opts):
-        #ObjectDeserializer.__init__(self, required=required, **opts)
         CollectionSerializer.__init__(self, **opts)
         self._readOnly = self._readOnly.union(readOnly or [])
         self._attrPrefix = attrPrefix
@@ -95,8 +87,8 @@ class ObjectSerializer(CollectionSerializer, ObjectDeserializer):
         all_ordered = list(keys.intersection(self._required))
         all_ordered += list(keys.difference(all_ordered))
         no_defaults = opts.get('no_defaults', self._noDefaults)
-        no_read_only = opts.get('no_read_only', self._noReadOnly)
-        if no_read_only:
+        no_readOnly = opts.get('no_readOnly', self._noReadOnly)
+        if no_readOnly:
             excludes += list(self._readOnly)
         for k in all_ordered:
             if k in self._required:
@@ -133,7 +125,6 @@ class Object(Collection, ObjectSerializer):
                  additionalProperties=None,
                  **opts):
         # split the schema to isolate properties schema and object schema
-        #ObjectSerializer.__init__(self, required=required, **opts)
         Collection.__init__(self, **opts)
         cls_name = f'{self.__class__.__name__}_{id(self)}'
         if properties:
@@ -208,18 +199,6 @@ class Object(Collection, ObjectSerializer):
         opts['items'] = False
         return self._serialize(self, ret, **opts)
 
-    #@staticmethod
-    #def _check(self, value, items=True, **opts):
-    #    value = self._deserializer._check(self, value, **opts)
-    #    value = Collection._check(self, value, items=items, **opts)
-    #    return value
-
-    #@staticmethod
-    #def _convert(self, value, items=True, **opts):
-    #    value = ObjectDeserializer._convert(self, value, **opts)
-    #    value = Collection._convert(self, value, items=items, **opts)
-    #    return value
-
     @staticmethod
     def _deserialize(self, value, items=True, evaluate=True, raw_literals=False, **opts):
         value = self._collType(value or self._default)
@@ -230,49 +209,6 @@ class Object(Collection, ObjectSerializer):
         value = self._collType([(k, value[k]) for k in self._call_order(self, value, items=items, **opts)])
         value = Collection._deserialize(self, value, items=items, evaluate=evaluate, raw_literals=raw_literals, **opts)
         return value
-
-    #    for k in self._call_order(value, items=items, **opts):
-    #        try:
-    #            t = Object._items_type(self, k)
-    #            v = value.get(k)
-    #            # initialize default even if items is not selected
-    #            if not items and v is None and (t.has_default() or k in self._required):
-    #                v = t.default(raw_literals=True, **opts)
-    #            value[k] = v if not items else t.deserialize(v, **opts)
-    #        except Exception as er:
-    #            raise
-    #    return value
-
-    #def _default(self, **opts):
-    #    if self._default_cache is None:
-    #        opts.setdefault('items', False)
-    #        opts.setdefault('rawLiterals', False)
-    #        self._default_cache = Object._convert(self, self._schema.get('default', {}), **opts)
-    #    return self._default_cache
-
-    #@classmethod
-    #def default(cls, **opts):
-    #    return Object._default(cls, **opts)
-
-    #def _check(self, value, items=True, **opts):
-    #    if not isinstance(value, Mapping):
-    #        raise TypeError('%s is not of type mapping.' % value)
-    #    return Collection._check(self, value, **opts)
-    #    #keys = set(value)
-    #    #if self._required.difference(keys).difference(self._propertiesWithDefault):
-    #    #    return False
-    #    #for k in keys.difference(self._properties):
-    #    #    for reg, _ in self._patternProperties:
-    #    #        if reg.search(k):
-    #    #            break
-    #    #    else:
-    #    #        if not self._additionalProperties:
-    #    #            return False
-    #    #if items:
-    #    #    for k, v in value.items():
-    #    #        if not Object._items_type(self, k).check(v):
-    #    #            return False
-    #    #return True
 
     @staticmethod
     def _validate(self, value, items=True, excludes=[], **opts):
@@ -288,62 +224,6 @@ class Object(Collection, ObjectSerializer):
         opts['with_type'] = False
         value = Collection._validate(self, value, items=items, excludes=excludes, **opts)
         return value
-
-    #def _items_inputs(self, item, value, **opts):
-    #    v = value[item]
-    #    try:
-    #        i = set() if not v else Object._items_type(self, item).inputs(v, **opts)
-    #    except Exception as er:
-    #        self._logger.error(f'{item} {str(v)[:40]}...: {str(er)}', exc_info=True)
-    #        raise er
-    #    return i.union(self._dependencies.get(item, []))
-
-    #def _inputs(self, value, items=False, **opts):
-    #    """
-    #    Create object dependency tree according to class declared dependencies and expression inputs.
-    #    Make all property names raw and keep only first level
-    #    """
-    #    inputs = set(self._required)
-    #    if value is None:
-    #        if self.has_default():
-    #            return self.inputs(self.default(raw_literals=True), items=items, **opts)
-    #    if items:
-    #        inputs.update(ChainMap(*[set([f'{k}.{i}' for i in Object._items_inputs(self, k, value, **opts)])
-    #                                 for k in value.keys()]))
-    #    return inputs
-
-    #@staticmethod
-    #def _call_order(self, value, **opts):
-    #    value = set(value).union(self._properties)
-    #    return ObjectDeserializer._call_order(self, value, **opts)
-
-    #    dependencies = defaultdict(set, **self._dependencies)
-    #    if items:
-    #        # make a local copy
-    #        for k, v in value.items():
-    #            t = self.items_type(k)
-    #            if v is None and t.has_default():
-    #                v = t.default(raw_literals=True, **opts)
-    #            inputs = [i.split('.')[0] for i in t.inputs(v)] if v else []
-    #            dependencies[k].update([i for i in inputs if i in self._properties])
-    #    return Collection._call_order(self, value, dependencies=dependencies, **opts)
-    #    return ObjectDeserializer._call_order(self, value, dependencies=dependencies, **opts)
-
-    #def _serialize(self, value, deserialize=True, **opts):
-    #    value = self._deserialize(value, **opts) if deserialize else value
-    #    # separate excludes/only from opts as they apply to the first component and might be applied to its properties
-    #    no_defaults = opts.get('no_defaults', self._noDefaults)
-    #    attr_prefix = opts.get('attr_prefix', self._attrPrefix)
-    #    ptypes = [(k, Object._items_type(self, k))
-    #              for k in ObjectSerializer._print_order(self, value, **opts)]
-    #    try:
-    #        ret = OrderedDict([((attr_prefix if t.is_primitive() else '') + k,
-    #                             t.serialize(value[k], **opts))
-    #                             for k, t in ptypes])
-    #    except Exception as er:
-    #        self._logger.error(er, exc_info=True)
-    #        raise er
-    #    return ret if not no_defaults else OrderedDict([(k, v) for k, v in ret.items() if v is not None])
 
     @staticmethod
     def _inputs(self, value, items=False, **opts):
@@ -367,7 +247,7 @@ class Object(Collection, ObjectSerializer):
                 v = value[k]
                 if t._has_default(t):
                     d = t.default(context=context, raw_literals=True)
-                    v = neg(v) if k in self._aliasNegated else v
+                    v = neg(v) if k in self._aliasesNegated else v
                     if v == d:
                         continue
                     if t.is_primitive():

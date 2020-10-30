@@ -65,14 +65,12 @@ class Serializer(Deserializer):
         value = self._deserializer._deserialize(self, value, **opts) if deserialize else value
         return value
 
-    def __call__(self, value, deserialize=True, **opts):
+    def __call__(self, value, **opts):
         opts['context'] = self.create_context(**opts)
-        value = self._deserializer._deserialize(self, value, **opts) if deserialize else value
-        return self._serialize(self, value, deserialize=False, **opts)
+        return self._serialize(self, value, **opts)
 
     @classmethod
-    def serialize(cls, value, deserialize=True, **opts):
+    def serialize(cls, value, **opts):
         opts['context'] = cls.create_context(**opts)
-        value = cls._deserializer._deserialize(cls, value, **opts) if deserialize else value
-        return cls._serialize(cls, value, deserialize=False, **opts)
+        return cls._serialize(cls, value, **opts)
 

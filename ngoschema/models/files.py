@@ -168,25 +168,6 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
             return self._encoder._deserialize(self, self.contentRaw)
         except Exception as er:
             return self.contentRaw
-        #encoding = str(self.charset)
-        #if self.filepath:
-        #    if not self.binary:
-        #        with codecs.open(str(self.filepath), 'r', encoding) as f:
-        #            content = f.read()
-        #    else:
-        #        with open(str(self.filepath), mode='rb') as f:
-        #            content = f.read()
-        #elif self.uri:
-        #    response = urlopen(self.uri.geturl())
-        #    if not self.binary:
-        #        content = response.read().decode(encoding)
-        #    else:
-        #        content = response.read()
-        #if content is None:
-        #    raise IOError("Impossible to load %s." % self.identifier)
-        #self._contentRaw = content
-        #self._content = content
-        #return content
 
     def del_file(self):
         if not self.filepath:
@@ -219,26 +200,13 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
                 self._append_file(self, self.filepath, content, **opts)
             else:
                 self._write_file(self, self.filepath, content, **opts)
-            #if not self.binary:
-            #    enc = str(self.charset)
-            #    with codecs.open(str(self.filepath), mode, enc) as f:
-            #        f.write(content)
-            #else:
-            #    with open(str(self.filepath), mode+'b') as f:
-            #        f.write(content)
-            #self._contentRaw = content if mode != 'a' else self._contentRaw + content
         elif self.uri:
             raise Exception('impossible to write on a URL referenced document')
-
-    #@depend_on_prop('filepath')
-    #def get_uri(self):
-    #    return self.filepath.resolve().as_uri() if self.filepath else None
-    #
-    #content = property(get_content)
 
     @property
     def filename(self):
         return self.filepath.name if self.filepath else self.uri.split('/')[-1]
+
 
 _default_document_registry = None
 

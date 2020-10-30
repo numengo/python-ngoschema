@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from .validator import Validator
 from .serializer import Serializer
 from .loader import Loader, Saver
+from ..types.object import Object
 from ..registries import repositories_registry
 
 
@@ -20,6 +21,10 @@ class Repository(Saver):
         self._session = session or self._session
         if self._many:
             self._content = []
+
+    @staticmethod
+    def _deserialize(self, value, **opts):
+        return Object._deserialize(self, value, **opts)
 
     @staticmethod
     def _commit(self, value, save=True, **opts):

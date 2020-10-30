@@ -81,9 +81,6 @@ class TypeProxy(TypeProtocol):
         kls = cls.proxy_type_cls()
         return isinstance(instance, kls) if kls else False
 
-    #def __subclasscheck__(cls, subclass):
-    #    return issubclass(subclass, cls.proxy_type_cls())
-
     @classmethod
     def __subclasshook__(cls, subclass):
         kls = cls.proxy_type_cls()

@@ -12,10 +12,10 @@ def find_ns_mgr(context):
 
 
 class NsManagerContext(Context):
-    _nsMgr = None
+    _ns_mgr = None
 
     def set_context(self, *parents, **local):
         Context.set_context(self, *parents, **local)
-        self._nsMgr = find_ns_mgr(self._context)
+        self._ns_mgr = find_ns_mgr(self._context)
         if '_nsMgr' in self._properties:
-            self._set_data_validated('_nsMgr', self._nsMgr)
+            self._set_data_validated('_nsMgr', self._ns_mgr)
