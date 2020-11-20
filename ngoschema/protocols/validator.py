@@ -65,7 +65,7 @@ class Validator(Converter, Context):
 
     @staticmethod
     def _validate(self, value, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         msg = Validator._format_errors(self, value, **opts)
         if msg:
             raise InvalidValue(msg)
@@ -73,7 +73,7 @@ class Validator(Converter, Context):
 
     @staticmethod
     def _evaluate(self, value, convert=True, validate=True, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         if value is None:
             if self._default is None:
                 return None

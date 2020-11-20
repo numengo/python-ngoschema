@@ -169,7 +169,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def _convert(self, value, **opts):
         from ..managers.type_builder import TypeBuilder
         value = self._collType(value)
-        if '$schema' in value:
+        if value.get('$schema'):
             s_id = Id.convert(scope(value.pop('$schema'), self._id), **opts)
             if s_id != self._id:
                 self = TypeBuilder.load(s_id)
@@ -211,12 +211,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return CollectionProtocol._deserialize(self, value, **opts)
 
     @classmethod
-    def default(cls, value=None, **opts):
-        return cls(Object.default(cls, value, **opts))
+    def default(cls, value=None, convert=False, **opts):
+        dft = Object.default(cls, value, **opts)
+        return cls(dft, **opts) if convert else dft
 
     @staticmethod
     def _create_context(self, *extra_contexts, **local):
-        return CollectionProtocol._create_context(self, self._data_validated, *extra_contexts, **local)
+        return CollectionProtocol._create_context(self, {'this': self}, self._data_validated, self, *extra_contexts, **local)
 
     def _items_touch(self, item):
         CollectionProtocol._items_touch(self, item)
@@ -449,13 +450,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def _items_type(self, item):
         # add a cache to resolve type proxies and avoid property resolution
         from .type_proxy import TypeProxy
-        item = self._aliases.get(item, item)
-        item = self._aliasesNegated.get(item, item)
         if self._items_type_cache is None:
             self._items_type_cache = {}
         t = self._items_type_cache.get(item)
         if t is None:
-            t = Object._items_type(self, item)
+            i = self._aliases.get(item, item)
+            i = self._aliasesNegated.get(item, item)
+            t = Object._items_type(self, i)
             self._items_type_cache[item] = t
             if t and hasattr(t, '_proxy_type'):
                 if t._proxy_type:
@@ -610,7 +611,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     extra_schema_properties[pname] = dict(ptype._schema)
                     extra_schema_properties[pname]['default'] = v
                     has_default.add(pname)
-                    read_only.add(pname)  # as defined in schema attributes or hardcoded
+                    #read_only.add(pname)  # as defined in schema attributes or hardcoded
                 else:
                     raise InvalidValue("Impossible to get a default value of type '%s' from class attributes '%s' in '%s'." % (
                         ptype._schema.get("type"), pname, clsname))

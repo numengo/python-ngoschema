@@ -33,7 +33,7 @@ class CollectionProtocol(Collection):
     _repr = None
     _str = None
 
-    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, **opts):
+    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, **opts):
         self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading
         lz = self._lazyLoading if items is None else not items
         #Collection.__init__(self, **opts)
@@ -41,15 +41,12 @@ class CollectionProtocol(Collection):
         self._data = self._deserialize(self, value, items=False, evaluate=False, convert=False, **opts)
         # touch allocates storage for data, need to call _create_context again
         self._touch()
-        self.set_context(opts)
+        context = self._create_context(self, context=context)
+        self.set_context(context, **opts)
         if not lz:
             self._collType(self)
         if validate:
-            self._validate(self, self, items=False)
-
-    @staticmethod
-    def _create_context(self, *extra_contexts, **local):
-        return Collection._create_context(self, {'this': self}, *extra_contexts, **local)
+            self._validate(self, self, items=False, context=context)
 
     @staticmethod
     def _convert(self, value, excludes=[], **opts):
@@ -108,30 +105,48 @@ class CollectionProtocol(Collection):
         return ret
 
     def _items_evaluate(self, item, **opts):
+        from ..types.constants import _True
         v = self._data[item]
         t = self._items_type(self, item)
         opts.setdefault('context', self._context)
         if hasattr(t, '_lazyLoading'):
             if t._lazyLoading:
                 opts.setdefault('validate', False)
-        if t.is_primitive():
-            opts['serialize'] = False
-        return t.evaluate(v, **opts)
         try:
-            ret = t(v, **opts)
-            return ret
+            if t.is_primitive():
+                opts['serialize'] = False
+                return t(v, **opts)
+            elif isinstance(t, _True):
+                if isinstance(v, TypeProtocol):
+                    v.set_context(self._context)
+                return v
+            else:
+                return v if isinstance(v, t) else t(v, **opts)
         except Exception as er:
             self._logger.error(er, exc_info=True)
             raise er
-        return t._evaluate(t, v, **opts)
+        #try:
+        #    ret = t(v, **opts)
+        #    return ret
+        #except Exception as er:
+        #    self._logger.error(er, exc_info=True)
+        #    raise er
+        #return t._evaluate(t, v, **opts)
 
-    @classmethod
-    def items_serialize(cls, value, item, **opts):
-        v = value[item]
-        t = cls._items_type(cls, item)
-        ctx = getattr(value, '_context', cls._context)
-        opts.setdefault('context', ctx)
+    def items_serialize(self, item, **opts):
+        v = self[item]
+        t = self._items_type(self, item)
+        #ctx = getattr(self, '_context', self._context)
+        opts.setdefault('context', self._context)
         return t._serialize(t, v, **opts)
+
+    #@classmethod
+    #def items_serialize(cls, value, item, **opts):
+    #    v = value[item]
+    #    t = cls._items_type(cls, item)
+    #    ctx = getattr(value, '_context', cls._context)
+    #    opts.setdefault('context', ctx)
+    #    return t._serialize(t, v, **opts)
 
     def __setitem__(self, item, value):
         self._data[item] = value
@@ -149,7 +164,7 @@ class CollectionProtocol(Collection):
         del self._data[index]
         del self._data_validated[index]
         del self._items_inputs[index]
-        self._validate(items=False)
+        CollectionProtocol._validate(self, self, items=False)
 
     def get(self, key, default=None):
         try:

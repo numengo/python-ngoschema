@@ -41,10 +41,10 @@ class Repository(Saver):
         return self._saver._save(self, self._content, **opts)
 
     def __call__(self, value, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return self._commit(self, value, **opts)
 
-    @classmethod
-    def commit(cls, value, load=True, **opts):
-        opts['context'] = cls.create_context(**opts)
-        return cls._commit(cls, value, **opts)
+    def commit(self, value, **opts):
+        opts.setdefault('context', self._context)
+        #opts['context'] = self.create_context(**opts)
+        return self._commit(self, value, **opts)

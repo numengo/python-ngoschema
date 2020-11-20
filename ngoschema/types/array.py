@@ -112,7 +112,7 @@ class Array(Collection, ArraySerializer):
 
     def __call__(self, value=None, *values, **opts):
         value = value or list(values)  # to allow initialization by varargs
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return self._serialize(self, value, **opts)
 
     @staticmethod

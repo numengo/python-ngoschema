@@ -34,12 +34,12 @@ class FileLoader(Loader):
         self._charset = charset
 
     def set_filepath(self, filepath):
-        self._filepath = filepath = PathFileExists(filepath, resolve=True) if filepath else None
+        self._filepath = filepath = PathFileExists.convert(filepath, resolve=True) if filepath else None
         return filepath
 
     @staticmethod
     def _open_file(self, filepath, mode='r', **opts):
-        filepath = self.set_filepath(self, filepath)
+        filepath = FileLoader.set_filepath(self, filepath)
         charset = opts.get('charset', self._charset)
         binary = opts.get('binary', self._binary)
         fp = str(filepath)
@@ -62,7 +62,7 @@ class FileLoader(Loader):
 
     @staticmethod
     def _load_file(self, filepath, **opts):
-        filepath = self.set_filepath(self, filepath)
+        filepath = FileLoader.set_filepath(self, filepath)
         content = FileLoader._deserialize(self, filepath, **opts)
         parsed = self._encoder.deserialize(content, evaluate=False, **opts)
         return Loader._load(self, parsed, **opts)
@@ -71,17 +71,17 @@ class FileLoader(Loader):
     def _load(self, filepath, **opts):
         return self._load_file(self, filepath, **opts)
 
-    @classmethod
-    def open_file(cls, filepath, **opts):
-        return cls._open_file(cls, filepath, **opts)
+    #@classmethod
+    def open_file(self, filepath, **opts):
+        return self._open_file(self, filepath, **opts)
 
-    @classmethod
-    def read_file(cls, filepath, **opts):
-        return cls._read_file(cls, filepath, **opts)
+    #@classmethod
+    def read_file(self, filepath, **opts):
+        return self._read_file(self, filepath, **opts)
 
-    @classmethod
-    def load_file(cls, filepath, **opts):
-        return cls._load_file(cls, filepath, **opts)
+    #@classmethod
+    def load_file(self, filepath, **opts):
+        return self._load_file(self, filepath, **opts)
 
 
 class FileSaver(Saver, FileLoader):
@@ -99,7 +99,7 @@ class FileSaver(Saver, FileLoader):
 
     @staticmethod
     def _write_file(self, filepath, value, **opts):
-        filepath = self.set_filepath(filepath)
+        filepath = FileSaver.set_filepath(self, filepath)
         binary = opts.pop('binary', self._binary)
         mode = 'wb' if binary else 'w'
         if not filepath.parent.exists():
@@ -116,7 +116,7 @@ class FileSaver(Saver, FileLoader):
     @staticmethod
     @assert_arg(1, PathFileExists)
     def _append_file(self, filepath, value, **opts):
-        filepath = self.set_filepath(filepath)
+        filepath = FileSaver.set_filepath(self, filepath)
         binary = opts.pop('binary', self._binary)
         mode = 'ab' if binary else 'a'
         with self._open_file(self, filepath, mode=mode, **opts) as f:
@@ -124,7 +124,7 @@ class FileSaver(Saver, FileLoader):
 
     @staticmethod
     def _save_file(self, filepath, value, **opts):
-        filepath = self.set_filepath(filepath)
+        filepath = FileSaver.set_filepath(self, filepath)
         value = Loader._save(self, value, **opts)
         append = opts.pop('append', self._append)
         if append:
@@ -138,17 +138,17 @@ class FileSaver(Saver, FileLoader):
         filepath = opts.pop('filepath', self._filepath)
         return self._save_file(self, filepath, value, **opts)
 
-    @classmethod
-    def write_file(cls, filepath, value, **opts):
-        return cls._write_file(cls, filepath, value, **opts)
+    #@classmethod
+    def write_file(self, filepath, value, **opts):
+        return self._write_file(self, filepath, value, **opts)
 
-    @classmethod
-    def append_file(cls, filepath, value, **opts):
-        return cls._append_file(cls, filepath, value, **opts)
+    #@classmethod
+    def append_file(self, filepath, value, **opts):
+        return self._append_file(self, filepath, value, **opts)
 
-    @classmethod
-    def save_file(cls, filepath, value, **opts):
-        return cls._save_file(cls, filepath, value, **opts)
+    #@classmethod
+    def save_file(self, filepath, value, **opts):
+        return self._save_file(self, filepath, value, **opts)
 
 
 @serializers_registry.register('file')

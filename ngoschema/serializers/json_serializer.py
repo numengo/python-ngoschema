@@ -54,13 +54,13 @@ class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer)):
         value = Serializer._serialize(self, value, **opts)
         return self._encoder.encode(value)
 
-    @classmethod
-    def deserialize_json(cls, value, **opts):
-        return cls._deserialize_json(cls, value, **opts)
+    #@classmethod
+    def deserialize_json(self, value, **opts):
+        return self._deserialize_json(self, value, **opts)
 
-    @classmethod
-    def serialize_json(cls, value, **opts):
-        return cls._serialize_json(cls, value, **opts)
+    #@classmethod
+    def serialize_json(self, value, **opts):
+        return self._serialize_json(self, value, **opts)
 
 
 def set_json_defaults(kwargs=None):

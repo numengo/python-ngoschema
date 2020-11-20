@@ -64,7 +64,7 @@ class Uri(Primitive, Resolver):
 
 
 # https://regex101.com/r/njslOV/2
-cn_re = re.compile(r"^[\.a-zA-Z_]+$")
+cn_re = re.compile(r"^[\.\da-zA-Z_]+$")
 
 
 @register_type('id')
@@ -152,7 +152,7 @@ class Path(Uri):
         if expand_user:
             typed = typed.expanduser()
         if resolve:
-            typed = self._resolve(typed, **opts)
+            typed = typed.resolve()
         return typed
 
     @staticmethod
@@ -168,8 +168,9 @@ class Path(Uri):
                 p = value.relative_to(fp)
         return str(value)
 
+    @staticmethod
     def _resolve(self, typed, **opts):
-        return typed.resolve(**opts)
+        return typed.resolve()
 
 
 PathExists = Path.extend_type('PathExists', isPathExisting=True)

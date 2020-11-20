@@ -115,6 +115,7 @@ class Collection(Type, CollectionSerializer):
     def _serialize(self, value, items=True, **opts):
         ret = self._serializer._serialize(self, value, **opts)
         if items:
+            opts.setdefault('no_defaults', True)
             for k, t in self._items_types(self, value):
                 if self._is_included(k, value, **opts):
                     v = value[k]

@@ -40,7 +40,7 @@ class Deserializer(Validator):
         return value
 
     def __call__(self, value, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         value = self._deserialize(self, value, **opts)
         return value
 
@@ -66,11 +66,12 @@ class Serializer(Deserializer):
         return value
 
     def __call__(self, value, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return self._serialize(self, value, **opts)
 
     @classmethod
     def serialize(cls, value, **opts):
-        opts['context'] = cls.create_context(**opts)
+        #opts['context'] = cls.create_context(**opts)
+        opts.setdefault('context', cls._context)
         return cls._serialize(cls, value, **opts)
 

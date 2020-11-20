@@ -27,7 +27,7 @@ class Type(TypeProtocol):
                 self._pyType = TypeBuilder.get_type(ty)._pyType
 
     def __call__(self, value, deserialize=True, serialize=False, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         value = self._deserialize(self, value, **opts) if deserialize else value
         return self._serialize(self, value, deserialize=False, **opts) if serialize else value
 

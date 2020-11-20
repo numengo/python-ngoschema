@@ -26,13 +26,13 @@ class Context:
         return self._create_context(self, **opts)
 
     @classmethod
-    def create_context(cls, **opts):
-        return cls._create_context(cls, **opts)
+    def create_context(cls, *parents, **opts):
+        return cls._create_context(cls, *parents, **opts)
 
     @staticmethod
     def _create_context(self, *parents, context=None, **local):
         context = context or self._context
         return context.create_child(*parents, **local)
 
-    def set_context(self, *parents, **local):
-        self._context = self._create_context(self, *parents, **local)
+    def set_context(self, context, **opts):
+        self._context = context

@@ -36,8 +36,9 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _items_inputs = []
 
     @classmethod
-    def default(cls, value=None, **opts):
-        return cls(Array.default(cls, value, **opts))
+    def default(cls, value=None, convert=False, **opts):
+        dft = Array.default(cls, value, **opts)
+        return cls(dft, **opts) if convert else dft
 
     def _touch(self):
         CollectionProtocol._touch(self)
@@ -96,17 +97,6 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     def __str__(self):
         return ArrayProtocol._str_list(self)
-
-    #def _items_inputs_evaluate(self, item):
-    #    ret = {}
-    #    t = self._items_type(self, item)
-    #    for k in t._inputs(t, self._data[item]):
-    #        try:
-    #            ret[k] = self[item][k]
-    #        except Exception as er:
-    #            self._logger.error(er, exc_info=True)
-    #            pass
-    #    return ret
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):

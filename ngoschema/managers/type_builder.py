@@ -86,6 +86,7 @@ class TypeBuilder:
         from .namespace_manager import NamespaceManager
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
         from ..types.constants import _True, _False
+
         if TypeBuilder.contains(id):
             return TypeBuilder.get(id)
         if id in TypeBuilder._on_construction:

@@ -28,13 +28,14 @@ class Loader(Deserializer):
             return instance_class(value, **opts) if instance_class else value
 
     def __call__(self, value, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         raise self._load(self, value, **opts)
 
-    @classmethod
-    def load(cls, value, **opts):
-        opts['context'] = cls.create_context(**opts)
-        return cls._load(cls, value, **opts)
+    #@classmethod
+    def load(self, value, **opts):
+        #opts['context'] = cls.create_context(**opts)
+        opts.setdefault('context', self._context)
+        return self._load(self, value, **opts)
 
 
 class Saver(Serializer, Loader):
@@ -54,10 +55,11 @@ class Saver(Serializer, Loader):
         return value
 
     def __call__(self, value, load=False, **opts):
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         raise self._save(self, value, **opts)
 
-    @classmethod
-    def save(cls, value, load=True, **opts):
-        opts['context'] = cls.create_context(**opts)
-        return cls._save(cls, value, **opts)
+    #@classmethod
+    def save(self, value, **opts):
+        #opts['context'] = cls.create_context(**opts)
+        opts.setdefault('context', self._context)
+        return self._save(self, value, **opts)

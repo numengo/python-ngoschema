@@ -56,9 +56,9 @@ class XmlDeserializer(Deserializer):
             self._tag = keys[0]
         return value[self._tag]
 
-    @classmethod
-    def deserialize_xml(cls, value, **opts):
-        return cls._deserialize_xml(cls, value, **opts)
+    #@classmethod
+    def deserialize_xml(self, value, **opts):
+        return self._deserialize_xml(self, value, **opts)
 
 
 @serializers_registry.register('xml')
@@ -125,6 +125,6 @@ class XmlSerializer(with_metaclass(SchemaMetaclass, Serializer, XmlDeserializer)
     def _serialize(self, value, **opts):
         return XmlSerializer._serialize_xml(self, value, **opts)
 
-    @classmethod
-    def serialize_xml(cls, value, **opts):
-        return cls._serialize_xml(cls, value, **opts)
+    #@classmethod
+    def serialize_xml(self, value, **opts):
+        return self._serialize_xml(self, value, **opts)

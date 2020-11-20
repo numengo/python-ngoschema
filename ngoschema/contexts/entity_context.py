@@ -8,6 +8,6 @@ from .instance_context import InstanceContext
 class EntityContext(InstanceContext):
     _repository = None
 
-    def set_context(self, *parents, **local):
+    def set_context(self, context, **opts):
         from ..repositories import Repository
-        InstanceContext.set_context(self, *parents, **local)
+        InstanceContext.set_context(self, context, **opts)

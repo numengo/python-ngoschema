@@ -8,9 +8,9 @@ from .object_protocol_context import ObjectProtocolContext
 class InstanceContext(ObjectProtocolContext):
     _parentInstance = None
 
-    def set_context(self, *parents, **local):
+    def set_context(self, context, **opts):
         from ..models.instances import Instance
-        ObjectProtocolContext.set_context(self, *parents, **local)
+        ObjectProtocolContext.set_context(self, context, **opts)
         self._parentInstance = next((m for m in self._context.maps
                                       if isinstance(m, Instance) and m is not self), None)
         if '_parentInstance' in self._properties:

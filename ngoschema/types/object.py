@@ -146,7 +146,7 @@ class Object(Collection, ObjectSerializer):
 
     def __call__(self, value=None, **opts):
         value = value or opts  # to allow initialization by keywords
-        opts['context'] = self.create_context(**opts)
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return self._serialize(self, value, **opts)
 
     @staticmethod
@@ -240,7 +240,7 @@ class Object(Collection, ObjectSerializer):
     @staticmethod
     def _print_order(self, value, **opts):
         no_defaults = opts.pop('no_defaults', self._noDefaults)
-        context = self.create_context(**opts)
+        context = opts.pop('context', self._context)
         for k in ObjectSerializer._print_order(self, value, no_defaults=no_defaults, **opts):
             if no_defaults:
                 t = self._items_type(self, k)

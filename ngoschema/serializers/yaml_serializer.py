@@ -28,9 +28,9 @@ class YamlDeserializer(Deserializer):
     def _deserialize(self, value, **opts):
         return YamlSerializer._deserialize_yaml(self, value, **opts)
 
-    @classmethod
-    def deserialize_yaml(cls, value, **opts):
-        return cls._deserialize_yaml(cls, value, **opts)
+    #@classmethod
+    def deserialize_yaml(self, value, **opts):
+        return self._deserialize_yaml(self, value, **opts)
 
 
 @serializers_registry.register('yaml')
@@ -62,6 +62,6 @@ class YamlSerializer(with_metaclass(SchemaMetaclass, Serializer, YamlDeserialize
     def _serialize(self, value, **opts):
         return YamlSerializer._serialize_yaml(self, value, **opts)
 
-    @classmethod
-    def serialize_yaml(cls, value, **opts):
-        return cls._serialize_yaml(cls, value, **opts)
+    #@classmethod
+    def serialize_yaml(self, value, **opts):
+        return self._serialize_yaml(self, value, **opts)
