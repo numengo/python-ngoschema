@@ -12,6 +12,10 @@ class Constant(TypeProtocol):
     def __init__(self, **opts):
         pass
 
+    @classmethod
+    def is_constant(cls):
+        return True
+
     @staticmethod
     def _check(self, value, **opts):
         if self._pyType:

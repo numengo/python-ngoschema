@@ -272,7 +272,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __getattr__(self, name):
         # private and protected attributes at accessed directly
         if name.startswith('_') or name in self._attributesOrig:
-            return MutableMapping.__getattribute__(self, name)
+            if name.startswith('__'):
+                return MutableMapping.__getattribute__(self, name)
+            if name not in self._propertiesAllowed:
+                return self.__dict__[name]
+        #if name.startswith('_') or name in self._attributesOrig:
+        #    return MutableMapping.__getattribute__(self, name)
         op = lambda x: neg(x) if name in self._aliasesNegated else x
         name = self._aliasesNegated.get(name, name)
         name = self._aliases.get(name, name)
@@ -344,8 +349,11 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     def __setattr__(self, name, value):
         # private and protected attributes at accessed directly
-        if name.startswith('_') or name in self._attributesOrig:
-            return MutableMapping.__setattr__(self, name, value)
+        if name.startswith('_'):  # or name in self._attributesOrig:
+            if name not in self._propertiesAllowed:
+                self.__dict__[name] = value
+                return
+            #return MutableMapping.__setattr__(self, name, value)
         try:
             self[name] = value
         except KeyError as er:
@@ -416,7 +424,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 v = ret.get(raw)
                 if v is not None:
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = - v
-        if isinstance(value, self) and value.__class__._id != self._id:
+        if isinstance(value, ObjectProtocol) and value.__class__._id != self._id:
             schema = True
         if schema:
             ret['$schema'] = Id.serialize(self._id, context=self._context)

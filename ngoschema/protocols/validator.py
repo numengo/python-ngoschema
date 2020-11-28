@@ -14,6 +14,7 @@ from .converter import Converter
 from .context import Context
 
 logger = logging.getLogger(__name__)
+#count = 0
 
 
 class Validator(Converter, Context):
@@ -78,6 +79,8 @@ class Validator(Converter, Context):
             if self._default is None:
                 return None
             value = copy(self._default)
+        global count
+        #count = count + 1
         value = self._convert(self, value, validate=False, **opts) if convert else value
         value = self._validate(self, value, with_type=False, **opts) if validate else value
         return value
@@ -86,7 +89,7 @@ class Validator(Converter, Context):
         return self._evaluate(self, value, **opts)
 
     @classmethod
-    def check(cls, value, convert=False, validate=True, **opts):
+    def check(cls, value, convert=False, validate=False, **opts):
         try:
             value = cls._convert(cls, value, validate=False, **opts) if convert else value
             value = cls._check(cls, value, **opts)

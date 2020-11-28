@@ -62,7 +62,7 @@ class Collection(Type, CollectionSerializer):
         self._items = items or self._items
 
     @staticmethod
-    def _check(self, value, items=True, **opts):
+    def _check(self, value, items=False, **opts):
         value = self._deserializer._check(self, value, **opts)
         if items:
             for k, t in self._items_types(self, value):
@@ -82,11 +82,11 @@ class Collection(Type, CollectionSerializer):
         return self._evaluate(self, ret, items=False, **opts) if evaluate else ret
 
     @staticmethod
-    def _convert(self, value, items=True, **opts):
+    def _convert(self, value, items=True, no_defaults=True, **opts):
         value = self._collType(value)
         if items:
             for k, t in self._items_types(self, value):
-                if self._is_included(k, value, **opts):
+                if self._is_included(k, value, no_defaults=no_defaults, **opts):
                     value[k] = t._convert(t, value[k], **opts)
         value = self._deserializer._convert(self, value, **opts)
         return value

@@ -71,8 +71,8 @@ class Pattern(String):
         raise TypeError('%s is not of type "pattern".' % value)
 
     @staticmethod
-    def _convert(self, value, **opts):
-        ctx = self.create_context(**opts).merged
+    def _convert(self, value, context=None, **opts):
+        ctx = (context or self.create_context(**opts)).merged
         ctx.setdefault('this', None)
         if value is not None:
             return TemplatedString(value)(ctx)

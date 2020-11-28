@@ -100,6 +100,10 @@ class TypeProtocol(Serializer):
         return False
 
     @classmethod
+    def is_constant(cls):
+        return False
+
+    @classmethod
     def qualname(cls):
         cm = cls.__module__
         qn = cm + '.' if not cm.startswith('_') else ''

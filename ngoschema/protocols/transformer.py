@@ -34,6 +34,6 @@ class Transformer(Converter):
         return self._transform(self, value, **opts)
 
     @classmethod
-    def transform(cls, value, convert=True, **opts):
+    def transform(cls, value, convert=False, **opts):
         value = cls._convert(cls, value, **opts) if convert else value
-        return cls._transform(cls, value, convert=False, **opts)
+        return cls._transform(cls, value, convert=convert, **opts)

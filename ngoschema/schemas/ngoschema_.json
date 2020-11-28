@@ -1,5 +1,5 @@
 {
-  "$id": "https://numengo.org/ngoschema#",
+  "$id": "https://numengo.org/ngoschema_#",
   "type": "object",
   "$comment": "automatically generated for ngoschema",
   "$defs": {

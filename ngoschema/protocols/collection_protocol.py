@@ -95,7 +95,7 @@ class CollectionProtocol(Collection):
     def _items_inputs_evaluate(self, item):
         ret = {}
         t = self._items_type(self, item)
-        if t.is_primitive():
+        if t.is_primitive() and not t._rawLiterals:
             for k in t._inputs(t, self._data[item]):
                 try:
                     ret[k] = self[k]
@@ -117,11 +117,11 @@ class CollectionProtocol(Collection):
                 opts['serialize'] = False
                 return t(v, **opts)
             elif isinstance(t, _True):
-                if isinstance(v, TypeProtocol):
-                    v.set_context(self._context)
+            #    if isinstance(v, TypeProtocol):
+            #        v.set_context(self._context)
                 return v
             else:
-                return v if isinstance(v, t) else t(v, **opts)
+                return v if isinstance(t, type) and isinstance(v, t) else t(v, **opts)
         except Exception as er:
             self._logger.error(er, exc_info=True)
             raise er

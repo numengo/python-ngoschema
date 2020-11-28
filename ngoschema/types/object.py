@@ -49,7 +49,7 @@ class ObjectDeserializer(CollectionDeserializer):
     def _check(self, value, **opts):
         if not isinstance(value, Mapping):
             raise TypeError('%s is not of type mapping.' % value)
-        value = self._collType(value)
+        #value = self._collType(value)
         return value
 
     @staticmethod

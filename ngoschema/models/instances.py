@@ -41,7 +41,7 @@ class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
         # one that does not trigger lazyloading
         pi = self._parentInstance
         n = self._data_validated.get('name') or self._data.get('name')
-        return f'{pi._canonicalName}.{n}' if pi else n
+        return f'{pi._canonicalName}.{n}' if pi is not None else n
 
 
 class InstanceList(with_metaclass(SchemaMetaclass, ArrayProtocol, InstanceContext)):
@@ -56,9 +56,9 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     _primaryKeys = ('canonicalName', )
     _identityKeys = None
 
-    def __init__(self, value=None, primaryKeys=None, *opts):
+    def __init__(self, value=None, primaryKeys=None, **opts):
         self._primaryKeys = primaryKeys or self._primaryKeys
-        Instance.__init__(self, value, *opts)
+        Instance.__init__(self, value, **opts)
 
     def get_primaryKeys(self):
         return self._primaryKeys
