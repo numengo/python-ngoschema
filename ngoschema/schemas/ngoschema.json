@@ -1,0 +1,774 @@
+{
+  "$id": "https://numengo.org/ngoschema#",
+  "type": "object",
+  "$comment": "automatically generated for ngoschema",
+  "$defs": {
+    "contexts": {
+      "type": "object",
+      "$defs": {
+        "NsManagerContext": {
+          "type": "object",
+          "notValidated": [
+            "_nsMgr"
+          ],
+          "notSerialized": [
+            "_nsMgr"
+          ],
+          "properties": {
+            "_nsMgr": true
+          }
+        },
+        "ObjectProtocolContext": {
+          "type": "object",
+          "notValidated": [
+            "_parent"
+          ],
+          "notSerialized": [
+            "_parent"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/contexts/$defs/NsManagerContext"
+          ],
+          "properties": {
+            "_parent": true
+          }
+        },
+        "InstanceContext": {
+          "type": "object",
+          "notValidated": [
+            "_parentInstance"
+          ],
+          "notSerialized": [
+            "_parentInstance"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/contexts/$defs/ObjectProtocolContext"
+          ],
+          "properties": {
+            "_parentInstance": true
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "$defs": {
+        "Annotation": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "$comment": {
+              "type": "string"
+            }
+          }
+        },
+        "Id": {
+          "type": "object",
+          "properties": {
+            "$id": {
+              "type": "id"
+            },
+            "$schema": {
+              "type": "id"
+            }
+          }
+        },
+        "Plural": {
+          "type": "object",
+          "properties": {
+            "namePlural": {
+              "type": "string",
+              "defaultValue": "{%if this.name %}{{this.name|pluralize}}{% endif %}"
+            }
+          }
+        }
+      }
+    },
+    "protocols": {
+      "type": "object",
+      "$defs": {
+        "Checker": {
+          "type": "object",
+          "properties": {
+            "pyType": {
+              "type": "importable"
+            }
+          }
+        },
+        "Converter": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Checker"
+          ],
+          "properties": {
+            "checker": {
+              "$ref": "#/$defs/protocols/$defs/Checker"
+            }
+          }
+        },
+        "Transformer": {
+          "type": "object",
+          "aliases": {
+            "fromClass": "pyType"
+          },
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Converter"
+          ],
+          "properties": {
+            "converter": {
+              "$ref": "#/$defs/protocols/$defs/Converter"
+            },
+            "toClass": {
+              "type": "importable"
+            }
+          }
+        },
+        "Validator": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Converter"
+          ],
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "errors": {
+              "type": "object"
+            },
+            "converter": {
+              "$ref": "#/$defs/protocols/$defs/Converter"
+            }
+          }
+        },
+        "Deserializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Validator"
+          ],
+          "properties": {
+            "many": {
+              "type": "boolean"
+            },
+            "validator": {
+              "$ref": "#/$defs/protocols/$defs/Validator"
+            }
+          }
+        },
+        "Serializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Deserializer"
+          ],
+          "properties": {
+            "deserializer": {
+              "$ref": "#/$defs/protocols/$defs/Deserializer"
+            }
+          }
+        },
+        "Loader": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Deserializer"
+          ],
+          "properties": {
+            "instanceClass": {
+              "type": "string"
+            },
+            "deserializer": {
+              "$ref": "#/$defs/protocols/$defs/Deserializer"
+            }
+          }
+        },
+        "Resolver": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Converter"
+          ],
+          "properties": {
+            "converter": {
+              "$ref": "#/$defs/protocols/$defs/Converter"
+            }
+          }
+        },
+        "Repository": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/protocols/$defs/Loader",
+            "#/$defs/protocols/$defs/Serializer"
+          ],
+          "properties": {
+            "loader": {
+              "$ref": "#/$defs/protocols/$defs/Loader"
+            },
+            "serializer": {
+              "$ref": "#/$defs/protocols/$defs/Serializer"
+            }
+          }
+        }
+      }
+    },
+    "managers": {
+      "type": "object",
+      "$defs": {
+        "TypeBuilder": {
+          "type": "object"
+        },
+        "NamespaceManager": {
+          "type": "object"
+        }
+      }
+    },
+    "relationships": {
+      "type": "object",
+      "$defs": {
+        "Relationship": {
+          "title": "Relationship",
+          "type": "object",
+          "additionalProperties": false,
+          "extends": [
+            "#/$defs/instances/$defs/Entity"
+          ],
+          "properties": {
+            "$schema": {
+              "type": "id"
+            },
+            "fkeys": {
+              "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+            },
+            "cardinality": {
+              "type": "string"
+            },
+            "ordering": {
+              "type": "string"
+            },
+            "reverse": {
+              "type": "boolean"
+            }
+          }
+        },
+        "ForeignKey": {
+          "title": "Foreign Key",
+          "$comment": "to define a relationship to another instance",
+          "type": "object",
+          "additionalProperties": false,
+          "extends": [
+            "#/$defs/relationships/$defs/Relationship"
+          ],
+          "properties": {
+            "backPopulates": {
+              "$ref": "#/$defs/relationships/$defs/Relationship"
+            },
+            "onDelete": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "instances": {
+      "type": "object",
+      "$defs": {
+        "Instance": {
+          "type": "object",
+          "additionalProperties": false,
+          "notSerialized": [
+            "canonicalName"
+          ],
+          "extends": [
+            "#/$defs/contexts/$defs/InstanceContext",
+            "#/$defs/metadata/$defs/Annotation"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "canonicalName": {
+              "type": "string"
+            },
+            "properties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/instances/$defs/Instance"
+              }
+            }
+          }
+        },
+        "InstanceList": {
+          "type": "object",
+          "notSerialized": [
+            "items",
+            "namePlural"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/instances/$defs/Instance",
+            "#/$defs/metadata/$defs/Plural"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/instances/$defs/Instance"
+              }
+            }
+          }
+        },
+        "Entity": {
+          "title": "Entity",
+          "type": "object",
+          "description": "Protocol for persistent entities with primary keys",
+          "readOnly": [
+            "identityKeys"
+          ],
+          "additionalProperties": false,
+          "extends": [
+            "#/$defs/instances/$defs/Instance",
+            "#/$defs/metadata/$defs/Id"
+          ],
+          "properties": {
+            "primaryKeys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "_icons": [
+                  "edit"
+                ]
+              }
+            },
+            "identityKeys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "_icons": [
+                  "edit"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "object",
+      "$defs": {
+        "File": {
+          "type": "object",
+          "primaryKeys": [
+            "filepath"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/instances/$defs/Entity"
+          ],
+          "properties": {
+            "filepath": {
+              "type": "path"
+            },
+            "contentRaw": {
+              "type": "string"
+            }
+          }
+        },
+        "FileInfo": {
+          "type": "object",
+          "required": [
+            "file"
+          ],
+          "properties": {
+            "file": {
+              "$ref": "#/$defs/files/$defs/File"
+            },
+            "dateCreated": {
+              "type": "datetime"
+            },
+            "dateModified": {
+              "type": "datetime"
+            },
+            "contentSize": {
+              "type": "integer"
+            },
+            "contentSizeHuman": {
+              "type": "string"
+            },
+            "mimetype": {
+              "type": "string"
+            },
+            "sha1": {
+              "type": "string"
+            }
+          }
+        },
+        "UriFile": {
+          "type": "object",
+          "primaryKeys": [
+            "uri"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/files/$defs/File"
+          ],
+          "properties": {
+            "uri": {
+              "type": "uri"
+            },
+            "contentRaw": {
+              "type": "string"
+            }
+          }
+        },
+        "Document": {
+          "title": "Document",
+          "type": "object",
+          "additionalProperties": false,
+          "primaryKeys": [
+            "identifier"
+          ],
+          "extends": [
+            "#/$defs/files/$defs/File"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string"
+            },
+            "charset": {
+              "type": "string",
+              "defaultValue": "utf-8"
+            },
+            "version": {
+              "type": "string"
+            },
+            "author": {
+              "type": "string"
+            },
+            "keywords": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "_icons": [
+                  "edit"
+                ]
+              }
+            },
+            "doc_id": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "serializers": {
+      "type": "object",
+      "$defs": {
+        "CollectionSerializer": {
+          "type": "object",
+          "properties": {
+            "many": {
+              "type": "boolean"
+            },
+            "excludes": {
+              "type": "array"
+            },
+            "only": {
+              "type": "array"
+            }
+          }
+        },
+        "ObjectSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/CollectionSerializer"
+          ],
+          "properties": {
+            "attrPrefix": {
+              "type": "string"
+            },
+            "noDefaults": {
+              "type": "boolean"
+            },
+            "noReadOnly": {
+              "type": "boolean"
+            }
+          }
+        },
+        "InstanceSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/ObjectSerializer"
+          ],
+          "properties": {
+            "tag": {
+              "type": "string"
+            }
+          }
+        },
+        "EntitySerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/InstanceSerializer"
+          ],
+          "properties": {
+            "useEntityKeys": {
+              "type": "boolean"
+            },
+            "useIdentityKeys": {
+              "type": "boolean"
+            }
+          }
+        },
+        "FileSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/files/$defs/File",
+            "#/$defs/protocols/$defs/Serializer"
+          ],
+          "properties": {
+            "file": {
+              "$ref": "#/$defs/files/$defs/File"
+            },
+            "binary": {
+              "type": "boolean"
+            },
+            "charset": {
+              "type": "string",
+              "defaultValue": "utf-8"
+            }
+          }
+        },
+        "JsonSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/InstanceSerializer"
+          ]
+        },
+        "XmlSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/InstanceSerializer"
+          ],
+          "properties": {
+            "attr_prefix": {
+              "type": "string",
+              "defaultValue": "@"
+            },
+            "pretty": {
+              "type": "boolean",
+              "defaultValue": true
+            },
+            "cdata_key": {
+              "type": "string",
+              "defaultValue": "#text"
+            },
+            "short_empty_elements": {
+              "type": "boolean",
+              "defaultValue": true
+            },
+            "indent": {
+              "type": "string",
+              "defaultValue": "\t"
+            },
+            "newl": {
+              "type": "string",
+              "defaultValue": "\n"
+            }
+          }
+        },
+        "YamlSerializer": {
+          "type": "object",
+          "_type": "id",
+          "extends": [
+            "#/$defs/serializers/$defs/InstanceSerializer"
+          ]
+        }
+      }
+    },
+    "repositories": {
+      "type": "object",
+      "$defs": {
+        "MemoryRepository": {
+          "title": "Memory Repository",
+          "type": "object",
+          "additionalProperties": false,
+          "extends": [
+            "#/$defs/protocols/$defs/Repository",
+            "#/$defs/serializers/$defs/EntitySerializer"
+          ],
+          "properties": {
+            "instanceClass": {
+              "type": "importable"
+            }
+          }
+        },
+        "FileRepository": {
+          "title": "File Repository",
+          "type": "object",
+          "additionalProperties": false,
+          "abstract": true,
+          "extends": [
+            "#/$defs/protocols/$defs/Repository",
+            "#/$defs/serializers/$defs/FileSerializer"
+          ],
+          "properties": {
+            "overwrite": {
+              "type": "boolean"
+            }
+          }
+        },
+        "JsonFileRepository": {
+          "title": "Json File Repository",
+          "type": "object",
+          "additionalProperties": true,
+          "extends": [
+            "#/$defs/repositories/$defs/FileRepository",
+            "#/$defs/serializers/$defs/JsonSerializer"
+          ]
+        },
+        "YamlFileRepository": {
+          "title": "Yaml File Repository",
+          "type": "object",
+          "additionalProperties": true,
+          "extends": [
+            "#/$defs/repositories/$defs/FileRepository",
+            "#/$defs/serializers/$defs/YamlSerializer"
+          ]
+        },
+        "XmlFileRepository": {
+          "title": "Xml File Repository",
+          "type": "object",
+          "additionalProperties": true,
+          "extends": [
+            "#/$defs/repositories/$defs/FileRepository",
+            "#/$defs/serializers/$defs/XmlSerializer"
+          ]
+        }
+      }
+    },
+    "queries": {
+      "type": "object",
+      "$defs": {
+        "Filter": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "attrs": {
+              "type": "array",
+              "items": true
+            },
+            "attrs_value": {
+              "type": "object"
+            },
+            "negate": {
+              "type": "boolean"
+            },
+            "any_of": {
+              "type": "boolean"
+            }
+          }
+        },
+        "Query": {
+          "type": "object",
+          "notValidated": [
+            "iterable"
+          ],
+          "readOnly": [
+            "result"
+          ],
+          "notSerialized": [
+            "iterable"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/queries/$defs/Filter"
+          ],
+          "properties": {
+            "iterable": {
+              "type": "array"
+            },
+            "distinct": {
+              "type": "boolean"
+            },
+            "order_by": true,
+            "reverse": {
+              "type": "boolean"
+            },
+            "result": {
+              "type": "array"
+            }
+          }
+        },
+        "EntityQuery": {
+          "type": "object",
+          "readOnly": [
+            "iterable"
+          ],
+          "_type": "id",
+          "extends": [
+            "#/$defs/queries/$defs/Query"
+          ],
+          "properties": {
+            "entity": {
+              "type": "importable"
+            },
+            "field": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "$defs": {
+        "Session": {
+          "title": "Session",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "autoflush": {
+              "type": "boolean",
+              "defaultValue": true
+            },
+            "expire_on_commit": {
+              "type": "boolean",
+              "defaultValue": true
+            },
+            "autocommit": {
+              "type": "boolean",
+              "defaultValue": true
+            },
+            "bind": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "repositories": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/protocols/$defs/Repository"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

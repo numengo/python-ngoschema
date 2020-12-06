@@ -116,10 +116,11 @@ class Collection(Type, CollectionSerializer):
         ret = self._serializer._serialize(self, value, **opts)
         if items:
             opts.setdefault('no_defaults', True)
-            for k, t in self._items_types(self, value):
-                if self._is_included(k, value, **opts):
-                    v = value[k]
+            for k, t in self._items_types(self, ret):
+                if self._is_included(k, ret, **opts):
+                    v = ret[k]
                     ret[k] = t._serialize(t, v, **opts)
+                    #ret[k] = v.do_serialize(**opts) if hasattr(v, 'do_serialize') else t._serialize(t, v, **opts)
         return ret
 
     @classmethod

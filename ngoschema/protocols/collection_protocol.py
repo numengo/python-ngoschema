@@ -96,12 +96,16 @@ class CollectionProtocol(Collection):
         ret = {}
         t = self._items_type(self, item)
         if t.is_primitive() and not t._rawLiterals:
+            for k in self._dependencies.get(item, []):
+                try:
+                    ret[k] = self[k]
+                except Exception as er:
+                    self._logger.error(er, exc_info=True)
             for k in t._inputs(t, self._data[item]):
                 try:
                     ret[k] = self[k]
                 except Exception as er:
                     self._logger.error(er, exc_info=True)
-                    pass
         return ret
 
     def _items_evaluate(self, item, **opts):
@@ -117,36 +121,18 @@ class CollectionProtocol(Collection):
                 opts['serialize'] = False
                 return t(v, **opts)
             elif isinstance(t, _True):
-            #    if isinstance(v, TypeProtocol):
-            #        v.set_context(self._context)
                 return v
             else:
                 return v if isinstance(t, type) and isinstance(v, t) else t(v, **opts)
         except Exception as er:
             self._logger.error(er, exc_info=True)
             raise er
-        #try:
-        #    ret = t(v, **opts)
-        #    return ret
-        #except Exception as er:
-        #    self._logger.error(er, exc_info=True)
-        #    raise er
-        #return t._evaluate(t, v, **opts)
 
     def items_serialize(self, item, **opts):
         v = self[item]
         t = self._items_type(self, item)
-        #ctx = getattr(self, '_context', self._context)
-        opts.setdefault('context', self._context)
+        opts['context'] = getattr(v, '_context', self._context)
         return t._serialize(t, v, **opts)
-
-    #@classmethod
-    #def items_serialize(cls, value, item, **opts):
-    #    v = value[item]
-    #    t = cls._items_type(cls, item)
-    #    ctx = getattr(value, '_context', cls._context)
-    #    opts.setdefault('context', ctx)
-    #    return t._serialize(t, v, **opts)
 
     def __setitem__(self, item, value):
         self._data[item] = value
@@ -196,7 +182,7 @@ class CollectionProtocol(Collection):
 
     def _is_outdated(self, item):
         return (self._data_validated[item] is None and self._data[item] is not None
-                ) or (self._items_inputs.get(item, []) != self._items_inputs_evaluate(item))
+                ) or (self._items_inputs.get(item, {}) != self._items_inputs_evaluate(item))
 
     @classmethod
     def create(cls, value=None, **opts):
@@ -205,8 +191,9 @@ class CollectionProtocol(Collection):
     def do_validate(self, **opts):
         return self._validate(self, self, **opts)
 
-    def do_serialize(self, **opts):
-        return self._serialize(self, self, deserialize=False, **opts)
+    def do_serialize(self, deserialize=False, **opts):
+        opts['context'] = self._context
+        return self._serialize(self, self, deserialize=deserialize, **opts)
 
     def copy(self):
         return self.create(self._data, context=self._context)

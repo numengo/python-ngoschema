@@ -22,6 +22,7 @@ from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from ..contexts.object_protocol_context import ObjectProtocolContext
 from .. import settings
+from .serializer import Serializer
 from .type_protocol import TypeProtocol
 from .collection_protocol import CollectionProtocol
 
@@ -276,8 +277,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 return MutableMapping.__getattribute__(self, name)
             if name not in self._propertiesAllowed:
                 return self.__dict__[name]
-        #if name.startswith('_') or name in self._attributesOrig:
-        #    return MutableMapping.__getattribute__(self, name)
         op = lambda x: neg(x) if name in self._aliasesNegated else x
         name = self._aliasesNegated.get(name, name)
         name = self._aliases.get(name, name)
@@ -353,7 +352,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if name not in self._propertiesAllowed:
                 self.__dict__[name] = value
                 return
-            #return MutableMapping.__setattr__(self, name, value)
         try:
             self[name] = value
         except KeyError as er:
@@ -369,7 +367,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             # case: canonical name such as a[0][1].b[0].c
             cur = self
             for p in parts:
-                cur = cur[p]
+                cur = cur[p] if not hasattr(cur, p) else getattr(cur, p)
                 if cur is None:
                     return
             return cur
@@ -410,9 +408,11 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def _serialize(self, value, schema=False, excludes=[], **opts):
+        serializer = self if not isinstance(value, Serializer) else value
+        context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
-        ret = CollectionProtocol._serialize(self, value, excludes=excludes, **opts)
-        ret = self._collType([((attr_prefix if self._items_type(self, k).is_primitive() else '') + k, ret[k])
+        ret = CollectionProtocol._serialize(serializer, value, excludes=excludes, **opts)
+        ret = self._collType([((attr_prefix if self._items_type(serializer, k).is_primitive() else '') + k, ret[k])
                                 for k in ret.keys()])
         for alias, raw in self._aliases.items():
             if alias not in excludes:
@@ -427,12 +427,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if isinstance(value, ObjectProtocol) and value.__class__._id != self._id:
             schema = True
         if schema:
-            ret['$schema'] = Id.serialize(self._id, context=self._context)
+            ret['$schema'] = Id.serialize(self._id, context=context)
             ret.move_to_end('$schema', False)
         return ret
-
-    #def serialize_item(self, item, **opts):
-    #    return self.items_serialize(self, item, **opts)
 
     def __repr__(self):
         if self._repr is None:

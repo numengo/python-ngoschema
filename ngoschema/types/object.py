@@ -247,11 +247,12 @@ class Object(Collection, ObjectSerializer):
                 v = value[k]
                 if t._has_default(t):
                     d = t.default(context=context, raw_literals=True)
+                    d = t(d, context=context)
                     v = neg(v) if k in self._aliasesNegated else v
+                    #if t.is_primitive():
+                    #    #d = t.serialize(d, raw_literals=True)
+                    #    #if Pattern.check(d) and v == t.evaluate(d, context=context):
+                    #    #    continue
                     if v == d:
                         continue
-                    if t.is_primitive():
-                        d = t.serialize(d, raw_literals=True)
-                        if Pattern.check(d) and v == t.evaluate(d, context=context):
-                            continue
             yield k
