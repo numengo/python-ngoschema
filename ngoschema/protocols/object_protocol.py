@@ -212,9 +212,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return CollectionProtocol._deserialize(self, value, **opts)
 
     @classmethod
-    def default(cls, value=None, convert=False, **opts):
-        dft = Object.default(cls, value, **opts)
-        return cls(dft, **opts) if convert else dft
+    def default(cls, value=None, evaluate=False, **opts):
+        dft = Object.default(cls, value, evaluate=evaluate, **opts)
+        return cls(dft, **opts) if evaluate else dft
 
     @staticmethod
     def _create_context(self, *extra_contexts, **local):

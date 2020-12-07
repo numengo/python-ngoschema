@@ -46,5 +46,4 @@ class Repository(Saver):
 
     def commit(self, value, **opts):
         opts.setdefault('context', self._context)
-        #opts['context'] = self.create_context(**opts)
         return self._commit(self, value, **opts)

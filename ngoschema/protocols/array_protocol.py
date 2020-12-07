@@ -36,9 +36,9 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _items_inputs = []
 
     @classmethod
-    def default(cls, value=None, convert=False, **opts):
-        dft = Array.default(cls, value, **opts)
-        return cls(dft, **opts) if convert else dft
+    def default(cls, value=None, evaluate=False, **opts):
+        dft = Array.default(cls, value, evaluate=evaluate, **opts)
+        return cls(dft, **opts) if evaluate else dft
 
     def _touch(self):
         CollectionProtocol._touch(self)
@@ -121,6 +121,8 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
             bases = list(bases) + [ArrayProtocol]
         #if 'validate' in schema:
         #    attrs['_validate'] = schema['validate']
+        if 'default' in schema:
+            attrs['_default'] = schema['default']
         if lz is not None:
             attrs.setdefault('_lazyLoading', lz)
         attrs['_items'] = items

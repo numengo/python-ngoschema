@@ -191,11 +191,11 @@ class Object(Collection, ObjectSerializer):
         return sch_repr
 
     def default(self, value=None, **opts):
-        value = value or self._default
-        ret = {k: None for k in value.keys()}
-        for k, t in list(self._propertiesWithDefault):
+        ret = self._collType(value or self._default)
+        for k in list(self._propertiesWithDefault):
             t = self._items_type(self, k)
-            ret[k] = t.default(**opts) if t.has_default() else None
+            v = value.get(k)
+            ret[k] = t.default(**opts) if v is None else v
         opts['items'] = False
         return self._serialize(self, ret, **opts)
 
@@ -203,7 +203,7 @@ class Object(Collection, ObjectSerializer):
     def _deserialize(self, value, items=True, evaluate=True, raw_literals=False, **opts):
         value = self._collType(value or self._default)
         #value = ObjectDeserializer._deserialize(self, value, items=False, evaluate=evaluate, **opts)
-        value.update({k: self._items_type(self, k).default(raw_literals=True, **opts)
+        value.update({k: self._items_type(self, k).default(raw_literals=True, evaluate=evaluate, **opts)
                       for k in self._propertiesWithDefault if k not in value})
         value.update({k: None for k in self._properties.keys() if k not in value})
         value = self._collType([(k, value[k]) for k in self._call_order(self, value, items=items, **opts)])

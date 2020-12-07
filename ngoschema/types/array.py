@@ -145,14 +145,14 @@ class Array(Collection, ArraySerializer):
         return rs
 
     @staticmethod
-    def _has_default(self, **opts):
+    def _has_default(self, value=None, **opts):
         return True
 
     def default(self, value=None, **opts):
         value = value or self._default
         ret = [None] * len(value)
         for k, t in self._items_types(self, value):
-            ret[k] = t.default(**opts) if t.has_default() else None
+            ret[k] = t.default(value[k], **opts) if t.has_default(value[k]) else None
         return self._serialize(self, ret, items=False, **opts)
 
     @staticmethod
