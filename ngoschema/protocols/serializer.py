@@ -22,11 +22,12 @@ class Deserializer(Validator):
         if only and key not in only:
             return False
         if value is not None:
+            vk = getattr(value, '_data', value)  # trick to use data dict instead of protocolbased which gets triggered
             if isinstance(key, str):
-                if key not in value:
+                if key not in vk:
                     return False
             else:
-                if key >= len(value):
+                if key >= len(vk):
                     return False
             value = value[key]
         if no_defaults:

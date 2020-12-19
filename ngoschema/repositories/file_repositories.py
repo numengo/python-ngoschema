@@ -50,13 +50,17 @@ logger = logging.getLogger(__name__)
 class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
+    _encoder = Serializer
 
-    def __init__(self, value=None, **opts):
-        Repository.__init__(self, **opts)
+    def __init__(self, value=None, meta_opts=None, **opts):
+        Repository.__init__(self, **(meta_opts or {}))
         ObjectProtocol.__init__(self, value, **opts)
 
     @staticmethod
     def _commit(self, value, **opts):
+        value = Repository._commit(self, value, **opts)
+
+
         stream = self._encoder.serialize(value, **opts)
         filepath = opts.get('filepath', self._filepath)
         if not filepath.parent.exists():
@@ -75,14 +79,21 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
 
 
 @assert_arg(0, PathFile)
-def load_object_from_file(fp, repository_class=None, session=None, **kwargs):
+def load_object_from_file(fp, repository_class=None, session=None, file_opts=None, repo_opts=None, **opts):
     from ..session import session_maker, scoped_session
+    from ..models.files import File, Document
     session = session or scoped_session(session_maker())()
-    repository_class = repository_class or JsonFileRepository
-    repo = repository_class(filepath=fp, **kwargs)
+    repo_class = repository_class or JsonFileRepository
+    repo = repo_class(repo_opts or {})
     session.bind_repo(repo)
+    #file_opts = dict(file_opts or {})
+    #file_opts.update(repo.do_serialize(no_defaults=True))
+    #file_opts['encoder'] = repo._encoder
+    #file = File(filepath=fp, meta_opts=file_opts)
+    #file = Document(filepath=fp)
+    #repo.load(fp)
     logger.info("LOAD %s from %s", repo.instanceClass or '<class unknown>', file_link_format(fp))
-    return repo.load(fp)
+    return repo.load_file(fp)
 
 
 @assert_arg(1, Path)
@@ -154,15 +165,13 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = XmlSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
+    _tag = None
 
-    def __init__(self, value=None, tag=None, postprocessor=None, **opts):
+    def __init__(self, value=None, postprocessor=None, **opts):
         FileRepository.__init__(self, value, **opts)
         #self._serializer = JsonSerializer(no_defaults=self.no_defaults,
         #                                  use_entity_keys=self.use_entity_keys)
-        self._tag = tag
-        if not tag and self._instanceClass:
-            self._tag = self._instanceClass.__name__
-
+        self._tag = self.tag = self.tag or self._tag or self._instanceClass.__name__
         # this default post processor makes all non attribute be list
         _prefix = str(self._attrPrefix)
 

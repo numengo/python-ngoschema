@@ -11,11 +11,11 @@ from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
 
-    def __init__(self, value=None, **opts):
+    def __init__(self, value=None, meta_opts=None, **opts):
         from ..protocols.array_protocol import ArrayProtocol
-        Repository.__init__(self, **opts)
-        ObjectProtocol.__init__(self, value, **opts)
-        self._content = ArrayProtocol(items=self._instanceClass, maxItems=1 if not self._many else None)(content)
+        Repository.__init__(self, **(meta_opts or {}))
+        ObjectProtocol.__init__(self, **opts)
+        self._content = ArrayProtocol(items=self._instanceClass, maxItems=1 if not self._many else None)(value)
 
     def get(self, identity_keys, **opts):
         if self._content:

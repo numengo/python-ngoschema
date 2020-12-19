@@ -26,7 +26,6 @@
           "notSerialized": [
             "_parent"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/contexts/$defs/NsManagerContext"
           ],
@@ -42,7 +41,6 @@
           "notSerialized": [
             "_parentInstance"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/contexts/$defs/ObjectProtocolContext"
           ],
@@ -85,7 +83,7 @@
           "properties": {
             "namePlural": {
               "type": "string",
-              "defaultValue": "{%if this.name %}{{this.name|pluralize}}{% endif %}"
+              "default": "{%if this.name %}{{this.name|pluralize}}{% endif %}"
             }
           }
         }
@@ -94,6 +92,9 @@
     "protocols": {
       "type": "object",
       "$defs": {
+        "Context": {
+          "type": "object"
+        },
         "Checker": {
           "type": "object",
           "properties": {
@@ -104,7 +105,6 @@
         },
         "Converter": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Checker"
           ],
@@ -119,7 +119,6 @@
           "aliases": {
             "fromClass": "pyType"
           },
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Converter"
           ],
@@ -134,7 +133,6 @@
         },
         "Validator": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Converter"
           ],
@@ -152,7 +150,6 @@
         },
         "Deserializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Validator"
           ],
@@ -167,7 +164,6 @@
         },
         "Serializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Deserializer"
           ],
@@ -179,7 +175,6 @@
         },
         "Loader": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Deserializer"
           ],
@@ -194,7 +189,6 @@
         },
         "Resolver": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/protocols/$defs/Converter"
           ],
@@ -204,19 +198,29 @@
             }
           }
         },
-        "Repository": {
+        "Saver": {
           "type": "object",
-          "_type": "id",
           "extends": [
-            "#/$defs/protocols/$defs/Loader",
-            "#/$defs/protocols/$defs/Serializer"
+            "#/$defs/protocols/$defs/Loader"
           ],
           "properties": {
-            "loader": {
-              "$ref": "#/$defs/protocols/$defs/Loader"
-            },
             "serializer": {
               "$ref": "#/$defs/protocols/$defs/Serializer"
+            },
+            "loader": {
+              "$ref": "#/$defs/protocols/$defs/Loader"
+            }
+          }
+        },
+        "Repository": {
+          "type": "object",
+          "extends": [
+            "#/$defs/protocols/$defs/Saver"
+          ],
+          "properties": {
+            "content": true,
+            "saver": {
+              "$ref": "#/$defs/protocols/$defs/Saver"
             }
           }
         }
@@ -251,7 +255,11 @@
               "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
             },
             "cardinality": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "one2one",
+                "one2many"
+              ]
             },
             "ordering": {
               "type": "string"
@@ -274,7 +282,15 @@
               "$ref": "#/$defs/relationships/$defs/Relationship"
             },
             "onDelete": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CASCADE",
+                "PROTECT",
+                "SET_NULL",
+                "SET_DEFAULT",
+                "SET",
+                "DO_NOTHING"
+              ]
             }
           }
         }
@@ -284,11 +300,12 @@
       "type": "object",
       "$defs": {
         "Instance": {
+          "title": "Named Object",
           "type": "object",
-          "additionalProperties": false,
           "notSerialized": [
             "canonicalName"
           ],
+          "additionalProperties": false,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Annotation"
@@ -314,7 +331,6 @@
             "items",
             "namePlural"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Plural"
@@ -371,7 +387,6 @@
           "primaryKeys": [
             "filepath"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/instances/$defs/Entity"
           ],
@@ -418,7 +433,6 @@
           "primaryKeys": [
             "uri"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -434,20 +448,23 @@
         "Document": {
           "title": "Document",
           "type": "object",
-          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
+          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
           "properties": {
+            "encoder": {
+              "$ref": "#/$defs/serializers/$defs/JsonSerializer"
+            },
             "identifier": {
               "type": "string"
             },
             "charset": {
               "type": "string",
-              "defaultValue": "utf-8"
+              "default": "utf-8"
             },
             "version": {
               "type": "string"
@@ -490,7 +507,6 @@
         },
         "ObjectSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/CollectionSerializer"
           ],
@@ -508,7 +524,6 @@
         },
         "InstanceSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/ObjectSerializer"
           ],
@@ -520,7 +535,6 @@
         },
         "EntitySerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ],
@@ -535,67 +549,60 @@
         },
         "FileSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/files/$defs/File",
             "#/$defs/protocols/$defs/Serializer"
           ],
           "properties": {
-            "file": {
-              "$ref": "#/$defs/files/$defs/File"
-            },
             "binary": {
               "type": "boolean"
             },
             "charset": {
               "type": "string",
-              "defaultValue": "utf-8"
+              "default": "utf-8"
             }
           }
         },
         "JsonSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ]
         },
         "XmlSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ],
           "properties": {
             "attr_prefix": {
               "type": "string",
-              "defaultValue": "@"
+              "default": "@"
             },
             "pretty": {
               "type": "boolean",
-              "defaultValue": true
+              "default": true
             },
             "cdata_key": {
               "type": "string",
-              "defaultValue": "#text"
+              "default": "#text"
             },
             "short_empty_elements": {
               "type": "boolean",
-              "defaultValue": true
+              "default": true
             },
             "indent": {
               "type": "string",
-              "defaultValue": "\t"
+              "default": "\t"
             },
             "newl": {
               "type": "string",
-              "defaultValue": "\n"
+              "default": "\n"
             }
           }
         },
         "YamlSerializer": {
           "type": "object",
-          "_type": "id",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ]
@@ -622,8 +629,8 @@
         "FileRepository": {
           "title": "File Repository",
           "type": "object",
-          "additionalProperties": false,
           "abstract": true,
+          "additionalProperties": false,
           "extends": [
             "#/$defs/protocols/$defs/Repository",
             "#/$defs/serializers/$defs/FileSerializer"
@@ -659,7 +666,12 @@
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
             "#/$defs/serializers/$defs/XmlSerializer"
-          ]
+          ],
+          "properties": {
+            "postprocessor": {
+              "type": "importable"
+            }
+          }
         }
       }
     },
@@ -687,16 +699,15 @@
         },
         "Query": {
           "type": "object",
-          "notValidated": [
-            "iterable"
-          ],
           "readOnly": [
             "result"
+          ],
+          "notValidated": [
+            "iterable"
           ],
           "notSerialized": [
             "iterable"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/queries/$defs/Filter"
           ],
@@ -721,7 +732,6 @@
           "readOnly": [
             "iterable"
           ],
-          "_type": "id",
           "extends": [
             "#/$defs/queries/$defs/Query"
           ],
@@ -746,15 +756,15 @@
           "properties": {
             "autoflush": {
               "type": "boolean",
-              "defaultValue": true
+              "default": true
             },
             "expire_on_commit": {
               "type": "boolean",
-              "defaultValue": true
+              "default": true
             },
             "autocommit": {
               "type": "boolean",
-              "defaultValue": true
+              "default": true
             },
             "bind": {
               "type": "object",

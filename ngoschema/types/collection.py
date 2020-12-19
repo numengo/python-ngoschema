@@ -75,6 +75,7 @@ class Collection(Type, CollectionSerializer):
     @staticmethod
     def _deserialize(self, value, evaluate=True, items=False, **opts):
         ret = self._deserializer._deserialize(self, value or self._default, items=items, evaluate=False, **opts)
+        ret = self._collType(ret)
         if items:
             for k, t in self._items_types(self, value):
                 if self._is_included(k, value, **opts):
@@ -92,12 +93,12 @@ class Collection(Type, CollectionSerializer):
         return value
 
     @staticmethod
-    def _validate(self, value, items=True, **opts):
+    def _validate(self, value, items=True, no_defaults=True, **opts):
         value = self._deserializer._validate(self, value, **opts)
         if items:
             value = self._collType(value)  # make a copy to avoid modifying original object
             for k, t in self._items_types(self, value):
-                if self._is_included(k, value, **opts):
+                if self._is_included(k, value, no_defaults=no_defaults, **opts):
                     value[k] = t._validate(t, value[k], **opts)
         return value
 
@@ -113,12 +114,13 @@ class Collection(Type, CollectionSerializer):
 
     @staticmethod
     def _serialize(self, value, items=True, **opts):
-        ret = self._serializer._serialize(self, value, **opts)
+        value = self._serializer._serialize(self, value, **opts)
+        opts.setdefault('no_defaults', True)
+        ret = self.null(value, **opts)
         if items:
-            opts.setdefault('no_defaults', True)
             for k, t in self._items_types(self, ret):
-                if self._is_included(k, ret, **opts):
-                    v = ret[k]
+                if self._is_included(k, value, **opts):
+                    v = value[k]
                     ret[k] = t._serialize(t, v, **opts)
                     #ret[k] = v.do_serialize(**opts) if hasattr(v, 'do_serialize') else t._serialize(t, v, **opts)
         return ret
@@ -132,3 +134,8 @@ class Collection(Type, CollectionSerializer):
     def items_type(cls, item):
         # _items_types is defined in the collection implementation class
         return cls._items_type(cls, item)
+
+    @classmethod
+    def null(cls, value, **opts):
+        # _null is defined in the collection implementation class
+        return cls._null(cls, value, **opts)

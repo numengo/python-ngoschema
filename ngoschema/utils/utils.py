@@ -89,7 +89,8 @@ class ReadOnlyChainMap(Mapping):
         return ReadOnlyChainMap(kwargs, *maps, *self._maps)
 
     def __repr__(self):
-        return repr(list(self._maps))
+        from .str_utils import shorten
+        return '<ReadOnlyChainMap %s>' % shorten(self.merged)
 
     def __str__(self):
         return str(self.merged)

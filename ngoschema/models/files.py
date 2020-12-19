@@ -28,15 +28,15 @@ from collections import Mapping, ChainMap
 from ..types import PathDir, PathFile, String
 from ..decorators import assert_arg, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol
+from ..protocols.serializer import Serializer
+from ..protocols.file_loader import FileSaver
 from ..query import Query
 from ..types.uri import Uri, Path
 from ..resolvers.uri_resolver import UriResolver
-from ..repositories import FileRepository
-from ..serializers.json_serializer import JsonSerializer
 from ..models.instances import Entity
 
 
-class File(with_metaclass(SchemaMetaclass, FileRepository, Entity)):
+class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
@@ -44,21 +44,23 @@ class File(with_metaclass(SchemaMetaclass, FileRepository, Entity)):
     """
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/File'
 
-    def __init__(self, **opts):
-        FileRepository.__init__(self, **opts)
-        Entity.__init__(self, **opts)
+    def __init__(self, value=None, meta_opts=None, **opts):
+        FileSaver.__init__(self, **(meta_opts or {}))
+        Entity.__init__(self, value, **opts)
 
     def set_filepath(self, filepath):
-        return FileRepository.set_filepath(filepath)
+        return FileSaver.set_filepath(self, filepath)
 
     @depend_on_prop('filepath')
     def get_contentRaw(self):
-        return FileRepository._load_file(self, self._filepath)
+        fp = self.filepath
+        if fp and fp.exists():
+            return FileSaver._load_file(self, fp)
 
-    @staticmethod
-    def _load(self, filepath, **opts):
-        self.filepath = filepath
-        return FileRepository._load_file(self, filepath, **opts)
+    #@staticmethod
+    #def _load(self, filepath, **opts):
+    #    self.filepath = filepath
+    #    return FileSaver._load_file(self, filepath, **opts)
 
 
 class FileInfo(with_metaclass(SchemaMetaclass)):
@@ -116,7 +118,8 @@ class UriFile(with_metaclass(SchemaMetaclass, UriResolver)):
 
     @depend_on_prop('uri')
     def get_contentRaw(self):
-        return UriResolver._resolve(self, self.uri)
+        if self.uri:
+            return UriResolver._resolve(self, self.uri)
 
     @staticmethod
     def _resolve(self, uri, **opts):
@@ -135,7 +138,7 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
     #_contentRaw = None
     #_loaded = False
     _lazyLoading = True
-    _encoder = JsonSerializer
+    _encoder = Serializer
 
     _identifier = None
 
@@ -147,7 +150,7 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
     @depend_on_prop('uri', 'filepath')
     def get_contentRaw(self):
         if self.filepath:
-            return FileRepository._load_file(self, self.filepath)
+            return FileSaver._load_file(self, self.filepath)
         if self.uri:
             return UriResolver._resolve(self, self.uri)
 
@@ -162,12 +165,12 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
         if content:
             return content.get('$id')
 
-    @depend_on_prop('contentRaw')
-    def get_content(self):
-        try:
-            return self._encoder._deserialize(self, self.contentRaw)
-        except Exception as er:
-            return self.contentRaw
+    #@depend_on_prop('contentRaw')
+    #def get_content(self):
+    #    try:
+    #        return self._encoder._deserialize(self, self.contentRaw)
+    #    except Exception as er:
+    #        return self.contentRaw
 
     def del_file(self):
         if not self.filepath:
@@ -197,9 +200,9 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
     def write(self, content, append=False, **opts):
         if self.filepath:
             if append:
-                self._append_file(self, self.filepath, content, **opts)
+                self._append_file(self, content, self.filepath, **opts)
             else:
-                self._write_file(self, self.filepath, content, **opts)
+                self._write_file(self, content, self.filepath, **opts)
         elif self.uri:
             raise Exception('impossible to write on a URL referenced document')
 

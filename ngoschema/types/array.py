@@ -19,13 +19,14 @@ class ArrayDeserializer(CollectionDeserializer):
     _minItems = 0
     _maxItems = None
     _uniqueItems = False
+    _splitString = False
     _strDelimiter = ','
-    _accept_strings = False
 
-    def __init__(self, minItems=None, maxItems=None, uniqueItems=None, strDelimiter=None, **opts):
+    def __init__(self, minItems=None, maxItems=None, uniqueItems=None, splitString=None, strDelimiter=None, **opts):
         self._minItems = minItems or self._minItems
         self._maxItems = maxItems or self._maxItems
         self._uniqueItems = uniqueItems or self._uniqueItems
+        self._splitString = splitString or self._splitString
         self._strDelimiter = strDelimiter or self._strDelimiter
         CollectionDeserializer.__init__(self, **opts)
 
@@ -37,10 +38,11 @@ class ArrayDeserializer(CollectionDeserializer):
     @staticmethod
     def _deserialize(self, value, **opts):
         value = CollectionDeserializer._deserialize(self, value, **opts)
-        with_string = opts.get('with_string', self._accept_strings)
-        if with_string and String.check(value):
-            value = [s.strip() for s in value.split(self._strDelimiter)]
-        value = list(value) if isinstance(value, (Sequence, deque)) else [value]
+        split_string = opts.get('split_string', self._splitString)
+        if String.check(value):
+            value = [s.strip() for s in value.split(self._strDelimiter)] if split_string else [value]
+        else:
+            value = list(value) if isinstance(value, (Sequence, deque)) else [value]
         many = opts.get('many', self._many)
         lv = len(value)
         if lv > 1 and not many:
@@ -142,6 +144,9 @@ class Array(Collection, ArraySerializer):
             rs['maxItems'] = self._maxItems
         if self._uniqueItems:
             rs['uniqueItems'] = self._uniqueItems
+        if self._splitString:
+            rs['splitString'] = self._splitString
+            rs['strDelimiter'] = self._strDelimiter
         return rs
 
     @staticmethod
@@ -156,10 +161,14 @@ class Array(Collection, ArraySerializer):
         return self._serialize(self, ret, items=False, **opts)
 
     @staticmethod
-    def _check(self, value, with_string=True, **opts):
+    def _null(self, value, **opts):
+        return self._collType([None for k in self.call_order(value, **opts)])
+
+    @staticmethod
+    def _check(self, value, split_string=True, **opts):
         if String.check(value):
-            if not with_string:
-                raise TypeError('%s is a string and is not allowed in this array. Use with_string.')
+            if not split_string:
+                raise TypeError('%s is a string and is not allowed in this array. Use split_string.')
             value = Array._convert(self, value)
         if not isinstance(value, Sequence):
             raise TypeError('%s is not a sequence or array.')

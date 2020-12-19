@@ -133,7 +133,7 @@ class Path(Uri):
     def __init__(self, **opts):
         Primitive.__init__(self, **opts)
         self._expandUser = self._schema.get('expandUser', self._expandUser)
-        self._isPathEExisting = self._schema.get('isPathExisting', self._isPathExisting)
+        self._isPathExisting = self._schema.get('isPathExisting', self._isPathExisting)
         self._isPathDir = self._schema.get('isPathDir', self._isPathDir)
         self._isPathFile = self._schema.get('isPathFile', self._isPathFile)
 

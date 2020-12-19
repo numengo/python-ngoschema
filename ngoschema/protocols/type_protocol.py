@@ -100,6 +100,10 @@ class TypeProtocol(Serializer):
         return False
 
     @classmethod
+    def is_array_primitive(cls):
+        return False
+
+    @classmethod
     def is_constant(cls):
         return False
 

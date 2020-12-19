@@ -111,8 +111,8 @@ class Object(Collection, ObjectSerializer):
 
     _attrPrefix = ''
     _properties = OrderedDict()
-    _patternProperties = set()
-    _additionalProperties = _True()
+    _propertiesPattern = set()
+    _propertiesAdditional = _True()
     _propertiesWithDefault = set()
 
     @classmethod
@@ -137,9 +137,9 @@ class Object(Collection, ObjectSerializer):
             pps = set(self.patternProperties)
             pps.update([(re.compile(k), TypeBuilder.build(
                 f'{cls_name}/patternProperties/{k}', v)) for k, v in patternProperties.items()])
-            self._patternProperties = pps
+            self._propertiesPattern = pps
         if additionalProperties is not None:
-            self._additionalProperties = TypeBuilder.build(f'{cls_name}/additionalProperties', additionalProperties)
+            self._propertiesAdditional = TypeBuilder.build(f'{cls_name}/additionalProperties', additionalProperties)
         self._propertiesWithDefault = set(k for k, t in self._properties.items() if t.has_default())
         self._required.difference_update(self._propertiesWithDefault)
         self._items_type_cache = {}
@@ -156,8 +156,6 @@ class Object(Collection, ObjectSerializer):
     @staticmethod
     def _items_type(self, item):
         """Returns the type of a property by its name."""
-        if self._items_type_cache is None:
-            self._items_type_cache = {}
         pt = self._items_type_cache.get(item)
         if pt:
             return pt
@@ -165,13 +163,13 @@ class Object(Collection, ObjectSerializer):
         if pt is not None:
             self._items_type_cache[item] = pt
             return pt
-        for reg, t in self._patternProperties:
+        for reg, t in self._propertiesPattern:
             if reg.search(item):
                 self._items_type_cache[item] = t
                 return t
-        if self._additionalProperties:
-            self._items_type_cache[item] = self._additionalProperties
-            return self._additionalProperties
+        if self._propertiesAdditional:
+            self._items_type_cache[item] = self._propertiesAdditional
+            return self._propertiesAdditional
         raise KeyError(item)
 
     @staticmethod
@@ -184,9 +182,9 @@ class Object(Collection, ObjectSerializer):
             sch_repr['readOnly'] = list(self._readOnly)
         if self._properties:
             sch_repr['properties'] = {k: t.repr_schema() for k, t in self._properties.items()}
-        if self._patternProperties:
-            sch_repr['patternProperties'] = {k: t.repr_schema() for k, t in list(self._patternProperties)}
-        if not self._additionalProperties:
+        if self._propertiesPattern:
+            sch_repr['patternProperties'] = {k: t.repr_schema() for k, t in list(self._propertiesPattern)}
+        if not self._propertiesAdditional:
             sch_repr['additionalProperties'] = False
         return sch_repr
 
@@ -194,10 +192,14 @@ class Object(Collection, ObjectSerializer):
         ret = self._collType(value or self._default)
         for k in list(self._propertiesWithDefault):
             t = self._items_type(self, k)
-            v = value.get(k)
+            v = ret.get(k)
             ret[k] = t.default(**opts) if v is None else v
         opts['items'] = False
         return self._serialize(self, ret, **opts)
+
+    @staticmethod
+    def _null(self, value, items=False, **opts):
+        return self._collType([(k, None) for k in self._print_order(self, value, items=items, **opts)])
 
     @staticmethod
     def _deserialize(self, value, items=True, evaluate=True, raw_literals=False, **opts):
@@ -215,11 +217,11 @@ class Object(Collection, ObjectSerializer):
         excludes = list(excludes) + ['required', 'properties', 'propertiesAdditional', 'additionalProperties']
         #value = self._deserializer._validate(self, value, excludes=excludes, **opts)
         for k in set(value).difference(self._properties):
-           for reg, _ in self._patternProperties:
+           for reg, _ in self._propertiesPattern:
                if reg.search(k):
                    break
            else:
-               if not self._additionalProperties:
+               if not self._propertiesAdditional:
                    raise InvalidValue('No additional properties allowed for %s' % value)
         opts['with_type'] = False
         value = Collection._validate(self, value, items=items, excludes=excludes, **opts)

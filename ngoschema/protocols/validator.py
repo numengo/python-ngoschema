@@ -22,11 +22,11 @@ class Validator(Converter, Context):
     _schema = {}
     _jsValidator = DefaultValidator({})
 
-    def __init__(self, converter=None, schema=None, **opts):
+    def __init__(self, converter=None, schema=None, context=None, **opts):
         from ..managers.type_builder import untype_schema, TypeBuilder
         self._converter = converter or self._converter
         self._converter.__init__(self, **opts)
-        Context.__init__(self, **opts)
+        Context.__init__(self, context, **opts)
         schema = untype_schema(schema or opts)
         self._schema = ReadOnlyChainMap(schema, self._schema)
         sch = dict(self._schema)

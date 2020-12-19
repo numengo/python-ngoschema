@@ -126,10 +126,12 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if lz is not None:
             attrs.setdefault('_lazyLoading', lz)
         attrs['_items'] = items
-        attrs['_minItems'] = schema.get('minItems', 0)
-        attrs['_maxItems'] = schema.get('maxItems')
-        attrs['_uniqueItems'] = schema.get('uniqueItems', False)
-        attrs['_has_pk'] = bool(any(len(getattr(t, '_primaryKeys', [])) for t in items)\
+        attrs['_minItems'] = schema.get('minItems', Array._minItems)
+        attrs['_maxItems'] = schema.get('maxItems', Array._maxItems)
+        attrs['_uniqueItems'] = schema.get('uniqueItems', Array._uniqueItems)
+        attrs['_splitString'] = schema.get('splitString', Array._splitString)
+        attrs['_strDelimiter'] = schema.get('strDelimiter', Array._strDelimiter)
+        attrs['_hasPk'] = bool(any(len(getattr(t, '_primaryKeys', [])) for t in items)\
                                     if items_list else len(getattr(items, '_primaryKeys', [])))
         attrs['_itemsIsList'] = items_list
         attrs['_schema'] = schema

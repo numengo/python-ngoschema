@@ -37,7 +37,10 @@ class CollectionProtocol(Collection):
         self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading
         lz = self._lazyLoading if items is None else not items
         #Collection.__init__(self, **opts)
-        value = opts if value is None else value  # to allow initialization by keywords
+        if value is None:
+            # to allow initialization by keywords
+            value = opts
+            opts = {}
         self._data = self._deserialize(self, value, items=False, evaluate=False, **opts)  #, convert=False, **opts)
         # touch allocates storage for data, need to call _create_context again
         self._touch()

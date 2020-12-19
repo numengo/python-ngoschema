@@ -67,7 +67,10 @@ class PropertyDescriptor:
         try:
             key = self.pname
             outdated = obj._is_outdated(key)
-            if outdated or self.fget: # or self.fset:
+            if self.fget and obj._data_validated.get(key) is None:
+                outdated = True
+            #if outdated or self.fget: # or self.fset:
+            if outdated:
                 inputs = obj._items_inputs_evaluate(key)
                 if self.fget:
                     obj._set_data(key, self.fget(obj))
@@ -276,6 +279,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if name.startswith('__'):
                 return MutableMapping.__getattribute__(self, name)
             if name not in self._propertiesAllowed:
+                return MutableMapping.__getattribute__(self, name)
                 return self.__dict__[name]
         op = lambda x: neg(x) if name in self._aliasesNegated else x
         name = self._aliasesNegated.get(name, name)
@@ -314,10 +318,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     if cn2 == cn:
                         yield cur, cn, cur_path
                     for k, v in cur.items():
-                        if Object.check(v) or Array.check(v, with_string=False):
+                        if Object.check(v) or Array.check(v, split_string=False):
                             for _ in _resolve_cname_path(cn, v, cn2, cur_path + [k]):
                                 yield _
-            if Array.check(cur, with_string=False):
+            if Array.check(cur, split_string=False):
                 for i, v in enumerate(cur):
                     for _ in _resolve_cname_path(cn, v, cur_cn, cur_path + [i]):
                         yield _
@@ -424,10 +428,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 v = ret.get(raw)
                 if v is not None:
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = - v
-        if isinstance(value, ObjectProtocol) and value.__class__._id != self._id:
+        if isinstance(value, ObjectProtocol) and value._id != self._id:
             schema = True
         if schema:
-            ret['$schema'] = Id.serialize(self._id, context=context)
+            ret['$schema'] = Id.serialize(value._id, context=context)
             ret.move_to_end('$schema', False)
         return ret
 
@@ -455,8 +459,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def _items_type(self, item):
         # add a cache to resolve type proxies and avoid property resolution
         from .type_proxy import TypeProxy
-        if self._items_type_cache is None:
-            self._items_type_cache = {}
         t = self._items_type_cache.get(item)
         if t is None:
             i = self._aliases.get(item, item)
@@ -530,7 +532,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 dependencies[k].update(set(v))
 
         primary_keys = schema.get('primaryKeys', [])
-        #primary_keys = primary_keys if Array.check(primary_keys, with_string=False) else [primary_keys]
+        #primary_keys = primary_keys if Array.check(primary_keys, split_string=False) else [primary_keys]
         if not primary_keys:
             for b in pbases:
                 primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
@@ -673,10 +675,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_id'] = id
         attrs['_extends'] = extends
         attrs['_schema'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
-        attrs['_has_pk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
+        attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
         attrs['_primaryKeys'] = primary_keys
         attrs['_properties'] = dict(all_properties)
-        attrs['_patternProperties'] = set().union(pattern_properties, *[b._patternProperties for b in pbases])
+        attrs['_propertiesPattern'] = set().union(pattern_properties, *[b._propertiesPattern for b in pbases])
         attrs['_propertiesAdditional'] = additional_properties
         attrs['_propertiesChained'] = all_properties
         attrs['_propertiesDescriptor'] = dict(ChainMap(properties_descriptor, *[getattr(b, '_propertiesDescriptor', {})
@@ -695,7 +697,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_propertiesWithDefault'] = has_default
         attrs['_logger'] = logger
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
-        attrs['_items_type_cache'] = None
+        attrs['_items_type_cache'] = {}
         attrs['_mroType'] = pbases
         if 'lazyLoading' in schema:
             attrs['_lazyLoading'] = schema['lazyLoading']

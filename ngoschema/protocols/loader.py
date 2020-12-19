@@ -17,11 +17,12 @@ class Loader(Deserializer):
 
     @staticmethod
     def _load(self, value, many=False, deserialize=True, **opts):
-        from ..types.symbols import Symbol
+        from ..types import Symbol, Array
         instance_class = Symbol.convert(opts.get('instance_class', self._instanceClass))
-        many = opts.get('many', self._many)
         if many:
-            value = [self._deserializer._deserialize(self, v, evaluate=False, **opts) if deserialize else v for v in value]
+            value = Array.deserialize(value, split_string=True)
+            value = [self._deserializer._deserialize(self, v, evaluate=False, **opts) if deserialize else v
+                     for v in value]
             return [instance_class(d, **opts) if instance_class else d for d in value]
         else:
             value = self._deserializer._deserialize(self, value, evaluate=False, **opts) if deserialize else value

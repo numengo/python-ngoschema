@@ -59,6 +59,13 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     def __init__(self, value=None, primaryKeys=None, **opts):
         self._primaryKeys = primaryKeys or self._primaryKeys
         Instance.__init__(self, value, **opts)
+        self.identityKeys
+
+    def __str__(self):
+        if self._str is None:
+            ks = self._identityKeys
+            self._str = '<%s %s>' % (self.qualname(), ', '.join(ks))
+        return self._str
 
     def get_primaryKeys(self):
         return self._primaryKeys

@@ -23,11 +23,11 @@ class XmlDeserializer(Deserializer):
                   'complexType', 'restriction')
 
     def __init__(self, **opts):
-        self._processNamespaces = opts.get('process_namespaces', self._processNamespaces)
-        self._namespaceSeparator = opts.get('namespace_separator', self._namespaceSeparator)
-        self._disableEntities = opts.get('disable_entities', self._disableEntities)
-        self._processComments = opts.get('process_comments', self._processComments)
-        self._forceList = opts.get('force_list', self._forceList)
+        self._processNamespaces = opts.get('process_namespaces', XmlDeserializer._processNamespaces)
+        self._namespaceSeparator = opts.get('namespace_separator', XmlDeserializer._namespaceSeparator)
+        self._disableEntities = opts.get('disable_entities', XmlDeserializer._disableEntities)
+        self._processComments = opts.get('process_comments', XmlDeserializer._processComments)
+        self._forceList = opts.get('force_list', XmlDeserializer._forceList)
 
     @staticmethod
     def _deserialize(self, value, **opts):
@@ -76,14 +76,14 @@ class XmlSerializer(with_metaclass(SchemaMetaclass, Serializer, XmlDeserializer)
 
     def __init__(self, **opts):
         Serializer.__init__(self, **opts)
-        self._tag = tag = opts.get('tag', self._tag)
-        self._attrPrefix = attr_prefix = opts.get('attr_prefix', self._attrPrefix)
-        self._cdataKey = opts.get('cdata_key', self._cdataKey)
-        self._forceList = opts.get('force_list', self._forceList)
-        self._pretty = opts.get('pretty', self._pretty)
-        self._indent = opts.get('indent', self._indent)
-        self._newl = opts.get('newl', self._newl)
-        self._shortEmptyElements = opts.get('short_empty_elements', self._shortEmptyElements)
+        self._tag = tag = opts.get('tag', XmlSerializer._tag)
+        self._attrPrefix = attr_prefix = opts.get('attr_prefix', XmlSerializer._attrPrefix)
+        self._cdataKey = opts.get('cdata_key', XmlSerializer._cdataKey)
+        self._forceList = opts.get('force_list', XmlSerializer._forceList)
+        self._pretty = opts.get('pretty', XmlSerializer._pretty)
+        self._indent = opts.get('indent', XmlSerializer._indent)
+        self._newl = opts.get('newl', XmlSerializer._newl)
+        self._shortEmptyElements = opts.get('short_empty_elements', XmlSerializer._shortEmptyElements)
         if not tag and self._instanceClass:
             self._tag = self._instanceClass.__name__
 
