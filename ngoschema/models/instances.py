@@ -25,7 +25,7 @@ class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
     def __str__(self):
         if self._str is None:
             cn = self._canonicalName
-            a = ([cn] if cn else []) + [f'{k}={str(self._data_validated[k] or self._data[k])}' for k in self._required]
+            a = ([cn] if cn else []) + [f'{k}={str(self._dataValidated[k] or self._data[k])}' for k in self._required]
             self._str = '<%s %s>' % (self.qualname(), ' '.join(a))
         return self._str
 
@@ -40,7 +40,7 @@ class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
     def _canonicalName(self):
         # one that does not trigger lazyloading
         pi = self._parentInstance
-        n = self._data_validated.get('name') or self._data.get('name')
+        n = self._dataValidated.get('name') or self._data.get('name')
         return f'{pi._canonicalName}.{n}' if pi is not None else n
 
 

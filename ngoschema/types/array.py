@@ -126,7 +126,7 @@ class Array(Collection, ArraySerializer):
     def _items_type(self, item):
         from ..protocols.type_proxy import TypeProxy
         t = self._items[item] if self._itemsIsList else self._items
-        return t._proxy_type if getattr(t, '_proxy_type', None) else t
+        return t.proxy_type() if getattr(t, '_proxyUri', None) else t
 
     @staticmethod
     def _repr_schema(self):

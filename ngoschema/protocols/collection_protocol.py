@@ -27,8 +27,8 @@ class CollectionProtocol(Collection):
     #_validate = COLLECTION_VALIDATE
 
     _data = None
-    _data_validated = None
-    _items_inputs = None
+    _dataValidated = None
+    _itemsInputs = None
     _items_type_cache = None
     _repr = None
     _str = None
@@ -89,8 +89,8 @@ class CollectionProtocol(Collection):
 
     def _items_touch(self, item):
         CollectionProtocol._touch(self)
-        self._data_validated[item] = None
-        self._items_inputs[item] = {}
+        self._dataValidated[item] = None
+        self._itemsInputs[item] = {}
         for d, s in self._dependencies.items():
             if item in s:
                 self._items_touch(d)
@@ -140,19 +140,19 @@ class CollectionProtocol(Collection):
     def __setitem__(self, item, value):
         self._data[item] = value
         if not self._lazyLoading:
-            self._items_inputs[item] = self._items_inputs_evaluate(item)
+            self._itemsInputs[item] = self._items_inputs_evaluate(item)
             self._set_data_validated(item, self._items_evaluate(item))
 
     def __getitem__(self, item):
-        if self._data_validated[item] is None:
-            self._items_inputs[item] = self._items_inputs_evaluate(item)
+        if self._dataValidated[item] is None:
+            self._itemsInputs[item] = self._items_inputs_evaluate(item)
             self._set_data_validated(item, self._items_evaluate(item))
-        return self._data_validated[item]
+        return self._dataValidated[item]
 
     def __delitem__(self, index):
         del self._data[index]
-        del self._data_validated[index]
-        del self._items_inputs[index]
+        del self._dataValidated[index]
+        del self._itemsInputs[index]
         CollectionProtocol._validate(self, self, items=False)
 
     def get(self, key, default=None):
@@ -181,11 +181,11 @@ class CollectionProtocol(Collection):
                 self._data[item] = value
         else:
             self._data[item] = value
-        self._data_validated[item] = value
+        self._dataValidated[item] = value
 
     def _is_outdated(self, item):
-        return (self._data_validated[item] is None and self._data[item] is not None
-                ) or (self._items_inputs.get(item, {}) != self._items_inputs_evaluate(item))
+        return (self._dataValidated[item] is None and self._data[item] is not None
+                ) or (self._itemsInputs.get(item, {}) != self._items_inputs_evaluate(item))
 
     @classmethod
     def create(cls, value=None, **opts):
@@ -216,5 +216,5 @@ class CollectionProtocol(Collection):
         return True
 
     def __hash__(self):
-        return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._data_validated))))
+        return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._dataValidated))))
 

@@ -6,8 +6,7 @@ from .type_protocol import TypeProtocol
 
 
 class TypeProxy(TypeProtocol):
-    _proxy_uri = None
-    _proxy_type = None
+    _proxyUri = None
 
     @staticmethod
     def build(uri, schema=None):
@@ -22,78 +21,73 @@ class TypeProxy(TypeProtocol):
         #bases += (protocol, TypeProxy) if not issubclass(protocol, bases) else ()
         bases += (protocol, ) if not issubclass(protocol, bases) else ()
         attrs = {k: v for k, v in attrs.items() if not k.startswith('__')}
-        attrs['_proxy_uri'] = uri
+        attrs['_proxyUri'] = uri
         attrs['_id'] = uri
         attrs['_schema'] = schema
         attrs['__doc__'] = 'reference to %s' % clsname
         return type(clsname, (TypeProxy, ) + bases, attrs)
 
-    def __init__(self, *args, **kwargs):
-        #self.proxy_type.__init__(*args, **kwargs)
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return self.proxy_type(*args, **kwargs)
+    def __new__(cls, *args, **kwargs):
+        return cls.proxy_type()(*args, **kwargs)
 
     @classmethod
-    def proxy_type_cls(cls):
-        if not cls._proxy_type:
-            from ..managers.type_builder import TypeBuilder
-            cls._proxy_type = cls._pyType = TypeBuilder.get(cls._proxy_uri)
-        return cls._proxy_type
-
-    @property
-    def proxy_type(self):
-        if not self._proxy_type:
-            self._proxy_type = self._pyType = self.proxy_type_cls()
-        return self._proxy_type
+    def proxy_type(cls):
+        from ..managers.type_builder import TypeBuilder
+        return TypeBuilder.get(cls._proxyUri)
 
     @classmethod
     def check(cls, value, **opts):
-        return cls.proxy_type_cls() and cls.proxy_type_cls().check(value, **opts)
+        p = cls.proxy_type()
+        return p and p.check(value, **opts)
 
     @classmethod
     def has_default(cls):
-        return cls.proxy_type_cls() and cls.proxy_type_cls().has_default()
+        p = cls.proxy_type()
+        return p and p.has_default()
 
     @classmethod
     def convert(cls, value, **opts):
-        return cls.proxy_type_cls().convert(value, **opts)
+        p = cls.proxy_type()
+        return p and p.convert(value, **opts)
 
     @classmethod
     def serialize(cls, value, **opts):
-        return cls.proxy_type_cls().serialize(value, **opts)
+        p = cls.proxy_type()
+        return p and p.serialize(value, **opts)
 
     @classmethod
     def inputs(cls, value, **opts):
-        return cls.proxy_type_cls().inputs(value, **opts)
+        p = cls.proxy_type()
+        return p and p.inputs(value, **opts)
 
     @classmethod
     def validate(cls, value, **opts):
-        return cls.proxy_type_cls().validate(value, **opts)
+        p = cls.proxy_type()
+        return p and p.validate(value, **opts)
 
     @classmethod
     def evaluate(cls, value, **opts):
-        return cls.proxy_type_cls().evaluate(value, **opts)
+        p = cls.proxy_type()
+        return p and p.evaluate(value, **opts)
 
     @classmethod
     def __instancecheck__(cls, instance):
-        kls = cls.proxy_type_cls()
+        kls = cls.proxy_type()
         return isinstance(instance, kls) if kls else False
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        kls = cls.proxy_type_cls()
+        kls = cls.proxy_type()
         return issubclass(subclass, kls) if kls else False
 
     @classmethod
     def __hash__(cls):
-        return hash(cls._proxy_uri)
+        return hash(cls._proxyUri)
 
     def __repr__(self):
-        rc = self.proxy_type
-        return repr(rc) if rc else f'<TypeProxy $id={self._proxy_uri}>'
+        rc = self.proxy_type()
+        return repr(rc) if rc else f'<TypeProxy $id={self._proxyUri}>'
 
     def __str__(self):
-        rc = self.proxy_type
-        return str(rc) if rc else f'<TypeProxy $id={self._proxy_uri}>'
+        rc = self.proxy_type()
+        return str(rc) if rc else f'<TypeProxy $id={self._proxyUri}>'

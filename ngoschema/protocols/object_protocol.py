@@ -67,7 +67,7 @@ class PropertyDescriptor:
         try:
             key = self.pname
             outdated = obj._is_outdated(key)
-            if self.fget and obj._data_validated.get(key) is None:
+            if self.fget and obj._dataValidated.get(key) is None:
                 outdated = True
             #if outdated or self.fget: # or self.fset:
             if outdated:
@@ -76,12 +76,12 @@ class PropertyDescriptor:
                     obj._set_data(key, self.fget(obj))
                 iopts = {'validate': False} if key in obj._notValidated else {}
                 obj._set_data_validated(key, obj._items_evaluate(key, **iopts))
-                obj._items_inputs[key] = inputs  # after set_validated_data as it touches inputs data
-            value = obj._data_validated[key]
+                obj._itemsInputs[key] = inputs  # after set_validated_data as it touches inputs data
+            value = obj._dataValidated[key]
             if outdated and self.fset:
                 self.fset(obj, value)
             # value can change in setter
-            return obj._data_validated[key]
+            return obj._dataValidated[key]
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
@@ -93,11 +93,11 @@ class PropertyDescriptor:
                 raise AttributeError("'%s' is read only" % key)
             obj._set_data(key, value)
             if not obj._lazyLoading:
-                obj._items_inputs[key] = obj._items_inputs_evaluate(key)
+                obj._itemsInputs[key] = obj._items_inputs_evaluate(key)
                 iopts = {'validate': False} if key in obj._notValidated else {}
                 obj._set_data_validated(key, obj._items_evaluate(key, **iopts))
                 if self.fset:
-                    self.fset(obj, obj._data_validated[key])
+                    self.fset(obj, obj._dataValidated[key])
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
@@ -109,8 +109,8 @@ class PropertyDescriptor:
         if self.fdel:
             self.fdel(obj)
         del obj._data[key]
-        del obj._data_validated[key]
-        del obj._items_inputs[key]
+        del obj._dataValidated[key]
+        del obj._itemsInputs[key]
 
 
 class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableMapping):
@@ -133,9 +133,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _deserializer = ObjectDeserializer
     _collection = Object
     _data = {}
-    _data_validated = {}
-    _data_additional = {}
-    _items_inputs = {}
+    _dataValidated = {}
+    _dataAdditional = {}
+    _itemsInputs = {}
     _attributesOrig = set()
 
     _attributeByName = ATTRIBUTE_BY_NAME
@@ -221,7 +221,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def _create_context(self, *extra_contexts, **local):
-        return CollectionProtocol._create_context(self, {'this': self}, self._data_validated, self, *extra_contexts, **local)
+        return CollectionProtocol._create_context(self, {'this': self}, self._dataValidated, self, *extra_contexts, **local)
 
     def _items_touch(self, item):
         CollectionProtocol._items_touch(self, item)
@@ -232,16 +232,16 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def _touch(self):
         CollectionProtocol._touch(self)
         keys = list(self._data.keys())
-        self._items_inputs = {k: {} for k in keys}
-        self._data_validated = {k: None for k in keys}
-        self._data_additional = {k: None for k in self._data_additional.keys()}
+        self._itemsInputs = {k: {} for k in keys}
+        self._dataValidated = {k: None for k in keys}
+        self._dataAdditional = {k: None for k in self._dataAdditional.keys()}
         self._dependencies = dict(self.__class__._dependencies)
 
     def __len__(self):
-        return len(self._data_validated)
+        return len(self._dataValidated)
 
     def __iter__(self):
-        return iter(self._data_validated.keys())
+        return iter(self._dataValidated.keys())
 
     __properties_raw_trans = None
     @classmethod
@@ -289,8 +289,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if desc:
             return op(desc.__get__(self))
         if self._propertiesAdditional and name in self._data:
-            self._items_inputs[raw] = self._items_inputs_evaluate(name)
-            self._data_additional[raw] = v = op(self[name])
+            self._itemsInputs[raw] = self._items_inputs_evaluate(name)
+            self._dataAdditional[raw] = v = op(self[name])
             return v
         if self._attributeByName:
             try:
@@ -385,9 +385,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if desc:
             return op(desc.__get__(self))
         if self._lazyLoading or self._is_outdated(key):
-            self._items_inputs[key] = self._items_inputs_evaluate(key)
+            self._itemsInputs[key] = self._items_inputs_evaluate(key)
             self._set_data_validated(key, self._items_evaluate(key))
-        return op(self._data_validated[key])
+        return op(self._dataValidated[key])
 
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._aliasesNegated else x
@@ -398,7 +398,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if not self._propertiesAdditional:
             raise KeyError(key)
         v = op(value)
-        self._data[key] = self._data_additional[key] = self._data_validated[key] = v
+        self._data[key] = self._dataAdditional[key] = self._dataValidated[key] = v
 
     def __delitem__(self, key):
         for trans, raw in self._propertiesTranslation.items():
@@ -407,8 +407,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 break
         else:
             del self._data[key]
-            del self._items_inputs[key]
-            del self._data_validated[key]
+            del self._itemsInputs[key]
+            del self._dataValidated[key]
 
     @staticmethod
     def _serialize(self, value, schema=False, excludes=[], **opts):
@@ -440,7 +440,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             m = settings.PPRINT_MAX_EL
             ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=True))
             hidden = max(0, len(ks) - m)
-            a = ['%s=%s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a = ['%s=%s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
         return self._repr
@@ -450,7 +450,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             m = settings.PPRINT_MAX_EL
             ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=False))
             hidden = max(0, len(ks) - m)
-            a = ['%s: %s' % (k, shorten(self._data_validated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a = ['%s: %s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._str = '{%s}' % (', '.join(a))
         return self._str
@@ -465,9 +465,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             i = self._aliasesNegated.get(item, item)
             t = Object._items_type(self, i)
             self._items_type_cache[item] = t
-            if t and hasattr(t, '_proxy_type'):
-                if t._proxy_type:
-                    self._items_type_cache[item] = t = t._proxy_type
+            if t and hasattr(t, '_proxyUri'):
+                p = t.proxy_type()
+                if p:
+                    self._items_type_cache[item] = t = p
                 else:
                     self._items_type_cache[item] = None  # not ready yet
         return t
@@ -507,7 +508,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         pbases = pbases + bases_extended
 
         not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
-        not_ready_yet_sch = tuple(TypeBuilder.expand(b._proxy_uri) for b in not_ready_yet)
+        not_ready_yet_sch = tuple(TypeBuilder.expand(b._proxyUri) for b in not_ready_yet)
         pbases = tuple(b for b in pbases if b not in not_ready_yet)
         if not pbases:
             bases += [ObjectProtocol]
@@ -537,7 +538,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             for b in pbases:
                 primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
 
-        extends = [b._id for b in pbases] + [b._proxy_uri for b in not_ready_yet]
+        extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', []), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
         not_validated = set().union(schema.get('notValidated', []), *[b._notValidated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
         required = set().union(schema.get('required', []), *[b._required for b in pbases], *[s.get('required', []) for s in not_ready_yet_sch])

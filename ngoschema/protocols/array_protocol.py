@@ -32,8 +32,8 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     _deserializer = ArrayDeserializer
     _collection = Array
     _data = []
-    _data_validated = []
-    _items_inputs = []
+    _dataValidated = []
+    _itemsInputs = []
 
     @classmethod
     def default(cls, value=None, evaluate=False, **opts):
@@ -42,8 +42,8 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     def _touch(self):
         CollectionProtocol._touch(self)
-        self._data_validated = [None] * len(self._data)
-        self._items_inputs = [{}] * len(self._data)
+        self._dataValidated = [None] * len(self._data)
+        self._itemsInputs = [{}] * len(self._data)
 
     #@staticmethod
     #def _items_type(self, item):
@@ -73,11 +73,11 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         return len(self._data)
 
     def insert(self, item, value):
-        self._items_inputs.insert(item, {})
-        self._data_validated.insert(item, None)
+        self._itemsInputs.insert(item, {})
+        self._dataValidated.insert(item, None)
         self._data.insert(item, value)
         if not self._lazyLoading:
-            self._items_inputs[item] = self._items_inputs_evaluate(item)
+            self._itemsInputs[item] = self._items_inputs_evaluate(item)
             self._set_data_validated(item, self._items_evaluate(item))
         elif isinstance(value, TypeProtocol):
             value.set_context(self._context)
@@ -86,7 +86,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def _str_list(self):
         if self._str is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._data_validated[i] or self._data[i], str_fun=repr)
+            a = [shorten(self._dataValidated[i] or self._data[i], str_fun=repr)
                  for i, t in enumerate(self._items_types(self, self._data))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
             self._str = '[%s]' % (', '.join(a))

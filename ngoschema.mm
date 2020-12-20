@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -147,7 +147,7 @@
 <node TEXT="The context is initialized at the instance creation and defines the environment" ID="ID_163645921" CREATED="1601954291499" MODIFIED="1601954833720"/>
 </node>
 </node>
-<node TEXT="metadata" FOLDED="true" ID="ID_427542342" CREATED="1598195209085" MODIFIED="1598195211727">
+<node TEXT="metadata" ID="ID_427542342" CREATED="1598195209085" MODIFIED="1598195211727">
 <node TEXT="$defs" ID="ID_406543537" CREATED="1598384084418" MODIFIED="1598384086716">
 <node TEXT="Tag" FOLDED="true" ID="ID_394515957" CREATED="1601391361110" MODIFIED="1601952474522">
 <icon BUILTIN="button_cancel"/>

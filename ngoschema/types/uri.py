@@ -76,7 +76,7 @@ class Id(NsManagerContext, String):
         self._canonical = self._schema.get('canonical', self._canonical)
 
     def __repr__(self):
-        uri = self._data_validated.get('uri') or self._data.get('uri')
+        uri = self._dataValidated.get('uri') or self._data.get('uri')
         return f'<id {uri}>'
 
     @staticmethod
