@@ -10,6 +10,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from future.utils import with_metaclass
+from collections import Mapping
 
 from .. import settings
 from ..decorators import memoized_property, depend_on_prop
@@ -56,8 +57,20 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     _primaryKeys = ('canonicalName', )
     _identityKeys = None
 
+    def __new__(cls, *args, **kwargs):
+        if args and args[0] and not isinstance(args[0], Mapping):
+            context = kwargs.get('context')
+            session = context._session if context else None
+            inst = session.resolve_fkey(args, cls)
+            cls = inst.__class__
+        return ObjectProtocol.__new__(cls, *args, **kwargs)
+
     def __init__(self, value=None, primaryKeys=None, **opts):
         self._primaryKeys = primaryKeys or self._primaryKeys
+        if value and not isinstance(value, Mapping):
+            context = opts.get('context')
+            session = context._session if context else None
+            value = session.resolve_fkey(value, self.__class__)
         Instance.__init__(self, value, **opts)
         self.identityKeys
 
@@ -74,6 +87,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         self._identityKeys = tuple(self[k] for k in self._primaryKeys)
         return self._identityKeys
 
+    @staticmethod
     def _serialize(self, value, root_entity=False, **opts):
         use_identity_keys = opts.get('useIdentityKeys', False)
         use_entity_keys = opts.get('useEntityKeys', False)

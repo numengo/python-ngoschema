@@ -14,6 +14,7 @@ from ..protocols import TypeProtocol, Resolver
 from ..managers.type_builder import register_type
 from .strings import String
 from .numerics import Integer
+from .uri import Id
 from .array import Array, Tuple
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
@@ -46,36 +47,60 @@ class Ref(String):
 
 @register_type('foreignKey')
 class ForeignKey(Ref):
-    _foreign_class = None
-    _foreign_keys = ['id']
-    _foreign_keys_type = [Integer]
-    _back_populates = None
+    _foreignSchema = None
+    _foreignClass = None
+    _foreignKeys = ['id']
+    _foreignKeysType = [Integer]
+    _backPopulates = None
+
+    def __init__(self, value=None, foreign_schema=None, **opts):
+        TypeProtocol.__init__(self, **opts)
+        fs = foreign_schema or self._schema.get('foreignSchema')
+        self.set_foreign_schema(fs)
+
+    def set_foreignSchema(self, foreign_schema):
+        from ..protocols.object_protocol import ObjectProtocol
+        from ..managers.type_builder import TypeBuilder
+        self._foreignSchema = fs = foreign_schema
+        self._foreignClass = ObjectProtocol
+        if fs:
+            try:
+                fc = TypeBuilder.load(fs)
+                self.set_foreignClass(fc)
+            except Exception as er:
+                self._logger.error(er, exc_info=True)
+                pass
+
+    def set_foreignClass(self, foreign_class):
+        from ..models.instances import Entity
+        if foreign_class:
+            self._foreignClass = fc = foreign_class
+            if not issubclass(fc, Entity):
+                raise ValueError('target class (%r) must implement (%r) interface.' \
+                                 % (fc, Entity))
+            self._foreignKeys = fk = self._schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
+            #self._foreignKeys = fk = fc._schema.get('primaryKeys')
+            self._foreignKeysType = [fc._items_type(fc, k) for k in fk]
+        return foreign_class
 
     @staticmethod
-    def _convert(self, value, **opts):
-        if self._foreign_class and isinstance(value, self._foreign_class):
-            value = [getattr(value, k) for k in self._foreign_keys]
-        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreign_keys_type, value))
+    def _convert(self, value, foreign_class=None, **opts):
+        foreign_class = foreign_class or self._foreignClass
+        if foreign_class and isinstance(value, foreign_class):
+            value = [getattr(value, k) for k in self._foreignKeys]
+        elif String.check(value):
+            return Id.convert(value, **opts)
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
 
     @staticmethod
     @assert_arg(1, Array, strDelimiter=',')
     def _check(self, value, **opts):
-        if all(t._check(t, v, **opts) for t, v in zip(self._foreign_keys_type, Array.convert(value, **opts))):
+        if all(t._check(t, v, **opts) for t, v in zip(self._foreignKeysType, Array.convert(value, **opts))):
             return value
         raise TypeError('%s is not of type foreignKey.' % value)
 
-    def __init__(self, **opts):
-        from ..managers.type_builder import TypeBuilder
-        from ..protocols.object_protocol import ObjectProtocol
-        TypeProtocol.__init__(self, **opts)
-        fc = TypeBuilder.load(self._schema['$schema']) if '$schema' in self._schema else None
-        self._foreign_keys = self._schema.get('foreignKey', {}).get('fkeys') or self._foreign_keys
-        if fc:
-            self._foreign_class = fc
-            self._foreign_keys = fk = fc._schema.get('primaryKeys')
-            self._foreign_keys_type = [fc._items_type(fc, k) for k in fk]
-        else:
-            self._foreign_class = ObjectProtocol
+    def _serialize(self, value, **opts):
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
 
     @staticmethod
     def _evaluate(self, value, validate=True, resolve=False, context=None, **opts):
@@ -92,13 +117,13 @@ class ForeignKey(Ref):
         TypeProtocol._validate(self, value, **opts)
         if resolve:
             raise InvalidValue()
-        pass
+        return value
 
     @staticmethod
     @assert_arg(1, Tuple, strDelimiter=',')
     def _resolve(self, key, session=None, **opts):
         session = session or scoped_session(session_maker())()
-        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self._foreign_class)]
+        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self._foreignClass)]
         for r in fc_repos:
             v = r.get(key)
             if v is not None:
@@ -107,17 +132,17 @@ class ForeignKey(Ref):
 
 
         def _check_object(c):
-            if not set(self._foreign_keys).difference(c.keys()):
-                cur_key = tuple([c[k] for k in self._foreign_keys])
+            if not set(self._foreignKeys).difference(c.keys()):
+                cur_key = tuple([c[k] for k in self._foreignKeys])
                 if cur_key == key:
                     return True
             return False
 
         ctx = Type.make_context(self, context)
         for c in ctx.maps_flattened:
-            if isinstance(c, self._foreign_class):
-                if not set(self._foreign_keys).difference(c.keys()):
-                    cur_key = tuple([c[k] for k in self._foreign_keys])
+            if isinstance(c, self._foreignClass):
+                if not set(self._foreignKeys).difference(c.keys()):
+                    cur_key = tuple([c[k] for k in self._foreignKeys])
                     if cur_key == key:
                         return c
         else:
@@ -126,14 +151,14 @@ class ForeignKey(Ref):
 
 @register_type('canonicalName')
 class CanonicalName(ForeignKey):
-    _foreign_keys = ['canonicalName']
-    _foreign_keys_type = [String]
+    _foreignKeys = ['canonicalName']
+    _foreignKeysType = [String]
 
     @staticmethod
     def _convert(self, value, **opts):
-        if self._foreign_class and isinstance(value, self._foreign_class):
-            value = [getattr(value, k) for k in self._foreign_keys]
-        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreign_keys_type, value))[0]
+        if self._foreignClass and isinstance(value, self._foreignClass):
+            value = [getattr(value, k) for k in self._foreignKeys]
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))[0]
 
     @staticmethod
     @assert_arg(1, Array, strDelimiter='.')

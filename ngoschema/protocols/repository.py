@@ -47,3 +47,10 @@ class Repository(Saver):
     def commit(self, value, **opts):
         opts.setdefault('context', self._context)
         return self._commit(self, value, **opts)
+
+    def __contains__(self, item):
+        return item in self._content
+
+    def query(self, *attrs, **attrs_value):
+        from ..query import Query
+        return Query(self._content).get(*attrs, **attrs_value)

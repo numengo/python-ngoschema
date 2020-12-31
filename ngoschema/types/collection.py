@@ -75,7 +75,7 @@ class Collection(Type, CollectionSerializer):
     @staticmethod
     def _deserialize(self, value, evaluate=True, items=False, **opts):
         ret = self._deserializer._deserialize(self, value or self._default, items=items, evaluate=False, **opts)
-        ret = self._collType(ret)
+        #ret = self._collType(ret)
         if items:
             for k, t in self._items_types(self, value):
                 if self._is_included(k, value, **opts):
@@ -114,16 +114,16 @@ class Collection(Type, CollectionSerializer):
 
     @staticmethod
     def _serialize(self, value, items=True, **opts):
-        value = self._serializer._serialize(self, value, **opts)
         opts.setdefault('no_defaults', True)
-        ret = self.null(value, **opts)
+        ret = value = self._serializer._serialize(self, value, **opts)
         if items:
+            ret = self.null(value, **opts)
             for k, t in self._items_types(self, ret):
                 if self._is_included(k, value, **opts):
                     v = value[k]
                     ret[k] = t._serialize(t, v, **opts)
                     #ret[k] = v.do_serialize(**opts) if hasattr(v, 'do_serialize') else t._serialize(t, v, **opts)
-        return ret
+        return self._collType(ret)
 
     @classmethod
     def items_types(cls, value, **opts):

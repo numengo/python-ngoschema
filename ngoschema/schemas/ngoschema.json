@@ -78,6 +78,20 @@
             }
           }
         },
+        "Tag": {
+          "type": "object",
+          "extends": [
+            "#/$defs/metadata/$defs/Annotation"
+          ],
+          "properties": {
+            "tags": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/metadata/$defs/Tag"
+              }
+            }
+          }
+        },
         "Plural": {
           "type": "object",
           "properties": {
@@ -244,14 +258,31 @@
           "title": "Relationship",
           "type": "object",
           "additionalProperties": false,
+          "notSerialized": [
+            "foreignClass"
+          ],
+          "readOnly": [
+            "foreignClass"
+          ],
+          "dependencies": {
+            "foreignKeys": [
+              "foreignClass"
+            ],
+            "foreignClass": [
+              "foreignSchema"
+            ]
+          },
           "extends": [
             "#/$defs/instances/$defs/Entity"
           ],
           "properties": {
-            "$schema": {
+            "foreignSchema": {
               "type": "id"
             },
-            "fkeys": {
+            "foreignClass": {
+              "type": "importable"
+            },
+            "foreignKeys": {
               "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
             },
             "cardinality": {
@@ -302,10 +333,10 @@
         "Instance": {
           "title": "Named Object",
           "type": "object",
+          "additionalProperties": false,
           "notSerialized": [
             "canonicalName"
           ],
-          "additionalProperties": false,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Annotation"
@@ -348,10 +379,19 @@
           "title": "Entity",
           "type": "object",
           "description": "Protocol for persistent entities with primary keys",
+          "additionalProperties": false,
+          "notSerialized": [
+            "identityKeys",
+            "primaryKeys"
+          ],
           "readOnly": [
             "identityKeys"
           ],
-          "additionalProperties": false,
+          "dependencies": {
+            "identityKeys": [
+              "primaryKeys"
+            ]
+          },
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
@@ -360,20 +400,11 @@
             "primaryKeys": {
               "type": "array",
               "items": {
-                "type": "string",
-                "_icons": [
-                  "edit"
-                ]
+                "type": "string"
               }
             },
             "identityKeys": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "_icons": [
-                  "edit"
-                ]
-              }
+              "type": "array"
             }
           }
         }
@@ -475,10 +506,7 @@
             "keywords": {
               "type": "array",
               "items": {
-                "type": "string",
-                "_icons": [
-                  "edit"
-                ]
+                "type": "string"
               }
             },
             "doc_id": {
@@ -629,8 +657,8 @@
         "FileRepository": {
           "title": "File Repository",
           "type": "object",
-          "abstract": true,
           "additionalProperties": false,
+          "abstract": true,
           "extends": [
             "#/$defs/protocols/$defs/Repository",
             "#/$defs/serializers/$defs/FileSerializer"
@@ -699,14 +727,14 @@
         },
         "Query": {
           "type": "object",
-          "readOnly": [
-            "result"
-          ],
           "notValidated": [
             "iterable"
           ],
           "notSerialized": [
             "iterable"
+          ],
+          "readOnly": [
+            "result"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

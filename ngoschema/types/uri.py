@@ -86,7 +86,8 @@ class Id(NsManagerContext, String):
         m = cn_re.search(String.convert(value, **opts))
         if m and canonical:
             uri = find_ns_mgr(context).get_cname_id(m.group())
-        return value
+            return value
+        raise TypeError('%s is not type Id.' % value)
 
     @staticmethod
     def _convert(self, value, context=None, **opts):

@@ -212,7 +212,7 @@
           "title": "Named Entity",
           "type": "object",
           "extends": [
-            "#/$defs/entities/$defs/Entity",
+            "#/$defs/instances/$defs/Entity",
             "#/$defs/metadata/$defs/NamedObject"
           ],
           "primaryKeys": [

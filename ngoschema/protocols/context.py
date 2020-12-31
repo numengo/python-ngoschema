@@ -18,6 +18,7 @@ DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
 
 class Context:
     _context = DEFAULT_CONTEXT
+    _session = None
 
     def __init__(self, context=None, **opts):
         self._context = context or self._context
@@ -32,7 +33,10 @@ class Context:
     @staticmethod
     def _create_context(self, *parents, context=None, **local):
         context = context or self._context
-        return context.create_child(*parents, **local)
+        ctx = context.create_child(*parents, **local)
+        ctx._session = getattr(context, '_session', None)
+        return ctx
 
-    def set_context(self, context, **opts):
+    def set_context(self, context, session=None, **opts):
         self._context = context
+        self._context._session = session or self._context._session

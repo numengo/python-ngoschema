@@ -88,10 +88,10 @@ class NamespaceManager(Registry):
         n, u = self._find_ns_by_cname(item)
         return bool(n and u)
 
-    def get_id_cname(self, ref):
+    def get_id_cname(self, ref, relative=False):
         rcn = self._current_ns
         cname = self._get_id_cname(ref, rcn)
-        if rcn and cname.startswith(rcn):
+        if relative and rcn and cname.startswith(rcn):
             local_cn = cname[len(rcn):].split('.')
             if local_cn and not local_cn[0]:
                 return '.'.join(local_cn[1:])

@@ -147,7 +147,7 @@ class Object(Collection, ObjectSerializer):
     def __call__(self, value=None, **opts):
         value = value or opts  # to allow initialization by keywords
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
-        return self._serialize(self, value, **opts)
+        return Type.__call__(self, value, **opts)
 
     @staticmethod
     def _items_types(self, value, **opts):
@@ -194,7 +194,7 @@ class Object(Collection, ObjectSerializer):
             t = self._items_type(self, k)
             v = ret.get(k)
             ret[k] = t.default(**opts) if v is None else v
-        opts['items'] = False
+        #opts['items'] = False
         return self._serialize(self, ret, **opts)
 
     @staticmethod

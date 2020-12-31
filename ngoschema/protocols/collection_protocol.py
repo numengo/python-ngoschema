@@ -32,8 +32,9 @@ class CollectionProtocol(Collection):
     _items_type_cache = None
     _repr = None
     _str = None
+    _session = None
 
-    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, **opts):
+    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, session=None, **opts):
         self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading
         lz = self._lazyLoading if items is None else not items
         #Collection.__init__(self, **opts)
@@ -45,7 +46,7 @@ class CollectionProtocol(Collection):
         # touch allocates storage for data, need to call _create_context again
         self._touch()
         context = self._create_context(self, context=context)
-        self.set_context(context, **opts)
+        self.set_context(context, session=session, **opts)
         if not lz:
             self._collType(self)
         if validate:
@@ -65,6 +66,7 @@ class CollectionProtocol(Collection):
     @staticmethod
     def _validate(self, value, items=False, excludes=[], **opts):
         excludes = list(self._notValidated.union(excludes))
+        opts.setdefault('context', self._context)
         return self._collection._validate(self, value, items=items, excludes=excludes, **opts)
 
     @staticmethod
@@ -98,12 +100,14 @@ class CollectionProtocol(Collection):
     def _items_inputs_evaluate(self, item):
         ret = {}
         t = self._items_type(self, item)
+        # treat dependencies
+        for k in self._dependencies.get(item, []):
+            try:
+                ret[k] = self[k]
+            except Exception as er:
+                self._logger.error(er, exc_info=True)
+        # treat data
         if t.is_primitive() and not t._rawLiterals:
-            for k in self._dependencies.get(item, []):
-                try:
-                    ret[k] = self[k]
-                except Exception as er:
-                    self._logger.error(er, exc_info=True)
             for k in t._inputs(t, self._data[item]):
                 try:
                     ret[k] = self[k]
@@ -141,12 +145,12 @@ class CollectionProtocol(Collection):
         self._data[item] = value
         if not self._lazyLoading:
             self._itemsInputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_dataValidated(item, self._items_evaluate(item))
 
     def __getitem__(self, item):
         if self._dataValidated[item] is None:
             self._itemsInputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_dataValidated(item, self._items_evaluate(item))
         return self._dataValidated[item]
 
     def __delitem__(self, index):
@@ -173,7 +177,7 @@ class CollectionProtocol(Collection):
             self._items_touch(item)
         self._data[item] = value
 
-    def _set_data_validated(self, item, value):
+    def _set_dataValidated(self, item, value):
         t = self._items_type(self, item)
         if t.is_primitive():
             orig = self._data[item]
@@ -197,6 +201,7 @@ class CollectionProtocol(Collection):
     def do_serialize(self, deserialize=False, **opts):
         opts['context'] = self._context
         return self._serialize(self, self, deserialize=deserialize, **opts)
+        return self._serializer._serialize(self, self, deserialize=deserialize, **opts)
 
     def copy(self):
         return self.create(self._data, context=self._context)

@@ -18,4 +18,4 @@ class NsManagerContext(Context):
         Context.set_context(self, context, **opts)
         self._ns_mgr = find_ns_mgr(self._context)
         if '_nsMgr' in self._properties:
-            self._set_data_validated('_nsMgr', self._ns_mgr)
+            self._set_dataValidated('_nsMgr', self._ns_mgr)

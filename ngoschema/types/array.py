@@ -10,6 +10,7 @@ from ..decorators import log_exceptions
 from ..managers.type_builder import register_type
 from ..protocols.serializer import Serializer
 from .type import Type
+from .constants import _True
 from .collection import CollectionDeserializer, CollectionSerializer, Collection
 from .strings import String
 
@@ -98,7 +99,7 @@ class Array(Collection, ArraySerializer):
     def is_array(cls):
         return True
 
-    def __init__(self, items=True, **opts):
+    def __init__(self, items=None, **opts):
         # split the schema to isolate items schema and object schema
         from ..managers.type_builder import TypeBuilder
         cls_name = f'{self.__class__.__name__}_{id(self)}'
@@ -109,13 +110,13 @@ class Array(Collection, ArraySerializer):
             self._items = [TypeBuilder.build(f'{cls_name}/items/{i}', item)
                                for i, item in enumerate(items)]
         else:
-            self._items = items
+            self._items = items or _True()
         Collection.__init__(self, **opts)
 
     def __call__(self, value=None, *values, **opts):
         value = value or list(values)  # to allow initialization by varargs
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
-        return self._serialize(self, value, **opts)
+        return Type.__call__(self, value, **opts)
 
     @staticmethod
     def _items_types(self, value, **opts):
@@ -208,10 +209,10 @@ ArrayString = Array.extend_type('ArrayString', items=String)
 @register_type('tuple')
 class Tuple(Array):
     _pyType = tuple
-    _collType = tuple
+    #_collType = list
 
 
 @register_type('set')
 class Set(Array):
     _pyType = set
-    _collType = set
+    #_collType = list

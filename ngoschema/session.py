@@ -60,16 +60,18 @@ class Session(with_metaclass(SchemaMetaclass)):
         rn = cns[0]
         cn = cns[1:]
         for repo in [r for r in self._repos if issubclass(r.instanceClass, Entity)]:
-            if rn in repo._catalog:
-                v = repo.get_instance(rn)
+            if rn in repo:
+                v = repo.resolve_fkey(rn)
                 return v if not cn else v.resolve_cname(cn)
-        raise Exception("impossible to resolve '%s'" % cname)
+        raise Exception("Impossible to resolve '%s'" % cname)
 
     @assert_arg(1, Tuple, strDelimiter=',')
     def resolve_fkey(self, keys, object_class):
-        for repo in [r for r in self._repos if issubclass(r.instanceClass, object_class)]:
-            if keys in repo._catalog:
-                return repo.get_instance(keys)
+        for repo in [r for r in self.repositories if issubclass(r.instanceClass, object_class)]:
+            if keys in repo:
+                return repo.resolve_fkey(keys)
+        else:
+            raise Exception("Impossible to resolve '%s'" % keys)
 
     def query(self, *attrs, order_by=False, **attrs_value):
         """

@@ -75,7 +75,7 @@ class PropertyDescriptor:
                 if self.fget:
                     obj._set_data(key, self.fget(obj))
                 iopts = {'validate': False} if key in obj._notValidated else {}
-                obj._set_data_validated(key, obj._items_evaluate(key, **iopts))
+                obj._set_dataValidated(key, obj._items_evaluate(key, **iopts))
                 obj._itemsInputs[key] = inputs  # after set_validated_data as it touches inputs data
             value = obj._dataValidated[key]
             if outdated and self.fset:
@@ -95,7 +95,7 @@ class PropertyDescriptor:
             if not obj._lazyLoading:
                 obj._itemsInputs[key] = obj._items_inputs_evaluate(key)
                 iopts = {'validate': False} if key in obj._notValidated else {}
-                obj._set_data_validated(key, obj._items_evaluate(key, **iopts))
+                obj._set_dataValidated(key, obj._items_evaluate(key, **iopts))
                 if self.fset:
                     self.fset(obj, obj._dataValidated[key])
         except Exception as er:
@@ -172,7 +172,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     @staticmethod
     def _convert(self, value, **opts):
         from ..managers.type_builder import TypeBuilder
-        value = self._collType(value)
+        #value = self._collType(value)
         if value.get('$schema'):
             s_id = Id.convert(scope(value.pop('$schema'), self._id), **opts)
             if s_id != self._id:
@@ -251,13 +251,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         cached = cls.__properties_raw_trans.get(name)
         if cached:
             return cached
+        if name in cls._properties:
+            cls.__properties_raw_trans[name] = (name, name)
+            return name, name
         for trans, raw in cls._propertiesTranslation.items():
             if name in (raw, trans):
                 cls.__properties_raw_trans[name] = (raw, trans)
                 return raw, trans
-        if name in cls._properties:
-            cls.__properties_raw_trans[name] = (name, name)
-            return name, name
         alias = cls._aliases.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
@@ -370,11 +370,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             parts = split_cname(key)
             # case: canonical name such as a[0][1].b[0].c
             cur = self
-            for p in parts:
-                cur = cur[p] if not hasattr(cur, p) else getattr(cur, p)
-                if cur is None:
-                    return
-            return cur
+            try:
+                for p in parts:
+                    cur = cur[p] if not hasattr(cur, p) else getattr(cur, p)
+                    if cur is None:
+                        return
+                return cur
+            except Exception as er:
+                raise KeyError(key)
         op = lambda x: neg(x) if key in self._aliasesNegated else x
         key = self._aliasesNegated.get(key, key)
         key = self._aliases.get(key, key)
@@ -386,7 +389,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             return op(desc.__get__(self))
         if self._lazyLoading or self._is_outdated(key):
             self._itemsInputs[key] = self._items_inputs_evaluate(key)
-            self._set_data_validated(key, self._items_evaluate(key))
+            self._set_dataValidated(key, self._items_evaluate(key))
         return op(self._dataValidated[key])
 
     def __setitem__(self, key, value):
@@ -412,7 +415,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def _serialize(self, value, schema=False, excludes=[], **opts):
-        serializer = self if not isinstance(value, Serializer) else value
+        serializer = self if not isinstance(value, Serializer) else value.__class__
         context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
         ret = CollectionProtocol._serialize(serializer, value, excludes=excludes, **opts)
@@ -532,11 +535,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             for k, v in s.get('dependencies', {}).items():
                 dependencies[k].update(set(v))
 
-        primary_keys = schema.get('primaryKeys', [])
-        #primary_keys = primary_keys if Array.check(primary_keys, split_string=False) else [primary_keys]
+        primary_keys = list(schema.get('primaryKeys', attrs.get('_primaryKeys', [])))
         if not primary_keys:
             for b in pbases:
                 primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
+        if primary_keys:
+            dependencies['identityKeys'] = set(primary_keys)
 
         extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', []), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
@@ -593,7 +597,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # store additional data that will be used to rebuild the inner object type with property redefinitions
         def is_symbol(f):
             import types
-            return isinstance(f, types.FunctionType) or isinstance(f, classmethod) or isinstance(f, types.MethodType)
+            from ..decorators import ClassPropertyDescriptor
+            return isinstance(f, types.FunctionType) or isinstance(f, classmethod)\
+                   or isinstance(f, types.MethodType) or isinstance(f, ClassPropertyDescriptor)
 
         def is_mro_symbol(a):
             mro_attrs = [getattr(b, a, None) for b in bases + bases_extended + [ObjectProtocol]] + [attrs.get(a)]

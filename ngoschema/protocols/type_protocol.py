@@ -84,8 +84,8 @@ class TypeProtocol(Serializer):
         return cls._has_default(cls, value=value, **opts)
 
     @classmethod
-    def default(cls, value=None, evaluate=False, **opts):
-        return cls._deserialize(cls, value or cls._default, **opts)
+    def default(cls, value=None, evaluate=False, raw_literals=True, **opts):
+        return cls._deserialize(cls, value or cls._default, raw_literals=raw_literals, **opts)
 
     @classmethod
     def is_primitive(cls):

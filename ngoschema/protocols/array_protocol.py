@@ -78,7 +78,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         self._data.insert(item, value)
         if not self._lazyLoading:
             self._itemsInputs[item] = self._items_inputs_evaluate(item)
-            self._set_data_validated(item, self._items_evaluate(item))
+            self._set_dataValidated(item, self._items_evaluate(item))
         elif isinstance(value, TypeProtocol):
             value.set_context(self._context)
         self._validate(self, value, items=False)
@@ -146,6 +146,14 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if not self._session and self._root and getattr(self._root, '_repo', None):
             self._session = self._root._repo.session
         return self._session
+
+    @property
+    def identityKeys(self):
+        return [i.identityKeys for i in self] if self._hasPk else None
+
+    @property
+    def attrs(self, attr):
+        return [i[attr] for i in self]
 
     def get(self, *pks, default=None, **kwargs):
         from ..query import Query
