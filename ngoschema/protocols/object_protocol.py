@@ -143,6 +143,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _extends = []
     _propertiesAllowed = set()
     _propertiesTranslation = {}
+    _relationships = {}
     _aliases = {}
     _aliasesNegated = {}
 
@@ -479,6 +480,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
         from ..managers.type_builder import TypeBuilder, scope
+        from ..managers.relationship_builder import RelationshipBuilder
         from ..protocols import TypeProxy
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
@@ -550,16 +552,25 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         has_default = set().union(*[b._propertiesWithDefault for b in pbases])
 
         # create type for properties
-        properties = OrderedDict([(k, TypeBuilder.build(f'{id}/properties/{k}', v))
+        local_properties = OrderedDict([(k, TypeBuilder.build(f'{id}/properties/{k}', v))
                                   for k, v in schema.get('properties', {}).items()])
+        redefined_properties = OrderedDict()
         for i, s in zip(not_ready_yet, not_ready_yet_sch):
             for k, v in s.get('properties', {}).items():
-                properties[k] = TypeBuilder.build(f'{id}/properties/{k}', v)
-        all_properties = ChainMap(properties, *[b._propertiesChained for b in pbases])
+                redefined_properties[k] = TypeBuilder.build(f'{id}/properties/{k}', v)
+        all_properties = ChainMap(local_properties, redefined_properties, *[b._propertiesChained for b in pbases])
         pattern_properties = set([(re.compile(k),
                                    TypeBuilder.build(f'{id}/patternProperties/{k}', v))
                                    for k, v in schema.get('patternProperties', {}).items()])
         additional_properties = TypeBuilder.build(f'{id}/additionalProperties', schema.get('additionalProperties', True))
+
+        local_relationships = OrderedDict([(k, RelationshipBuilder.build(f'{id}/relationships/{k}', v))
+                                  for k, v in schema.get('relationships', {}).items()])
+        relationships = ChainMap(local_relationships, *[b._relationships for b in pbases])
+        for k, v in schema.get('properties', {}).items():
+            if Object.check(v) and 'foreignKey' in v:
+                rn = k + '_ptr'
+                local_relationships[rn] = RelationshipBuilder.build(f'{id}/relationships/{rn}', v['foreignKey'])
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...
@@ -648,14 +659,15 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         # add redefined properties to local properties and to schemas
         if extra_schema_properties:
-            properties.update({k: TypeBuilder.build(f'{id}/properties/{k}', sch) for k, sch in extra_schema_properties.items()})
+            local_properties.update({k: TypeBuilder.build(f'{id}/properties/{k}', sch)
+                                     for k, sch in extra_schema_properties.items()})
             schema.setdefault('properties', {})
             schema['properties'].update(extra_schema_properties)
 
         # create descriptors
         # go through local properties and create descriptors
         properties_descriptor = {}
-        for pname, ptype in properties.items():
+        for pname, ptype in ChainMap(local_properties, redefined_properties).items():
             if ptype.has_default():
                 has_default.add(pname)
             pfun = descriptor_funs.pop(pname, {})
@@ -685,11 +697,15 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
         attrs['_primaryKeys'] = primary_keys
         attrs['_properties'] = dict(all_properties)
+        attrs['_propertiesChained'] = all_properties
+        attrs['_propertiesLocal'] = local_properties
+        attrs['_propertiesRedefined'] = redefined_properties
         attrs['_propertiesPattern'] = set().union(pattern_properties, *[b._propertiesPattern for b in pbases])
         attrs['_propertiesAdditional'] = additional_properties
-        attrs['_propertiesChained'] = all_properties
         attrs['_propertiesDescriptor'] = dict(ChainMap(properties_descriptor, *[getattr(b, '_propertiesDescriptor', {})
-                                                                                 for b in pbases]))
+                                                                                for b in pbases]))
+        attrs['_relationships'] = relationships
+        attrs['_localRelationships'] = local_relationships
         attrs['_required'] = required
         attrs['_dependencies'] = dependencies
         attrs['_readOnly'] = read_only

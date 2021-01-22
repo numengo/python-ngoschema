@@ -24,6 +24,10 @@ class Annotation(with_metaclass(SchemaMetaclass)):
     _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Annotation"
 
 
+class Name(with_metaclass(SchemaMetaclass)):
+    _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Name"
+
+
 class Id(with_metaclass(SchemaMetaclass)):
     _id = "https://numengo.org/ngoschema#/$defs/metadata/$defs/Id"
 

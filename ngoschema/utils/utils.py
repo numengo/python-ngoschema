@@ -223,6 +223,9 @@ class Registry(Mapping):
     def __len__(self):
         return len(self._registry)
 
+    def __contains__(self, key):
+        return key in self._registry
+
     def register(self, key, value):
         self._registry[key] = value
 
@@ -241,6 +244,7 @@ class WeakRegistry(Registry):
 
 
 class GenericClassRegistry(Registry):
+    _registry = {}
 
     def register(self, name=None):
         def f(functor):
@@ -249,6 +253,14 @@ class GenericClassRegistry(Registry):
             return functor
 
         return f
+
+    @classmethod
+    def get(cls, id):
+        return cls._registry.get(id)
+
+    @classmethod
+    def contains(cls, id):
+        return id in cls._registry
 
 
 def gcs(*classes):

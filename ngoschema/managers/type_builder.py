@@ -8,7 +8,7 @@ from collections import OrderedDict, Mapping
 from jsonschema.validators import extend
 from jsonschema.exceptions import UndefinedTypeCheck
 
-from ..utils import ReadOnlyChainMap, apply_through_collection
+from ..utils import ReadOnlyChainMap, apply_through_collection, GenericClassRegistry
 from ngoschema.resolvers.uri_resolver import resolve_uri, scope
 from .jsch_validators import Draft201909Validator, default_meta_validator
 
@@ -29,7 +29,7 @@ def untype_schema(schema):
     return schema
 
 
-class TypeBuilder:
+class TypeBuilder(GenericClassRegistry):
     _registry = {}
     _type_registry = {}
     _on_construction = {}
@@ -50,10 +50,7 @@ class TypeBuilder:
 
     @staticmethod
     def register(id):
-        def to_decorate(cls):
-            TypeBuilder._registry[id] = cls
-            return cls
-        return to_decorate
+        return GenericClassRegistry.register(TypeBuilder, id)
 
     @staticmethod
     def is_type(value, id):
@@ -72,14 +69,6 @@ class TypeBuilder:
     @staticmethod
     def get_type(id):
         return TypeBuilder._type_registry[id]
-
-    @staticmethod
-    def get(id):
-        return TypeBuilder._registry.get(id)
-
-    @staticmethod
-    def contains(id):
-        return id in TypeBuilder._registry
 
     @staticmethod
     def build(id, schema=None, bases=(), attrs=None):

@@ -34,7 +34,7 @@ class Context:
     def _create_context(self, *parents, context=None, **local):
         context = context or self._context
         ctx = context.create_child(*parents, **local)
-        ctx._session = getattr(context, '_session', None)
+        ctx._session = getattr(context, '_session', None) or self._session
         return ctx
 
     def set_context(self, context, session=None, **opts):

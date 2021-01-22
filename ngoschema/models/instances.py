@@ -54,13 +54,14 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     Object referenced by a list of keys of a foreign schema
     """
     _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/Entity"
-    _primaryKeys = ('canonicalName', )
+    _primaryKeys = tuple()
     _identityKeys = None
 
     def __new__(cls, *args, **kwargs):
         if args and args[0] and not isinstance(args[0], Mapping):
             context = kwargs.get('context')
             session = context._session if context else None
+            session = session or cls._session
             inst = session.resolve_fkey(args, cls)
             cls = inst.__class__
         return ObjectProtocol.__new__(cls, *args, **kwargs)
@@ -70,6 +71,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         if value and not isinstance(value, Mapping):
             context = opts.get('context')
             session = context._session if context else None
+            session = session or self._session
             value = session.resolve_fkey(value, self.__class__)
         Instance.__init__(self, value, **opts)
         self.identityKeys

@@ -67,6 +67,14 @@
             }
           }
         },
+        "Name": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        },
         "Id": {
           "type": "object",
           "properties": {
@@ -257,23 +265,23 @@
         "Relationship": {
           "title": "Relationship",
           "type": "object",
+          "dependencies": {
+            "foreignClass": [
+              "foreignSchema"
+            ],
+            "foreignKeys": [
+              "foreignClass"
+            ]
+          },
+          "readOnly": [
+            "foreignClass"
+          ],
           "additionalProperties": false,
           "notSerialized": [
             "foreignClass"
           ],
-          "readOnly": [
-            "foreignClass"
-          ],
-          "dependencies": {
-            "foreignKeys": [
-              "foreignClass"
-            ],
-            "foreignClass": [
-              "foreignSchema"
-            ]
-          },
           "extends": [
-            "#/$defs/instances/$defs/Entity"
+            "#/$defs/metadata/$defs/Name"
           ],
           "properties": {
             "foreignSchema": {
@@ -331,7 +339,6 @@
       "type": "object",
       "$defs": {
         "Instance": {
-          "title": "Named Object",
           "type": "object",
           "additionalProperties": false,
           "notSerialized": [
@@ -339,6 +346,7 @@
           ],
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
+            "#/$defs/metadata/$defs/Name",
             "#/$defs/metadata/$defs/Annotation"
           ],
           "properties": {
@@ -379,21 +387,22 @@
           "title": "Entity",
           "type": "object",
           "description": "Protocol for persistent entities with primary keys",
-          "additionalProperties": false,
-          "notSerialized": [
-            "identityKeys",
-            "primaryKeys"
-          ],
-          "readOnly": [
-            "identityKeys"
-          ],
           "dependencies": {
             "identityKeys": [
               "primaryKeys"
             ]
           },
+          "readOnly": [
+            "identityKeys"
+          ],
+          "additionalProperties": false,
+          "notSerialized": [
+            "identityKeys",
+            "primaryKeys",
+            "$schema",
+            "$id"
+          ],
           "extends": [
-            "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
           ],
           "properties": {
@@ -479,10 +488,10 @@
         "Document": {
           "title": "Document",
           "type": "object",
+          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
-          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -657,8 +666,8 @@
         "FileRepository": {
           "title": "File Repository",
           "type": "object",
-          "additionalProperties": false,
           "abstract": true,
+          "additionalProperties": false,
           "extends": [
             "#/$defs/protocols/$defs/Repository",
             "#/$defs/serializers/$defs/FileSerializer"
@@ -727,14 +736,14 @@
         },
         "Query": {
           "type": "object",
+          "readOnly": [
+            "result"
+          ],
           "notValidated": [
             "iterable"
           ],
           "notSerialized": [
             "iterable"
-          ],
-          "readOnly": [
-            "result"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

@@ -27,6 +27,10 @@ class Relationship(with_metaclass(SchemaMetaclass, ForeignKey_t)):
             return new(cls)
         return new(cls, *args, **kwargs)
 
+    def __init__(self, *args, **kwargs):
+        ObjectProtocol.__init__(self, *args, **kwargs)
+        ForeignKey_t.__init__(self, *args, **kwargs)
+
     def set_foreignSchema(self, value):
         return ForeignKey_t.set_foreignSchema(self, value)
 
@@ -49,6 +53,9 @@ class ForeignKey(with_metaclass(SchemaMetaclass)):
         if new is object.__new__:
             return new(cls)
         return new(cls, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        Relationship.__init__(self, *args, **kwargs)
 
     @staticmethod
     def _serialize(self, value, **opts):
