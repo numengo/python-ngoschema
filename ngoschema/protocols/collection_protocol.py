@@ -45,12 +45,12 @@ class CollectionProtocol(Collection):
         self._data = self._deserialize(self, value, items=False, evaluate=False, **opts)  #, convert=False, **opts)
         # touch allocates storage for data, need to call _create_context again
         self._touch()
-        context = self._create_context(self, context=context)
-        self.set_context(context, session=session, **opts)
+        ctx = self._create_context(self, context=context)
+        self.set_context(ctx, session=session, **opts)
         if not lz:
             self._collType(self)
         if validate:
-            self._validate(self, self, items=False, context=context)
+            self._validate(self, self, items=False, context=ctx)
 
     @staticmethod
     def _convert(self, value, excludes=[], **opts):

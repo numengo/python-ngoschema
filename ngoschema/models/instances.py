@@ -91,9 +91,10 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     @staticmethod
     def _serialize(self, value, root_entity=False, **opts):
-        use_identity_keys = opts.get('useIdentityKeys', False)
-        use_entity_keys = opts.get('useEntityKeys', False)
-        if not root_entity:
+        use_identity_keys = opts.get('use_identity_keys', False)
+        use_entity_keys = opts.get('use_entity_keys', False)
+        add_identity_keys = opts.get('add_identity_keys', False)
+        if value and not root_entity:
             if use_identity_keys:
                 ik = value.identityKeys
                 return ik[0] if len(ik) == 1 else ik
@@ -101,5 +102,10 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
                 keys = self.primaryKeys
                 assert len(keys) == 1, keys
                 return {(keys[0] if keys[0] != '$id' else '$ref'): self.identityKeys[0]}
-        return ObjectProtocol._serialize(self, value, **opts)
-
+        data = ObjectProtocol._serialize(self, value, **opts)
+        if add_identity_keys:
+            for k in self._primaryKeys:
+                pk = value[k]
+                if pk is not None:
+                    data[k] = value[k]
+        return data

@@ -141,6 +141,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _attributeByName = ATTRIBUTE_BY_NAME
 
     _extends = []
+    _abstract = False
     _propertiesAllowed = set()
     _propertiesTranslation = {}
     _relationships = {}
@@ -303,6 +304,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             # additional properties not allowed, raise exception
             raise AttributeError("'{0}' is not a valid property of {1}".format(
                                 name, self.__class__.__name__))
+        if name not in self._required:
+            return
         raise AttributeError("'{0}' has not been set to {1}".format(
                                 name, self.__class__.__name__))
 
@@ -506,6 +509,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             meta_validator = DefaultValidator(metaschema, resolver=resolver)
             meta_validator.validate(schema)
 
+        abstract = schema.get('abstract', False)
+
         bases_extended = [TypeBuilder.load(scope(e, id)) for e in schema.get('extends', [])]
         bases_extended = [e for e in bases_extended if not any(issubclass(b, e) for b in bases)]
         pbases = [b for b in bases if issubclass(b, ObjectProtocol) and not any(issubclass(e, b) for e in bases_extended)]
@@ -694,6 +699,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_id'] = id
         attrs['_extends'] = extends
         attrs['_schema'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
+        attrs['_abstract'] = abstract
         attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
         attrs['_primaryKeys'] = primary_keys
         attrs['_properties'] = dict(all_properties)

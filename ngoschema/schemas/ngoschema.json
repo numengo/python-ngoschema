@@ -265,6 +265,13 @@
         "Relationship": {
           "title": "Relationship",
           "type": "object",
+          "notSerialized": [
+            "foreignClass"
+          ],
+          "readOnly": [
+            "foreignClass"
+          ],
+          "additionalProperties": false,
           "dependencies": {
             "foreignClass": [
               "foreignSchema"
@@ -273,13 +280,6 @@
               "foreignClass"
             ]
           },
-          "readOnly": [
-            "foreignClass"
-          ],
-          "additionalProperties": false,
-          "notSerialized": [
-            "foreignClass"
-          ],
           "extends": [
             "#/$defs/metadata/$defs/Name"
           ],
@@ -340,10 +340,11 @@
       "$defs": {
         "Instance": {
           "type": "object",
-          "additionalProperties": false,
+          "abstract": true,
           "notSerialized": [
             "canonicalName"
           ],
+          "additionalProperties": false,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Name",
@@ -387,21 +388,22 @@
           "title": "Entity",
           "type": "object",
           "description": "Protocol for persistent entities with primary keys",
-          "dependencies": {
-            "identityKeys": [
-              "primaryKeys"
-            ]
-          },
-          "readOnly": [
-            "identityKeys"
-          ],
-          "additionalProperties": false,
+          "abstract": true,
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
             "$schema",
             "$id"
           ],
+          "readOnly": [
+            "identityKeys"
+          ],
+          "additionalProperties": false,
+          "dependencies": {
+            "identityKeys": [
+              "primaryKeys"
+            ]
+          },
           "extends": [
             "#/$defs/metadata/$defs/Id"
           ],
@@ -488,10 +490,10 @@
         "Document": {
           "title": "Document",
           "type": "object",
-          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
+          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -666,7 +668,6 @@
         "FileRepository": {
           "title": "File Repository",
           "type": "object",
-          "abstract": true,
           "additionalProperties": false,
           "extends": [
             "#/$defs/protocols/$defs/Repository",
@@ -681,7 +682,6 @@
         "JsonFileRepository": {
           "title": "Json File Repository",
           "type": "object",
-          "additionalProperties": true,
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
             "#/$defs/serializers/$defs/JsonSerializer"
@@ -736,14 +736,14 @@
         },
         "Query": {
           "type": "object",
-          "readOnly": [
-            "result"
-          ],
           "notValidated": [
             "iterable"
           ],
           "notSerialized": [
             "iterable"
+          ],
+          "readOnly": [
+            "result"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

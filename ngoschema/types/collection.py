@@ -113,13 +113,13 @@ class Collection(Type, CollectionSerializer):
         return Type._evaluate(self, value, convert=False, validate=validate, **opts)
 
     @staticmethod
-    def _serialize(self, value, items=True, **opts):
+    def _serialize(self, value, items=True, only=[], **opts):
         opts.setdefault('no_defaults', True)
-        ret = value = self._serializer._serialize(self, value, **opts)
+        ret = value = self._serializer._serialize(self, value, only=only, **opts)
         if items:
-            ret = self.null(value, **opts)
+            ret = self.null(value, only=only, **opts)
             for k, t in self._items_types(self, ret):
-                if self._is_included(k, value, **opts):
+                if self._is_included(k, value, only=only, **opts):
                     v = value[k]
                     ret[k] = t._serialize(t, v, **opts)
                     #ret[k] = v.do_serialize(**opts) if hasattr(v, 'do_serialize') else t._serialize(t, v, **opts)

@@ -122,8 +122,8 @@ class NamespaceManager(Registry):
             cname = '.'.join(rcn + [cname])
         id = self._get_cname_id(cname, self._current_ns)
         u = self._current_ns_uri.split('#')[0] + '#'
-        #if u and id.startswith(u):
-        #    id = id[len(u.strip('#')):]
+        if u and id.startswith(u):
+            id = id[len(u.strip('#')):]
         return id
 
     def _get_cname_id_cached(self, cname, current_ns):

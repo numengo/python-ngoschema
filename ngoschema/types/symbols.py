@@ -67,6 +67,7 @@ class Symbol(Primitive):
 
     @staticmethod
     def _serialize(self, value, **opts):
+        value = String._serialize(self, value, **opts)
         if value:
             if not String.check(value):
                 if isinstance(value, types.ModuleType):
@@ -74,7 +75,7 @@ class Symbol(Primitive):
                 else:
                     m = getattr(value, '__module__', None)
                     value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
-        return String._serialize(self, value, **opts)
+        return value
 
 
 @register_type('module')
