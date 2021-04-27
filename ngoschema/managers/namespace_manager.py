@@ -8,10 +8,12 @@ import re
 from collections import OrderedDict
 from functools import lru_cache
 
+from .. import settings
 from ..utils import ReadOnlyChainMap as ChainMap, Registry
 from ngoschema.resolvers.uri_resolver import resolve_uri, UriResolver
 
 CLEAN_JS_NAME_REGEX = re.compile(r"[^a-zA-z0-9\.\-_]+")
+MS_NETLOC = urlparse(settings.MS_DOMAIN).netloc
 
 
 def clean_js_name(name):
@@ -165,6 +167,8 @@ class NamespaceManager(Registry):
     def _uri_to_cname(uri):
         u = urlparse(uri)
         cn = []
+        if u.netloc != MS_NETLOC:
+            cn = [u.netloc.split('.')[0].replace('-', '_')]
         for p in u.path.split('/'):
             if p:
                 if p[0].isdigit() and cn:

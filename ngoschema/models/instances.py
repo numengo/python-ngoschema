@@ -78,7 +78,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     def __str__(self):
         if self._str is None:
-            ks = self._identityKeys
+            ks = [str(k) for k in self._identityKeys]
             self._str = '<%s %s>' % (self.qualname(), ', '.join(ks))
         return self._str
 

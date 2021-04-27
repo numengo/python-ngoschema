@@ -50,6 +50,18 @@ class TypeProtocol(Serializer):
             from ..types import Enum
             attrs['_enum'] = schema['enum']
             extra_bases += (Enum, )
+        if 'foreignKey' in schema:
+            from ..types.foreign_key import ForeignKey
+            fs = schema.get('foreignKey', {}).get('foreignSchema')
+            attrs['_foreignSchema'] = fs = scope(fs, id)
+            try:
+                attrs['_foreignClass'] = fc = TypeBuilder.load(fs)
+                #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
+                attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc, '_primaryKeys', ['id']))
+                attrs['_foreignKeysType'] = [fc._items_type(fc, k) for k in fks]
+            except Exception as er:
+                pass
+            extra_bases += (ForeignKey, )
         if 'type' in schema:
             extra_bases += (TypeBuilder.get_type(schema['type']), )
         # filter bases to remove duplicates

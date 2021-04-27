@@ -2,6 +2,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import sys
+import six
 import logging
 from collections import MutableMapping, Mapping
 from collections import OrderedDict, defaultdict
@@ -85,6 +87,8 @@ class PropertyDescriptor:
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
+            #etype, value, trace = sys.exc_info()
+            #raise six.reraise(AttributeError, value, trace)
 
     def __set__(self, obj, value):
         try:
@@ -101,6 +105,8 @@ class PropertyDescriptor:
         except Exception as er:
             obj._logger.error(er, exc_info=True)
             raise
+            #etype, value, trace = sys.exc_info()
+            #raise six.reraise(AttributeError, value, trace)
 
     def __delete__(self, obj):
         key = self.pname
@@ -700,7 +706,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_extends'] = extends
         attrs['_schema'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
         attrs['_abstract'] = abstract
-        attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
+        attrs['_hasPk'] = bool(primary_keys)
+        #attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
         attrs['_primaryKeys'] = primary_keys
         attrs['_properties'] = dict(all_properties)
         attrs['_propertiesChained'] = all_properties

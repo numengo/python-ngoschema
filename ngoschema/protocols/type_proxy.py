@@ -14,8 +14,8 @@ class TypeProxy(TypeProtocol):
         from ..managers.type_builder import TypeBuilder
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
-        schema = schema or {}
         sch, bases, attrs = TypeBuilder._on_construction[uri]
+        schema = schema or sch
         clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(uri)
         protocol = {'object': ObjectProtocol, 'array': ArrayProtocol}.get(sch['type'], TypeProtocol)
         #bases += (protocol, TypeProxy) if not issubclass(protocol, bases) else ()

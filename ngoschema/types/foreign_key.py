@@ -34,6 +34,10 @@ class Ref(String):
                 return False
 
     @staticmethod
+    def _convert(self, value, **opts):
+        return Id.convert(value, **opts)
+
+    @staticmethod
     def _resolve(self, value):
         return resolve_uri(value)
 
@@ -55,8 +59,9 @@ class ForeignKey(Ref):
 
     def __init__(self, value=None, foreign_schema=None, **opts):
         TypeProtocol.__init__(self, **opts)
-        fs = foreign_schema or self._schema.get('foreignSchema')
-        self.set_foreign_schema(fs)
+        fs = foreign_schema or self._schema.get('foreignKey', {}).get('foreignSchema')
+        if fs:
+            self.set_foreignSchema(fs)
 
     def set_foreignSchema(self, foreign_schema):
         from ..protocols.object_protocol import ObjectProtocol
@@ -73,24 +78,35 @@ class ForeignKey(Ref):
                 pass
 
     def set_foreignClass(self, foreign_class):
+        from ..protocols import TypeProxy
         from ..models.instances import Entity
-        if foreign_class:
-            self._foreignClass = fc = foreign_class
+        fc = foreign_class
+        if fc and not issubclass(fc, TypeProxy):
             if not issubclass(fc, Entity):
                 raise ValueError('target class (%r) must implement (%r) interface.' \
                                  % (fc, Entity))
-            self._foreignKeys = fk = self._schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
-            #self._foreignKeys = fk = fc._schema.get('primaryKeys')
-            self._foreignKeysType = [fc._items_type(fc, k) for k in fk]
-        return foreign_class
+            else:
+                self._foreignClass = fc
+                self._foreignKeys = fk = self._schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
+                self._foreignKeysType = [fc._items_type(fc, k) for k in fk]
+        return fc
+
+    def get_foreignClass(self):
+        from ..protocols.type_proxy import TypeProxy
+        fc, fs = self._foreignClass, self._foreignSchema
+        if fc and issubclass(fc, TypeProxy):
+            self._foreignClass = fc.proxy_type()
+        if not fc and fs:
+            ForeignKey.set_foreignSchema(self, self._foreignSchema)
+        return self._foreignClass
 
     @staticmethod
     def _convert(self, value, foreign_class=None, **opts):
-        foreign_class = foreign_class or self._foreignClass
-        if foreign_class and isinstance(value, foreign_class):
+        fc = foreign_class or ForeignKey.get_foreignClass(self)
+        if fc and isinstance(value, fc):
             value = [getattr(value, k) for k in self._foreignKeys]
-        elif String.check(value):
-            return Id.convert(value, **opts)
+        value = Array.convert(value, split_string=True, **opts)
+        opts['raw_literals'] = False
         return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
 
     @staticmethod
@@ -124,7 +140,7 @@ class ForeignKey(Ref):
     @assert_arg(1, Tuple, strDelimiter=',')
     def _resolve(self, key, session=None, **opts):
         session = session or scoped_session(session_maker())()
-        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self._foreignClass)]
+        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self.foreignClass)]
         for r in fc_repos:
             v = r.get(key)
             if v is not None:
@@ -157,7 +173,8 @@ class CanonicalName(ForeignKey):
 
     @staticmethod
     def _convert(self, value, **opts):
-        if self._foreignClass and isinstance(value, self._foreignClass):
+        fc = self.foreignClass
+        if fc and isinstance(value, fc):
             value = [getattr(value, k) for k in self._foreignKeys]
         return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))[0]
 
