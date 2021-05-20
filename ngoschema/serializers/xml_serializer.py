@@ -28,6 +28,7 @@ class XmlDeserializer(Deserializer):
         self._disableEntities = opts.get('disable_entities', XmlDeserializer._disableEntities)
         self._processComments = opts.get('process_comments', XmlDeserializer._processComments)
         self._forceList = opts.get('force_list', XmlDeserializer._forceList)
+        Deserializer.__init__(self, **opts, **self)
 
     @staticmethod
     def _deserialize(self, value, **opts):

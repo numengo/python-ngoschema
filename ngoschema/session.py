@@ -344,3 +344,6 @@ class scoped_session(object):
             )
 
         self.session_factory.configure(**kwargs)
+
+
+default_session = scoped_session(session_maker())()

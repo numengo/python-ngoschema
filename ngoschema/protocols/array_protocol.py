@@ -142,12 +142,6 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         return cls
 
     @property
-    def session(self):
-        if not self._session and self._root and getattr(self._root, '_repo', None):
-            self._session = self._root._repo.session
-        return self._session
-
-    @property
     def identityKeys(self):
         return [i.identityKeys for i in self] if self._hasPk else None
 

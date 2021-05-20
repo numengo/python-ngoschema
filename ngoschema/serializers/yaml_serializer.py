@@ -44,9 +44,10 @@ class YamlSerializer(with_metaclass(SchemaMetaclass, Serializer, YamlDeserialize
                  indent=2,
                  charset='utf-8',
                  **opts):
+        #ObjectProtocol.__init__(self, value, **opts)
+        Serializer.__init__(self, **opts)
         self._indent = indent
         self._charset = charset
-        Serializer.__init__(self, **opts)
 
     @staticmethod
     def _serialize_yaml(self, value, **opts):

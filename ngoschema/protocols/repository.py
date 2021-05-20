@@ -5,20 +5,22 @@ from __future__ import unicode_literals
 from .validator import Validator
 from .serializer import Serializer
 from .loader import Loader, Saver
+from ..session import default_session
 from ..types.object import Object
 from ..registries import repositories_registry
 
 
 class Repository(Saver):
     _saver = Saver
-    _session = None
+    _session = default_session
     _content = None
 
     def __init__(self, saver=None, session=None, **opts):
         from ..protocols.array_protocol import ArrayProtocol
         self._saver = saver or self._saver
         self._saver.__init__(self, **opts)
-        self._session = session or self._session
+        session = session or self._session
+        session.bind_repo(self)
         if self._many:
             self._content = []
 

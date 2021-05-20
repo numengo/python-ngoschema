@@ -20,9 +20,8 @@ from ..protocols.file_loader import FileSaver
 class FileSerializer(with_metaclass(SchemaMetaclass, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/serializers/$defs/FileSerializer'
 
-    def __init__(self, value=None, meta_opts=None, **opts):
-        FileSaver.__init__(self, **(meta_opts or {}))
-        ObjectProtocol.__init__(self, value, **opts)
+    def __init__(self, **opts):
+        FileSaver.__init__(self, **opts)
 
     def set_filepath(self, filepath):
         return FileSaver.set_filepath(self, filepath)

@@ -32,7 +32,7 @@ class CollectionProtocol(Collection):
     _items_type_cache = None
     _repr = None
     _str = None
-    _session = None
+    #_session = None
 
     def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, session=None, **opts):
         self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading

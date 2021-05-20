@@ -21,7 +21,7 @@ ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 
 @register_type('$ref')
-class Ref(String):
+class Ref(String, Resolver):
 
     @staticmethod
     def _validate(self, value, resolve=True, **opts):
@@ -116,8 +116,9 @@ class ForeignKey(Ref):
             return value
         raise TypeError('%s is not of type foreignKey.' % value)
 
+    @staticmethod
     def _serialize(self, value, **opts):
-        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
+        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value)) if value is not None else None
 
     @staticmethod
     def _evaluate(self, value, validate=True, resolve=False, context=None, **opts):
@@ -140,9 +141,11 @@ class ForeignKey(Ref):
     @assert_arg(1, Tuple, strDelimiter=',')
     def _resolve(self, key, session=None, **opts):
         session = session or scoped_session(session_maker())()
-        fc_repos = [r for r in session._repos if issubclass(r.instanceClass, self.foreignClass)]
+        ric = [r.instanceClass for r in session.repositories]
+        fc_repos = [r for r in session.repositories if issubclass(r.instanceClass, self._foreignClass)]
         for r in fc_repos:
-            v = r.get(key)
+            # change resolve_fkey to use resolve??
+            v = r.resolve_fkey(key)
             if v is not None:
                 return v
         raise InvalidValue('impossible to resolve foreign key %s' % repr(key))

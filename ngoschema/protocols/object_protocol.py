@@ -293,7 +293,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         name = self._aliasesNegated.get(name, name)
         name = self._aliases.get(name, name)
         raw = self._propertiesTranslation.get(name, name)
-        desc = self._propertiesDescriptor.get(raw)
+        desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
             return op(desc.__get__(self))
         if self._propertiesAdditional and name in self._data:
@@ -388,6 +388,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 return cur
             except Exception as er:
                 raise KeyError(key)
+        desc = self._relationshipsDescriptor.get(key)
+        if desc:
+            return desc.__get__(self)
         op = lambda x: neg(x) if key in self._aliasesNegated else x
         key = self._aliasesNegated.get(key, key)
         key = self._aliases.get(key, key)
@@ -405,7 +408,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._aliasesNegated else x
         raw, trans = self._properties_raw_trans(key)
-        desc = self._propertiesDescriptor.get(raw)
+        desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
             return desc.__set__(self, op(value))
         if not self._propertiesAdditional:
@@ -489,7 +492,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
         from ..managers.type_builder import TypeBuilder, scope
-        from ..managers.relationship_builder import RelationshipBuilder
+        from ..managers.relationship_builder import RelationshipDescriptor, RelationshipBuilder
         from ..protocols import TypeProxy
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
@@ -548,7 +551,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             for k, v in s.get('dependencies', {}).items():
                 dependencies[k].update(set(v))
 
-        primary_keys = list(schema.get('primaryKeys', attrs.get('_primaryKeys', [])))
+        #primary_keys = list(schema.get('primaryKeys', attrs.get('_primaryKeys', [])))
+        primary_keys = list(attrs.get('_primaryKeys', schema.get('primaryKeys', [])))
         if not primary_keys:
             for b in pbases:
                 primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
@@ -577,11 +581,15 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         local_relationships = OrderedDict([(k, RelationshipBuilder.build(f'{id}/relationships/{k}', v))
                                   for k, v in schema.get('relationships', {}).items()])
+        local_relationships_descriptor = OrderedDict()
         relationships = ChainMap(local_relationships, *[b._relationships for b in pbases])
         for k, v in schema.get('properties', {}).items():
             if Object.check(v) and 'foreignKey' in v:
                 rn = k + '_ptr'
-                local_relationships[rn] = RelationshipBuilder.build(f'{id}/relationships/{rn}', v['foreignKey'])
+                rs = v['foreignKey']
+                ra = {'_foreignKey': k}
+                local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
+                local_relationships_descriptor[rn] = RelationshipDescriptor(k, rl)
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...
@@ -719,6 +727,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                                                                                 for b in pbases]))
         attrs['_relationships'] = relationships
         attrs['_localRelationships'] = local_relationships
+        attrs['_relationshipsDescriptor'] = dict(ChainMap(local_relationships_descriptor,
+                                                          *[getattr(b, '_relationshipsDescriptor', {}) for b in pbases]))
         attrs['_required'] = required
         attrs['_dependencies'] = dependencies
         attrs['_readOnly'] = read_only

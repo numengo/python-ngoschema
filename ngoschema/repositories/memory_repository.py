@@ -17,8 +17,8 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     def __init__(self, value=None, meta_opts=None, **opts):
         from ..types import Array
         #from ..protocols.array_protocol import ArrayProtocol
-        Repository.__init__(self, **(meta_opts or {}), **opts)
         ObjectProtocol.__init__(self, **opts)
+        Repository.__init__(self, **(meta_opts or {}), **self)
         self._catalog = OrderedDict()
         self._content = Array(items=self._instanceClass, maxItems=1 if not self._many else None)(value)
 

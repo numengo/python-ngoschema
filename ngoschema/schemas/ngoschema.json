@@ -202,7 +202,7 @@
           ],
           "properties": {
             "instanceClass": {
-              "type": "string"
+              "type": "importable"
             },
             "deserializer": {
               "$ref": "#/$defs/protocols/$defs/Deserializer"
@@ -405,6 +405,7 @@
             ]
           },
           "extends": [
+            "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
           ],
           "properties": {
@@ -520,6 +521,7 @@
                 "type": "string"
               }
             },
+            "content": true,
             "doc_id": {
               "type": "string"
             }
@@ -660,7 +662,7 @@
             "#/$defs/serializers/$defs/EntitySerializer"
           ],
           "properties": {
-            "instanceClass": {
+            "instanceClass__": {
               "type": "importable"
             }
           }

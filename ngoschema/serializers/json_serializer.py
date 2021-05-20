@@ -28,12 +28,14 @@ class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer)):
     _default = None
     _encoder = json.JSONEncoder(indent=_indent, ensure_ascii=_ensure_ascii, separators=_separators, default=_default)
 
-    def __init__(self, indent=2, ensure_ascii=False, separators=None, default=None, **opts):
+    def __init__(self, value=None, indent=2, ensure_ascii=False, separators=None, default=None, meta_opts=None, **opts):
         self._indent = indent
         self._ensure_ascii = ensure_ascii
         self._separators = separators
         self._default = default
         self._encoder = json.JSONEncoder(indent=indent, ensure_ascii=ensure_ascii, separators=separators, default=default)
+        #ObjectProtocol.__init__(self, value, **opts)
+        #Serializer.__init__(self, **(meta_opts or {}), **self)
 
     @staticmethod
     def _deserialize(self, value, **opts):

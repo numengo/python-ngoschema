@@ -12,6 +12,24 @@ from ..resolvers.uri_resolver import resolve_uri
 logger = logging.getLogger(__name__)
 
 
+class RelationshipDescriptor:
+
+    def __init__(self, pname, rtype):
+        self.pname = pname
+        self.rtype = rtype
+
+    def __get__(self, obj, owner=None):
+        if obj is None and owner is not None:
+            return self
+        fk = self.pname
+        ik = obj[fk]
+        return obj.items_type(fk).resolve(ik, session=obj.session)
+
+    def __set__(self, obj, value):
+        obj[self.pname] = value._identityKeys
+        pass
+
+
 class RelationshipBuilder(GenericClassRegistry):
     _registry = {}
 
@@ -33,17 +51,19 @@ class RelationshipBuilder(GenericClassRegistry):
         attrs = dict(attrs or {})
         attrs['name'] = clsname
         attrs['_id'] = id
+        fk = attrs.get('_foreignKey') or schema.get('foreignKey')
         fs = schema.get('foreignSchema')
         bp = schema.get('backPopulates')
-        if fs:
-            attrs['_foreignSchema'] = scope(fs, id)
+        attrs['_foreignSchema'] = fs = scope(fs, id)
+        fc = TypeBuilder.load(fs)
+        attrs['_foreignClass'] = fc
         if not any([issubclass(b, Relationship) for b in bases]):
             bases = (Relationship, ) + bases
         cls = ObjectProtocol.build(id, schema, bases, attrs)
         if bp:
-            fc = TypeBuilder.load(fs)
-            attrs['_foreignClass'] = fc
-            fc._relationships[bp] = cls
+            bp_id = fs + f'/relationships/{bp}'
+            bp_rl = {'foreignSchema': id.split('/relationships')[0]}
+            fc._relationships[bp] = RelationshipBuilder.build(bp_id, bp_rl)
         RelationshipBuilder._registry[id] = cls
         return cls
 

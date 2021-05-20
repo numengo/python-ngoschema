@@ -165,12 +165,12 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
         if content:
             return content.get('$id')
 
-    #@depend_on_prop('contentRaw')
-    #def get_content(self):
-    #    try:
-    #        return self._encoder._deserialize(self, self.contentRaw)
-    #    except Exception as er:
-    #        return self.contentRaw
+    @depend_on_prop('contentRaw')
+    def get_content(self):
+        try:
+            return self._encoder._deserialize(self, self.contentRaw)
+        except Exception as er:
+            return self.contentRaw
 
     def del_file(self):
         if not self.filepath:

@@ -208,7 +208,7 @@ class NamespaceManager(Registry):
         return OrderedDict([(k, ns[k]) for k in sorted(nsk)])
 
     def get_cname_definitions(self, cname):
-        ns_uri = self.get_cname_id(cname)
+        ns_uri = self.get_id_cname(cname)
         doc = resolve_uri(ns_uri)
         defs = {}
         for tag in ['$defs', 'definitions']:
