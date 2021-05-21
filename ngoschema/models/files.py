@@ -45,8 +45,10 @@ class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/File'
 
     def __init__(self, value=None, meta_opts=None, **opts):
-        FileSaver.__init__(self, **(meta_opts or {}))
         Entity.__init__(self, value, **opts)
+        meta_opts = meta_opts or {}
+        meta_opts.setdefault('binary', self.binary)
+        FileSaver.__init__(self, **meta_opts)
 
     def set_filepath(self, filepath):
         return FileSaver.set_filepath(self, filepath)
@@ -120,6 +122,7 @@ class UriFile(with_metaclass(SchemaMetaclass, UriResolver)):
     def get_contentRaw(self):
         if self.uri:
             return UriResolver._resolve(self, self.uri)
+        return File.get_contentRaw(self)
 
     @staticmethod
     def _resolve(self, uri, **opts):
@@ -167,10 +170,11 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
 
     @depend_on_prop('contentRaw')
     def get_content(self):
-        try:
-            return self._encoder._deserialize(self, self.contentRaw)
-        except Exception as er:
-            return self.contentRaw
+        if not self.binary:
+            try:
+                return self._encoder._deserialize(self, self.contentRaw)
+            except Exception as er:
+                self._logger.error(er, exc_info=True)
 
     def del_file(self):
         if not self.filepath:

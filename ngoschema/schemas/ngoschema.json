@@ -437,6 +437,9 @@
             "filepath": {
               "type": "path"
             },
+            "binary": {
+              "type": "boolean"
+            },
             "contentRaw": {
               "type": "string"
             }

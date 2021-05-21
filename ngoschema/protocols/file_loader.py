@@ -95,6 +95,7 @@ class FileSaver(Saver, FileLoader):
 
     def __init__(self, append=False, **opts):
         Saver.__init__(self, **opts)
+        FileLoader.__init__(self, **opts)
         self._append = append
 
     #def set_filepath(self, filepath):

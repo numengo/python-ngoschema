@@ -75,10 +75,6 @@ class Id(NsManagerContext, String):
         String.__init__(self, **opts)
         self._canonical = self._schema.get('canonical', self._canonical)
 
-    def __repr__(self):
-        uri = self._dataValidated.get('uri') or self._data.get('uri')
-        return f'<id {uri}>'
-
     @staticmethod
     def _check(self, value, canonical=True, context=None, **opts):
         if Uri._check(self, value, **opts) and '#' in Uri.serialize(value, context=context):

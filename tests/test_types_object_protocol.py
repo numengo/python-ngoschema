@@ -150,8 +150,17 @@ def test_repr():
     print(repr(a1))
     print(str(a1))
 
+
+def test_repr2():
+    from ngoschema.models.files import Document
+    print(repr(Document._properties))
+
+
+
 if __name__ == "__main__":
+    #test_repr2()
     test_object_protocol()
     test_call_order()
     test_repr()
+
     #test_schema_mro()
