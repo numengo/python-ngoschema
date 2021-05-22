@@ -263,7 +263,6 @@
       "type": "object",
       "$defs": {
         "Relationship": {
-          "title": "Relationship",
           "type": "object",
           "notSerialized": [
             "foreignClass"
@@ -271,7 +270,6 @@
           "readOnly": [
             "foreignClass"
           ],
-          "additionalProperties": false,
           "dependencies": {
             "foreignClass": [
               "foreignSchema"
@@ -280,6 +278,7 @@
               "foreignClass"
             ]
           },
+          "additionalProperties": false,
           "extends": [
             "#/$defs/metadata/$defs/Name"
           ],
@@ -291,7 +290,10 @@
               "type": "importable"
             },
             "foreignKeys": {
-              "$ref": "https://json-schema.org/draft/2019-09/meta/validation#/$defs/stringArray"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "cardinality": {
               "type": "string",
@@ -309,8 +311,6 @@
           }
         },
         "ForeignKey": {
-          "title": "Foreign Key",
-          "$comment": "to define a relationship to another instance",
           "type": "object",
           "additionalProperties": false,
           "extends": [
@@ -340,10 +340,10 @@
       "$defs": {
         "Instance": {
           "type": "object",
-          "abstract": true,
           "notSerialized": [
             "canonicalName"
           ],
+          "abstract": true,
           "additionalProperties": false,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
@@ -385,25 +385,19 @@
           }
         },
         "Entity": {
-          "title": "Entity",
           "type": "object",
-          "description": "Protocol for persistent entities with primary keys",
-          "abstract": true,
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
             "$schema",
             "$id"
           ],
+          "abstract": true,
           "readOnly": [
             "identityKeys"
           ],
+          "dependencies": {},
           "additionalProperties": false,
-          "dependencies": {
-            "identityKeys": [
-              "primaryKeys"
-            ]
-          },
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
@@ -440,9 +434,7 @@
             "binary": {
               "type": "boolean"
             },
-            "contentRaw": {
-              "type": "string"
-            }
+            "contentRaw": true
           }
         },
         "FileInfo": {
@@ -486,18 +478,15 @@
             "uri": {
               "type": "uri"
             },
-            "contentRaw": {
-              "type": "string"
-            }
+            "contentRaw": true
           }
         },
         "Document": {
-          "title": "Document",
           "type": "object",
+          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
-          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -657,7 +646,6 @@
       "type": "object",
       "$defs": {
         "MemoryRepository": {
-          "title": "Memory Repository",
           "type": "object",
           "additionalProperties": false,
           "extends": [
@@ -665,13 +653,12 @@
             "#/$defs/serializers/$defs/EntitySerializer"
           ],
           "properties": {
-            "instanceClass__": {
+            "instanceClass": {
               "type": "importable"
             }
           }
         },
         "FileRepository": {
-          "title": "File Repository",
           "type": "object",
           "additionalProperties": false,
           "extends": [
@@ -685,7 +672,6 @@
           }
         },
         "JsonFileRepository": {
-          "title": "Json File Repository",
           "type": "object",
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
@@ -693,7 +679,6 @@
           ]
         },
         "YamlFileRepository": {
-          "title": "Yaml File Repository",
           "type": "object",
           "additionalProperties": true,
           "extends": [
@@ -702,7 +687,6 @@
           ]
         },
         "XmlFileRepository": {
-          "title": "Xml File Repository",
           "type": "object",
           "additionalProperties": true,
           "extends": [
@@ -792,7 +776,6 @@
       "type": "object",
       "$defs": {
         "Session": {
-          "title": "Session",
           "type": "object",
           "additionalProperties": false,
           "properties": {

@@ -53,6 +53,9 @@ class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     def set_filepath(self, filepath):
         return FileSaver.set_filepath(self, filepath)
 
+    def set_binary(self, binary):
+        self._binary = binary
+
     @depend_on_prop('filepath')
     def get_contentRaw(self):
         fp = self.filepath
