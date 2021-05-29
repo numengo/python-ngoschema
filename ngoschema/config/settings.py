@@ -15,15 +15,15 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'console': {
-            'format': '%(levelname)s %(asctime)s.%(msecs)03d %(name)s %(funcName)s: %(message)s',
+            'format': u'%(levelname)s %(asctime)s.%(msecs)03d %(name)s %(funcName)s: %(message)s',
             'datefmt': '%I:%M:%S'
         },
         'standard': {
-            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+            'format': u'%(asctime)s [%(levelname)s] %(name)s: %(message)s'
         },
         'verbose': {
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '%(levelname) -10s %(asctime)s %(name) -35s %(funcName) -30s: %(message)s'
+            'format': u'%(levelname) -10s %(asctime)s %(name) -35s %(funcName) -30s: %(message)s'
         },
     },
     'handlers': {

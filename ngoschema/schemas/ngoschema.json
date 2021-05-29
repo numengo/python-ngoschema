@@ -264,12 +264,6 @@
       "$defs": {
         "Relationship": {
           "type": "object",
-          "notSerialized": [
-            "foreignClass"
-          ],
-          "readOnly": [
-            "foreignClass"
-          ],
           "dependencies": {
             "foreignClass": [
               "foreignSchema"
@@ -279,6 +273,12 @@
             ]
           },
           "additionalProperties": false,
+          "readOnly": [
+            "foreignClass"
+          ],
+          "notSerialized": [
+            "foreignClass"
+          ],
           "extends": [
             "#/$defs/metadata/$defs/Name"
           ],
@@ -340,11 +340,11 @@
       "$defs": {
         "Instance": {
           "type": "object",
+          "additionalProperties": false,
+          "abstract": true,
           "notSerialized": [
             "canonicalName"
           ],
-          "abstract": true,
-          "additionalProperties": false,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Name",
@@ -386,18 +386,18 @@
         },
         "Entity": {
           "type": "object",
+          "dependencies": {},
+          "additionalProperties": false,
+          "readOnly": [
+            "identityKeys"
+          ],
+          "abstract": true,
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
             "$schema",
             "$id"
           ],
-          "abstract": true,
-          "readOnly": [
-            "identityKeys"
-          ],
-          "dependencies": {},
-          "additionalProperties": false,
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
@@ -493,6 +493,9 @@
           "properties": {
             "encoder": {
               "$ref": "#/$defs/serializers/$defs/JsonSerializer"
+            },
+            "file_info": {
+              "$ref": "#/$defs/files/$defs/FileInfo"
             },
             "identifier": {
               "type": "string"
@@ -725,14 +728,14 @@
         },
         "Query": {
           "type": "object",
+          "readOnly": [
+            "result"
+          ],
           "notValidated": [
             "iterable"
           ],
           "notSerialized": [
             "iterable"
-          ],
-          "readOnly": [
-            "result"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

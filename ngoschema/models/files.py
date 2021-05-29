@@ -70,6 +70,7 @@ class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
 
 class FileInfo(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/FileInfo'
+    _lazyLoading = True
 
     def __init__(self, file=None, filepath=None, **opts):
         file = file or File(filepath)
@@ -86,7 +87,7 @@ class FileInfo(with_metaclass(SchemaMetaclass)):
 
     def get_mimetype(self):
         import magic
-        return magic.Magic(mime=True).from_file(str(self.filepath))
+        return magic.Magic(mime=True).from_file(str(self.file.filepath))
 
     @depend_on_prop('contentSize')
     def get_contentSizeHuman(self):
@@ -100,8 +101,9 @@ class FileInfo(with_metaclass(SchemaMetaclass)):
     def get_sha1(self):
         import hashlib
         sha = hashlib.sha1()
-        if self.filepath:
-            with open(str(self.filepath), 'rb') as source:
+        fp = self.file.filepath if self.file else None
+        if fp:
+            with open(str(fp), 'rb') as source:
                 block = source.read(2 ** 16)
                 while len(block) != 0:
                     sha.update(block)
@@ -164,6 +166,9 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
     def get_identifier(self):
         self._identifier = self.filepath or self.uri
         return self._identifier
+
+    def get_file_info(self):
+        return FileInfo(file=self, context=self._context)
 
     @depend_on_prop('content')
     def get_doc_id(self):
