@@ -222,6 +222,11 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # required with default
         return CollectionProtocol._deserialize(self, value, **opts)
 
+    @staticmethod
+    def _has_default(self, value=None, **opts):
+        value = self._default if value is None else value
+        return bool(value) or self._schema.get('default') is not None
+
     @classmethod
     def default(cls, value=None, evaluate=False, **opts):
         dft = Object.default(cls, value, evaluate=evaluate, **opts)
@@ -407,6 +412,18 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._aliasesNegated else x
+        if '.' in key:
+            parts = split_cname(key) # case: canonical name such as a[0][1].b[0].c
+            cur = self
+            try:
+                for p in parts[:-1]:
+                    cur = cur[p] if not hasattr(cur, p) else getattr(cur, p)
+                    if cur is None:
+                        return
+                cur[parts[-1]] = value
+                return
+            except Exception as er:
+                raise KeyError(key)
         raw, trans = self._properties_raw_trans(key)
         desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
@@ -560,10 +577,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             dependencies['identityKeys'] = set(primary_keys)
 
         extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
-        not_serialized = set().union(schema.get('notSerialized', []), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
-        not_validated = set().union(schema.get('notValidated', []), *[b._notValidated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
-        required = set().union(schema.get('required', []), *[b._required for b in pbases], *[s.get('required', []) for s in not_ready_yet_sch])
-        read_only = set().union(schema.get('readOnly', []), *[b._readOnly for b in pbases], *[s.get('readOnly', []) for s in not_ready_yet_sch])
+        not_serialized = set().union(schema.get('notSerialized', attrs.get('_notSerialized', [])), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
+        not_validated = set().union(schema.get('notValidated', attrs.get('_notValidated', [])), *[b._notValidated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
+        required = set().union(schema.get('required', attrs.get('_required', [])), *[b._required for b in pbases], *[s.get('required', []) for s in not_ready_yet_sch])
+        read_only = set().union(schema.get('readOnly', attrs.get('_readOnly', [])), *[b._readOnly for b in pbases], *[s.get('readOnly', []) for s in not_ready_yet_sch])
         has_default = set().union(*[b._propertiesWithDefault for b in pbases])
 
         # create type for properties
@@ -585,11 +602,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         relationships = ChainMap(local_relationships, *[b._relationships for b in pbases])
         for k, v in schema.get('properties', {}).items():
             if Object.check(v) and 'foreignKey' in v:
-                rn = k + '_ptr'
                 rs = v['foreignKey']
-                ra = {'_foreignKey': k}
-                local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
-                local_relationships_descriptor[rn] = RelationshipDescriptor(k, rl)
+                bps = v.get('backPopulates', {})
+                for kbp, bp in bps.items():
+                    local_relationships[kbp] = rl = RelationshipBuilder.build(f'{id}/relationships/{kbp}', rs, attrs=ra)
+                    #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
+                    local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...
@@ -738,8 +756,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_propertiesTranslation'] = dict(ChainMap(properties_translation, *[b._propertiesTranslation for b in pbases]))
         attrs['_aliases'] = dict(ChainMap(aliases, *[b._aliases for b in pbases]))
         attrs['_aliasesNegated'] = dict(ChainMap(negated_aliases, *[b._aliasesNegated for b in pbases]))
-        attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases'])\
-            .union(attrs['_aliasesNegated']).union(attrs['_propertiesTranslation']).difference(read_only)
+        attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases']).union(attrs['_aliases'].values())\
+            .union(attrs['_aliasesNegated']).union(attrs['_aliasesNegated'].values()).union(attrs['_propertiesTranslation']).difference(read_only)
         attrs['_propertiesWithDefault'] = has_default
         attrs['_logger'] = logger
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))

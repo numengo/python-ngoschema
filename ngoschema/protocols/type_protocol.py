@@ -46,21 +46,24 @@ class TypeProtocol(Serializer):
         if ref:
             extra_bases += (TypeBuilder.load(scope(ref, id)), )
         # add enum type if detected
+        enum = []
         if 'enum' in schema:
             from ..types import Enum
-            attrs['_enum'] = schema['enum']
+            attrs['_enum'] = enum = schema['enum']
             extra_bases += (Enum, )
         if 'foreignKey' in schema:
             from ..types.foreign_key import ForeignKey
             fs = schema.get('foreignKey', {}).get('foreignSchema')
             attrs['_foreignSchema'] = fs = scope(fs, id)
             try:
-                attrs['_foreignClass'] = fc = TypeBuilder.load(fs)
+                fc = TypeBuilder.load(fs)
+                attrs['_foreignClass'] = fc
                 #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
-                attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc, '_primaryKeys', ['id']))
+                attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc._schema, 'primaryKeys', ['id']))
                 attrs['_foreignKeysType'] = [fc._items_type(fc, k) for k in fks]
             except Exception as er:
-                pass
+                # certainly a proxy type inf fc item fk type evaluation
+                assert hasattr(fc, '_proxyUri')
             extra_bases += (ForeignKey, )
         if 'type' in schema:
             extra_bases += (TypeBuilder.get_type(schema['type']), )
@@ -73,6 +76,8 @@ class TypeProtocol(Serializer):
             attrs['_rawLiterals'] = schema['rawLiterals']
         if 'default' in schema:
             attrs['_default'] = schema['default']
+        elif enum:
+            attrs['_default'] = enum[0]
         attrs['_id'] = id
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))

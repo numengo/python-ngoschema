@@ -92,7 +92,7 @@ class XmlSerializer(with_metaclass(SchemaMetaclass, Serializer, XmlDeserializer)
         _prefix = str(attr_prefix)
 
         def default_postprocessor(path, key, value):
-            return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, Array.convert(value))
+            return (key, value) if key.startswith(_prefix) or key.endswith('schema') else (key, Array.deserialize(value))
 
         self._postprocessor = opts.get('postprocessor', default_postprocessor)
 

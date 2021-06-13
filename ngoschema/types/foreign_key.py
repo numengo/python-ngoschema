@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import OrderedDict, defaultdict, Mapping
+from collections import OrderedDict, defaultdict, Mapping, Sequence
 import re
 
 from .. import settings
@@ -88,7 +88,7 @@ class ForeignKey(Ref):
             else:
                 self._foreignClass = fc
                 self._foreignKeys = fk = self._schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
-                self._foreignKeysType = [fc._items_type(fc, k) for k in fk]
+                self._foreignKeysType = tuple(fc._items_type(fc, k) for k in fk)
         return fc
 
     def get_foreignClass(self):
@@ -102,23 +102,35 @@ class ForeignKey(Ref):
 
     @staticmethod
     def _convert(self, value, foreign_class=None, **opts):
+        if value is None:
+            return None
         fc = foreign_class or ForeignKey.get_foreignClass(self)
         if fc and isinstance(value, fc):
             value = [getattr(value, k) for k in self._foreignKeys]
-        value = Array.convert(value, split_string=True, **opts)
+        elif Integer.check(value):
+            if value < 0:
+                return None
+            value = [value]
+        else:
+            value = Array.deserialize(value, split_string=True, **opts)
         opts['raw_literals'] = False
-        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
+        fkt = self._foreignKeysType
+        return fkt[0]._convert(fkt[0], value[0], **opts) if len(fkt)==1 else tuple(t._convert(t, v, **opts) for t, v in zip(fkt, value))
+        #return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
 
     @staticmethod
     @assert_arg(1, Array, strDelimiter=',')
     def _check(self, value, **opts):
-        if all(t._check(t, v, **opts) for t, v in zip(self._foreignKeysType, Array.convert(value, **opts))):
+        if all(t._check(t, v, **opts) for t, v in zip(self._foreignKeysType, Array.deserialize(value, **opts))):
             return value
         raise TypeError('%s is not of type foreignKey.' % value)
 
     @staticmethod
     def _serialize(self, value, **opts):
-        return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value)) if value is not None else None
+        fkt = self._foreignKeysType
+        return fkt[0]._convert(fkt[0], value, **opts) if len(fkt)==1 else tuple(t._convert(t, v, **opts)\
+                                                                                  for t, v in zip(fkt, value))
+        #return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value)) if value is not None else None
 
     @staticmethod
     def _evaluate(self, value, validate=True, resolve=False, context=None, **opts):

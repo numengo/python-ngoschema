@@ -102,6 +102,10 @@ class Enum(Primitive):
         from .numerics import Integer
         from .strings import String
         enum = self._enum
+        if String.check(value):
+            s = String.convert(value, **opts)
+            if s in enum:
+                return s
         if Integer.check(value, convert=True):
             i = Integer.convert(value)
             if i in enum:
@@ -109,10 +113,7 @@ class Enum(Primitive):
             if i > len(enum):
                 raise ConversionError('Index %i exceeds enum size of %r' % (i, enum))
             return enum[i]
-        if String.check(value):
-            s = String.convert(value, **opts)
-            if s in enum:
-                return s
+
         if not s:
             return self._enum[0]
         raise ConversionError('Impossible to convert %s to enum %r' % (value, enum))

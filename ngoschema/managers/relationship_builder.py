@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import logging
 
-from ..utils import GenericClassRegistry
+from ..utils import GenericClassRegistry, is_mapping
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from ..managers.type_builder import TypeBuilder, scope
 from ..resolvers.uri_resolver import resolve_uri
@@ -51,19 +51,32 @@ class RelationshipBuilder(GenericClassRegistry):
         attrs = dict(attrs or {})
         attrs['name'] = clsname
         attrs['_id'] = id
-        fk = attrs.get('_foreignKey') or schema.get('foreignKey')
         fs = schema.get('foreignSchema')
-        bp = schema.get('backPopulates')
         attrs['_foreignSchema'] = fs = scope(fs, id)
         fc = TypeBuilder.load(fs)
+        is_fc_proxy = hasattr(fc, '_proxyUri')
         attrs['_foreignClass'] = fc
+        attrs['_cardinality'] = attrs.get('_cardinality') or schema.get('cardinality', 'OneToOne')
+        fks = attrs.get('_foreignKeys') or schema.get('foreignKeys', [])
+        if not is_fc_proxy:
+            fks = fks or fc._primaryKeys # just add
+        attrs['_foreignKeys'] = fks
+        attrs['_one2many'] = attrs.get('_one2many') or 'OneTo' not in attrs['_cardinality']
+        attrs['_ordering'] = attrs.get('_ordering') or schema.get('ordering', [])
+        attrs['_reverse'] = attrs.get('_reverse') or schema.get('reverse', False)
         if not any([issubclass(b, Relationship) for b in bases]):
             bases = (Relationship, ) + bases
-        cls = ObjectProtocol.build(id, schema, bases, attrs)
-        if bp:
-            bp_id = fs + f'/relationships/{bp}'
-            bp_rl = {'foreignSchema': id.split('/relationships')[0]}
-            fc._relationships[bp] = RelationshipBuilder.build(bp_id, bp_rl)
+        # schema is left empty and class is built using attributes
+        cls = ObjectProtocol.build(id, {}, bases, attrs)
+        bps = schema.get('backPopulates')
+        if bps and is_mapping(bps):
+            for n, bp  in bps.items():
+                bp_fs = scope(bp['foreignSchema'], id)
+                bp_fc = TypeBuilder.load(bp_fs)
+                bp_id = fs + f'/relationships/{bp}'
+                bp_rl = {'foreignSchema': id.split('/relationships')[0]}
+                if not hasattr(bp_fc, '_proxyUri'):
+                    bp_fc._localRelationships[bp] = RelationshipBuilder.build(bp_id, bp_rl)
         RelationshipBuilder._registry[id] = cls
         return cls
 

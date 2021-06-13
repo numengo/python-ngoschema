@@ -29,7 +29,7 @@ class Deserializer(Validator):
             else:
                 if key >= len(vk):
                     return False
-            value = value[key]
+            value = vk[key]
         if no_defaults:
             if value is None:
                 return False

@@ -2,12 +2,14 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import logging
 from ..exceptions import ConversionError
 from ..utils import shorten
 from .checker import Checker
 
 
 class Converter(Checker):
+    _logger = logging.getLogger(__name__)
     _checker = Checker
 
     def __init__(self, checker=None, **opts):
@@ -24,7 +26,7 @@ class Converter(Checker):
         try:
             return py_type(value)
         except Exception as er:
-            self._logger.error(er, exc_info=True)
+            #self._logger.error(er, exc_info=True)
             raise ConversionError("Impossible to convert %r to %s" % (shorten(value, str_fun=repr), self._pyType))
 
     def __call__(self, value, check=True, **opts):

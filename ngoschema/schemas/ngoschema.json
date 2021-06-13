@@ -8,10 +8,10 @@
       "$defs": {
         "NsManagerContext": {
           "type": "object",
-          "notValidated": [
+          "notSerialized": [
             "_nsMgr"
           ],
-          "notSerialized": [
+          "notValidated": [
             "_nsMgr"
           ],
           "properties": {
@@ -20,10 +20,10 @@
         },
         "ObjectProtocolContext": {
           "type": "object",
-          "notValidated": [
+          "notSerialized": [
             "_parent"
           ],
-          "notSerialized": [
+          "notValidated": [
             "_parent"
           ],
           "extends": [
@@ -35,10 +35,10 @@
         },
         "InstanceContext": {
           "type": "object",
-          "notValidated": [
+          "notSerialized": [
             "_parentInstance"
           ],
-          "notSerialized": [
+          "notValidated": [
             "_parentInstance"
           ],
           "extends": [
@@ -265,18 +265,18 @@
         "Relationship": {
           "type": "object",
           "dependencies": {
-            "foreignClass": [
-              "foreignSchema"
-            ],
             "foreignKeys": [
               "foreignClass"
+            ],
+            "foreignClass": [
+              "foreignSchema"
             ]
           },
-          "additionalProperties": false,
-          "readOnly": [
+          "notSerialized": [
             "foreignClass"
           ],
-          "notSerialized": [
+          "additionalProperties": false,
+          "readOnly": [
             "foreignClass"
           ],
           "extends": [
@@ -303,7 +303,10 @@
               ]
             },
             "ordering": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "reverse": {
               "type": "boolean"
@@ -340,11 +343,11 @@
       "$defs": {
         "Instance": {
           "type": "object",
-          "additionalProperties": false,
-          "abstract": true,
           "notSerialized": [
             "canonicalName"
           ],
+          "additionalProperties": false,
+          "abstract": true,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Name",
@@ -387,16 +390,16 @@
         "Entity": {
           "type": "object",
           "dependencies": {},
-          "additionalProperties": false,
-          "readOnly": [
-            "identityKeys"
-          ],
-          "abstract": true,
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
             "$schema",
             "$id"
+          ],
+          "additionalProperties": false,
+          "abstract": true,
+          "readOnly": [
+            "identityKeys"
           ],
           "extends": [
             "#/$defs/instances/$defs/Instance",
@@ -483,10 +486,10 @@
         },
         "Document": {
           "type": "object",
-          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
+          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -728,14 +731,14 @@
         },
         "Query": {
           "type": "object",
-          "readOnly": [
-            "result"
+          "notSerialized": [
+            "iterable"
           ],
           "notValidated": [
             "iterable"
           ],
-          "notSerialized": [
-            "iterable"
+          "readOnly": [
+            "result"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

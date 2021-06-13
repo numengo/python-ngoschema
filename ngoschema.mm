@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -1752,32 +1752,36 @@
 </node>
 </node>
 </node>
-<node TEXT="cardinality" FOLDED="true" ID="ID_496578373" CREATED="1598171795000" MODIFIED="1598171795000">
+<node TEXT="cardinality" ID="ID_496578373" CREATED="1598171795000" MODIFIED="1598171795000">
 <attribute NAME="type" VALUE="string"/>
-<node TEXT="enum" FOLDED="true" ID="ID_1325312015" CREATED="1598171795000" MODIFIED="1598171795000">
+<node TEXT="enum" ID="ID_1325312015" CREATED="1598171795000" MODIFIED="1598171795000">
 <icon BUILTIN="very_positive"/>
 <node TEXT="one2one" ID="ID_1882036887" CREATED="1598171795000" MODIFIED="1598171795000"/>
 <node TEXT="one2many" ID="ID_1529617061" CREATED="1598171795000" MODIFIED="1598171795000"/>
 </node>
 </node>
-<node TEXT="ordering" ID="ID_316191220" CREATED="1598171795000" MODIFIED="1598171795000">
-<icon BUILTIN="edit"/>
-<attribute NAME="type" VALUE="string"/>
+<node TEXT="ordering" ID="ID_316191220" CREATED="1598171795000" MODIFIED="1622567841633">
+<icon BUILTIN="very_positive"/>
+<node TEXT="items" FOLDED="true" ID="ID_605049214" CREATED="1621587373578" MODIFIED="1621587375662">
+<node TEXT="type" ID="ID_1787095509" CREATED="1621587376024" MODIFIED="1621587379123">
+<node TEXT="string" ID="ID_1027842695" CREATED="1621587380647" MODIFIED="1621587383483"/>
 </node>
-<node TEXT="reverse" ID="ID_745617599" CREATED="1598171795000" MODIFIED="1598171795000">
+</node>
+</node>
+<node TEXT="reverse" ID="ID_745617599" CREATED="1598171795000" MODIFIED="1622567836637">
 <icon BUILTIN="checked"/>
 <attribute NAME="type" VALUE="boolean"/>
 <attribute NAME="default" VALUE="False"/>
 </node>
 </node>
 </node>
-<node TEXT="ForeignKey" ID="ID_1393403904" CREATED="1598171795000" MODIFIED="1598171795000">
+<node TEXT="ForeignKey" ID="ID_1393403904" CREATED="1598171795000" MODIFIED="1622567778378">
 <icon BUILTIN="list"/>
 <attribute NAME="title" VALUE="Foreign Key"/>
 <attribute NAME="$comment" VALUE="to define a relationship to another instance"/>
 <attribute NAME="type" VALUE="object"/>
 <attribute NAME="additionalProperties" VALUE="False"/>
-<node TEXT="extends" ID="ID_1671618567" CREATED="1598171795000" MODIFIED="1598171795000">
+<node TEXT="extends" ID="ID_1671618567" CREATED="1598171795000" MODIFIED="1622567778378">
 <icon BUILTIN="very_positive"/>
 <node TEXT="Relationship" ID="ID_1768315163" CREATED="1598171795000" MODIFIED="1598267654543"/>
 </node>
@@ -1790,7 +1794,7 @@
 </node>
 <node TEXT="onDelete" FOLDED="true" ID="ID_279336139" CREATED="1598171795000" MODIFIED="1598171795000">
 <attribute NAME="type" VALUE="string"/>
-<node TEXT="enum" FOLDED="true" ID="ID_180016940" CREATED="1598171795000" MODIFIED="1598171795000">
+<node TEXT="enum" ID="ID_180016940" CREATED="1598171795000" MODIFIED="1598171795000">
 <icon BUILTIN="very_positive"/>
 <node TEXT="CASCADE" ID="ID_737723369" CREATED="1598171795000" MODIFIED="1598171795000"/>
 <node TEXT="PROTECT" ID="ID_278128141" CREATED="1598171795000" MODIFIED="1598171795000"/>

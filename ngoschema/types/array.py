@@ -39,9 +39,12 @@ class ArrayDeserializer(CollectionDeserializer):
     @staticmethod
     def _deserialize(self, value, **opts):
         value = CollectionDeserializer._deserialize(self, value, **opts)
-        split_string = opts.get('split_string', self._splitString)
+        #split_string = self._splitString if split_string is None else split_string
+        #str_del = self._strDelimiter if str_del is None else str_del
         if String.check(value):
-            value = [s.strip() for s in value.split(self._strDelimiter)] if split_string else [value]
+            split_string = opts.get('split_string', self._splitString)
+            str_del = opts.get('strDelimiter', self._strDelimiter)
+            value = [s.strip() for s in value.split(str_del)] if split_string else [value]
         else:
             value = list(value) if isinstance(value, (Sequence, deque)) else [value]
         many = opts.get('many', self._many)
