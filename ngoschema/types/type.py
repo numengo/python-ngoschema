@@ -19,12 +19,12 @@ class Type(TypeProtocol):
 
     def __init__(self, **opts):
         TypeProtocol.__init__(self, **opts)
-        from ..managers import TypeBuilder
+        from ..managers import type_builder
         schema = dict(self._schema)
         if not self._pyType:
             ty = schema.get('type')
             if 'type' in schema:
-                self._pyType = TypeBuilder.get_type(ty)._pyType
+                self._pyType = type_builder.get_type(ty)._pyType
 
     def __call__(self, value, deserialize=True, serialize=False, **opts):
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)

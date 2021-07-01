@@ -34,17 +34,17 @@ class TypeProtocol(Serializer):
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
-        from ..managers.type_builder import TypeBuilder, DefaultValidator
+        from ..managers.type_builder import type_builder, DefaultValidator
         from ..managers.namespace_manager import default_ns_manager
         from ..types import Type
         attrs = attrs or {}
         ref = schema.get('$ref')
         cname = default_ns_manager.get_id_cname(ref or id)
         clsname = cname.split('.')[-1]
-        extra_bases = tuple(TypeBuilder.load(scope(e, id)) for e in schema.get('extends', []))
+        extra_bases = tuple(type_builder.load(scope(e, id)) for e in schema.get('extends', []))
         # extract type and ref from schema and add the corresponding python types in bases
         if ref:
-            extra_bases += (TypeBuilder.load(scope(ref, id)), )
+            extra_bases += (type_builder.load(scope(ref, id)), )
         # add enum type if detected
         enum = []
         if 'enum' in schema:
@@ -56,7 +56,7 @@ class TypeProtocol(Serializer):
             fs = schema.get('foreignKey', {}).get('foreignSchema')
             attrs['_foreignSchema'] = fs = scope(fs, id)
             try:
-                fc = TypeBuilder.load(fs)
+                fc = type_builder.load(fs)
                 attrs['_foreignClass'] = fc
                 #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
                 attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc._schema, 'primaryKeys', ['id']))
@@ -67,7 +67,7 @@ class TypeProtocol(Serializer):
                 assert hasattr(fc, '_proxyUri')
             extra_bases += (ForeignKey, )
         if 'type' in schema:
-            extra_bases += (TypeBuilder.get_type(schema['type']), )
+            extra_bases += (type_builder.get_type(schema['type']), )
         # filter bases to remove duplicates
         extra_bases = tuple(b for b in extra_bases if not issubclass(b, bases))
         if not bases and not extra_bases:
@@ -148,8 +148,8 @@ class TypeProtocol(Serializer):
     @classmethod
     def extend_type(cls, id, *bases, **schema):
         import inflection
-        from ..managers.type_builder import TypeBuilder
-        return TypeBuilder.register(inflection.underscore(id))(TypeProtocol.build(id, schema, bases=(cls, )+bases))
+        from ..managers.type_builder import type_builder
+        return type_builder.register(inflection.underscore(id))(TypeProtocol.build(id, schema, bases=(cls, )+bases))
 
 
 class SchemaMetaclass(type):
@@ -165,7 +165,7 @@ class SchemaMetaclass(type):
     """
 
     def __new__(cls, clsname, bases, attrs):
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         schema = attrs.get('_schema', {})
         id = attrs.get('_id')
         if not schema and id:
@@ -175,10 +175,10 @@ class SchemaMetaclass(type):
         schema.setdefault('type', 'object')
         id = id or clsname
         # remove previous entry in registry
-        if id in TypeBuilder._registry:
-            del TypeBuilder._registry[id]
+        if id in type_builder._registry:
+            del type_builder._registry[id]
         attrs['_clsname'] = clsname
-        return TypeBuilder.build(id, schema, bases, attrs=attrs)
+        return type_builder.build(id, schema, bases, attrs=attrs)
 
     def __subclasscheck__(cls, subclass):
         """Just modify the behavior for classes that aren't genuine subclasses."""

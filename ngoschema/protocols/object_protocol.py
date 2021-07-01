@@ -155,12 +155,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _aliasesNegated = {}
 
     def __new__(cls, *args, **kwargs):
-        from ..managers import TypeBuilder
+        from ..managers import type_builder
         data = args[0] if args else kwargs
         if isinstance(data, Mapping) and data.get('$schema'):
             s_id = Id.convert(scope(data.pop('$schema'), cls._id), **kwargs)
             if s_id != cls._id:
-                cls = TypeBuilder.load(s_id)
+                cls = type_builder.load(s_id)
                 return cls(*args, **kwargs)
         return super(ObjectProtocol, cls).__new__(cls)
 
@@ -179,12 +179,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def _convert(self, value, **opts):
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         #value = self._collType(value)
         if value.get('$schema'):
             s_id = Id.convert(scope(value.pop('$schema'), self._id), **opts)
             if s_id != self._id:
-                self = TypeBuilder.load(s_id)
+                self = type_builder.load(s_id)
         return CollectionProtocol._convert(self, value, **opts)
 
     @staticmethod
@@ -204,7 +204,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def _deserialize(self, value, **opts):
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         if value is None:
             return value
         value = dict(value)
@@ -212,7 +212,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if value.get('$schema'):
             s_id = Id.convert(scope(value.pop('$schema'), self._id), **opts)
             if s_id != self._id:
-                self = TypeBuilder.load(s_id)
+                self = type_builder.load(s_id)
         # handle aliases/property translations
         for k in set(value).difference(self._properties).intersection(self._propertiesTranslation):
             # deals with conflicting properties with identical translated names
@@ -512,8 +512,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
-        from ..managers.type_builder import TypeBuilder, scope
-        from ..managers.relationship_builder import RelationshipDescriptor, RelationshipBuilder
+        from ..managers.type_builder import type_builder, scope
+        from ..managers.relationship_builder import RelationshipDescriptor, RelationshipBuilder, relationship_builder
         from ..protocols import TypeProxy
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
@@ -541,14 +541,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         abstract = schema.get('abstract', False)
 
-        bases_extended = [TypeBuilder.load(scope(e, id)) for e in schema.get('extends', [])]
+        bases_extended = [type_builder.load(scope(e, id)) for e in schema.get('extends', [])]
         bases_extended = [e for e in bases_extended if not any(issubclass(b, e) for b in bases)]
         pbases = [b for b in bases if issubclass(b, ObjectProtocol) and not any(issubclass(e, b) for e in bases_extended)]
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
 
         not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
-        not_ready_yet_sch = tuple(TypeBuilder.expand(b._proxyUri) for b in not_ready_yet)
+        not_ready_yet_sch = tuple(type_builder.expand(b._proxyUri) for b in not_ready_yet)
         pbases = tuple(b for b in pbases if b not in not_ready_yet)
         if not pbases:
             bases += [ObjectProtocol]
@@ -559,7 +559,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         properties_translation = {}
 
         # building inner definitions
-        defs = {dn: TypeBuilder.load(f'{id}/$defs/{dn}') for dn, defn in schema.get('$defs', {}).items()}
+        defs = {dn: type_builder.load(f'{id}/$defs/{dn}') for dn, defn in schema.get('$defs', {}).items()}
 
         # create a dependency dictionary from all bases dependencies
         dependencies = defaultdict(set)
@@ -588,19 +588,19 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         has_default = set().union(*[b._propertiesWithDefault for b in pbases])
 
         # create type for properties
-        local_properties = OrderedDict([(k, TypeBuilder.build(f'{id}/properties/{k}', v))
+        local_properties = OrderedDict([(k, type_builder.build(f'{id}/properties/{k}', v))
                                   for k, v in schema.get('properties', {}).items()])
         redefined_properties = OrderedDict()
         for i, s in zip(not_ready_yet, not_ready_yet_sch):
             for k, v in s.get('properties', {}).items():
-                redefined_properties[k] = TypeBuilder.build(f'{id}/properties/{k}', v)
+                redefined_properties[k] = type_builder.build(f'{id}/properties/{k}', v)
         all_properties = ChainMap(local_properties, redefined_properties, *[b._propertiesChained for b in pbases])
         pattern_properties = set([(re.compile(k),
-                                   TypeBuilder.build(f'{id}/patternProperties/{k}', v))
+                                   type_builder.build(f'{id}/patternProperties/{k}', v))
                                    for k, v in schema.get('patternProperties', {}).items()])
-        additional_properties = TypeBuilder.build(f'{id}/additionalProperties', schema.get('additionalProperties', True))
+        additional_properties = type_builder.build(f'{id}/additionalProperties', schema.get('additionalProperties', True))
 
-        local_relationships = OrderedDict([(k, RelationshipBuilder.build(f'{id}/relationships/{k}', v))
+        local_relationships = OrderedDict([(k, relationship_builder.build(f'{id}/relationships/{k}', v))
                                   for k, v in schema.get('relationships', {}).items()])
         local_relationships_descriptor = OrderedDict()
         relationships = ChainMap(local_relationships, *[b._relationships for b in pbases])
@@ -614,7 +614,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     # add a pointer
                     bps[f'{k}_ptr'] = {'foreignSchema': rs['foreignSchema'], 'foreignKeys': [k]}
                 for kbp, bp in bps.items():
-                    local_relationships[kbp] = rl = RelationshipBuilder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
+                    local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
                     #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
                     local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
 
@@ -705,7 +705,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         # add redefined properties to local properties and to schemas
         if extra_schema_properties:
-            local_properties.update({k: TypeBuilder.build(f'{id}/properties/{k}', sch)
+            local_properties.update({k: type_builder.build(f'{id}/properties/{k}', sch)
                                      for k, sch in extra_schema_properties.items()})
             schema.setdefault('properties', {})
             schema['properties'].update(extra_schema_properties)

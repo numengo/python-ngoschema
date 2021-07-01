@@ -104,13 +104,13 @@ class Array(Collection, ArraySerializer):
 
     def __init__(self, items=None, **opts):
         # split the schema to isolate items schema and object schema
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         cls_name = f'{self.__class__.__name__}_{id(self)}'
         if isinstance(items, Mapping):
-            self._items = TypeBuilder.build(f'{cls_name}/items', items)
+            self._items = type_builder.build(f'{cls_name}/items', items)
         elif isinstance(items, Sequence):
             self._itemsIsList = True
-            self._items = [TypeBuilder.build(f'{cls_name}/items/{i}', item)
+            self._items = [type_builder.build(f'{cls_name}/items/{i}', item)
                                for i, item in enumerate(items)]
         else:
             self._items = items or _True()

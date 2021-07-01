@@ -6,7 +6,7 @@ import logging
 
 from ..utils import GenericClassRegistry, is_mapping
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
-from ..managers.type_builder import TypeBuilder, scope
+from ..managers.type_builder import type_builder, scope
 from ..resolvers.uri_resolver import resolve_uri
 
 logger = logging.getLogger(__name__)
@@ -33,27 +33,27 @@ class RelationshipDescriptor:
 class RelationshipBuilder(GenericClassRegistry):
     _registry = {}
 
-    @staticmethod
-    def register(id):
-        return GenericClassRegistry.register(RelationshipBuilder, id)
+    #@staticmethod
+    #def register(id):
+    #    return GenericClassRegistry.register(RelationshipBuilder, id)
 
-    @staticmethod
-    def get(id):
-        return GenericClassRegistry.get(RelationshipBuilder, id)
+    #@staticmethod
+    #def get(id):
+    #    return GenericClassRegistry.get(RelationshipBuilder, id)
 
-    @staticmethod
-    def contains(id):
-        return GenericClassRegistry.contains(RelationshipBuilder, id)
+    #@staticmethod
+    #def contains(id):
+    #    return GenericClassRegistry.contains(RelationshipBuilder, id)
 
-    @staticmethod
-    def build(id, schema=None, bases=(), attrs=None):
+    #@staticmethod
+    def build(self, id, schema=None, bases=(), attrs=None):
         from ..relationships import Relationship, ForeignKey
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
         cname = default_ns_manager.get_id_cname(id)
         clsname = cname.split('.')[-1]
         attrs = attrs or {}
-        if RelationshipBuilder.contains(id):
-            return RelationshipBuilder.get(id)
+        if self.contains(id):
+            return self.get(id)
         if schema is None:
             schema = resolve_uri(id)
         attrs = dict(attrs or {})
@@ -61,7 +61,7 @@ class RelationshipBuilder(GenericClassRegistry):
         attrs['_id'] = id
         fs = schema.get('foreignSchema')
         attrs['_foreignSchema'] = fs = scope(fs, id)
-        fc = TypeBuilder.load(fs)
+        fc = type_builder.load(fs)
         is_fc_proxy = hasattr(fc, '_proxyUri')
         attrs['_foreignClass'] = fc
         attrs['_cardinality'] = attrs.get('_cardinality') or schema.get('cardinality', 'OneToOne')
@@ -80,20 +80,20 @@ class RelationshipBuilder(GenericClassRegistry):
         if bps and is_mapping(bps):
             for n, bp  in bps.items():
                 bp_fs = scope(bp['foreignSchema'], id)
-                bp_fc = TypeBuilder.load(bp_fs)
+                bp_fc = type_builder.load(bp_fs)
                 bp_id = fs + f'/relationships/{bp}'
                 bp_rl = {'foreignSchema': id.split('/relationships')[0]}
                 if not hasattr(bp_fc, '_proxyUri'):
-                    bp_fc._localRelationships[bp] = RelationshipBuilder.build(bp_id, bp_rl)
-        RelationshipBuilder._registry[id] = cls
+                    bp_fc._localRelationships[bp] = self.build(bp_id, bp_rl)
+        self._registry[id] = cls
         return cls
 
-    @staticmethod
-    def load(id):
+    #@staticmethod
+    def load(self, id):
         from ..protocols import TypeProxy
-        if id not in RelationshipBuilder._registry:
-            RelationshipBuilder._registry[id] = RelationshipBuilder.build(id)
-        return RelationshipBuilder._registry[id]
+        if id not in self._registry:
+            self._registry[id] = self.build(id)
+        return self._registry[id]
 
 
 relationship_builder = RelationshipBuilder()

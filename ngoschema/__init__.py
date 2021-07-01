@@ -36,6 +36,7 @@ __all__ = [
     'register_module',
     # builder and protocol
     'TypeBuilder',
+    'type_builder',
     'NamespaceManager',
     'with_metaclass',
     'SchemaMetaclass',

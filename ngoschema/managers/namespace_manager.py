@@ -197,8 +197,8 @@ class NamespaceManager(Registry):
         return {NamespaceManager._uri_to_cname(k): k for k in UriResolver._doc_store.keys()}
 
     def load(self, cname):
-        from .type_builder import TypeBuilder
-        return TypeBuilder.load(self.get_cname_id(cname))
+        from .type_builder import type_builder
+        return type_builder.load(self.get_cname_id(cname))
 
     def namespaces(self, contains=None):
         ns = ChainMap(self._registry, self._builder_ns, NamespaceManager.available_namespaces())

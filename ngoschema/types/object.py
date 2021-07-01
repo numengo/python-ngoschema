@@ -9,7 +9,7 @@ from operator import neg
 from ..exceptions import InvalidValue
 from ..decorators import log_exceptions
 from ..utils import ReadOnlyChainMap as ChainMap, shorten
-from ..managers.type_builder import register_type, TypeBuilder, untype_schema
+from ..managers.type_builder import register_type, type_builder, untype_schema
 from ..protocols.serializer import Serializer
 from .constants import _True, _False
 from .type import Type
@@ -130,16 +130,16 @@ class Object(Collection, ObjectSerializer):
         if properties:
             ps = OrderedDict(self._properties)
             properties = untype_schema(properties)
-            ps.update(OrderedDict([(name, TypeBuilder.build(f'{cls_name}/properties/{name}', sch))
+            ps.update(OrderedDict([(name, type_builder.build(f'{cls_name}/properties/{name}', sch))
                                    for name, sch in properties.items()]))
             self._properties = ps
         if patternProperties:
             pps = set(self.patternProperties)
-            pps.update([(re.compile(k), TypeBuilder.build(
+            pps.update([(re.compile(k), type_builder.build(
                 f'{cls_name}/patternProperties/{k}', v)) for k, v in patternProperties.items()])
             self._propertiesPattern = pps
         if additionalProperties is not None:
-            self._propertiesAdditional = TypeBuilder.build(f'{cls_name}/additionalProperties', additionalProperties)
+            self._propertiesAdditional = type_builder.build(f'{cls_name}/additionalProperties', additionalProperties)
         self._propertiesWithDefault = set(k for k, t in self._properties.items() if t.has_default())
         self._required.difference_update(self._propertiesWithDefault)
         self._items_type_cache = {}

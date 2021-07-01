@@ -100,7 +100,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)
         clsname = cname.split('.')[-1]
@@ -111,9 +111,9 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if items:
             if Array.check(items):
                 items_list = True
-                items = [TypeBuilder.build(f'{id}/items/{i}', item) for i, item in enumerate(items)]
+                items = [type_builder.build(f'{id}/items/{i}', item) for i, item in enumerate(items)]
             else:
-                items = TypeBuilder.build(f'{id}/items', items)
+                items = type_builder.build(f'{id}/items', items)
                 lz = lz or getattr(items, '_lazyLoading', None)
         else:
             items = TRUE

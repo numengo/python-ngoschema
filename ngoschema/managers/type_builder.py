@@ -34,11 +34,10 @@ class TypeBuilder(GenericClassRegistry):
     _type_registry = {}
     _on_construction = {}
 
-    @staticmethod
-    def register_type(type):
+    def register_type(self, type):
         """Decorator to register a protocol based class """
         def to_decorate(cls):
-            TypeBuilder._type_registry[type] = cls
+            self._type_registry[type] = cls
             cls._type = type
             cls._schema = dict(cls._schema, type=cls._type)
             #if not cls._schema:
@@ -48,45 +47,29 @@ class TypeBuilder(GenericClassRegistry):
             return cls
         return to_decorate
 
-    #@staticmethod
-    #def register(id):
-    #    return GenericClassRegistry.register(TypeBuilder, id)
-
-    @staticmethod
-    def get(id):
-        return GenericClassRegistry.get(TypeBuilder, id)
-
-    @staticmethod
-    def contains(id):
-        return GenericClassRegistry.contains(TypeBuilder, id)
-
-    @staticmethod
-    def is_type(value, id):
+    def is_type(self, value, id):
         """Reproduce is_type method of jsonschema.Type"""
-        t = TypeBuilder._type_registry.get(id)
+        t = self._type_registry.get(id)
         if not t:
             raise UndefinedTypeCheck(id)
         return t.check(value, items=False, convert=False, validate=False)
 
-    @staticmethod
-    def detect_type(value):
-        for k, t in TypeBuilder._type_registry.items():
+    def detect_type(self, value):
+        for k, t in self._type_registry.items():
             if t.check(value):
                 return k, t
 
-    @staticmethod
-    def get_type(id):
-        return TypeBuilder._type_registry[id]
+    def get_type(self, id):
+        return self._type_registry[id]
 
-    @staticmethod
-    def build(id, schema=None, bases=(), attrs=None):
+    def build(self, id, schema=None, bases=(), attrs=None):
         from .namespace_manager import NamespaceManager
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
         from ..types.constants import _True, _False
 
-        if TypeBuilder.contains(id):
-            return TypeBuilder.get(id)
-        if id in TypeBuilder._on_construction:
+        if self.contains(id):
+            return self.get(id)
+        if id in self._on_construction:
             return TypeProxy.build(id)
             #return TypeProxy.build(id)()
         if schema is None:
@@ -96,11 +79,11 @@ class TypeBuilder(GenericClassRegistry):
         if schema is False:
             return _False()
         attrs = attrs or {}
-        TypeBuilder._on_construction[id] = (schema, bases, attrs)
+        self._on_construction[id] = (schema, bases, attrs)
         if '$ref' in schema:
             schema = schema.copy()
             ref = schema.pop('$ref')
-            cls = TypeBuilder.load(scope(ref, id))
+            cls = self.load(scope(ref, id))
             if schema:
                 cls = cls.extend_type(id, **schema)
         elif 'object' in schema.get('type', ''):
@@ -109,27 +92,24 @@ class TypeBuilder(GenericClassRegistry):
             cls = ArrayProtocol.build(id, schema, bases, attrs)
         else:
             cls = TypeProtocol.build(id, schema, bases, attrs)()
-        TypeBuilder._on_construction.pop(id)
-        TypeBuilder._registry[id] = cls
+        self._on_construction.pop(id)
+        self._registry[id] = cls
         NamespaceManager.register_ns(id)
         return cls
 
-    @staticmethod
-    def load(id):
+    def load(self, id):
         from ..protocols import TypeProxy
-        if id not in TypeBuilder._registry:
-            if id in TypeBuilder._on_construction:
+        if id not in self._registry:
+            if id in self._on_construction:
                 return TypeProxy.build(id)
-            TypeBuilder._registry[id] = TypeBuilder.build(id)
-        return TypeBuilder._registry[id]
+            self._registry[id] = self.build(id)
+        return self._registry[id]
 
-    @staticmethod
-    def check_schema(schema):
+    def check_schema(self, schema):
         from jsonschema.exceptions import SchemaError
         for error in default_meta_validator.iter_errors(schema):
             raise SchemaError.create_from(error)
 
-    @staticmethod
     def schema_mro(id, schema=None):
         schema = schema or resolve_uri(id)
         def _schema_mro(id, sch):
@@ -141,8 +121,7 @@ class TypeBuilder(GenericClassRegistry):
                     yield m
         return OrderedDict(_schema_mro(id, schema))
 
-    @staticmethod
-    def expand(id, schema=None):
+    def expand(self, id, schema=None):
         def scope_refs(id, schema):
             def _scope_refs(coll, key, level):
                 if isinstance(coll, Mapping):
@@ -152,7 +131,7 @@ class TypeBuilder(GenericClassRegistry):
             apply_through_collection(schema, _scope_refs)
 
         schema = copy.deepcopy(schema or resolve_uri(id))
-        mro = TypeBuilder.schema_mro(id, schema)
+        mro = self.schema_mro(id, schema)
         scope_refs(id, schema)
         for i, s in mro.items():
             scope_refs(i, s)
@@ -180,8 +159,8 @@ class TypeBuilder(GenericClassRegistry):
 
 type_builder = TypeBuilder()
 
-register_type = TypeBuilder.register_type
-wrap = TypeBuilder.register
+register_type = type_builder.register_type
+wrap = type_builder.register
 
 
-DefaultValidator = extend(Draft201909Validator, type_checker=TypeBuilder)
+DefaultValidator = extend(Draft201909Validator, type_checker=type_builder)

@@ -11,10 +11,10 @@ class TypeProxy(TypeProtocol):
     @staticmethod
     def build(uri, schema=None):
         from ..managers.namespace_manager import default_ns_manager
-        from ..managers.type_builder import TypeBuilder
+        from ..managers.type_builder import type_builder
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
-        sch, bases, attrs = TypeBuilder._on_construction[uri]
+        sch, bases, attrs = type_builder._on_construction[uri]
         schema = schema or sch
         clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(uri)
         protocol = {'object': ObjectProtocol, 'array': ArrayProtocol}.get(sch['type'], TypeProtocol)
@@ -32,8 +32,8 @@ class TypeProxy(TypeProtocol):
 
     @classmethod
     def proxy_type(cls):
-        from ..managers.type_builder import TypeBuilder
-        return TypeBuilder.get(cls._proxyUri)
+        from ..managers.type_builder import type_builder
+        return type_builder.get(cls._proxyUri)
 
     @classmethod
     def check(cls, value, **opts):

@@ -65,13 +65,13 @@ class ForeignKey(Ref):
 
     def set_foreignSchema(self, foreign_schema):
         from ..protocols.object_protocol import ObjectProtocol
-        from ..managers.type_builder import TypeBuilder, scope
+        from ..managers.type_builder import type_builder, scope
         self._foreignSchema = fs = foreign_schema
         self._foreignClass = ObjectProtocol
         if fs:
             try:
                 fs = scope(fs, self._id)
-                fc = TypeBuilder.load(fs)
+                fc = type_builder.load(fs)
                 self.set_foreignClass(fc)
             except Exception as er:
                 self._logger.error(er, exc_info=True)
