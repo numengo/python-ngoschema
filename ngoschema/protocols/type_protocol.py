@@ -63,6 +63,7 @@ class TypeProtocol(Serializer):
                 attrs['_foreignKeysType'] = [fc._items_type(fc, k) for k in fks]
             except Exception as er:
                 # certainly a proxy type inf fc item fk type evaluation
+                #logger.error(er, exc_info=True)
                 assert hasattr(fc, '_proxyUri')
             extra_bases += (ForeignKey, )
         if 'type' in schema:

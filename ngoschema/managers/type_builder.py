@@ -48,9 +48,17 @@ class TypeBuilder(GenericClassRegistry):
             return cls
         return to_decorate
 
+    #@staticmethod
+    #def register(id):
+    #    return GenericClassRegistry.register(TypeBuilder, id)
+
     @staticmethod
-    def register(id):
-        return GenericClassRegistry.register(TypeBuilder, id)
+    def get(id):
+        return GenericClassRegistry.get(TypeBuilder, id)
+
+    @staticmethod
+    def contains(id):
+        return GenericClassRegistry.contains(TypeBuilder, id)
 
     @staticmethod
     def is_type(value, id):
@@ -169,6 +177,8 @@ class TypeBuilder(GenericClassRegistry):
             schema['patternProperties'] = pattern_properties
         return schema
 
+
+type_builder = TypeBuilder()
 
 register_type = TypeBuilder.register_type
 wrap = TypeBuilder.register

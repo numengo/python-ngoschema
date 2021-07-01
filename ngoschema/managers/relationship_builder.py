@@ -38,6 +38,14 @@ class RelationshipBuilder(GenericClassRegistry):
         return GenericClassRegistry.register(RelationshipBuilder, id)
 
     @staticmethod
+    def get(id):
+        return GenericClassRegistry.get(RelationshipBuilder, id)
+
+    @staticmethod
+    def contains(id):
+        return GenericClassRegistry.contains(RelationshipBuilder, id)
+
+    @staticmethod
     def build(id, schema=None, bases=(), attrs=None):
         from ..relationships import Relationship, ForeignKey
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
@@ -87,3 +95,5 @@ class RelationshipBuilder(GenericClassRegistry):
             RelationshipBuilder._registry[id] = RelationshipBuilder.build(id)
         return RelationshipBuilder._registry[id]
 
+
+relationship_builder = RelationshipBuilder()

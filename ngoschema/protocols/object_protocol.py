@@ -444,19 +444,23 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             del self._dataValidated[key]
 
     @staticmethod
-    def _serialize(self, value, schema=False, excludes=[], **opts):
+    def _serialize(self, value, schema=False, excludes=[], only=[], **opts):
         serializer = self if not isinstance(value, Serializer) else value.__class__
         context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
-        ret = CollectionProtocol._serialize(serializer, value, excludes=excludes, **opts)
+        ret = CollectionProtocol._serialize(serializer, value, excludes=excludes, only=only, **opts)
         ret = self._collType([((attr_prefix if self._items_type(serializer, k).is_primitive() else '') + k, ret[k])
                                 for k in ret.keys()])
         for alias, raw in self._aliases.items():
+            if only and alias not in only:
+                continue
             if alias not in excludes:
                 v = ret.get(raw)
                 if v is not None:
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = v
         for alias, raw in self._aliasesNegated.items():
+            if only and alias not in only:
+                continue
             if alias not in excludes:
                 v = ret.get(raw)
                 if v is not None:
@@ -528,7 +532,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         if schema.get('$schema'):
             # todo remove the following as never used?
-            raise
+            # raise
             ms_uri = schema['$schema']
             metaschema = resolve_uri(ms_uri)
             resolver = UriResolver.create(uri=id, schema=schema)
@@ -603,9 +607,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         for k, v in schema.get('properties', {}).items():
             if Object.check(v) and 'foreignKey' in v:
                 rs = v['foreignKey']
+                ra = {}
+                # treat backpopulates
                 bps = v.get('backPopulates', {})
+                if not bps:
+                    # add a pointer
+                    bps[f'{k}_ptr'] = {'foreignSchema': rs['foreignSchema'], 'foreignKeys': [k]}
                 for kbp, bp in bps.items():
-                    local_relationships[kbp] = rl = RelationshipBuilder.build(f'{id}/relationships/{kbp}', rs, attrs=ra)
+                    local_relationships[kbp] = rl = RelationshipBuilder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
                     #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
                     local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
 

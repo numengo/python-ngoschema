@@ -207,8 +207,10 @@ class UriDict(_KeyModifierMapping):
 
 
 class Registry(Mapping):
+    _parent_registries = []
 
-    def __init__(self):
+    def __init__(self, *parent_registries):
+        self._parent_registries = parent_registries
         self._registry = collections.OrderedDict()
 
     def __repr__(self):
@@ -228,14 +230,19 @@ class Registry(Mapping):
 
     def register(self, key, value):
         self._registry[key] = value
+        for pr in self._parent_registries:
+            Registry.register(pr, key, value)
 
     def unregister(self, key):
         del self._registry[key]
+        for pr in self._parent_registries:
+            Registry.unregister(pr, key)
 
 
 class WeakRegistry(Registry):
 
-    def __init__(self):
+    def __init__(self, *parent_registries):
+        Registry.__init__(self, *parent_registries)
         self._registry = weakref.WeakValueDictionary()
 
     def __getitem__(self, key):
@@ -248,19 +255,22 @@ class GenericClassRegistry(Registry):
 
     def register(self, name=None):
         def f(functor):
-            self._registry[name if name is not None
-                           else functor.__name__] = functor
+            n = name if name is not None else functor.__name__
+            #self._registry[n] = functor
+            #for pr in self._parent_registries:
+            #    pr._registry[n]
+            Registry.register(self, n, functor)
+            #self._registry[name if name is not None
+            #               else functor.__name__] = functor
             return functor
 
         return f
 
-    @classmethod
-    def get(cls, id):
-        return cls._registry.get(id)
+    def get(self, id, default=None):
+        return self._registry.get(id)
 
-    @classmethod
-    def contains(cls, id):
-        return id in cls._registry
+    def contains(self, id):
+        return id in self._registry
 
 
 def gcs(*classes):

@@ -51,6 +51,15 @@ class Session(with_metaclass(SchemaMetaclass)):
         self.repositories.append(repo)
         repo._session = self
 
+    def get_or_create_repo(self, name):
+        for r in self.repositories:
+            if r.__class__.__name__ == name:
+                return r
+        # not found, create binded repository
+        from .repositories import repositories_registry
+        r = repositories_registry.get(name)
+        return r(session=self)
+
     def resolve_cname(self, cname):
         return self._resolve_cname(cname)
 
