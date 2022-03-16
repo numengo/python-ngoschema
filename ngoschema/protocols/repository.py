@@ -19,8 +19,8 @@ class Repository(Saver):
         from ..protocols.array_protocol import ArrayProtocol
         self._saver = saver or self._saver
         self._saver.__init__(self, **opts)
-        session = session or self._session
-        session.bind_repo(self)
+        self._session = session or self._session
+        self._session.bind_repo(self)
         if self._many:
             self._content = []
 

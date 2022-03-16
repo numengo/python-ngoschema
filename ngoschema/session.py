@@ -51,14 +51,30 @@ class Session(with_metaclass(SchemaMetaclass)):
         self.repositories.append(repo)
         repo._session = self
 
-    def get_or_create_repo(self, name):
+    def get_or_create_repo(self, name, repo_registry=None):
+        from .repositories import repositories_registry
+        repo_registry = repo_registry or repositories_registry
         for r in self.repositories:
             if r.__class__.__name__ == name:
                 return r
         # not found, create binded repository
+        r = repo_registry.get(name)
+        if r:
+            return r(session=self)
+        raise ValueError('no repository %s in registry %.' % (name, repo_registry))
+
+    def get_or_create_repo_by_class(self, instance_class, repo_registry=None):
         from .repositories import repositories_registry
-        r = repositories_registry.get(name)
-        return r(session=self)
+        repo_registry = repo_registry or repositories_registry
+        for r in self.repositories:
+            if r.instanceClass is instance_class:
+                return r
+        # not found, create binded repository
+        # look first in repo registry
+        for kr, r in repo_registry.items():
+            if r.instanceClass is instance_class:
+                return r(session=self)  # repo is binded at initialization
+        raise ValueError('no instance_class %s in registry %.' % (instance_class, repo_registry))
 
     def resolve_cname(self, cname):
         return self._resolve_cname(cname)

@@ -37,6 +37,9 @@ class GenericModuleFileLoader(Registry):
                 self.update_function()
         return subfolder
 
+    def subfolder(self, module):
+        return self._registry[module][0]
+
     def preload(self,
                 includes=["*"],
                 excludes=[],

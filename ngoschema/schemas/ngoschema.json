@@ -264,6 +264,13 @@
       "$defs": {
         "Relationship": {
           "type": "object",
+          "additionalProperties": false,
+          "notSerialized": [
+            "foreignClass"
+          ],
+          "readOnly": [
+            "foreignClass"
+          ],
           "dependencies": {
             "foreignKeys": [
               "foreignClass"
@@ -272,13 +279,6 @@
               "foreignSchema"
             ]
           },
-          "notSerialized": [
-            "foreignClass"
-          ],
-          "additionalProperties": false,
-          "readOnly": [
-            "foreignClass"
-          ],
           "extends": [
             "#/$defs/metadata/$defs/Name"
           ],
@@ -309,6 +309,9 @@
               }
             },
             "reverse": {
+              "type": "boolean"
+            },
+            "inheritance": {
               "type": "boolean"
             }
           }
@@ -343,11 +346,11 @@
       "$defs": {
         "Instance": {
           "type": "object",
+          "additionalProperties": false,
+          "abstract": true,
           "notSerialized": [
             "canonicalName"
           ],
-          "additionalProperties": false,
-          "abstract": true,
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Name",
@@ -389,18 +392,18 @@
         },
         "Entity": {
           "type": "object",
-          "dependencies": {},
+          "additionalProperties": false,
+          "abstract": true,
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
             "$schema",
             "$id"
           ],
-          "additionalProperties": false,
-          "abstract": true,
           "readOnly": [
             "identityKeys"
           ],
+          "dependencies": {},
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Id"
@@ -486,10 +489,10 @@
         },
         "Document": {
           "type": "object",
+          "additionalProperties": false,
           "primaryKeys": [
             "identifier"
           ],
-          "additionalProperties": false,
           "extends": [
             "#/$defs/files/$defs/File"
           ],
@@ -589,10 +592,12 @@
         "FileSerializer": {
           "type": "object",
           "extends": [
-            "#/$defs/files/$defs/File",
             "#/$defs/protocols/$defs/Serializer"
           ],
           "properties": {
+            "filepath": {
+              "type": "path"
+            },
             "binary": {
               "type": "boolean"
             },
@@ -734,11 +739,11 @@
           "notSerialized": [
             "iterable"
           ],
-          "notValidated": [
-            "iterable"
-          ],
           "readOnly": [
             "result"
+          ],
+          "notValidated": [
+            "iterable"
           ],
           "extends": [
             "#/$defs/queries/$defs/Filter"

@@ -19,7 +19,7 @@ from wrapt import decorator
 
 from pprint import pformat
 from pyrsistent import pmap
-from python_jsonschema_objects.validators import ValidationError
+from jsonschema.exceptions import ValidationError
 
 from .exceptions import InvalidValue
 

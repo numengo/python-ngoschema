@@ -72,6 +72,7 @@ class RelationshipBuilder(GenericClassRegistry):
         attrs['_one2many'] = attrs.get('_one2many') or 'OneTo' not in attrs['_cardinality']
         attrs['_ordering'] = attrs.get('_ordering') or schema.get('ordering', [])
         attrs['_reverse'] = attrs.get('_reverse') or schema.get('reverse', False)
+        attrs['_inheritance'] = attrs.get('_inheritance') or schema.get('inheritance', False)
         if not any([issubclass(b, Relationship) for b in bases]):
             bases = (Relationship, ) + bases
         # schema is left empty and class is built using attributes

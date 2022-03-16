@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -219,6 +219,7 @@
 <icon BUILTIN="edit"/>
 <attribute NAME="type" VALUE="string"/>
 <attribute NAME="default" VALUE="{%if this.name %}{{this.name|pluralize}}{% endif %}"/>
+<node TEXT="" ID="ID_46114947" CREATED="1627936230810" MODIFIED="1627936230810"/>
 </node>
 </node>
 </node>
@@ -1704,7 +1705,8 @@
 </node>
 </node>
 </node>
-<node TEXT="relationships" FOLDED="true" ID="ID_601941961" CREATED="1598195086874" MODIFIED="1612105431149">
+<node TEXT="relationships" FOLDED="true" ID="ID_601941961" CREATED="1598195086874" MODIFIED="1624821593235">
+<icon BUILTIN="wizard"/>
 <node TEXT="$defs" ID="ID_1911550111" CREATED="1598385385349" MODIFIED="1612105431148">
 <node TEXT="Relationship" ID="ID_210334732" CREATED="1598171795000" MODIFIED="1598171795000">
 <icon BUILTIN="list"/>
@@ -1772,6 +1774,9 @@
 <icon BUILTIN="checked"/>
 <attribute NAME="type" VALUE="boolean"/>
 <attribute NAME="default" VALUE="False"/>
+</node>
+<node TEXT="inheritance" ID="ID_1271059074" CREATED="1626726230243" MODIFIED="1626726243260">
+<icon BUILTIN="checked"/>
 </node>
 </node>
 </node>
@@ -2089,7 +2094,9 @@
 </node>
 <node TEXT="FileSerializer" ID="ID_1917511026" CREATED="1602012892519" MODIFIED="1602012899055">
 <node TEXT="extends" ID="ID_884094818" CREATED="1602012899891" MODIFIED="1602012903542">
-<node TEXT="..files.File" ID="ID_981673020" CREATED="1602051119207" MODIFIED="1607617250923"/>
+<node TEXT="..files.File" ID="ID_981673020" CREATED="1602051119207" MODIFIED="1628266620672">
+<icon BUILTIN="button_cancel"/>
+</node>
 <node TEXT="..protocols.Serializer" ID="ID_1094553599" CREATED="1603198614757" MODIFIED="1605858918055"/>
 </node>
 <node TEXT="properties" ID="ID_431262452" CREATED="1602012951098" MODIFIED="1602012964520">
@@ -2101,9 +2108,8 @@
 <icon BUILTIN="button_cancel"/>
 <node TEXT="..protocols.Serializer" ID="ID_1437945936" CREATED="1601745497896" MODIFIED="1602051028003"/>
 </node>
-<node TEXT="filepath" ID="ID_1842151554" CREATED="1598171796000" MODIFIED="1602051178914">
+<node TEXT="filepath" ID="ID_1842151554" CREATED="1598171796000" MODIFIED="1628266615374">
 <icon BUILTIN="folder"/>
-<icon BUILTIN="button_cancel"/>
 <attribute NAME="type" VALUE="path"/>
 </node>
 <node TEXT="binary" ID="ID_1964959956" CREATED="1598171796000" MODIFIED="1598171796000">
@@ -2263,7 +2269,7 @@
 </node>
 </node>
 </node>
-<node TEXT="queries" FOLDED="true" ID="ID_508233317" CREATED="1598295403642" MODIFIED="1601317929798">
+<node TEXT="queries" ID="ID_508233317" CREATED="1598295403642" MODIFIED="1601317929798">
 <node TEXT="$defs" ID="ID_166916689" CREATED="1598295408953" MODIFIED="1601317929798">
 <node TEXT="Filter" ID="ID_153766179" CREATED="1598295431388" MODIFIED="1598295433060">
 <node TEXT="additionalProperties" ID="ID_1587198824" CREATED="1598295480666" MODIFIED="1598295487285">

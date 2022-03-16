@@ -12,8 +12,6 @@ import itertools
 import operator
 import re
 
-from python_jsonschema_objects.literals import LiteralValue
-
 from . import utils
 from ngoschema.utils import get_descendant
 

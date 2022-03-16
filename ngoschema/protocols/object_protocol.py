@@ -515,6 +515,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         from ..managers.type_builder import type_builder, scope
         from ..managers.relationship_builder import RelationshipDescriptor, RelationshipBuilder, relationship_builder
         from ..protocols import TypeProxy
+        from ..contexts.entity_context import EntityContext
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
         except Exception as er:
@@ -546,6 +547,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         pbases = [b for b in bases if issubclass(b, ObjectProtocol) and not any(issubclass(e, b) for e in bases_extended)]
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
+        # get entity type parents testing EntityContext and excluding the Entity class
+        ebases = [b for b in pbases if issubclass(b, EntityContext) and b.__name__ not in ['Entity', 'EntityNode']]
 
         not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
         not_ready_yet_sch = tuple(type_builder.expand(b._proxyUri) for b in not_ready_yet)
@@ -617,6 +620,19 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
                     #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
                     local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
+        # add foreign keys from inherited entities
+        from inflection import underscore
+        for b in ebases:
+            rname = underscore(b.__name__)
+            assert len(b._primaryKeys) == 1
+            pk = b._primaryKeys[0]
+            pname = f'{rname}_{pk}'
+            ptype = b._properties[pk]._type
+            psch = {'type': ptype, 'foreignKey': {'foreignSchema': b._id, 'foreignKeys': [pk]}}
+            local_properties[pname] = type_builder.build(f'{id}/properties/{pname}', psch)
+            rsch = {'foreignSchema': b._id, 'foreignKeys': [pname], 'inheritance': True}
+            local_relationships[rname] = rl = relationship_builder.build(f'{id}/relationships/{rname}', rsch)
+            local_relationships_descriptor[rname] = RelationshipDescriptor(rname, rl)
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...

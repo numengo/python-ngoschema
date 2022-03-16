@@ -20,6 +20,8 @@ class Relationship(with_metaclass(SchemaMetaclass, ForeignKey_t)):
     Class to deal with relationships
     """
     _id = 'https://numengo.org/ngoschema#/$defs/relationships/$defs/Relationship'
+    _inheritance = False
+    _reverse = False
 
     def __new__(cls, *args, **kwargs):
         new = super(ObjectProtocol, cls).__new__

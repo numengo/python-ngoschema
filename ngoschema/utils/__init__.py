@@ -2,10 +2,8 @@ from .jinja2 import *
 from .utils import *
 from .str_utils import *
 from ._qualname import *
-from python_jsonschema_objects.util import resolve_ref_uri
 
 __all__ = [
-    'resolve_ref_uri',
     'qualname',
     # utils
     'ReadOnlyChainMap',

@@ -50,6 +50,10 @@ class Number(Numeric):
         decimal.setcontext(self._dcmContext)
         return Primitive._evaluate(self, value, **opts)
 
+    @staticmethod
+    def _serialize(self, value, **opts):
+        return value.to_eng_string(context=self._dcmContext)
+
 
 @register_type('integer')
 class Integer(Numeric):

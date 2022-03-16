@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlparse
 import dpath.util
 import requests
 import inflection
-from jsonschema.compat import urldefrag, lru_cache, urljoin
+from jsonschema.validators import urldefrag, lru_cache, urljoin
 from jsonschema.validators import RefResolver
 
 from ..exceptions import InvalidValue

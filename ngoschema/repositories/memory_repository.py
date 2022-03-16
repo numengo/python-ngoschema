@@ -22,6 +22,12 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
         self._catalog = OrderedDict()
         self._content = Array(items=self._instanceClass, maxItems=1 if not self._many else None)(value)
 
+    def __repr__(self):
+        return f'{self.qualname()}[{len(self._catalog)}]'
+
+    def __str__(self):
+        return f'{self.qualname()}[{len(self._catalog)}]'
+
     def __contains__(self, item):
         return item in self._catalog
 

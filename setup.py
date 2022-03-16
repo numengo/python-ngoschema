@@ -74,7 +74,7 @@ install_requires = [
     'attrs',
     'dpath',
     'pyrsistent',
-    'simple-settings[yaml]',
+    'simple-settings[yaml,redis]',
     'appdirs',
     'wrapt',
     'jinja2',
@@ -86,6 +86,7 @@ install_requires = [
     'python-magic-bin',
     'xmldict',
     'redis',
+    'sqlalchemy',
 ]
 
 post_install_requires = [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]

@@ -77,7 +77,7 @@ class PrettyShortPrinter(pprint.PrettyPrinter):
             self._recursive = True
             self._readable = False
             return
-        if hasattr(object, '__propinfo__'):
+        if hasattr(object, '__properties'):
             # we use our str representation as a safe repr
             rep = str(object)
             if hasattr(object, 'isLiteralClass'):
