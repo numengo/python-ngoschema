@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -467,7 +467,7 @@
 <node TEXT="types" FOLDED="true" ID="ID_1625162877" CREATED="1597397568768" MODIFIED="1601831888788">
 <icon BUILTIN="button_cancel"/>
 <node TEXT="$defs" ID="ID_50672615" CREATED="1597395128729" MODIFIED="1598210562261">
-<node TEXT="Type" FOLDED="true" ID="ID_1447017522" CREATED="1587021696522" MODIFIED="1598197857721">
+<node TEXT="Type" ID="ID_1447017522" CREATED="1587021696522" MODIFIED="1598197857721">
 <node TEXT="extends" ID="ID_1379712397" CREATED="1587010028068" MODIFIED="1587010029852">
 <node TEXT="ngoschema.contexts.ParentDefinitionMixin" ID="ID_1093628871" CREATED="1601583775113" MODIFIED="1601592180771"/>
 <node TEXT="ngoschema.converters.Converter" ID="ID_1677215728" CREATED="1601747976006" MODIFIED="1601770363958"/>
