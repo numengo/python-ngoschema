@@ -10,8 +10,7 @@ Overview
     * - docs
       - |docs|
     * - tests
-      - | |travis| |appveyor| |requires|
-        | |codecov|
+      - | |requires|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
@@ -23,10 +22,6 @@ Overview
 .. |requires| image:: https://requires.io/github/numengo/python-ngoschema/requirements.svg?branch=master
     :alt: Requirements Status
     :target: https://requires.io/github/numengo/python-ngoschema/requirements/?branch=master
-
-.. |codecov| image:: https://codecov.io/github/numengo/python-ngoschema/coverage.svg?branch=master
-    :alt: Coverage Status
-    :target: https://codecov.io/github/numengo/python-ngoschema
 
 .. |version| image:: https://img.shields.io/pypi/v/ngoschema.svg
     :alt: PyPI Package latest release
@@ -90,7 +85,7 @@ Documentation
 https://python-ngoschema.readthedocs.io/
 
 Settings are managed using
-`simple-settings <https://raw.githubusercontent.com/drgarcia1986/simple-settings>`__
+`simple-settings <https://github.com/drgarcia1986/simple-settings>`__
 and can be overriden with configuration files (cfg, yaml, json) or with environment variables
 prefixed with NGOSCHEMA_.
 

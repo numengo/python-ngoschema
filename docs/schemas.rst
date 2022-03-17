@@ -1,4 +1,4 @@
-NgoSchema
+Schemas
 =========
 
 The library intends to deal with complex schemas, possibly using inheritance which is
@@ -23,7 +23,7 @@ The additional grammar adds:
 
 It also comes with a few definitions that can be useful in a `Domain-Driven Design implementation <https://en.wikipedia.org/wiki/Domain-driven_design>`_.
 
-This meta-schema is available as `<http://numengo.org/ngoschema/draft-05>`_
+This meta-schema is available as ``https://numengo.org/ngoschema <https://numengo.org/ngoschema#``
 and can be optionally referred as `$schema <https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema>`_.
 in the definitions (instead of the standard `draft <https://json-schema.org/understanding-json-schema/index.html>`_)
 

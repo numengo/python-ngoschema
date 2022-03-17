@@ -1,29 +1,10 @@
 =====
 Usage
 =====
-To build a class from a schema, user can call the ``ClassBuilder`` using ``get_builder`` as:
-
-.. code-block:: python
-    >>> from ngoschema import get_builder
-
-    >>> Counter = get_builder().construct('Counter', {
-    ...        'type': 'object',
-    ...        'additionalProperties': False,
-    ...        'properties': {
-    ...            'count': {'type': 'integer', 'minimum': 0}
-    ...        }
-    ...    })
-
-    >>> c = Counter()
-    >>> c.count = 1
-    >>> c.count = -1
-    Traceback (most recent call last):
-        ...
-    python_jsonschema_objects.validators.ValidationError: -1 is less than 0
 
 User can register json files as schemas in his module using ``load_module_schemas("{module_folder}")`` in the module ``__init__.py``.
 
-A proper JSON-schema document should have a property ``$id`` set to `an absolute URI (it s domain/namespace) <https://json-schema.org/understanding-json-schema/structuring.html#the-id-property>`_.
+A proper JSON-schema document should have a property ``$id`` set to `an absolute URI (it s domain/namespace) <https://json-schema.org/understanding-json-schema/structuring.html#id15>`_.
 
 To add a schema to a class, user needs to have the class use the ``SchemaMetaclass`` and can build a class refering to a
 domain/namespace which will be looked first in the available modules schemas, and eventually on-line.
@@ -75,11 +56,11 @@ properties as both attributes and through dictionary access.
 In addition, classes contain a number of utility methods for serialization,
 deserialization, and validation.
 
-.. autoclass:: ngoschema.protocol_base.ProtocolBase
+.. autoclass:: ngoschema.protocols.TypeProtocol
     :members:
 
-.. autoclass:: ngoschema.wrapper_types.ArrayWrapper
+.. autoclass:: ngoschema.protocols.ObjectProtocol
     :members:
 
-.. autoclass:: ngoschema.literals.LiteralValue
+.. autoclass:: ngoschema.protocols.ArrayProtocol
     :members:
