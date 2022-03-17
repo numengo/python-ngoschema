@@ -1,5 +1,5 @@
-Schemas
-=======
+NgoSchema
+=========
 
 The library intends to deal with complex schemas, possibly using inheritance which is
 not yet supported in JSON Schema, as well as data types which can be useful in generated class.
