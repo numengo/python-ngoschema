@@ -20,14 +20,6 @@ Overview
     :target: https://readthedocs.org/projects/python-ngoschema
     :alt: Documentation Status
 
-.. |travis| image:: https://travis-ci.org/numengo/python-ngoschema.svg?branch=master
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/numengo/python-ngoschema
-
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/numengo/python-ngoschema?branch=master&svg=true
-    :alt: AppVeyor Build Status
-    :target: https://ci.appveyor.com/project/numengo/python-ngoschema
-
 .. |requires| image:: https://requires.io/github/numengo/python-ngoschema/requirements.svg?branch=master
     :alt: Requirements Status
     :target: https://requires.io/github/numengo/python-ngoschema/requirements/?branch=master
@@ -40,9 +32,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/ngoschema
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/numengo/python-ngoschema/v0.4.1.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/numengo/python-ngoschema/v0.4.2.svg
     :alt: Commits since latest release
-    :target: https://github.com/numengo/python-ngoschema/compare/v0.4.1...master
+    :target: https://github.com/numengo/python-ngoschema/compare/v0.4.2...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/ngoschema.svg
     :alt: PyPI Wheel
@@ -62,7 +54,7 @@ Overview
 Description
 ===========
 
-I'm Cédric ROMAN.
+I'm Cedric ROMAN.
 
 ``ngoschema`` aims at automate the building of classes based on a `JSON schema
 <https://spacetelescope.github.io/understanding-json-schema/index.html>`_.
