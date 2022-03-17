@@ -39,8 +39,8 @@ name = 'ngoschema'
 package = 'ngoschema'
 description = 'automatic class-based binding to JSON schemas and toolkit for Domain-Driven Design.'
 url = 'https://github.com/numengo/python-ngoschema'
-author = 'Cédric ROMAN',
-author_email = 'roman@numengo.com',
+author = 'Cédric ROMAN'
+author_email = 'roman@numengo.com'
 license = 'GNU General Public License v3'
 version = get_version(package)
 
