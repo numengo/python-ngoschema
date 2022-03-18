@@ -9,9 +9,6 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoinsp.inspectors.doc_rest_parser import parse_docstring
-from ngoinsp.inspectors.doc_rest_parser import parse_type_string as pts
-
 
 def test_doc_parsing():
 
@@ -27,6 +24,7 @@ def test_doc_parsing():
 
         :rtype: bool
         """
+    from ngoinsp.inspectors.doc_rest_parser import parse_docstring
     doc = parse_docstring(ds)
     assert doc["params"]["filetype"]["doc"] == "type of file"
     assert doc["params"]["filetype"]["type"] == "type1, type2, type3"
@@ -35,6 +33,7 @@ def test_doc_parsing():
 
 
 def test_type_parsing():
+    from ngoinsp.inspectors.doc_rest_parser import parse_type_string as pts
     t1 = pts("str")
     assert t1["type"] == "string"
 

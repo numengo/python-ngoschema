@@ -9,7 +9,6 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoinsp.inspectors import inspect_class, inspect_function
 
 
 def function_example(a, b=1, *args):
@@ -22,6 +21,7 @@ def function_example(a, b=1, *args):
 
 
 def test_function():
+    from ngoinsp.inspectors import inspect_class, inspect_function
     fi = inspect_function(function_example)
     assert fi['arguments'][0]['name'] == 'a'
     assert fi['arguments'][1]['name'] == 'b'
@@ -53,6 +53,7 @@ class Foo2(Foo):
 
 
 def test_class():
+    from ngoinsp.inspectors import inspect_class, inspect_function
     ci = inspect_class(Foo)
     assert ci['methods']['bar']
     ci = inspect_class(Foo2)

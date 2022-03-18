@@ -9,12 +9,11 @@ licence: GNU GPLv3  """
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from ngoinsp.inspectors.inspect_objects import ClassInspector
-from ngoinsp.inspectors.inspect_objects import FunctionInspector
 from ngoschema import load_module_schemas
 
 
 def test_FunctionInspector():
+    from ngoinsp.inspectors.inspect_objects import FunctionInspector
     fi = FunctionInspector(load_module_schemas)
     assert fi.parameters[0].name == "module"
     assert fi.parameters[1].name == "schemas_store"
@@ -27,6 +26,7 @@ def test_FunctionInspector():
 
 
 def test_ClassInspector():
+    from ngoinsp.inspectors.inspect_objects import ClassInspector
     from ngoschema import ProtocolBase
 
     ci = ClassInspector(ProtocolBase)

@@ -10,7 +10,6 @@ Contents
    introduction
    schemas
    usage
-   reference/index
    contributing
    authors
    changelog

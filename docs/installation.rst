@@ -2,7 +2,7 @@
 Installation
 ============
 
-At the command line::
+To install, with the command line::
 
     pip install ngoschema
 

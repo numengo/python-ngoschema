@@ -18,7 +18,7 @@ The additional grammar adds:
     * extra property attributes for specific types:
         - ``isPathDir`` boolean to indicate the path of a directory
         - ``isPathFile`` boolean to indicate the path of a file
-        - ``isPathExisting`` boolean to indicate an existinng path
+        - ``isPathExisting`` boolean to indicate an existing path
         - ``foreignKey`` dictionary of options to define a foreign key to another object
 
 It also comes with a few definitions that can be useful in a `Domain-Driven Design implementation <https://en.wikipedia.org/wiki/Domain-driven_design>`_.
@@ -27,13 +27,10 @@ This meta-schema is available as ``https://numengo.org/ngoschema <https://numeng
 and can be optionally referred as `$schema <https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema>`_.
 in the definitions (instead of the standard `draft <https://json-schema.org/understanding-json-schema/index.html>`_)
 
-Additional types are available for literals, and can then be used already properly casted in further code.
-Those types are mapped as follows:
+Additional types are available for literals, and can then be used already properly casted in further code. Those types are mapped as follows:
     * ``date``: ``datetime.date``
     * ``datetime``: ``datetime.datetime``
     * ``time``: ``datetime.time``
     * ``time``: ``datetime.time``
     * ``path``: ``pathlib.Path``
 
-Default type conversions are available and user can modify both the ``ngoschema.validators.converter_registry``
-and ``ngoschema.validators.formatter_registry``.

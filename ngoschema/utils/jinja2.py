@@ -17,7 +17,6 @@ from builtins import str
 import inflection
 import jinja2
 import jinja2.parser
-from slugify import slugify as _slugify
 
 from .utils import GenericClassRegistry
 
@@ -166,6 +165,7 @@ def underscore(word):
 
 @filters_registry.register()
 def slugify(string):
+    from slugify import slugify as _slugify
     return _slugify(string)
 
 

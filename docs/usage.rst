@@ -17,7 +17,7 @@ One could create a class extending the Card class from `json-schema.org <https:/
 .. code-block:: python
 
     from future.utils import with_metaclass
-    from ngoschema import SchemaMetaclass, ProtocolBase
+    from ngoschema.protocols import SchemaMetaclass, ProtocolBase
 
     class MyCardClass(with_metaclass(SchemaMetaclass, ProtocolBase)):
         __schema__ = "http://json-schema.org/card"
@@ -55,12 +55,3 @@ properties as both attributes and through dictionary access.
 
 In addition, classes contain a number of utility methods for serialization,
 deserialization, and validation.
-
-.. autoclass:: ngoschema.protocols.TypeProtocol
-    :members:
-
-.. autoclass:: ngoschema.protocols.ObjectProtocol
-    :members:
-
-.. autoclass:: ngoschema.protocols.ArrayProtocol
-    :members:

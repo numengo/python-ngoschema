@@ -73,10 +73,13 @@ implementation for JSON schema validation.
 
 * Free software: GNU General Public License v3
 
+.. skip-next
+
 Installation
 ============
 
-::
+To install, with the command line::
+
     pip install ngoschema
 
 Documentation
@@ -84,8 +87,7 @@ Documentation
 
 https://python-ngoschema.readthedocs.io/
 
-Settings are managed using
-`simple-settings <https://github.com/drgarcia1986/simple-settings>`__
+Settings are managed using `simple-settings <https://github.com/drgarcia1986/simple-settings>`__
 and can be overriden with configuration files (cfg, yaml, json) or with environment variables
 prefixed with NGOSCHEMA_.
 
@@ -112,3 +114,4 @@ Note, to combine the coverage data from all the tox environments run:
       - ::
 
             PYTEST_ADDOPTS=--cov-append tox
+

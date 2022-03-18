@@ -156,12 +156,18 @@ class SchemaMetaclass(type):
     """Metaclass for instrumented classes defined by a schema based on TypeProtocol.
 
     :param _id: id of schema to be resolved in loaded schemas using resolve_uri
+
     :param _schema: json schema (optional, schema can be supplied via _id
+
     :param _lazyLoading: attribute is only built and validated on first access
+
     :param _attributeByName: attributes can be accessed also by their names according to setting ATTRIBUTE_NAME_FIELD
+
     :param _add_logging: init method is decorated with a logger and all methods are decorated to log exceptions.
+
     :param _assert_args: if a method documentation is present, its content its parsed to detect attribute types and decorate
     the method with the proper check and conversion (default is True).
+
     """
 
     def __new__(cls, clsname, bases, attrs):

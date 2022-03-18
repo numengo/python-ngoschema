@@ -18,6 +18,9 @@ from os.path import join
 from glob import glob
 from os.path import splitext
 
+import sys
+sys.path.append(os.path.abspath('.'))
+
 
 def read(*names, **kwargs):
     return io.open(
@@ -74,12 +77,15 @@ install_requires = [
     'attrs',
     'dpath',
     'pyrsistent',
+    'simple_settings',
     'simple-settings[yaml,redis]',
     'appdirs',
     'wrapt',
     'jinja2',
     'arrow',
     'inflection',
+    'slugify',
+    'jsonpickle',
     'six',
     'requests',
     'ruamel.yaml',
@@ -120,9 +126,11 @@ setup(
     license=license,
     description=description,
     long_description='%s\n%s' %
-    (re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub(
-        '', read('README.rst')),
+    (re.compile('^.. skip-next.*', re.M | re.S).sub('',
+     re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('',
+     read('README.rst'))),
      re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))),
+    long_description_content_type='text/x-rst',
     author=author,
     author_email=author_email,
     url=url,
