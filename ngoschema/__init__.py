@@ -2,7 +2,7 @@
 
 __author__ = """Cedric ROMAN"""
 __email__ = "roman@numengo.com"
-__version__ = "__version__ = '0.4.4'"
+__version__ = "__version__ = '0.4.5'"
 
 # load settings
 from simple_settings import LazySettings
