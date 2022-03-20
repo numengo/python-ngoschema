@@ -6,7 +6,7 @@ __version__ = "__version__ = '0.4.6'"
 
 # load settings
 from simple_settings import LazySettings
-settings = LazySettings('ngoschema.config.settings', 'NGOSCHEMA_.environ')
+settings = LazySettings('ngoschema.config.settings')
 
 # register module and load schemas
 from .loaders import register_module

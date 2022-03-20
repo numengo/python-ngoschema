@@ -40,6 +40,8 @@ PROP_PREF = {
     'del': settings.DELETER_PREFIX,
 }
 
+_ngoinsp_loading_error_msg = False
+
 
 def split_cname(cname):
     # split cname into an array of identifiers
@@ -519,7 +521,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
         except Exception as er:
-            logging.warning(er)
+            if not _ngoinsp_loading_error_msg:
+                logging.warning('Module ngoinsp not found. No code inspection will be performed.')
+                _ngoinsp_loading_error_msg = True
             inspect_function = lambda x: {'arguments': []}
         attrs = attrs or {}
         cname = default_ns_manager.get_id_cname(id)
