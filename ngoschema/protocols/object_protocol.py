@@ -521,6 +521,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         try:
             from ngoinsp.inspectors.inspect_symbols import inspect_function
         except Exception as er:
+            global _ngoinsp_loading_error_msg
             if not _ngoinsp_loading_error_msg:
                 logging.warning('Module ngoinsp not found. No code inspection will be performed.')
                 _ngoinsp_loading_error_msg = True

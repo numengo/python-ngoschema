@@ -72,7 +72,7 @@ install_requires = [
     'pathlib',
     'future',
     'click',
-    'jsonschema',
+    'jsonschema>=4.0.0a6',
     #'rfc3987',
     'ngofile',
     'attrs',
@@ -96,10 +96,10 @@ install_requires = [
     'sqlalchemy',
 ]
 
-pre_install_requires = ['jsonschema>=4.0.0']
+#pre_install_requires = ['jsonschema>=4.0.0']
 
-pre_install_requires += [i for i in install_requires if ('-' in i or ':' in i or '.' in i)]
-install_requires = [i for i in install_requires if not ('-' in i or ':' in i or '.' in i)]
+pre_install_requires = [i for i in install_requires if '=' in i or ('-' in i or ':' in i or '.' in i)]
+install_requires = [i for i in install_requires if '=' not in i and not ('-' in i or ':' in i or '.' in i)]
 post_install_requires = []
 
 # for setuptools to work properly, we need to install packages with - or : separately
