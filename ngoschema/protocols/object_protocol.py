@@ -523,7 +523,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         except Exception as er:
             global _ngoinsp_loading_error_msg
             if not _ngoinsp_loading_error_msg:
-                logging.warning('Module ngoinsp not found. No code inspection will be performed.')
+                logging.debug('Optional module ngoinsp not found.')
                 _ngoinsp_loading_error_msg = True
             inspect_function = lambda x: {'arguments': []}
         attrs = attrs or {}
