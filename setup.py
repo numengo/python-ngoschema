@@ -115,7 +115,7 @@ setup(
     author=author,
     author_email=author_email,
     url=url,
-    packages=[package],
+    packages=find_packages(exclude='tests'),
     package_data=get_package_data(package),
     include_package_data=True,
     zip_safe=False,
