@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties fit_to_viewport="false" show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -2387,6 +2387,19 @@
 </node>
 </node>
 </node>
+</node>
+</node>
+<node TEXT="contexts" ID="ID_1162843585" CREATED="1648478769942" MODIFIED="1648478775920">
+<icon BUILTIN="messagebox_warning"/>
+<icon BUILTIN="button_cancel"/>
+<node TEXT="settings" ID="ID_1146830287" CREATED="1648478791277" MODIFIED="1648478793109">
+<node TEXT="DEFAULT_CONTEXT" ID="ID_245736853" CREATED="1648478798153" MODIFIED="1648478803570"/>
+</node>
+<node TEXT="DEFAULT_CONTEXT" ID="ID_1884093201" CREATED="1648478778854" MODIFIED="1648478784751">
+<node TEXT="merge settings.DEFAULT_CONFIG at init" ID="ID_324854993" CREATED="1648478788828" MODIFIED="1648478815001"/>
+</node>
+<node TEXT="APP_CONTEXT" ID="ID_44314998" CREATED="1648478784955" MODIFIED="1648478787580">
+<node TEXT="add {{appname}}_environ, settings.ad_dict at init" ID="ID_1690973620" CREATED="1648478818671" MODIFIED="1648478854275"/>
 </node>
 </node>
 </node>

@@ -105,7 +105,7 @@ class Id(NsManagerContext, String):
             return ns_mgr.get_id_cname(value)
         else:
             doc_id = ns_mgr.currentNsUri.split('#')[0]
-            if value.startswith(doc_id + '#'):
+            if value and value.startswith(doc_id + '#'):
                 value = value[len(doc_id):]
             return value
 

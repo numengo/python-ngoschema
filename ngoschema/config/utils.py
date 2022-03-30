@@ -49,4 +49,3 @@ def load_default_app_config(app_name, app_author=None):
                   + ['%s_.environ' % app_name.upper()]
     settings = LazySettings(*settings_list)
     return settings.as_dict()
-

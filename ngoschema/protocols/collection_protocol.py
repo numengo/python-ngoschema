@@ -19,10 +19,12 @@ from ..contexts import InstanceContext
 from .type_protocol import TypeProtocol
 
 LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
+USE_CONTEXT = settings.DEFAULT_COLLECTION_USE_CONTEXT
 
 
 class CollectionProtocol(Collection):
     _lazyLoading = LAZY_LOADING
+    _useContext = USE_CONTEXT
     _collection = None
     #_validate = COLLECTION_VALIDATE
 
@@ -34,15 +36,16 @@ class CollectionProtocol(Collection):
     _str = None
     #_session = None
 
-    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, session=None, **opts):
+    def __init__(self, value=None, lazyLoading=None, items=None, validate=True, context=None, use_context=None, session=None, **opts):
         self._lazyLoading = lazyLoading if lazyLoading is not None else self._lazyLoading
         lz = self._lazyLoading if items is None else not items
+        self._useContext = uc = use_context if use_context is not None else self._useContext
         #Collection.__init__(self, **opts)
         if value is None:
             # to allow initialization by keywords
             value = opts
             opts = {}
-        self._data = self._deserialize(self, value, items=False, evaluate=False, **opts)  #, convert=False, **opts)
+        self._data = self._deserialize(self, value, items=False, evaluate=False, context=context, use_context=uc, **opts)  #, convert=False, **opts)
         # touch allocates storage for data, need to call _create_context again
         self._touch()
         ctx = self._create_context(self, context=context)

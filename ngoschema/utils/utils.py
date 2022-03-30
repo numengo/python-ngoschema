@@ -141,11 +141,37 @@ class Context(ReadOnlyChainMap):
             parents = (local, ) + parents
         return Context(*parents, *self._maps)
 
+    def load_default_context(self, fp=None, **opts):
+        from ngoschema import settings
+        from pathlib import Path
+        fp = Path(str(fp or settings.CLI_CONTEXT_FILENAME))
+        if fp.exists():
+            return self.load_context_from_yaml(fp, **opts)
+        return self
+
+    def load_context_from_yaml(self, fp, **opts):
+        from ..repositories.file_repositories import load_yaml_from_file
+        return self.create_child(**load_yaml_from_file(fp, **opts))
+
+    def save_context_to_yaml(self, fp, **opts):
+        from ..repositories.file_repositories import save_to_yaml
+        save_to_yaml(self._local, fp, **opts)
+
+    def add_local_entries(self, **kwargs):
+        self._local.update(**kwargs)
+        return self
+
+    def add_local_entry(self, key, value):
+        self._local[key] = value
+        return self
+
     def prepend(self, mapping):
         self._maps.insert(0, mapping)
+        return self
 
     def append(self, mapping):
         self._maps.append(mapping)
+        return self
 
     def find_instance(self, cls, default=None, exclude=None, reverse=False):
         gen = (m for m in self.maps if isinstance(m, cls) and m is not exclude)

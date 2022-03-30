@@ -111,13 +111,6 @@ def test_call_order():
     assert 'c' in foo.do_serialize(no_defaults=False)
 
 
-def test_schema_mro():
-    import ngosim
-    from ngoschema.types import type_builder
-    mro = type_builder.schema_mro('https://numengo.org/ngosim#$defs/variable/$defs/EnumerationVariable')
-    assert mro
-
-
 def test_repr():
     class Obj(with_metaclass(SchemaMetaclass)):
         _schema = {

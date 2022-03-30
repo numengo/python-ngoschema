@@ -12,12 +12,6 @@ settings = LazySettings('ngoschema.config.settings')
 from .loaders import register_module
 register_module('ngoschema')
 
-# create a default context
-#from .contexts import Context
-
-#DEFAULT_CONTEXT = Context(**settings.DEFAULT_CONTEXT)
-#APP_CONTEXT = DEFAULT_CONTEXT.create_child(settings)
-
 from .exceptions import InvalidOperation, SchemaError, ValidationError
 from .managers import *
 from .protocols import *
@@ -25,6 +19,11 @@ from .repositories import *
 from .query import Query, Filter
 from .registries import serializers_registry, transformers_registry, repositories_registry
 
+# create a default context
+from .protocols.context import DEFAULT_CONTEXT
+
+DEFAULT_CONTEXT.load_default_context(settings.CLI_CONTEXT_FILENAME)
+APP_CONTEXT = DEFAULT_CONTEXT.create_child(_ngoschema_env=settings.as_dict())
 
 __all__ = [
     'settings',
@@ -46,4 +45,6 @@ __all__ = [
     'Filter',
     # repository
     'repositories_registry',
+    'DEFAULT_CONTEXT',
+    'APP_CONTEXT',
 ]

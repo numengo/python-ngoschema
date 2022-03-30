@@ -1,4 +1,17 @@
 
+CLI_CONTEXT_FILENAME = '.numengorc'
+# https://www.coolgenerator.com/ascii-text-generator
+# font: Shimrod
+CLI_BANNER = """
+                                ______       
+                               / _____)      
+ ____  _   _ ____   ____ ____ | /  ___  ___  
+|  _ \| | | |    \ / _  )  _ \| | (___)/ _ \ 
+| | | | |_| | | | ( (/ /| | | | \____/| |_| |
+|_| |_|\____|_|_|_|\____)_| |_|\_____/ \___/ 
+                                               
+"""
+
 SIMPLE_SETTINGS = {
     'OVERRIDE_BY_ENV': True,
     'CONFIGURE_LOGGING': True,
@@ -64,6 +77,7 @@ PPRINT_MAX_STRL = 40
 DEFAULT_CDATA_KEY = '#text'
 DEFAULT_PRIMITIVE_VALIDATE = True
 DEFAULT_COLLECTION_VALIDATE = False
+DEFAULT_COLLECTION_USE_CONTEXT = False
 DEFAULT_COLLECTION_LAZY_LOADING = False
 DEFAULT_COLLECTION_ATTRIBUTE_BY_NAME = False
 ATTRIBUTE_NAME_FIELD = 'name'

@@ -122,6 +122,11 @@ def load_json_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
 
+@assert_arg(0, PathFile)
+def save_to_json(obj, fp, session=None, **kwargs):
+    return serialize_object_to_file(obj, fp, repository_class=JsonFileRepository, session=session, **kwargs)
+
+
 @repositories_registry.register('yaml')
 class YamlFileRepository(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/YamlFileRepository'
@@ -145,6 +150,11 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass)):
 @assert_arg(0, PathFile)
 def load_yaml_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=YamlFileRepository, session=session, **kwargs)
+
+
+@assert_arg(0, PathFile)
+def save_to_yaml(obj, fp, session=None, **kwargs):
+    return serialize_object_to_file(obj, fp, repository_class=YamlFileRepository, session=session, **kwargs)
 
 
 @repositories_registry.register('xml')

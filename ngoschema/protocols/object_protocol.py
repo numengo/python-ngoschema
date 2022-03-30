@@ -205,7 +205,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return self._deserializer.call_order(value, dependencies=dependencies, **opts)
 
     @staticmethod
-    def _deserialize(self, value, **opts):
+    def _deserialize(self, value, context=None, **opts):
         from ..managers.type_builder import type_builder
         if value is None:
             return value
@@ -221,6 +221,11 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             value[self._propertiesTranslation[k]] = value.pop(k)
         value.update({k2: value.pop(k1) for k1, k2 in self._aliases.items() if k1 in value})
         value.update({k2: - value.pop(k1) for k1, k2 in self._aliasesNegated.items() if k1 in value})
+        # use information from context
+        if self._useContext:
+            ctx = context or self._context
+            for c in self._propertiesAllowed.intersection(ctx.keys()):
+                value.setdefault(c, ctx[c])
         # required with default
         return CollectionProtocol._deserialize(self, value, **opts)
 

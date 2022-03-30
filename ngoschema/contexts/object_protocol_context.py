@@ -8,7 +8,7 @@ from .ns_manager_context import NsManagerContext
 class ObjectProtocolContext(NsManagerContext):
     _parent = None
 
-    def set_context(self, context, **opts):
+    def set_context(self, context, session=None, **opts):
         from ..protocols.object_protocol import ObjectProtocol
         NsManagerContext.set_context(self, context, **opts)
         ctx = self._context
