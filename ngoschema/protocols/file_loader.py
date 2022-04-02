@@ -24,10 +24,10 @@ class FileLoader(Loader):
     _binary = False
     _charset = 'utf-8'
 
-    def __init__(self, encoder=None, filepath=None, binary=False, charset='utf-8', **opts):
+    def __init__(self, encoder=None, filepath=None, binary=False, charset='utf-8', enc_opts=None, **opts):
         Loader.__init__(self, **opts)
         self._encoder = encoder or self._encoder
-        self._encoder.__init__(self, **opts)
+        self._encoder.__init__(self, **(enc_opts or {}))
         self.set_filepath(filepath)
         self._binary = binary
         self._charset = charset
@@ -147,19 +147,19 @@ class FileSaver(Saver, FileLoader):
 
     #@classmethod
     def write_file(self, value, filepath, **opts):
-        self.filepath = filepath
+        self._filepath = filepath
         return FileSaver._write_file(self, value, self.filepath, **opts)
 
     #@classmethod
     def append_file(self, value, filepath, **opts):
-        self.filepath = filepath
+        self._filepath = filepath
         return FileSaver._append_file(self, value, self.filepath, **opts)
 
     #@classmethod
     def save_file(self, value, filepath, **opts):
-        self.filepath = filepath
+        self._filepath = filepath
         return FileSaver._save_file(self, value, self.filepath, **opts)
 
     def save(self, value, filepath=None, **opts):
-        filepath = filepath or self.filepath
+        filepath = filepath or self._filepath
         return FileSaver._save_file(self, value, filepath, **opts)

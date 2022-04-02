@@ -22,7 +22,9 @@ from .registries import serializers_registry, transformers_registry, repositorie
 # create a default context
 from .protocols.context import DEFAULT_CONTEXT
 
+# loads default context file if present in execution dir
 DEFAULT_CONTEXT.load_default_context(settings.CLI_CONTEXT_FILENAME)
+# adds ngoschema settings dictionary to application context
 APP_CONTEXT = DEFAULT_CONTEXT.create_child(_ngoschema_env=settings.as_dict())
 
 __all__ = [

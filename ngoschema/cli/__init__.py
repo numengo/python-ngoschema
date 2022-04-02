@@ -7,12 +7,13 @@ import click
 import pathlib
 import inflection
 import traceback
+from click.core import Context
 from click.testing import CliRunner
 
 
 class CliEnvironment(object):
 
-    def __init__(self):
+    def __init__(self, **opts):
         from .. import APP_CONTEXT
         self.verbose = False
         self.home = pathlib.Path.cwd()
@@ -33,12 +34,15 @@ class CliEnvironment(object):
         return self.home.joinpath(path).resolve()
 
     def load_context_file(self, fp, **opts):
-        self.rc.load_default_context(fp, **opts)
+        return self.rc.load_default_context(fp, **opts)
 
-    def repr(self, obj=None):
-        obj = obj or self.obj
+    def save_context_file(self, fp, **opts):
+        self.rc.save_context_to_json(fp, **opts)
+
+    def repr(self, key):
+        obj = self.rc.get(key)
         if obj:
-            click.echo('{')
+            click.echo(key + ' = {')
             for k, v in obj.do_serialize().items():
                 click.echo(f'\t{k}: {v}')
             click.echo('}')
@@ -55,11 +59,10 @@ class SpecialHelpMixin:
         click.MultiCommand.format_help(self, ctx, formatter)
         repr_obj = getattr(ctx, 'obj', None)
         if repr_obj and not isinstance(repr_obj, CliEnvironment):
-            ctx.repr(repr_obj)
-            #formatter.write_text('{')
-            #for k, v in repr_obj.do_serialize().items():
-            #    formatter.write_text(f'\t{k}: {v}')
-            #formatter.write_text('}')
+            formatter.write_text('{')
+            for k, v in repr_obj.do_serialize().items():
+                formatter.write_text(f'\t{k}: {v}')
+            formatter.write_text('}')
 
 
 class ComplexCLI(SpecialHelpMixin, click.MultiCommand):
@@ -116,7 +119,7 @@ def base_cli(ctx, home, config_file, verbose, log_level):
     from ngoschema import settings
     fn = ctx.rc.get('config_filename', settings.CLI_CONTEXT_FILENAME)
     config_file = ctx.resolve_path(config_file or fn)
-    ctx.rc.load_default_context(config_file)
+    ctx.load_context_file(config_file)
     logging.getLogger().setLevel(getattr(logging, log_level))
 
 

@@ -122,6 +122,7 @@ class Path(Uri):
     """
     _pyType = pathlib.Path
     _expandUser = False
+    _resolvePath = False
     _relative = None
     _isPathExisting = False
     _isPathDir = False
@@ -130,6 +131,7 @@ class Path(Uri):
     def __init__(self, **opts):
         Primitive.__init__(self, **opts)
         self._expandUser = self._schema.get('expandUser', self._expandUser)
+        self._resolvePath =  self._schema.get('resolve', self._resolvePath)
         self._isPathExisting = self._schema.get('isPathExisting', self._isPathExisting)
         self._isPathDir = self._schema.get('isPathDir', self._isPathDir)
         self._isPathFile = self._schema.get('isPathFile', self._isPathFile)
@@ -148,7 +150,7 @@ class Path(Uri):
         expand_user = opts.get('expand_user', self._expandUser)
         if expand_user:
             typed = typed.expanduser()
-        if resolve:
+        if resolve or self._resolvePath:
             typed = typed.resolve()
         return typed
 

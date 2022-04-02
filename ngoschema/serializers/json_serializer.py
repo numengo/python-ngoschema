@@ -15,37 +15,47 @@ import six
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
-from ..protocols import Serializer
-from ..registries import serializers_registry
+from ..protocols import Serializer, Deserializer
+from ..registries import serializers_registry, deserializers_registry
+
+
+@deserializers_registry.register('json')
+class JsonDeserializer(Deserializer):
+    #_json_decoder = json._default_decoder
+
+    @staticmethod
+    def _deserialize(self, value, **opts):
+        return JsonDeserializer._deserialize_json(self, value, **opts)
+
+    @staticmethod
+    def _deserialize_json(self, value, **opts):
+        __doc__ = json.loads.__doc__
+        #value = self._json_decoder.decode(value)
+        value = json.loads(value)
+        return Serializer._deserialize(self, value, **opts)
+
+    #@classmethod
+    def deserialize_json(self, value, **opts):
+        return self._deserialize_json(self, value, **opts)
 
 
 @serializers_registry.register('json')
-class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer)):
+class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer, JsonDeserializer)):
     _id = 'https://numengo.org/ngoschema#/$defs/serializers/$defs/JsonSerializer'
     _indent = 2
     _ensure_ascii = False
     _separators = None
-    _default = None
-    _encoder = json.JSONEncoder(indent=_indent, ensure_ascii=_ensure_ascii, separators=_separators, default=_default)
+    _default_val = None
+    _json_encoder = json.JSONEncoder(indent=_indent, ensure_ascii=_ensure_ascii, separators=_separators, default=_default_val)
 
     def __init__(self, value=None, indent=2, ensure_ascii=False, separators=None, default=None, meta_opts=None, **opts):
         self._indent = indent
         self._ensure_ascii = ensure_ascii
         self._separators = separators
-        self._default = default
-        self._encoder = json.JSONEncoder(indent=indent, ensure_ascii=ensure_ascii, separators=separators, default=default)
+        self._default_val = default
+        self._json_encoder = json.JSONEncoder(indent=indent, ensure_ascii=ensure_ascii, separators=separators, default=default)
         #ObjectProtocol.__init__(self, value, **opts)
         #Serializer.__init__(self, **(meta_opts or {}), **self)
-
-    @staticmethod
-    def _deserialize(self, value, **opts):
-        return JsonSerializer._deserialize_json(self, value, **opts)
-
-    @staticmethod
-    def _deserialize_json(self, value, **opts):
-        value = Serializer._deserialize(self, value, **opts)
-        value = self._encoder.decode(value)
-        return value
 
     @staticmethod
     def _serialize(self, value, **opts):
@@ -53,12 +63,8 @@ class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer)):
 
     @staticmethod
     def _serialize_json(self, value, **opts):
-        value = Serializer._serialize(self, value, **opts)
-        return self._encoder.encode(value)
-
-    #@classmethod
-    def deserialize_json(self, value, **opts):
-        return self._deserialize_json(self, value, **opts)
+        #value = Serializer._serialize(self, value, **opts)
+        return self._json_encoder.encode(value)
 
     #@classmethod
     def serialize_json(self, value, **opts):

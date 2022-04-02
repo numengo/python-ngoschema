@@ -92,8 +92,7 @@ def serialize_object_to_file(obj, fp, repository_class=None, session=None, **opt
     repo_class = repository_class or JsonFileRepository
     repo = repo_class(filepath=fp, session=session, **opts)
     logger.info("DUMP %s from %s", repo.instanceClass, file_link_format(fp))
-    repo.register(obj)
-    repo.commit()
+    repo.commit(obj, **opts)
 
 
 @repositories_registry.register('json')
@@ -122,8 +121,9 @@ def load_json_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
 
-@assert_arg(0, PathFile)
+@assert_arg(1, Path)
 def save_to_json(obj, fp, session=None, **kwargs):
+    kwargs.setdefault('evaluate', False)
     return serialize_object_to_file(obj, fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
 
@@ -152,7 +152,7 @@ def load_yaml_from_file(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=YamlFileRepository, session=session, **kwargs)
 
 
-@assert_arg(0, PathFile)
+@assert_arg(1, Path)
 def save_to_yaml(obj, fp, session=None, **kwargs):
     return serialize_object_to_file(obj, fp, repository_class=YamlFileRepository, session=session, **kwargs)
 

@@ -204,7 +204,6 @@ class CollectionProtocol(Collection):
     def do_serialize(self, deserialize=False, **opts):
         opts['context'] = self._context
         return self._serialize(self, self, deserialize=deserialize, **opts)
-        return self._serializer._serialize(self, self, deserialize=deserialize, **opts)
 
     def copy(self):
         return self.create(self._data, context=self._context)

@@ -146,16 +146,24 @@ class Context(ReadOnlyChainMap):
         from pathlib import Path
         fp = Path(str(fp or settings.CLI_CONTEXT_FILENAME))
         if fp.exists():
-            return self.load_context_from_yaml(fp, **opts)
-        return self
+            return self.load_context_from_json(fp, **opts)
 
-    def load_context_from_yaml(self, fp, **opts):
-        from ..repositories.file_repositories import load_yaml_from_file
-        return self.create_child(**load_yaml_from_file(fp, **opts))
+    def load_context_from_json(self, fp, **opts):
+        import json
+        with fp.open(**opts) as f:
+            ctx = json.load(f, **opts)
+        self._local.update(ctx)
+        return ctx
 
-    def save_context_to_yaml(self, fp, **opts):
-        from ..repositories.file_repositories import save_to_yaml
-        save_to_yaml(self._local, fp, **opts)
+    def save_context_to_json(self, fp, **opts):
+        from ..types.object import ObjectSerializer
+        from ..protocols import ObjectProtocol
+        from ..serializers import JsonSerializer, FileSaver
+        ctx = dict(self._local)
+        for k, v in ctx.items():
+            ctx[k] = v.do_serialize(**opts) if isinstance(v, ObjectProtocol) else v
+        FileSaver(filepath=fp, **opts).save(
+            JsonSerializer(**opts).serialize(ctx))
 
     def add_local_entries(self, **kwargs):
         self._local.update(**kwargs)
