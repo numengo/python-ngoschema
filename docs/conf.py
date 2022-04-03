@@ -28,7 +28,7 @@ project = 'NgoSchema'
 year = '2018'
 author = 'Cédric ROMAN'
 copyright = '{0}, {1}'.format(year, author)
-version = release = '1.0.8'
+version = release = '1.0.9'
 
 pygments_style = 'trac'
 templates_path = ['.']
