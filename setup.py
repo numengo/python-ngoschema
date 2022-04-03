@@ -88,7 +88,7 @@ install_requires = [
     'six',
     'requests',
     'ruamel.yaml',
-    'python-magic-bin',
+    'python-magic==0.4.15',
     'xmldict',
     'redis',
     'sqlalchemy',
