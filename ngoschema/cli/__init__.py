@@ -10,6 +10,8 @@ import traceback
 from click.core import Context
 from click.testing import CliRunner
 
+from ..utils.doc_rest_parser import parse_docstring
+
 
 class CliEnvironment(object):
 
@@ -63,6 +65,25 @@ class SpecialHelpMixin:
             for k, v in repr_obj.do_serialize().items():
                 formatter.write_text(f'\t{k}: {v}')
             formatter.write_text('}')
+
+    @staticmethod
+    def format_docstring(docstring, arguments=False, returns=False):
+        ds = parse_docstring(docstring)
+        help = ds['description']
+        if ds.get('longDescription'):
+            help += f'\n\n{ds["longDescription"]}'
+        if arguments and ds.get('arguments'):
+            help += f'\n\nParameters: \n\n'
+            for a in ds['arguments']:
+                help += f'\t{a["name"]}'
+                if a.get('description'):
+                    help += f':\t{a["description"]}'
+                help += f'\n\n'
+        if returns and ds.get('returns'):
+            returns = ds['returns']
+            if returns.get('description'):
+                help += f'\n\nReturns:\t{returns["description"]}'
+        return help
 
 
 class ComplexCLI(SpecialHelpMixin, click.MultiCommand):
