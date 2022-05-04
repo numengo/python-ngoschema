@@ -1,12 +1,15 @@
 import logging
 import pathlib
 import importlib
+import gettext
 
 from ngofile.list_files import list_files
 from ngofile.pathlist import PathList
 
 from .schemas import load_schema_file
 from ..utils import Registry
+
+_ = gettext.gettext
 
 
 def update_default_jinja2_env():
@@ -38,7 +41,8 @@ class GenericModuleFileLoader(Registry):
         return subfolder
 
     def subfolder(self, module):
-        return self._registry[module][0]
+        if module in self._registry:
+            return self._registry[module][0]
 
     def preload(self,
                 includes=["*"],
@@ -56,12 +60,12 @@ class GenericModuleFileLoader(Registry):
                                         serializers=serializers)
 
     def find_one(self, name):
-        """
+        _("""
         find first name/pattern in loader's pathlist (module as "{module}/")
 
         :param name: path or pattern
         :rtype: path
-        """
+        """)
         name = name.replace('\\', '/')
         if '/' in name:
             module, path = name.split('/', 1)
@@ -77,18 +81,21 @@ templates_module_loader = GenericModuleFileLoader('templates', update_function=u
 # loader to register module with a converters folder where to look for model transformations
 transforms_module_loader = GenericModuleFileLoader('transforms')
 
-# loader to register module with a models folder where to look for objects
+# loader to register module with a objects folder where to look for objects
 objects_module_loader = GenericModuleFileLoader('objects')
 
-# loader to register module with a models folder where to look for static files
+# loader to register module with a static folder where to look for static files
 static_module_loader = GenericModuleFileLoader('static')
 
-# loader to register module with a models folder where to look for objects
+# loader to register module with a schemas folder where to look for objects
 schemas_module_loader = GenericModuleFileLoader('schemas')
+
+# loader to register module with a config/locale folder where to look for objects
+locale_module_loader = GenericModuleFileLoader('config/locale')
 
 
 def load_module_schemas(module="ngoschema", schemas_store=None):
-    """
+    _("""
     Load the schemas of a module that are in the folder module
     as $(MODULEPATH)/schemas/*.json and add them with load_chema_file.
     User can provide an existing schema store to fill, or a new one
@@ -100,7 +107,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     :rtype: dict
-    """
+    """)
     from ngoschema.resolvers.uri_resolver import UriResolver
     schema_folder = schemas_module_loader.register(module)
 
@@ -123,3 +130,8 @@ def register_module(module_name):
     load_module_schemas(module_name)
     for module_loader in GenericModuleFileLoader.module_loaders_registry.values():
         module_loader.register(module_name)
+    # load locales
+    locale_dir = locale_module_loader.subfolder(module_name)
+    if locale_dir and locale_dir.exists():
+        gettext.bindtextdomain(module_name, localedir=str(locale_dir))
+        gettext.textdomain(module_name)

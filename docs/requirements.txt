@@ -1,5 +1,6 @@
 sphinx>=1.3
 sphinx-rtd-theme
+sphinx-intl
 ruamel.yaml
 simple-settings[yaml,redis]
 -e .

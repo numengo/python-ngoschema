@@ -10,9 +10,10 @@ from collections import OrderedDict, defaultdict
 import re
 from operator import neg
 import copy
+import gettext
 
 from ..exceptions import InvalidValue
-from ..utils import ReadOnlyChainMap as ChainMap, shorten
+from ..utils import ReadOnlyChainMap as ChainMap, shorten, is_mapping
 from .. import decorators
 from ..resolvers.uri_resolver import UriResolver, resolve_uri
 from ..types.array import Array
@@ -27,6 +28,8 @@ from .. import settings
 from .serializer import Serializer
 from .type_protocol import TypeProtocol
 from .collection_protocol import CollectionProtocol
+
+_ = gettext.gettext
 
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 ADD_LOGGING = settings.DEFAULT_ADD_LOGGING
@@ -122,7 +125,7 @@ class PropertyDescriptor:
 
 
 class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableMapping):
-    """
+    _("""
     ObjectProtocol is class defined by a json-schema and built by TypeBuilder.build_object_protocol.
     The schema is specified directly by a protected attribute _schema or by providing its id using a protected
     attribute _id to be resolved in loaded schemas.
@@ -136,7 +139,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
-    """
+    """)
     _serializer = ObjectSerializer
     _deserializer = ObjectDeserializer
     _collection = Object
@@ -238,6 +241,18 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def default(cls, value=None, evaluate=False, **opts):
         dft = Object.default(cls, value, evaluate=evaluate, **opts)
         return cls(dft, **opts) if evaluate else dft
+
+    def is_default(self, key):
+        raw = self._properties_raw_trans(key)[0]
+        if raw in self._propertiesWithDefault:
+            t = self.items_type(raw)
+            v = self[raw]
+            if t._has_default(t):
+                d = t.default(context=self._context, raw_literals=True)
+                d = t(d, context=self._context)
+                if v == d:
+                    return True
+        return False
 
     @staticmethod
     def _create_context(self, *extra_contexts, **local):
@@ -551,6 +566,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             meta_validator.validate(schema)
 
         abstract = schema.get('abstract', False)
+        description = schema.get('description')
+        comment = schema.get('$comment')
+        title = schema.get('title', clsname)
 
         bases_extended = [type_builder.load(scope(e, id)) for e in schema.get('extends', [])]
         bases_extended = [e for e in bases_extended if not any(issubclass(b, e) for b in bases)]
@@ -558,6 +576,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
         # get entity type parents testing EntityContext and excluding the Entity class
+        is_entity = any([issubclass(b, EntityContext) for b in pbases])
         ebases = [b for b in pbases if issubclass(b, EntityContext) and b.__name__ not in ['Entity', 'EntityNode']]
 
         not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
@@ -585,13 +604,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             for k, v in s.get('dependencies', {}).items():
                 dependencies[k].update(set(v))
 
-        #primary_keys = list(schema.get('primaryKeys', attrs.get('_primaryKeys', [])))
-        primary_keys = list(attrs.get('_primaryKeys', schema.get('primaryKeys', [])))
-        if not primary_keys:
-            for b in pbases:
-                primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
-        if primary_keys:
-            dependencies['identityKeys'] = set(primary_keys)
+        if is_entity:
+            primary_keys = list(attrs.get('_primaryKeys', schema.get('primaryKeys', [])))
+            if not primary_keys:
+                for b in pbases:
+                    primary_keys += [k for k in getattr(b, '_primaryKeys', []) if k not in primary_keys]
+            if primary_keys:
+                dependencies['identityKeys'] = set(primary_keys)
 
         extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', attrs.get('_notSerialized', [])), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
@@ -634,11 +653,11 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         from inflection import underscore
         for b in ebases:
             rname = underscore(b.__name__)
-            assert len(b._primaryKeys) == 1
-            pk = b._primaryKeys[0]
-            pname = f'{rname}_{pk}'
-            ptype = b._properties[pk]._type
-            psch = {'type': ptype, 'foreignKey': {'foreignSchema': b._id, 'foreignKeys': [pk]}}
+            assert len(b._primaryKeys)
+            pks = b._primaryKeys
+            pname = rname + '_' + '_'.join(pks)
+            ptype = b._properties[pks[0]]._type if len(pks) == 1 else 'array'
+            psch = {'type': ptype, 'foreignKey': {'foreignSchema': b._id, 'foreignKeys': pks}}
             local_properties[pname] = type_builder.build(f'{id}/properties/{pname}', psch)
             rsch = {'foreignSchema': b._id, 'foreignKeys': [pname], 'inheritance': True}
             local_relationships[rname] = rl = relationship_builder.build(f'{id}/relationships/{rname}', rsch)
@@ -762,14 +781,43 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     properties_descriptor[pname] = d
                     break
 
+        # create documentation
+        doc = f'{title}\n\n{description or ""}\n\n'
+        if local_properties:
+            doc += _('Arguments:') + '\n'
+            for a, p in local_properties.items():
+                desc = p._description or p._title or ''
+                pt = p._schema.get('type')
+                if p._schema.get('$ref'):
+                    pt = pt.__name__
+                if pt == 'array':
+                    pt = 'list'
+                    if p._items:  # to remove items set to True
+                        if not p._itemsIsList and p._items.is_constant():
+                            pass
+                        else:
+                            items = p._items if p._itemsIsList else [p._items]
+                            items = [getattr(i, '__name__', i._schema.get('type')) for i in items]
+                            pt += f'[{", ".join(items)}]'
+                doc += f'\t:param {a}: {_(desc)}\n'
+                doc += f'\t:type {a}: {pt}\n'
+            if pbases:
+                doc += _('Inherits from:') + '\n'
+                doc += '\t' + ', '.join([pb.__name__ for pb in pbases])
+
         # set the attributes
+        attrs['_title'] = title
+        attrs['__doc__'] = doc.strip()
+        attrs['_description'] = description
+        attrs['_comment'] = comment
         attrs['_id'] = id
         attrs['_extends'] = extends
         attrs['_schema'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
         attrs['_abstract'] = abstract
-        attrs['_hasPk'] = bool(primary_keys)
+        attrs['_hasPk'] = is_entity # or bool(primary_keys)
         #attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
-        attrs['_primaryKeys'] = primary_keys
+        if is_entity:
+            attrs['_primaryKeys'] = primary_keys
         attrs['_properties'] = dict(all_properties)
         attrs['_propertiesChained'] = all_properties
         attrs['_propertiesLocal'] = local_properties
@@ -797,7 +845,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_logger'] = logger
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_items_type_cache'] = {}
-        attrs['_mroType'] = pbases
+        attrs['_pbases'] = pbases
         if 'lazyLoading' in schema:
             attrs['_lazyLoading'] = schema['lazyLoading']
         # add inner definitions

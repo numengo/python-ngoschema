@@ -146,9 +146,24 @@ def tableize(word):
 
 
 @filters_registry.register()
+def humanize(word, lower_first=False):
+    __doc__ = inflection.humanize.__doc__
+    string = inflection.humanize(str(word))
+    if lower_first and string:
+        string = lower_first(string)
+    return string
+
+
+@filters_registry.register()
 def titleize(word):
     __doc__ = inflection.titleize.__doc__
     return inflection.titleize(str(word))
+
+
+@filters_registry.register()
+def lower_first(word):
+    """lower the first letter of the word"""
+    return word[0].lower() + word[1:] if word else ''
 
 
 @filters_registry.register()

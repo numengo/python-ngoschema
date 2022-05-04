@@ -64,17 +64,30 @@ class Session(with_metaclass(SchemaMetaclass)):
         raise ValueError('no repository %s in registry %.' % (name, repo_registry))
 
     def get_or_create_repo_by_class(self, instance_class, repo_registry=None):
-        from .repositories import repositories_registry
+        from .repositories import repositories_registry, MemoryRepository
         repo_registry = repo_registry or repositories_registry
         for r in self.repositories:
             if r.instanceClass is instance_class:
                 return r
         # not found, create binded repository
-        # look first in repo registry
+        # look first in repo registry to find exact one or best candidate
+        candidates = []
         for kr, r in repo_registry.items():
-            if r.instanceClass is instance_class:
+            if r._instanceClass is instance_class:
                 return r(session=self)  # repo is binded at initialization
-        raise ValueError('no instance_class %s in registry %.' % (instance_class, repo_registry))
+            elif not r._instanceClass:
+                pass
+            elif issubclass(instance_class, r._instanceClass):
+                candidates.append(r)
+        if not candidates:
+            r = type(instance_class.__name__ + 'Repository',
+                     (MemoryRepository, ),
+                     dict(_instanceClass=instance_class))
+            return r(session=self)
+            #raise ValueError('no instance_class %s in registry %s.' % (instance_class, repo_registry))
+        # could sort on mro maybe? mro lenght should do
+        candidates.sort(key=lambda c: len(c._instanceClass._pbases))
+        return candidates[-1](session=self)
 
     def resolve_cname(self, cname):
         return self._resolve_cname(cname)

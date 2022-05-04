@@ -50,6 +50,7 @@ def hybrid_class():
     # the setter is called and the value uppercased
     assert a.name == 'WORLD'
 
+
 def external_schema_class():
     """create a class from a schema stored in a file or available online"""
 

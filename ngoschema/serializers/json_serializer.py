@@ -10,6 +10,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 import collections
 import json
+import gettext
 
 import six
 from datetime import date, datetime, time, timedelta
@@ -17,6 +18,8 @@ from pathlib import Path
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 from ..protocols import Serializer, Deserializer
 from ..registries import serializers_registry, deserializers_registry
+
+_ = gettext.gettext
 
 
 @deserializers_registry.register('json')

@@ -2,12 +2,16 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import gettext
+
 from .validator import Validator
 from .serializer import Serializer
 from .loader import Loader, Saver
 from ..session import default_session
 from ..types.object import Object
 from ..registries import repositories_registry
+
+_ = gettext.gettext
 
 
 class Repository(Saver):
@@ -30,7 +34,7 @@ class Repository(Saver):
 
     @staticmethod
     def _commit(self, value, save=True, **opts):
-        """ optionally load the value (at least validate it) and add it to content """
+        _("""Optionally load the value (at least validate it) and add it to content """)
         value = self._saver._save(self, value, **opts) if save else value
         if self._many:
             self._content.extend(value)
@@ -39,7 +43,7 @@ class Repository(Saver):
         return self._content
 
     def dump(self, **opts):
-        """ serialize repository content """
+        _("""Serialize repository content.""")
         return self._saver._save(self, self._content, **opts)
 
     def __call__(self, value, **opts):

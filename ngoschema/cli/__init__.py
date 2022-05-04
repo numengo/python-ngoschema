@@ -69,7 +69,7 @@ class SpecialHelpMixin:
     @staticmethod
     def format_docstring(docstring, arguments=False, returns=False):
         ds = parse_docstring(docstring)
-        help = ds['description']
+        help = ds.get('description', '')
         if ds.get('longDescription'):
             help += f'\n\n{ds["longDescription"]}'
         if arguments and ds.get('arguments'):

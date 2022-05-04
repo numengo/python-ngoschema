@@ -15,6 +15,7 @@ import pathlib
 from builtins import str
 import pprint
 import collections
+import gettext
 from itertools import islice
 
 from ngoschema import utils
@@ -151,26 +152,26 @@ def _multiple_replacer(replace_dict):
 
 
 def multiple_replace(string, key_values):
-    """
+    _("""
     Replace efficiently multiple elements in a string according to a dictionary
 
     :param key_values: dictionary containing replacements
     :type key_values: dict
     :rtype: str
-    """
+    """)
     return _multiple_replacer(key_values)(string)
 
 
 @take_arrays(0)
 def split_string(string, delimiters=" ", strip=True):
-    """
+    _("""
     Split string with using several delimiters
 
     :param delimiters: string containing all delimiters
     :type delimiters: string
     :param strip: strip whitespaces around returned elements
     :rtype: list
-    """
+    """)
     if delimiters:
         specials = "[\^$.|?*+(){}"
         dels = ["\%s" % d if d in specials else d for d in delimiters]
@@ -186,7 +187,7 @@ def get_unicode(str_or_unicode, encoding='utf-8'):
 
 
 def rreplace(s, old, new, occurrence=1):
-    """right replace function"""
+    _("""right replace function""")
     li = s.rsplit(old, occurrence)
     return new.join(li)
 

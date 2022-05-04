@@ -41,6 +41,7 @@ from ..protocols.object_protocol import ObjectProtocol
 from ..types.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
+from ..models.files import File, Document
 #from .models.instances import InstanceList, Entity
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
     _encoder = Serializer
+    _instanceClass = File
 
     def __init__(self, value=None, meta_opts=None, **opts):
         ObjectProtocol.__init__(self, value, **opts)
@@ -101,6 +103,7 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = JsonSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
+    _instanceClass = Document
 
     def __init__(self, value=None, **opts):
         FileRepository.__init__(self, value, **opts)
@@ -133,6 +136,7 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = YamlSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
+    _instanceClass = Document
 
     def deserialize_data(self):
         data = self.document._serialize(self._yaml.load, **self._extended_properties)
@@ -163,6 +167,7 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = XmlSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
+    _instanceClass = Document
     _tag = None
 
     def __init__(self, value=None, postprocessor=None, **opts):

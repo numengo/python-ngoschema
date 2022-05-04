@@ -12,6 +12,13 @@ from jsonschema.exceptions import SchemaError
 from jsonschema.exceptions import FormatError, ValidationError
 
 
+class CommandError(Exception):
+    """
+    Exception class indicating a problem while executing a management
+    command.
+    """
+
+
 class ConversionError(ValueError):
     """
     Raised if an invalid value is detected in a validator

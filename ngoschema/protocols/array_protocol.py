@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from collections import MutableSequence
 import six
 import logging
+import gettext
 
 from ..types.array import Array, ArraySerializer, ArrayDeserializer
 from .collection_protocol import CollectionProtocol, TypeProtocol
@@ -13,13 +14,13 @@ from ..utils import shorten
 from ..managers.namespace_manager import default_ns_manager
 from .. import settings
 
-
+_ = gettext.gettext
 LAZY_LOADING = settings.DEFAULT_COLLECTION_LAZY_LOADING
 TRUE = _True()
 
 
 class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
-    """
+    _("""
     ArrayProtocol is class defined by a json-schema and built by TypeBuilder.build_array_protocol.
 
     The class is built with a list or a unique item type (which can be a Literal or a subclass of
@@ -27,7 +28,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
-    """
+    """)
     _serializer = ArraySerializer
     _deserializer = ArrayDeserializer
     _collection = Array
@@ -105,6 +106,9 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         cname = default_ns_manager.get_id_cname(id)
         clsname = cname.split('.')[-1]
         logger = logging.getLogger(cname)
+        description = schema.get('description')
+        comment = schema.get('$comment')
+        title = schema.get('title', clsname)
         items = schema.get('items')
         items_list = False
         lz = schema.get('lazyLoading', None)
@@ -126,6 +130,10 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if lz is not None:
             attrs.setdefault('_lazyLoading', lz)
         attrs['_items'] = items
+        attrs['_title'] = title
+        attrs['__doc__'] = description
+        attrs['_description'] = description
+        attrs['_comment'] = comment
         attrs['_minItems'] = schema.get('minItems', Array._minItems)
         attrs['_maxItems'] = schema.get('maxItems', Array._maxItems)
         attrs['_uniqueItems'] = schema.get('uniqueItems', Array._uniqueItems)

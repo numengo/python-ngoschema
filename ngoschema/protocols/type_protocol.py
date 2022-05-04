@@ -6,6 +6,7 @@ import logging
 import copy
 from abc import abstractmethod
 from collections import OrderedDict, Mapping, Sequence
+import gettext
 
 from ..utils import ReadOnlyChainMap, shorten
 from ngoschema.resolvers.uri_resolver import resolve_uri, scope, UriResolver
@@ -14,6 +15,7 @@ from .validator import Validator
 from .serializer import Serializer, Deserializer
 from .. import settings
 
+_ = gettext.gettext
 PRIMITIVE_VALIDATE = settings.DEFAULT_PRIMITIVE_VALIDATE
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 class TypeProtocol(Serializer):
     _serializer = Serializer
     _type = None
+    _title = None
     _description = None
     _comment = None
 
@@ -29,8 +32,9 @@ class TypeProtocol(Serializer):
         self._serializer = serializer or self._serializer
         self._serializer.__init__(self, **opts)
         self._type = self._schema.get('type', self._type)
+        self._title = self._schema.get('title', self._title)
+        #self._description = self._schema.get('description', self._description)
         self._comment = self._schema.get('$comment', self._comment)
-        self._description = self._schema.get('description', self._description)
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
@@ -41,6 +45,9 @@ class TypeProtocol(Serializer):
         ref = schema.get('$ref')
         cname = default_ns_manager.get_id_cname(ref or id)
         clsname = cname.split('.')[-1]
+        description = schema.get('description')
+        comment = schema.get('$comment')
+        title = schema.get('title', clsname)
         extra_bases = tuple(type_builder.load(scope(e, id)) for e in schema.get('extends', []))
         # extract type and ref from schema and add the corresponding python types in bases
         if ref:
@@ -80,9 +87,13 @@ class TypeProtocol(Serializer):
         elif enum:
             attrs['_default'] = enum[0]
         attrs['_id'] = id
+        attrs['_title'] = title
+        attrs.setdefault('__doc__', description or '')
+        attrs['_description'] = description
+        attrs['_comment'] = comment
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
-        attrs['_mroType'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
+        attrs['_pbases'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
         return type(clsname, bases + extra_bases, attrs)
 
     @staticmethod
@@ -131,6 +142,10 @@ class TypeProtocol(Serializer):
         qn = cm + '.' if not cm.startswith('_') else ''
         return qn + cls.__name__
 
+    @classmethod
+    def dosctring(cls):
+        return f':param {cls.__name__}:'
+
     def __repr__(self):
         s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema(self).items()])
         return '%s(%s)' % (self.qualname(), shorten(s, max_size=100, str_fun=str))
@@ -153,7 +168,7 @@ class TypeProtocol(Serializer):
 
 
 class SchemaMetaclass(type):
-    """Metaclass for instrumented classes defined by a schema based on TypeProtocol.
+    _("""Metaclass for instrumented classes defined by a schema based on TypeProtocol.
 
     :param _id: id of schema to be resolved in loaded schemas using resolve_uri
 
@@ -167,8 +182,7 @@ class SchemaMetaclass(type):
 
     :param _assert_args: if a method documentation is present, its content its parsed to detect attribute types and decorate
     the method with the proper check and conversion (default is True).
-
-    """
+    """)
 
     def __new__(cls, clsname, bases, attrs):
         from ..managers.type_builder import type_builder

@@ -74,6 +74,7 @@ DEFAULT_MS_URI = MS_URI
 PPRINT_MAX_EL = 10
 PPRINT_MAX_STRL = 40
 
+DEFAULT_LOCALE_ENCODING = 'utf-8'
 DEFAULT_CDATA_KEY = '#text'
 DEFAULT_PRIMITIVE_VALIDATE = True
 DEFAULT_COLLECTION_VALIDATE = False
@@ -112,7 +113,8 @@ SCHEMA_REF_TYPE_MAPPING = (
 
 SCHEMA_DEF_KEYS = ('type', 'extends', 'dependencies', 'aliases', 'negatedAliases', 'notSerialized', 'notValidated',
                    'default', 'required', 'readOnly', 'properties', 'patternProperties', 'additionalProperties',
-                   'primaryKeys', '$defs', 'items', 'convert', 'validate', 'serialize')
+                   'primaryKeys', '$defs', 'items', 'convert', 'validate', 'serialize',
+                   'description', 'title', '$comment')
 
 string_types = (basestring, str)
 datetime_types = string_types + (arrow.Arrow, datetime.datetime)

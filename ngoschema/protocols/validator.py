@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 from copy import copy
 import logging
+import gettext
 
 from ..exceptions import InvalidValue, ValidationError, ConversionError
 from ..utils import ReadOnlyChainMap, shorten
@@ -13,6 +14,7 @@ from ..managers.type_builder import DefaultValidator
 from .converter import Converter
 from .context import Context
 
+_ = gettext.gettext
 logger = logging.getLogger(__name__)
 
 
@@ -47,10 +49,10 @@ class Validator(Converter, Context):
 
     @staticmethod
     def _errors(self, value, excludes=[], with_type=True, **opts):
-        """
+        _("""
         Validate the value according to schema
         Return dictionnary of errors or raise ngoschema.InvalidValue
-        """
+        """)
         if not with_type:
             excludes = list(excludes) + ['type']
         schema = {k: v for k, v in opts.get('schema', self._schema).items() if k not in excludes}

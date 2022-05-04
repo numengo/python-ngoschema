@@ -3,11 +3,14 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from collections import OrderedDict
+import gettext
 
 from ..protocols.loader import Loader, Saver
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
+
+_ = gettext.gettext
 
 
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
@@ -36,7 +39,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
 
     @staticmethod
     def _commit(self, value, save=False, **opts):
-        """ optionally load the value (at least validate it) and add it to content """
+        _("""Optionally load the value (at least validate it) and add it to content """)
         value = self._saver._save(self, value, **opts) if save else value
         if self._many:
             # check/set identity keys

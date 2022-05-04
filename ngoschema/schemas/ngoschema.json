@@ -5,6 +5,7 @@
   "$defs": {
     "contexts": {
       "type": "object",
+      "description": "The context is initialized at the instance creation and defines the environment of the object. Contexts can give access to Namespace Manager, parent objects or instances",
       "$defs": {
         "NsManagerContext": {
           "type": "object",
@@ -20,14 +21,14 @@
         },
         "ObjectProtocolContext": {
           "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/NsManagerContext"
+          ],
           "notSerialized": [
             "_parent"
           ],
           "notValidated": [
             "_parent"
-          ],
-          "extends": [
-            "#/$defs/contexts/$defs/NsManagerContext"
           ],
           "properties": {
             "_parent": true
@@ -35,14 +36,14 @@
         },
         "InstanceContext": {
           "type": "object",
+          "extends": [
+            "#/$defs/contexts/$defs/ObjectProtocolContext"
+          ],
           "notSerialized": [
             "_parentInstance"
           ],
           "notValidated": [
             "_parentInstance"
-          ],
-          "extends": [
-            "#/$defs/contexts/$defs/ObjectProtocolContext"
           ],
           "properties": {
             "_parentInstance": true
@@ -55,6 +56,7 @@
       "$defs": {
         "Annotation": {
           "type": "object",
+          "description": "Basic annotations",
           "properties": {
             "title": {
               "type": "string"
@@ -88,6 +90,7 @@
         },
         "Tag": {
           "type": "object",
+          "description": "Recursive tags",
           "extends": [
             "#/$defs/metadata/$defs/Annotation"
           ],
@@ -115,10 +118,12 @@
       "type": "object",
       "$defs": {
         "Context": {
-          "type": "object"
+          "type": "object",
+          "description": "Protocol for context management"
         },
         "Checker": {
           "type": "object",
+          "description": "Type checking interface",
           "properties": {
             "pyType": {
               "type": "importable"
@@ -127,6 +132,7 @@
         },
         "Converter": {
           "type": "object",
+          "description": "Type conversion interface",
           "extends": [
             "#/$defs/protocols/$defs/Checker"
           ],
@@ -138,12 +144,13 @@
         },
         "Transformer": {
           "type": "object",
-          "aliases": {
-            "fromClass": "pyType"
-          },
+          "description": "Type transformation interface",
           "extends": [
             "#/$defs/protocols/$defs/Converter"
           ],
+          "aliases": {
+            "fromClass": "pyType"
+          },
           "properties": {
             "converter": {
               "$ref": "#/$defs/protocols/$defs/Converter"
@@ -155,6 +162,7 @@
         },
         "Validator": {
           "type": "object",
+          "description": "Validator interface",
           "extends": [
             "#/$defs/protocols/$defs/Converter"
           ],
@@ -172,6 +180,7 @@
         },
         "Deserializer": {
           "type": "object",
+          "description": "Deserialization interface: how input data is preprocessed when loading.",
           "extends": [
             "#/$defs/protocols/$defs/Validator"
           ],
@@ -186,6 +195,7 @@
         },
         "Serializer": {
           "type": "object",
+          "description": "Serialization interface: how object data is printed or saved",
           "extends": [
             "#/$defs/protocols/$defs/Deserializer"
           ],
@@ -197,6 +207,7 @@
         },
         "Loader": {
           "type": "object",
+          "description": "Loading interface: How data is loaded to memory. It can be from a file, a database",
           "extends": [
             "#/$defs/protocols/$defs/Deserializer"
           ],
@@ -222,6 +233,7 @@
         },
         "Saver": {
           "type": "object",
+          "description": "Saving interface: How data is saved persistently. It can be a file, a database.",
           "extends": [
             "#/$defs/protocols/$defs/Loader"
           ],
@@ -236,6 +248,7 @@
         },
         "Repository": {
           "type": "object",
+          "description": "Repository interface: How entities are handled in memory and/or saved persistently. It can be in memory, in a file, a database. Repositories store entities of a same family.",
           "extends": [
             "#/$defs/protocols/$defs/Saver"
           ],
@@ -264,39 +277,44 @@
       "$defs": {
         "Relationship": {
           "type": "object",
+          "description": "This objet represents the relationship between one and one/many other objects",
+          "extends": [
+            "#/$defs/metadata/$defs/Name"
+          ],
           "additionalProperties": false,
+          "dependencies": {
+            "foreignClass": [
+              "foreignSchema"
+            ],
+            "foreignKeys": [
+              "foreignClass"
+            ]
+          },
           "notSerialized": [
             "foreignClass"
           ],
           "readOnly": [
             "foreignClass"
           ],
-          "dependencies": {
-            "foreignKeys": [
-              "foreignClass"
-            ],
-            "foreignClass": [
-              "foreignSchema"
-            ]
-          },
-          "extends": [
-            "#/$defs/metadata/$defs/Name"
-          ],
           "properties": {
             "foreignSchema": {
-              "type": "id"
+              "type": "id",
+              "description": "Foreign object schema id"
             },
             "foreignClass": {
-              "type": "importable"
+              "type": "importable",
+              "description": "Foreign object symbol"
             },
             "foreignKeys": {
               "type": "array",
+              "description": "Foreign keys to index objects",
               "items": {
                 "type": "string"
               }
             },
             "cardinality": {
               "type": "string",
+              "description": "Relationship cardinality.",
               "enum": [
                 "one2one",
                 "one2many"
@@ -304,30 +322,35 @@
             },
             "ordering": {
               "type": "array",
+              "description": "list of objects keys to use for ordering",
               "items": {
                 "type": "string"
               }
             },
             "reverse": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if order is reversed"
             },
             "inheritance": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if inheritance relationship"
             }
           }
         },
         "ForeignKey": {
           "type": "object",
-          "additionalProperties": false,
+          "description": "This object allow to point an object stored in a repository from a foreign key, and to associate it to the current object",
           "extends": [
             "#/$defs/relationships/$defs/Relationship"
           ],
+          "additionalProperties": false,
           "properties": {
             "backPopulates": {
               "$ref": "#/$defs/relationships/$defs/Relationship"
             },
             "onDelete": {
               "type": "string",
+              "description": "Behavior on object deletion",
               "enum": [
                 "CASCADE",
                 "PROTECT",
@@ -346,25 +369,30 @@
       "$defs": {
         "Instance": {
           "type": "object",
-          "additionalProperties": false,
-          "abstract": true,
-          "notSerialized": [
-            "canonicalName"
-          ],
+          "title": "Named Object",
+          "description": "Instance abstract class. An instance is named and can be part of another instance and is referred by its canonical name.",
           "extends": [
             "#/$defs/contexts/$defs/InstanceContext",
             "#/$defs/metadata/$defs/Name",
             "#/$defs/metadata/$defs/Annotation"
           ],
+          "abstract": true,
+          "additionalProperties": false,
+          "notSerialized": [
+            "canonicalName"
+          ],
           "properties": {
             "name": {
-              "type": "string"
+              "type": "string",
+              "description": "Instance's name"
             },
             "canonicalName": {
-              "type": "string"
+              "type": "string",
+              "description": "Instance's canonical name, depends on parents."
             },
             "properties": {
               "type": "array",
+              "description": "Instance's properties",
               "items": {
                 "$ref": "#/$defs/instances/$defs/Instance"
               }
@@ -373,13 +401,14 @@
         },
         "InstanceList": {
           "type": "object",
-          "notSerialized": [
-            "items",
-            "namePlural"
-          ],
+          "description": "This objects represents a list of instances, with metadata for naming",
           "extends": [
             "#/$defs/instances/$defs/Instance",
             "#/$defs/metadata/$defs/Plural"
+          ],
+          "notSerialized": [
+            "items",
+            "namePlural"
           ],
           "properties": {
             "items": {
@@ -392,8 +421,14 @@
         },
         "Entity": {
           "type": "object",
-          "additionalProperties": false,
+          "description": "Entities are important object usually stored in databases, and indexed using a primary key that identify the object by its identity keys.",
+          "extends": [
+            "#/$defs/instances/$defs/Instance",
+            "#/$defs/metadata/$defs/Id"
+          ],
           "abstract": true,
+          "additionalProperties": false,
+          "dependencies": {},
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
@@ -403,20 +438,17 @@
           "readOnly": [
             "identityKeys"
           ],
-          "dependencies": {},
-          "extends": [
-            "#/$defs/instances/$defs/Instance",
-            "#/$defs/metadata/$defs/Id"
-          ],
           "properties": {
             "primaryKeys": {
               "type": "array",
+              "description": "Keys to be used as primary keys to index this class of entities.",
               "items": {
                 "type": "string"
               }
             },
             "identityKeys": {
-              "type": "array"
+              "type": "array",
+              "description": "Primary keys values in object, used to identify it."
             }
           }
         }
@@ -427,24 +459,28 @@
       "$defs": {
         "File": {
           "type": "object",
-          "primaryKeys": [
-            "filepath"
-          ],
+          "description": "This object represents a file.",
           "extends": [
             "#/$defs/instances/$defs/Entity"
           ],
+          "primaryKeys": [
+            "filepath"
+          ],
           "properties": {
             "filepath": {
-              "type": "path"
+              "type": "path",
+              "description": "Path to file"
             },
             "binary": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if binary file"
             },
             "contentRaw": true
           }
         },
         "FileInfo": {
           "type": "object",
+          "description": "This object represents file informations.",
           "required": [
             "file"
           ],
@@ -453,48 +489,57 @@
               "$ref": "#/$defs/files/$defs/File"
             },
             "dateCreated": {
-              "type": "datetime"
+              "type": "datetime",
+              "description": "File creation date and time."
             },
             "dateModified": {
-              "type": "datetime"
+              "type": "datetime",
+              "description": "File last modification date and time."
             },
             "contentSize": {
-              "type": "integer"
+              "type": "integer",
+              "description": "Content size in bytes."
             },
             "contentSizeHuman": {
-              "type": "string"
+              "type": "string",
+              "description": "Content size in human readable units."
             },
             "mimetype": {
-              "type": "string"
+              "type": "string",
+              "description": "MIME type of the file"
             },
             "sha1": {
-              "type": "string"
+              "type": "string",
+              "description": "SHA1 hash of the file."
             }
           }
         },
         "UriFile": {
           "type": "object",
-          "primaryKeys": [
-            "uri"
-          ],
+          "description": "This object represents a file referenced by a URI",
           "extends": [
             "#/$defs/files/$defs/File"
           ],
+          "primaryKeys": [
+            "uri"
+          ],
           "properties": {
             "uri": {
-              "type": "uri"
+              "type": "uri",
+              "description": "File Uri."
             },
             "contentRaw": true
           }
         },
         "Document": {
           "type": "object",
+          "description": "This object represents a document.",
+          "extends": [
+            "#/$defs/files/$defs/File"
+          ],
           "additionalProperties": false,
           "primaryKeys": [
             "identifier"
-          ],
-          "extends": [
-            "#/$defs/files/$defs/File"
           ],
           "properties": {
             "encoder": {
@@ -504,27 +549,33 @@
               "$ref": "#/$defs/files/$defs/FileInfo"
             },
             "identifier": {
-              "type": "string"
+              "type": "string",
+              "description": "Document identifier for indexing"
             },
             "charset": {
               "type": "string",
+              "description": "Character set",
               "default": "utf-8"
             },
             "version": {
-              "type": "string"
+              "type": "string",
+              "description": "Document version"
             },
             "author": {
-              "type": "string"
+              "type": "string",
+              "description": "Document author"
             },
             "keywords": {
               "type": "array",
+              "description": "Keywords associated to document",
               "items": {
                 "type": "string"
               }
             },
             "content": true,
             "doc_id": {
-              "type": "string"
+              "type": "string",
+              "description": "Document identifier"
             }
           }
         }
@@ -532,74 +583,91 @@
     },
     "serializers": {
       "type": "object",
+      "description": "Serializers implements the interface that formats objects in a string (for ex json, xml or yaml).",
       "$defs": {
         "CollectionSerializer": {
           "type": "object",
+          "description": "This represents a serializer for a collection.",
           "properties": {
             "many": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if serializer can serialize several objects at once."
             },
             "excludes": {
-              "type": "array"
+              "type": "array",
+              "description": "Keys to exclude from serialization"
             },
             "only": {
-              "type": "array"
+              "type": "array",
+              "description": "Keys to keep only during serialization"
             }
           }
         },
         "ObjectSerializer": {
           "type": "object",
+          "description": "This represents a serializer for an object.",
           "extends": [
             "#/$defs/serializers/$defs/CollectionSerializer"
           ],
           "properties": {
             "attrPrefix": {
-              "type": "string"
+              "type": "string",
+              "description": "Prefix used for simple primitive attributes."
             },
             "noDefaults": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if only non default value are serialized."
             },
             "noReadOnly": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if read-only attributes should not be serialized."
             }
           }
         },
         "InstanceSerializer": {
           "type": "object",
+          "description": "This represents a serializer for an instance.",
           "extends": [
             "#/$defs/serializers/$defs/ObjectSerializer"
           ],
           "properties": {
             "tag": {
-              "type": "string"
+              "type": "string",
+              "description": "Tag to use to represent object in serialization."
             }
           }
         },
         "EntitySerializer": {
           "type": "object",
+          "description": "This represents a serializer for an entity.",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ],
           "properties": {
-            "useEntityKeys": {
-              "type": "boolean"
-            },
             "useIdentityKeys": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if entities are referenced using their identity keys."
+            },
+            "useEntityKeys": {
+              "type": "boolean",
+              "description": "True, if entities are serialized as a dict with the primary key"
             }
           }
         },
         "FileSerializer": {
           "type": "object",
+          "description": "This represents a (de)serializer to/from a file.",
           "extends": [
             "#/$defs/protocols/$defs/Serializer"
           ],
           "properties": {
             "filepath": {
-              "type": "path"
+              "type": "path",
+              "description": "File path"
             },
             "binary": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if binary file"
             },
             "charset": {
               "type": "string",
@@ -609,44 +677,53 @@
         },
         "JsonSerializer": {
           "type": "object",
+          "description": "This represents a json (de)serializer.",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ]
         },
         "XmlSerializer": {
           "type": "object",
+          "description": "This represents a xml (de)serializer.",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ],
           "properties": {
             "attr_prefix": {
               "type": "string",
+              "description": "Prefix used for simple primitive attributes (usually '@').",
               "default": "@"
             },
             "pretty": {
               "type": "boolean",
+              "description": "True, if serialization is indented",
               "default": true
             },
             "cdata_key": {
               "type": "string",
+              "description": "Key used for cdata in xml (usually '#text')",
               "default": "#text"
             },
             "short_empty_elements": {
               "type": "boolean",
+              "description": "True, if empty elements are excluded",
               "default": true
             },
             "indent": {
               "type": "string",
+              "description": "Indentation string",
               "default": "\t"
             },
             "newl": {
               "type": "string",
+              "description": "New line string",
               "default": "\n"
             }
           }
         },
         "YamlSerializer": {
           "type": "object",
+          "description": "This represents a yaml (de)serializer.",
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ]
@@ -655,35 +732,41 @@
     },
     "repositories": {
       "type": "object",
+      "description": "Repositories are containers of objects, loading, holding and serializing the instances.",
       "$defs": {
         "MemoryRepository": {
           "type": "object",
-          "additionalProperties": false,
+          "description": "This represents a repository storing objects in memory.",
           "extends": [
             "#/$defs/protocols/$defs/Repository",
             "#/$defs/serializers/$defs/EntitySerializer"
           ],
+          "additionalProperties": false,
           "properties": {
             "instanceClass": {
-              "type": "importable"
+              "type": "importable",
+              "description": "Class symbol of objects stored in repository"
             }
           }
         },
         "FileRepository": {
           "type": "object",
-          "additionalProperties": false,
+          "description": "This represents a repository storing objects in files.",
           "extends": [
             "#/$defs/protocols/$defs/Repository",
             "#/$defs/serializers/$defs/FileSerializer"
           ],
+          "additionalProperties": false,
           "properties": {
             "overwrite": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if overwriting file is permitted."
             }
           }
         },
         "JsonFileRepository": {
           "type": "object",
+          "description": "This represents a repository storing objects in json files.",
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
             "#/$defs/serializers/$defs/JsonSerializer"
@@ -691,22 +774,25 @@
         },
         "YamlFileRepository": {
           "type": "object",
-          "additionalProperties": true,
+          "description": "This represents a repository storing objects in yaml files.",
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
             "#/$defs/serializers/$defs/YamlSerializer"
-          ]
+          ],
+          "additionalProperties": true
         },
         "XmlFileRepository": {
           "type": "object",
-          "additionalProperties": true,
+          "description": "This represents a repository storing objects in xml files.",
           "extends": [
             "#/$defs/repositories/$defs/FileRepository",
             "#/$defs/serializers/$defs/XmlSerializer"
           ],
+          "additionalProperties": true,
           "properties": {
             "postprocessor": {
-              "type": "importable"
+              "type": "importable",
+              "description": "Class symbol of postprocessor"
             }
           }
         }
@@ -717,67 +803,60 @@
       "$defs": {
         "Filter": {
           "type": "object",
+          "description": "This object represents a filter for a query set.",
           "additionalProperties": true,
           "properties": {
             "attrs": {
               "type": "array",
+              "description": "List of attributes that objects should have defined.",
               "items": true
             },
             "attrs_value": {
-              "type": "object"
+              "type": "object",
+              "description": "Set of key/value to filter query set."
             },
             "negate": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if negate condition."
             },
             "any_of": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if any of the filter conditions is enough."
             }
           }
         },
         "Query": {
           "type": "object",
+          "description": "This object represents a query",
+          "extends": [
+            "#/$defs/queries/$defs/Filter"
+          ],
           "notSerialized": [
+            "iterable"
+          ],
+          "notValidated": [
             "iterable"
           ],
           "readOnly": [
             "result"
           ],
-          "notValidated": [
-            "iterable"
-          ],
-          "extends": [
-            "#/$defs/queries/$defs/Filter"
-          ],
           "properties": {
             "iterable": {
-              "type": "array"
+              "type": "array",
+              "description": "Iterable to filter."
             },
             "distinct": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if only distinct objects are returned."
             },
             "order_by": true,
             "reverse": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "True, if order is reversed"
             },
             "result": {
-              "type": "array"
-            }
-          }
-        },
-        "EntityQuery": {
-          "type": "object",
-          "readOnly": [
-            "iterable"
-          ],
-          "extends": [
-            "#/$defs/queries/$defs/Query"
-          ],
-          "properties": {
-            "entity": {
-              "type": "importable"
-            },
-            "field": {
-              "type": "string"
+              "type": "array",
+              "description": "Filtered items"
             }
           }
         }
@@ -788,6 +867,7 @@
       "$defs": {
         "Session": {
           "type": "object",
+          "description": "This object represents a session, and binds all repositories in the scope of the application.",
           "additionalProperties": false,
           "properties": {
             "autoflush": {

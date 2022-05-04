@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 
 import codecs
 import os
-
+import gettext
 import arrow
 import six
 import itertools
@@ -35,13 +35,15 @@ from ..types.uri import Uri, Path
 from ..resolvers.uri_resolver import UriResolver
 from ..models.instances import Entity
 
+_ = gettext.gettext
+
 
 class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
-    """
+    _("""
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
-    """
+    """)
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/File'
 
     def __init__(self, value=None, meta_opts=None, **opts):
@@ -136,11 +138,11 @@ class UriFile(with_metaclass(SchemaMetaclass, UriResolver)):
 
 
 class Document(with_metaclass(SchemaMetaclass, UriFile)):
-    """
+    _("""
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
-    """
+    """)
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/Document'
     #_content = None
     #_contentRaw = None
@@ -227,9 +229,9 @@ _default_document_registry = None
 
 
 def get_document_registry():
-    """
+    _("""
     Return the default document registry
-    """
+    """)
     global _default_document_registry
     if _default_document_registry is None:
         _default_document_registry = DocumentRegistry()
@@ -255,11 +257,11 @@ class DocumentRegistry(Mapping):
 
     @assert_arg(1, PathFile)
     def register_from_file(self, fp):
-        """
+        _("""
         Register a document from a filepath
 
         :param fp: path of document to register
-        """
+        """)
         fp.resolve()
         if str(fp) not in self._fp_catalog._catalog:
             # no need for lazy loading as deserialize will load it anyway            doc =
@@ -269,14 +271,14 @@ class DocumentRegistry(Mapping):
 
     @assert_arg(1, String, type="string", format="uri-reference")
     def register_from_url(self, url):
-        """
+        _("""
         Register a document from an URL
 
         :param url: url of document to register
         :param deserialize: flag to deserialize document in memory
         :param deserializers: list of deserializers to try to use if `deserialize`=True
         :param deserializers_opts: dictionary of options for deserializers
-        """
+        """)
         if str(url) not in self._url_catalog:
             self._url_catalog.add(Document(url=url))
         doc = self._url_catalog[str(url)]
@@ -288,14 +290,14 @@ class DocumentRegistry(Mapping):
                                 includes=["*"],
                                 excludes=[],
                                 recursive=False):
-        """
+        _("""
         Register documents from a search in a directory
 
         :param src: directory containing files to register
         :param includes: pattern or list of patterns (*.py, *.txt, etc...)
         :param excludes: pattern or patterns to exclude
         :param recursive: list files recursively
-        """
+        """)
         # no need to assert_args in regiser_from_file as list_files return a file
         return [
             self.register_from_file(fp) for fp in list_files(

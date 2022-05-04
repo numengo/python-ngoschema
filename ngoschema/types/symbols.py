@@ -17,6 +17,12 @@ from .object import Object
 
 logger = logging.getLogger(__name__)
 
+_BUILTINS_QUALNAME = {
+    'builtins.module': 'types.ModuleType',
+    'builtins.function': 'types.FunctionType',
+    'builtins.method': 'types.MethodType',
+}
+
 
 @register_type('importable')
 class Symbol(Primitive):
@@ -67,14 +73,16 @@ class Symbol(Primitive):
 
     @staticmethod
     def _serialize(self, value, **opts):
-        value = String._serialize(self, value, **opts)
+        i = value
+        value = v = String._serialize(self, value, **opts)
         if value:
             if not String.check(value):
                 if isinstance(value, types.ModuleType):
-                    value = value.__name__
+                    value = v2 = value.__name__
                 else:
                     m = getattr(value, '__module__', None)
-                    value = '%s.%s' % (m, qualname(value)) if m else qualname(value)
+                    value = v2 = '%s.%s' % (m, qualname(value)) if m else qualname(value)
+                    value = _BUILTINS_QUALNAME.get(value, value)
         return value
 
 

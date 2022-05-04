@@ -9,6 +9,7 @@ created on 28/01/2019
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import gettext
 from future.utils import with_metaclass
 from collections import Mapping
 
@@ -17,6 +18,7 @@ from ..decorators import memoized_property, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol, ArrayProtocol, Context
 from ..contexts import InstanceContext, EntityContext
 
+_ = gettext.gettext
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 
@@ -50,9 +52,9 @@ class InstanceList(with_metaclass(SchemaMetaclass, ArrayProtocol, InstanceContex
 
 
 class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
-    """
+    _("""
     Object referenced by a list of keys of a foreign schema
-    """
+    """)
     _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/Entity"
     _primaryKeys = tuple()
     _identityKeys = None

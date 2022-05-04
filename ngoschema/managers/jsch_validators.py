@@ -23,7 +23,7 @@ jsch_validators_registry.register('const')(_validators.const)
 jsch_validators_registry.register('contains')(_validators.contains)
 #jsch_validators_registry.register('dependencies')(_validators.dependencies)
 ## 3.7
-jsch_validators_registry.register('dependencies')(getattr(_validators, 'dependentSchemas', getattr(_validators, 'dependencies', None)))
+jsch_validators_registry.register('dependencies')(getattr(_validators, 'dependentRequired', getattr(_validators, 'dependencies', None)))
 jsch_validators_registry.register('dependentSchemas')(_validators.dependentSchemas)
 jsch_validators_registry.register('dependentRequired')(_validators.dependentRequired)
 jsch_validators_registry.register('enum')(_validators.enum)
