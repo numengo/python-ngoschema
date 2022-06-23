@@ -85,7 +85,7 @@ class RelationshipBuilder(GenericClassRegistry):
                 bp_id = fs + f'/relationships/{bp}'
                 bp_rl = {'foreignSchema': id.split('/relationships')[0]}
                 if not hasattr(bp_fc, '_proxyUri'):
-                    bp_fc._localRelationships[bp] = self.build(bp_id, bp_rl)
+                    bp_fc._relationshipsLocal[bp] = self.build(bp_id, bp_rl)
         self._registry[id] = cls
         return cls
 

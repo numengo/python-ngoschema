@@ -22,6 +22,7 @@ class Validator(Converter, Context):
     _converter = Converter
     _default = None
     _schema = {}
+    _schemaFlattened = {}
     _jsValidator = DefaultValidator({})
 
     def __init__(self, converter=None, schema=None, context=None, **opts):
@@ -31,7 +32,8 @@ class Validator(Converter, Context):
         Context.__init__(self, context, **opts)
         schema = untype_schema(schema or opts)
         self._schema = ReadOnlyChainMap(schema, self._schema)
-        sch = dict(self._schema)
+        self._schemaFlattened = ReadOnlyChainMap(schema, self._schemaFlattened)
+        sch = dict(self._schemaFlattened)
         type_builder.check_schema(sch)
         self._default = sch.get('default', self._default)
         self._jsValidator = DefaultValidator(sch)
@@ -55,6 +57,9 @@ class Validator(Converter, Context):
         """)
         if not with_type:
             excludes = list(excludes) + ['type']
+        schema = {k: v for k, v in opts.get('schema', self._schemaFlattened).items() if k not in excludes}
+        return {'/'.join(e.schema_path): e.message
+                for e in self._jsValidator.evolve(schema=schema).iter_errors(value)}
         schema = {k: v for k, v in opts.get('schema', self._schema).items() if k not in excludes}
         return {'/'.join(e.schema_path): e.message
                 for e in self._jsValidator.iter_errors(value, schema)}

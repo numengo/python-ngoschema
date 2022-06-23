@@ -19,7 +19,7 @@ from ..resolvers.uri_resolver import UriResolver, resolve_uri
 from ..types.array import Array
 from ..types.type import Primitive
 from ..types.object import Object, ObjectSerializer, ObjectDeserializer
-from ..types.symbols import Function
+from ..types.symbols import Function, Class
 from ..types.uri import Id, scope
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
@@ -153,6 +153,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     _extends = []
     _abstract = False
+    _methods = {}
+    _methodsInherited = {}
+    _methodsChained = {}
     _propertiesAllowed = set()
     _propertiesTranslation = {}
     _relationships = {}
@@ -255,8 +258,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return False
 
     @staticmethod
-    def _create_context(self, *extra_contexts, **local):
-        return CollectionProtocol._create_context(self, {'this': self}, self._dataValidated, self, *extra_contexts, **local)
+    def _create_context(self, *extra_contexts, context=None, **local):
+        return CollectionProtocol._create_context(self, {'this': self}, self._dataValidated, self, *extra_contexts,
+                                                  context=context, **local)
 
     def _items_touch(self, item):
         CollectionProtocol._items_touch(self, item)
@@ -514,6 +518,50 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             self._str = '{%s}' % (', '.join(a))
         return self._str
 
+    @classmethod
+    def dosctring(cls, arguments=True, methods=True, methods_inherited=True):
+        txt = cls.__doc__
+        title = cls._title
+        description = cls._description
+        local_properties = cls._propertiesLocal
+
+        doc = f'{title}\n\n{description or ""}\n\n'
+        if local_properties:
+            doc += _('ARGUMENTS:') + '\n'
+            for a, p in local_properties.items():
+                desc = p._description or p._title or ''
+                pt = p._schema.get('type')
+                if p._schema.get('$ref'):
+                    pt = pt.__name__
+                if pt == 'array':
+                    pt = 'list'
+                    if p._items:  # to remove items set to True
+                        if not p._itemsIsList and p._items.is_constant():
+                            pass
+                        else:
+                            items = p._items if p._itemsIsList else [p._items]
+                            items = [getattr(i, '__name__', i._schema.get('type')) for i in items]
+                            pt += f'[{", ".join(items)}]'
+                doc += f'\t:param {a}: {_(desc)}\n'
+                doc += f'\t:type {a}: {pt}\n'
+            if cls._pbases:
+                doc += _('Inherits from:') + '\n'
+                doc += '\t' + ', '.join([pb.__name__ for pb in cls._pbases])
+
+        def append_doc_dict(dict, title):
+            global txt
+            txt += '\n' + title + '\n'
+            for k, m in dict.items():
+                txt += '\t' + k
+                if m.__doc__:
+                    txt += ':\t' + m.__doc__.splitlines()[0]
+
+        if methods and cls._methods:
+            append_doc_dict(cls._methods, _('METHODS'))
+        if methods_inherited and cls._methodsInherited:
+            append_doc_dict(cls._methodsInherited, _('METHODS INHERITED'))
+        return txt
+
     @staticmethod
     def _items_type(self, item):
         # add a cache to resolve type proxies and avoid property resolution
@@ -570,8 +618,17 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         comment = schema.get('$comment')
         title = schema.get('title', clsname)
 
+
         bases_extended = [type_builder.load(scope(e, id)) for e in schema.get('extends', [])]
         bases_extended = [e for e in bases_extended if not any(issubclass(b, e) for b in bases)]
+        wraps = schema.get('wraps')
+        if wraps:
+            if Class.check(wraps, convert=True):
+                wraps_s = Class.convert(wraps)
+                if wraps_s not in bases:
+                    bases = bases + (wraps_s, )
+            else:
+                logger.debug("%s not set to wrap %s." % (wraps, clsname))
         pbases = [b for b in bases if issubclass(b, ObjectProtocol) and not any(issubclass(e, b) for e in bases_extended)]
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
@@ -612,6 +669,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if primary_keys:
                 dependencies['identityKeys'] = set(primary_keys)
 
+        methods = {}
+
         extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', attrs.get('_notSerialized', [])), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
         not_validated = set().union(schema.get('notValidated', attrs.get('_notValidated', [])), *[b._notValidated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
@@ -644,7 +703,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 bps = v.get('backPopulates', {})
                 if not bps:
                     # add a pointer
-                    bps[f'{k}_ptr'] = {'foreignSchema': rs['foreignSchema'], 'foreignKeys': [k]}
+                    bps[f'{k}_ptr'] = {'foreignSchema': scope(rs['foreignSchema'], id), 'foreignKeys': [k]}
                 for kbp, bp in bps.items():
                     local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
                     #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
@@ -653,7 +712,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         from inflection import underscore
         for b in ebases:
             rname = underscore(b.__name__)
-            assert len(b._primaryKeys)
+            if not len(b._primaryKeys):
+                if b._abstract:
+                    continue
+                raise InvalidValue(_("Entity class '%s' is not abstract and has no primary keys defined.", rname))
             pks = b._primaryKeys
             pname = rname + '_' + '_'.join(pks)
             ptype = b._properties[pks[0]]._type if len(pks) == 1 else 'array'
@@ -672,6 +734,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 schema[k] = v._schema
             if Function.check(v):
                 f = v
+                if not k.startswith('_'):
+                    methods[k] = f
                 if add_logging:
                     if k == '__init__':
                         f = decorators.log_init(f)
@@ -805,14 +869,25 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 doc += _('Inherits from:') + '\n'
                 doc += '\t' + ', '.join([pb.__name__ for pb in pbases])
 
+        schema_chained = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
+        schema_flattened = dict(schema)
+        schema_flattened['required'] = required
+        schema_flattened['properties'] = dict(ChainMap(schema.get('properties', {}), *[getattr(b, '_schema', {}).get('properties', {}) for b in bases]))
+        schema_flattened['propertiesPattern'] = dict(ChainMap(schema.get('propertiesPattern', {}), *[getattr(b, '_schema', {}).get('propertiesPattern', {}) for b in bases]))
+        schema_flattened.pop('extends', None)
+        for f in ['required', 'properties', 'propertiesPattern']:
+            if not schema_flattened[f]:
+                del schema_flattened[f]
+
         # set the attributes
-        attrs['_title'] = title
+        attrs['_title'] = _(title)
         attrs['__doc__'] = doc.strip()
-        attrs['_description'] = description
-        attrs['_comment'] = comment
+        attrs['_description'] = _(description)
+        attrs['_comment'] = _(comment)
         attrs['_id'] = id
         attrs['_extends'] = extends
-        attrs['_schema'] = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
+        attrs['_schema'] = schema_chained
+        attrs['_schemaFlattened'] = schema_flattened
         attrs['_abstract'] = abstract
         attrs['_hasPk'] = is_entity # or bool(primary_keys)
         #attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
@@ -826,8 +901,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_propertiesAdditional'] = additional_properties
         attrs['_propertiesDescriptor'] = dict(ChainMap(properties_descriptor, *[getattr(b, '_propertiesDescriptor', {})
                                                                                 for b in pbases]))
+        attrs['_methods'] = methods
+        attrs['_methodsInherited'] = dict(ChainMap(*[b._methods for b in pbases],
+                                                   *[b._methodsInherited for b in pbases]))
+        attrs['_methodsChained'] = dict(ChainMap({id: methods},
+                                                 *[b._methodsChained for b in pbases]))
         attrs['_relationships'] = relationships
-        attrs['_localRelationships'] = local_relationships
+        attrs['_relationshipsLocal'] = local_relationships
         attrs['_relationshipsDescriptor'] = dict(ChainMap(local_relationships_descriptor,
                                                           *[getattr(b, '_relationshipsDescriptor', {}) for b in pbases]))
         attrs['_required'] = required

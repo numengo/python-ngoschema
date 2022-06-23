@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from urllib.parse import urlparse
 import inflection
+import importlib
 import re
 from collections import OrderedDict
 from functools import lru_cache
@@ -43,7 +44,14 @@ class NamespaceManager(Registry):
     def add(self, uri, name=None):
         if not uri.split('#')[0]:
             uri = self._registry[''].split('#')[0] + uri
-        self._local[NamespaceManager._uri_to_cname(uri) if name is None else name] = uri
+        cname = NamespaceManager._uri_to_cname(uri) if name is None else name or ''
+        self._local[cname] = uri
+        if cname == self._current_ns:
+            self._current_ns_uri = uri
+        try:
+            ns = importlib.import_module(cname)
+        except Exception as er:
+            pass
 
     def set_current(self, name):
         ns_names = sorted([k for k in self._registry.keys() if name.startswith(k)])

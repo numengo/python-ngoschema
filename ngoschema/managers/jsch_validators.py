@@ -76,21 +76,23 @@ def recursive_ref(validator, ref, instance, schema):
                 validator.resolver.pop_scope()
 
 
-@jsch_validators_registry.register('extends__')
-def extends(validator, ref, instance, schema):
+@jsch_validators_registry.register('extends')
+def extends(validator, refs, instance, schema):
     resolve = getattr(validator.resolver, "resolve", None)
     if resolve is None:
-        with validator.resolver.resolving(ref) as resolved:
-            for error in validator.descend(instance, resolved):
-                yield error
+        for ref in refs:
+            with validator.resolver.resolving(ref) as resolved:
+                for error in validator.descend(instance, resolved):
+                    yield error
     else:
-        scope, resolved = validator.resolver.resolve(ref)
+        for ref in refs:
+            scope, resolved = validator.resolver.resolve(ref)
 
-        try:
-            for error in validator.descend(instance, resolved):
-                yield error
-        finally:
-            pass
+            try:
+                for error in validator.descend(instance, resolved):
+                    yield error
+            finally:
+                pass
 
 # custom validators
 @jsch_validators_registry.register()

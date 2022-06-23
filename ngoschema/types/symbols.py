@@ -55,8 +55,8 @@ class Symbol(Primitive):
                 except Exception as er:
                     continue
             else:
-                logger.error("%s is not an importable object" % value)
-                #raise ConversionError("%s is not an importable object" % value)
+                #logger.debug("%s is not an importable object" % value)
+                raise ConversionError("%s is not an importable object" % value)
         if typed is not None and not self.check_symbol(typed):
             raise ConversionError("%s is not a %s" % (value, self._type))
         return typed

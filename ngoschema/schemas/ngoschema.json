@@ -275,13 +275,9 @@
     "relationships": {
       "type": "object",
       "$defs": {
-        "Relationship": {
+        "RelationshipBase": {
           "type": "object",
           "description": "This objet represents the relationship between one and one/many other objects",
-          "extends": [
-            "#/$defs/metadata/$defs/Name"
-          ],
-          "additionalProperties": false,
           "dependencies": {
             "foreignClass": [
               "foreignSchema"
@@ -337,11 +333,18 @@
             }
           }
         },
+        "Relationship": {
+          "type": "object",
+          "extends": [
+            "#/$defs/relationships/$defs/RelationshipBase",
+            "#/$defs/metadata/$defs/Name"
+          ]
+        },
         "ForeignKey": {
           "type": "object",
           "description": "This object allow to point an object stored in a repository from a foreign key, and to associate it to the current object",
           "extends": [
-            "#/$defs/relationships/$defs/Relationship"
+            "#/$defs/relationships/$defs/RelationshipBase"
           ],
           "additionalProperties": false,
           "properties": {
@@ -380,6 +383,9 @@
           "additionalProperties": false,
           "notSerialized": [
             "canonicalName"
+          ],
+          "required": [
+            "name"
           ],
           "properties": {
             "name": {
@@ -450,6 +456,77 @@
               "type": "array",
               "description": "Primary keys values in object, used to identify it."
             }
+          }
+        }
+      }
+    },
+    "dataframes": {
+      "type": "object",
+      "$defs": {
+        "Index": {
+          "type": "object",
+          "description": "This object represents a serie for Pandas",
+          "extends": [
+            "#/$defs/instances/$defs/Instance"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            }
+          }
+        },
+        "DatetimeIndex": {
+          "type": "object",
+          "extends": [
+            "#/$defs/dataframes/$defs/Index"
+          ]
+        },
+        "Series": {
+          "type": "object",
+          "description": "This object represents series for Pandas",
+          "extends": [
+            "#/$defs/instances/$defs/Instance"
+          ],
+          "additionalProperties": true,
+          "required": [
+            "index"
+          ],
+          "properties": {
+            "index": {
+              "$ref": "#/$defs/dataframes/$defs/Index"
+            },
+            "data": true,
+            "dtype": {
+              "type": "string",
+              "description": "dtype object of the underlying data."
+            }
+          }
+        },
+        "TimeSeries": {
+          "type": "object",
+          "extends": [
+            "#/$defs/dataframes/$defs/Series"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "index": {
+              "$ref": "#/$defs/dataframes/$defs/DatetimeIndex"
+            }
+          }
+        },
+        "DataFrame": {
+          "type": "object",
+          "description": "Two-dimensional size-mutable, potentially heterogeneous tabular data structure with labeled axes (rows and columns).",
+          "extends": [
+            "#/$defs/dataframes/$defs/Series"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "index": {
+              "$ref": "#/$defs/dataframes/$defs/Index"
+            },
+            "data": true
           }
         }
       }

@@ -165,3 +165,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
             return Query(self).next(**kwargs)
         except StopIteration as er:
             return default
+
+    def query(self, *attrs, distinct=False, order_by=False, reverse=False, **attrs_value):
+        from ..query import Query
+        return Query(self, distinct=distinct, order_by=order_by, reverse=reverse).get(*attrs, **attrs_value)

@@ -17,7 +17,7 @@ from .strings import String
 
 
 @register_type('uri')
-class Uri(Primitive, Resolver):
+class Uri(String, Resolver):
     """
     Add additional 'uri' to json-schema associated in python to urllib.parse.ParseResult
     """
@@ -68,7 +68,7 @@ cn_re = re.compile(r"^[\.\da-zA-Z_]+$")
 
 
 @register_type('id')
-class Id(NsManagerContext, String):
+class Id(NsManagerContext, Uri):
     _canonical = False
 
     def __init__(self, **opts):

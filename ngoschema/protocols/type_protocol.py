@@ -88,9 +88,9 @@ class TypeProtocol(Serializer):
             attrs['_default'] = enum[0]
         attrs['_id'] = id
         attrs['_title'] = title
-        attrs.setdefault('__doc__', description or '')
-        attrs['_description'] = description
-        attrs['_comment'] = comment
+        attrs.setdefault('__doc__', _(description or ''))
+        attrs['_description'] = _(description)
+        attrs['_comment'] = _(comment)
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_pbases'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
@@ -144,7 +144,7 @@ class TypeProtocol(Serializer):
 
     @classmethod
     def dosctring(cls):
-        return f':param {cls.__name__}:'
+        doc = f':param {cls.__name__}:\n:type {cls._type}:'
 
     def __repr__(self):
         s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema(self).items()])

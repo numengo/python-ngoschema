@@ -67,23 +67,24 @@ class ForeignKey(Ref):
         from ..protocols.object_protocol import ObjectProtocol
         from ..managers.type_builder import type_builder, scope
         self._foreignSchema = fs = foreign_schema
-        self._foreignClass = ObjectProtocol
+        #self._foreignClass = ObjectProtocol
+        self._foreignClass = None
         if fs:
             try:
                 fs = scope(fs, self._id)
                 fc = type_builder.load(fs)
                 self.set_foreignClass(fc)
             except Exception as er:
-                self._logger.error(er, exc_info=True)
+                self._logger.debug(er, exc_info=True)
                 pass
 
     def set_foreignClass(self, foreign_class):
         from ..protocols import TypeProxy
         from ..models.instances import Entity
         fc = foreign_class
-        if fc and not issubclass(fc, TypeProxy):
+        if fc and not hasattr(fc, '_proxyUri'):
             if not issubclass(fc, Entity):
-                raise ValueError('target class (%r) must implement (%r) interface.' \
+                raise ValueError('Impossible to set foreign class (%r) as it must implement (%r) interface.' \
                                  % (fc, Entity))
             else:
                 self._foreignClass = fc
@@ -94,7 +95,7 @@ class ForeignKey(Ref):
     def get_foreignClass(self):
         from ..protocols.type_proxy import TypeProxy
         fc, fs = self._foreignClass, self._foreignSchema
-        if fc and issubclass(fc, TypeProxy):
+        if fc and hasattr(fc, '_proxyUri'):
             self._foreignClass = fc.proxy_type()
         if not fc and fs:
             ForeignKey.set_foreignSchema(self, self._foreignSchema)

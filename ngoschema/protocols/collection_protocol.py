@@ -198,8 +198,8 @@ class CollectionProtocol(Collection):
     def create(cls, value=None, **opts):
         return cls(value, **opts)
 
-    def do_validate(self, **opts):
-        return self._validate(self, self, **opts)
+    def do_validate(self, items=True, **opts):
+        return self._validate(self, self, items=items, **opts)
 
     def do_serialize(self, deserialize=False, **opts):
         opts['context'] = self._context

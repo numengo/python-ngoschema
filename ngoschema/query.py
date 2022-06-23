@@ -504,3 +504,4 @@ class Query(object):
         Return all results of query set
         """
         return self.result_cache
+
