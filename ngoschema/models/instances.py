@@ -17,6 +17,7 @@ from .. import settings
 from ..decorators import memoized_property, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol, ArrayProtocol, Context
 from ..contexts import InstanceContext, EntityContext
+from ..utils import to_list
 
 _ = gettext.gettext
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
@@ -90,6 +91,26 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     def get_identityKeys(self):
         self._identityKeys = tuple(self[k] for k in self._primaryKeys)
         return self._identityKeys
+
+    @staticmethod
+    def _convert(self, value, **opts):
+        _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        pks = self._primaryKeys
+        pks_type = [self._items_type(self, pk) for pk in pks]
+        try:
+            return [pk_type._convert(pk_type, v, **opts) for pk_type, v in zip(pks_type, to_list(value))]
+        except Exception as er:
+            return Instance._convert(self, value)
+
+    @staticmethod
+    def _check(self, value, **opts):
+        _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        pks = self._primaryKeys
+        pks_type = [self._items_type(self, pk) for pk in pks]
+        try:
+            return [pk_type._check(pk_type, v, **opts) for pk_type, v in zip(pks_type, to_list(value))]
+        except Exception as er:
+            return Instance._check(self, value)
 
     @staticmethod
     def _serialize(self, value, root_entity=False, **opts):

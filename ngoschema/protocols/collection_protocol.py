@@ -26,6 +26,7 @@ class CollectionProtocol(Collection):
     _lazyLoading = LAZY_LOADING
     _useContext = USE_CONTEXT
     _collection = None
+    _wraps = None
     #_validate = COLLECTION_VALIDATE
 
     _data = None
@@ -132,6 +133,11 @@ class CollectionProtocol(Collection):
                 return t(v, **opts)
             elif isinstance(t, _True):
                 return v
+            elif t._wraps is not None:
+                if v is not None and isinstance(v, t._wraps):
+                    return v
+                else:
+                    return t._wraps(v)
             else:
                 return v if isinstance(t, type) and isinstance(v, t) else t(v, **opts)
         except Exception as er:
@@ -225,3 +231,24 @@ class CollectionProtocol(Collection):
     def __hash__(self):
         return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._dataValidated))))
 
+    #@classmethod
+    #def __subclasshook__(cls, subclass):
+    #    """Just modify the behavior for classes that aren't genuine subclasses."""
+    #    if super().__subclasshook__(subclass):
+    #        return True
+    #    else:
+    #        # Not a normal subclass, implement some customization here.
+    #        wraps = getattr(cls, '_wraps')
+    #        return issubclass(subclass, wraps) if wraps is not None else False
+
+    #@classmethod
+    #def __instancecheck__(cls, instance):
+    #    wraps = cls._wraps
+    #    if wraps is not None and isinstance(instance, wraps):
+    #        return True
+    #    return False
+    #
+    #@classmethod
+    #def __subclasshook__(cls, subclass):
+    #    wraps = cls._wraps
+    #    return issubclass(subclass, wraps) if wraps is not None else False

@@ -60,9 +60,6 @@ class Validator(Converter, Context):
         schema = {k: v for k, v in opts.get('schema', self._schemaFlattened).items() if k not in excludes}
         return {'/'.join(e.schema_path): e.message
                 for e in self._jsValidator.evolve(schema=schema).iter_errors(value)}
-        schema = {k: v for k, v in opts.get('schema', self._schema).items() if k not in excludes}
-        return {'/'.join(e.schema_path): e.message
-                for e in self._jsValidator.iter_errors(value, schema)}
 
     def _format_errors(self, value, **opts):
         errors = Validator._errors(self, value, **opts)

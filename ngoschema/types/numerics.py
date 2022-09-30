@@ -55,6 +55,11 @@ class Number(Numeric):
         return value.to_eng_string(context=self._dcmContext)
 
 
+@register_type('float')
+class Float(Number):
+    _pyType = float
+
+
 @register_type('integer')
 class Integer(Numeric):
     _pyType = int

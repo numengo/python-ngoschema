@@ -622,13 +622,15 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         bases_extended = [type_builder.load(scope(e, id)) for e in schema.get('extends', [])]
         bases_extended = [e for e in bases_extended if not any(issubclass(b, e) for b in bases)]
         wraps = schema.get('wraps')
-        if wraps:
-            if Class.check(wraps, convert=True):
-                wraps_s = Class.convert(wraps)
-                if wraps_s not in bases:
-                    bases = bases + (wraps_s, )
-            else:
-                logger.debug("%s not set to wrap %s." % (wraps, clsname))
+        if wraps and Class.check(wraps, convert=True):
+            wraps = Class.convert(wraps)
+        #if wraps:
+        #    if Class.check(wraps, convert=True):
+        #        wraps_s = Class.convert(wraps)
+        #        if wraps_s not in bases:
+        #            bases = bases + (wraps_s, )
+        #    else:
+        #        logger.debug("%s not set to wrap %s." % (wraps, clsname))
         pbases = [b for b in bases if issubclass(b, ObjectProtocol) and not any(issubclass(e, b) for e in bases_extended)]
         bases = [b for b in bases if not any(issubclass(e, b) for e in bases_extended)]
         pbases = pbases + bases_extended
@@ -671,7 +673,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         methods = {}
 
-        extends = [b._id for b in pbases] + [b._proxyUri for b in not_ready_yet]
+        extends = [b._id for b in pbases if b._id] + [b._proxyUri for b in not_ready_yet]
         not_serialized = set().union(schema.get('notSerialized', attrs.get('_notSerialized', [])), *[b._notSerialized for b in pbases], *[s.get('notSerialized', []) for s in not_ready_yet_sch])
         not_validated = set().union(schema.get('notValidated', attrs.get('_notValidated', [])), *[b._notValidated for b in pbases], *[s.get('notValidated', []) for s in not_ready_yet_sch])
         required = set().union(schema.get('required', attrs.get('_required', [])), *[b._required for b in pbases], *[s.get('required', []) for s in not_ready_yet_sch])
@@ -888,6 +890,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_extends'] = extends
         attrs['_schema'] = schema_chained
         attrs['_schemaFlattened'] = schema_flattened
+        attrs['_wraps'] = wraps
         attrs['_abstract'] = abstract
         attrs['_hasPk'] = is_entity # or bool(primary_keys)
         #attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))

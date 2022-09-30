@@ -114,14 +114,14 @@ class ForeignKey(Ref):
             value = [value]
         else:
             value = Array.deserialize(value, split_string=True, **opts)
-        opts['raw_literals'] = False
+        opts.setdefault('raw_literals', False)
         fkt = self._foreignKeysType
         return fkt[0]._convert(fkt[0], value[0], **opts) if len(fkt)==1 else tuple(t._convert(t, v, **opts) for t, v in zip(fkt, value))
         #return tuple(t._convert(t, v, **opts) for t, v in zip(self._foreignKeysType, value))
 
     @staticmethod
-    @assert_arg(1, Array, strDelimiter=',')
     def _check(self, value, **opts):
+        value = Array.deserialize(value, split_string=True, **opts)
         if all(t._check(t, v, **opts) for t, v in zip(self._foreignKeysType, Array.deserialize(value, **opts))):
             return value
         raise TypeError('%s is not of type foreignKey.' % value)

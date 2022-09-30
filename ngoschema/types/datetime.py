@@ -9,6 +9,7 @@ from ..exceptions import ValidationError, InvalidValue
 from .type import TypeProtocol, Primitive
 from ..managers.type_builder import register_type
 from .strings import String
+from .numerics import Integer
 from .. import settings
 
 
@@ -145,3 +146,28 @@ class Datetime(Date, Time):
     @staticmethod
     def _serialize(self, value, **opts):
         return _dt_serialize(self, value, **opts)
+
+
+@register_type('timestamp')
+class Timestamp(Integer, Datetime):
+    _pyType = int
+
+    @staticmethod
+    def _check(self, value, **opts):
+        if Integer._check(self, value) or Datetime._check(self, value):
+            return value
+        raise TypeError('%s is not of type timestamp.' % value)
+
+    @staticmethod
+    def _convert(self, value, **opts):
+        if Datetime._check(self, value):
+            return Datetime.convert(self, value, **opts).timestamp
+        if Integer._check(self, value):
+            return Integer._convert(self, value, **opts)
+        raise InvalidValue("{0} is not detected as a timestamp.".format(value))
+
+    @staticmethod
+    def _serialize(self, value, **opts):
+        if isinstance(value, arrow.Arrow):
+            return value.timestamp
+        return Integer._serialize(self, value, **opts)

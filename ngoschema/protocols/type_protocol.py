@@ -27,6 +27,7 @@ class TypeProtocol(Serializer):
     _title = None
     _description = None
     _comment = None
+    _id = None
 
     def __init__(self, serializer=None, **opts):
         self._serializer = serializer or self._serializer
@@ -66,7 +67,9 @@ class TypeProtocol(Serializer):
                 fc = type_builder.load(fs)
                 attrs['_foreignClass'] = fc
                 #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._primaryKeys)
-                attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc._schema, 'primaryKeys', ['id']))
+                #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', getattr(fc, '_primaryKeys', ['id']))
+                attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._schema.get('primaryKeys', fc._primaryKeys))
+                #attrs['_foreignKeys'] = fks = schema.get('foreignKey', {}).get('foreignKeys', fc._schema.get('primaryKeys', ['id']))
                 attrs['_foreignKeysType'] = [fc._items_type(fc, k) for k in fks]
             except Exception as er:
                 # certainly a proxy type inf fc item fk type evaluation
@@ -74,7 +77,9 @@ class TypeProtocol(Serializer):
                 assert hasattr(fc, '_proxyUri')
             extra_bases += (ForeignKey, )
         if 'type' in schema:
-            extra_bases += (type_builder.get_type(schema['type']), )
+            sch_type = type_builder.get_type(schema['type'])
+            if sch_type not in extra_bases:
+                extra_bases += (sch_type, )
         # filter bases to remove duplicates
         extra_bases = tuple(b for b in extra_bases if not issubclass(b, bases))
         if not bases and not extra_bases:

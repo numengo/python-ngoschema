@@ -157,6 +157,11 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def attrs(self, attr):
         return [i[attr] for i in self]
 
+    def sort(self, key=None, reverse=False):
+        list(self)
+        # sort 2 lists by one
+        self._dataValidated, self._data = zip(*sorted(zip(self._dataValidated, self._data), key=key, reverse=reverse))
+
     def get(self, *pks, default=None, **kwargs):
         from ..query import Query
         if pks:

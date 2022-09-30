@@ -11,9 +11,12 @@ from __future__ import unicode_literals
 import copy
 import logging, logging.config
 import pathlib
+import codecs
+import json
 
 from ruamel.yaml import YAML
 import appdirs
+#from simple_settings import LazySettings as SimpleLazySettings
 
 from ngofile.pathlist import PathList
 
@@ -49,3 +52,22 @@ def load_default_app_config(app_name, app_author=None):
                   + ['%s_.environ' % app_name.upper()]
     settings = LazySettings(*settings_list)
     return settings.as_dict()
+
+
+class SettingsLoadStrategyPythonSecrets:
+    """
+    This is the strategy used to read secret settings from a secrets.json file managed by python-secrets
+    """
+    name = 'python_secrets'
+
+    @staticmethod
+    def is_valid_file(file_name):
+        return file_name == 'python_secrets'
+
+    @staticmethod
+    def load_settings_file(settings_file):
+        from psec.secrets_environment import SecretsEnvironment
+        e = SecretsEnvironment()
+        if e.secrets_file_path_exists():
+            e.read_secrets_and_descriptions()
+            return dict(e.items())
