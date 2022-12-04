@@ -20,7 +20,7 @@ import appdirs
 
 from ngofile.pathlist import PathList
 
-from ngoschema.types import PathFileExists
+from ngoschema.datatypes import PathFileExists
 from ngoschema.decorators import assert_arg
 
 

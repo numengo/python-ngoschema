@@ -20,14 +20,14 @@ class ArrayDeserializer(CollectionDeserializer):
     _minItems = 0
     _maxItems = None
     _uniqueItems = False
-    _splitString = False
+    _asString = False
     _strDelimiter = ','
 
-    def __init__(self, minItems=None, maxItems=None, uniqueItems=None, splitString=None, strDelimiter=None, **opts):
+    def __init__(self, minItems=None, maxItems=None, uniqueItems=None, asString=None, strDelimiter=None, **opts):
         self._minItems = minItems or self._minItems
         self._maxItems = maxItems or self._maxItems
         self._uniqueItems = uniqueItems or self._uniqueItems
-        self._splitString = splitString or self._splitString
+        self._asString = asString or self._asString
         self._strDelimiter = strDelimiter or self._strDelimiter
         CollectionDeserializer.__init__(self, **opts)
 
@@ -39,10 +39,10 @@ class ArrayDeserializer(CollectionDeserializer):
     @staticmethod
     def _deserialize(self, value, **opts):
         value = CollectionDeserializer._deserialize(self, value, **opts)
-        #split_string = self._splitString if split_string is None else split_string
+        #split_string = self._asString if split_string is None else split_string
         #str_del = self._strDelimiter if str_del is None else str_del
         if String.check(value):
-            split_string = opts.get('split_string', self._splitString)
+            split_string = opts.get('split_string', self._asString)
             str_del = opts.get('strDelimiter', self._strDelimiter)
             value = [s.strip() for s in value.split(str_del)] if split_string else [value]
         else:
@@ -148,8 +148,8 @@ class Array(Collection, ArraySerializer):
             rs['maxItems'] = self._maxItems
         if self._uniqueItems:
             rs['uniqueItems'] = self._uniqueItems
-        if self._splitString:
-            rs['splitString'] = self._splitString
+        if self._asString:
+            rs['asString'] = self._asString
             rs['strDelimiter'] = self._strDelimiter
         return rs
 

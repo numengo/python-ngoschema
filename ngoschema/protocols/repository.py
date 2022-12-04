@@ -8,7 +8,7 @@ from .validator import Validator
 from .serializer import Serializer
 from .loader import Loader, Saver
 from ..session import default_session
-from ..types.object import Object
+from ..datatypes.object import Object
 from ..registries import repositories_registry
 
 _ = gettext.gettext

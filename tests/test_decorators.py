@@ -14,7 +14,7 @@ from builtins import object
 import pytest
 from python_jsonschema_objects.validators import ValidationError
 
-from ngoschema.types import Integer
+from ngoschema.datatypes import Integer
 from ngoschema.decorators import assert_arg
 from ngoschema.decorators import assert_prop
 from ngoschema.decorators import log_exceptions

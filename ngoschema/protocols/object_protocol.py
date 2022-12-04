@@ -11,16 +11,17 @@ import re
 from operator import neg
 import copy
 import gettext
+from abc import _abc_instancecheck, _abc_subclasscheck
 
 from ..exceptions import InvalidValue
 from ..utils import ReadOnlyChainMap as ChainMap, shorten, is_mapping
 from .. import decorators
 from ..resolvers.uri_resolver import UriResolver, resolve_uri
-from ..types.array import Array
-from ..types.type import Primitive
-from ..types.object import Object, ObjectSerializer, ObjectDeserializer
-from ..types.symbols import Function, Class
-from ..types.uri import Id, scope
+from ..datatypes.array import Array
+from ..datatypes.type import Primitive
+from ..datatypes.object import Object, ObjectSerializer, ObjectDeserializer
+from ..datatypes.symbols import Function, Class
+from ..datatypes.uri import Id, scope
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from ..contexts.object_protocol_context import ObjectProtocolContext
@@ -152,7 +153,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _attributeByName = ATTRIBUTE_BY_NAME
 
     _extends = []
+    _extendsProxy = []
     _abstract = False
+    _pbases = []
+    _pbasesProxy = []
     _methods = {}
     _methodsInherited = {}
     _methodsChained = {}
@@ -346,6 +350,16 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         raise AttributeError("'{0}' has not been set to {1}".format(
                                 name, self.__class__.__name__))
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        """Override for issubclass(subclass, cls)."""
+        # cls is subclass or cls in subclass parents
+        subklass = subclass if not hasattr(subclass, '_proxyUri') else subclass.proxy_type()
+        if cls in subklass.__mro__:
+            return True
+        else:
+            return getattr(cls, '_id', None) in getattr(subklass, '_extendsProxy', [])
+
     def resolve_cname_path(self, cname):
         from ..models.instances import Instance
         # use generators because of 'null' which might lead to different paths
@@ -503,7 +517,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             m = settings.PPRINT_MAX_EL
             ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=True))
             hidden = max(0, len(ks) - m)
-            a = ['%s=%s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            #a = ['%s=%s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a = ['%s=%s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k], str_fun=repr)) for k in ks[:m]]
+            #a = ['%s=%s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k]), str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
         return self._repr
@@ -513,7 +529,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             m = settings.PPRINT_MAX_EL
             ks = list(self._print_order(self, self._data, no_defaults=True, no_readOnly=False))
             hidden = max(0, len(ks) - m)
-            a = ['%s: %s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            #a = ['%s: %s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a = ['%s: %s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k], str_fun=repr)) for k in ks[:m]]
             a += ['+%i...' % hidden] if hidden else []
             self._str = '{%s}' % (', '.join(a))
         return self._str
@@ -638,7 +655,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         is_entity = any([issubclass(b, EntityContext) for b in pbases])
         ebases = [b for b in pbases if issubclass(b, EntityContext) and b.__name__ not in ['Entity', 'EntityNode']]
 
-        not_ready_yet = tuple(b for b in pbases if isinstance(b, TypeProxy) and b.proxy_type is None)
+        not_ready_yet = tuple(b for b in pbases if issubclass(b, TypeProxy) and b.proxy_type() is None)
         not_ready_yet_sch = tuple(type_builder.expand(b._proxyUri) for b in not_ready_yet)
         pbases = tuple(b for b in pbases if b not in not_ready_yet)
         if not pbases:
@@ -680,6 +697,17 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         read_only = set().union(schema.get('readOnly', attrs.get('_readOnly', [])), *[b._readOnly for b in pbases], *[s.get('readOnly', []) for s in not_ready_yet_sch])
         has_default = set().union(*[b._propertiesWithDefault for b in pbases])
 
+        # extends flattened for proxies
+        extends_proxies_flattened = []
+        def flatten_proxy_extends(proxy_id):
+            if proxy_id not in extends_proxies_flattened:
+                extends_proxies_flattened.append(proxy_id)
+            proxy_sch = resolve_uri(proxy_id)
+            for e in proxy_sch.get('extends', []):
+                flatten_proxy_extends(scope(e, proxy_id))
+        for b in not_ready_yet:
+            flatten_proxy_extends(b._proxyUri)
+
         # create type for properties
         local_properties = OrderedDict([(k, type_builder.build(f'{id}/properties/{k}', v))
                                   for k, v in schema.get('properties', {}).items()])
@@ -697,19 +725,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                                   for k, v in schema.get('relationships', {}).items()])
         local_relationships_descriptor = OrderedDict()
         relationships = ChainMap(local_relationships, *[b._relationships for b in pbases])
-        for k, v in schema.get('properties', {}).items():
-            if Object.check(v) and 'foreignKey' in v:
-                rs = v['foreignKey']
-                ra = {}
-                # treat backpopulates
-                bps = v.get('backPopulates', {})
-                if not bps:
-                    # add a pointer
-                    bps[f'{k}_ptr'] = {'foreignSchema': scope(rs['foreignSchema'], id), 'foreignKeys': [k]}
-                for kbp, bp in bps.items():
-                    local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
-                    #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
-                    local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
         # add foreign keys from inherited entities
         from inflection import underscore
         for b in ebases:
@@ -726,6 +741,20 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             rsch = {'foreignSchema': b._id, 'foreignKeys': [pname], 'inheritance': True}
             local_relationships[rname] = rl = relationship_builder.build(f'{id}/relationships/{rname}', rsch)
             local_relationships_descriptor[rname] = RelationshipDescriptor(rname, rl)
+        # add relationships related to local properties
+        for k, v in schema.get('properties', {}).items():
+            if Object.check(v) and 'foreignKey' in v:
+                rs = v['foreignKey']
+                ra = {}
+                # treat backpopulates
+                bps = v.get('backPopulates', {})
+                if not bps:
+                    # add a pointer
+                    bps[f'{k}_ptr'] = {'foreignSchema': scope(rs['foreignSchema'], id), 'foreignKeys': [k]}
+                for kbp, bp in bps.items():
+                    local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
+                    #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
+                    local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...
@@ -742,7 +771,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     if k == '__init__':
                         f = decorators.log_init(f)
                 if assert_args and f.__doc__:
-                    from ..types import Type
+                    from ..datatypes import Type
                     fi = inspect_function(f)
                     if 'assert_arg' in [d['name'] for d in fi.get('decorators', [])]:
                         # function is already using assert_arg
@@ -888,6 +917,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_comment'] = _(comment)
         attrs['_id'] = id
         attrs['_extends'] = extends
+        attrs['_extendsProxy'] = extends_proxies_flattened
         attrs['_schema'] = schema_chained
         attrs['_schemaFlattened'] = schema_flattened
         attrs['_wraps'] = wraps
@@ -929,6 +959,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_items_type_cache'] = {}
         attrs['_pbases'] = pbases
+        attrs['_pbasesProxy'] = tuple(not_ready_yet)
         if 'lazyLoading' in schema:
             attrs['_lazyLoading'] = schema['lazyLoading']
         # add inner definitions
@@ -942,9 +973,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
         bases = tuple(bases + bases_extended)
         if not_ready_yet:
-            logger.warning('removing bases not ready %s' % not_ready_yet)
+            # removing bases not ready. properties have descriptors
+            # subclassing is handled in ObjectProtocol.__subclasshook__
             bases = tuple(b for b in bases if b not in not_ready_yet)
-
         try:
             cls = type(clsname, bases, attrs)
         except Exception as er:

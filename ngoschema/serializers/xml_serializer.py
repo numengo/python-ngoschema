@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import collections
 
 from ..utils import xmltodict
-from ..types import Array
+from ..datatypes import Array
 from ..registries import deserializers_registry, serializers_registry
 from ..protocols import Deserializer, Serializer
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol

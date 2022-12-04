@@ -139,7 +139,7 @@ DATE_TODAY_STRINGS = ['today']
 
 # format options
 DATE_FORMATS = [
-    'YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYY-MM', 'YYYY/MM', 'YYYY.MM'
+    'YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYY:MM:DD', 'YYYY-MM', 'YYYY/MM', 'YYYY.MM'
 ]
 
 ALT_DATE_FORMATS = [

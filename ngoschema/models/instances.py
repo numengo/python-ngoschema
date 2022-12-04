@@ -64,9 +64,9 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         if args and args[0] and not isinstance(args[0], Mapping):
             context = kwargs.get('context')
             session = context._session if context else None
-            session = session or cls._session
-            inst = session.resolve_fkey(args, cls)
-            cls = inst.__class__
+            if session:
+                inst = session.resolve_fkey(args, cls)
+                cls = inst.__class__
         return ObjectProtocol.__new__(cls, *args, **kwargs)
 
     def __init__(self, value=None, primaryKeys=None, **opts):

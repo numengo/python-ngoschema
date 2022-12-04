@@ -33,15 +33,15 @@ class TypeProtocol(Serializer):
         self._serializer = serializer or self._serializer
         self._serializer.__init__(self, **opts)
         self._type = self._schema.get('type', self._type)
-        self._title = self._schema.get('title', self._title)
-        #self._description = self._schema.get('description', self._description)
-        self._comment = self._schema.get('$comment', self._comment)
+        self._title = self._schema.get('title', self._title)  # _(title)
+        self._description = self._schema.get('description', self._description)  # why was it disabled? _(description)
+        self._comment = self._schema.get('$comment', self._comment)  # _(comment) ?
 
     @staticmethod
     def build(id, schema, bases=(), attrs=None):
         from ..managers.type_builder import type_builder, DefaultValidator
         from ..managers.namespace_manager import default_ns_manager
-        from ..types import Type
+        from ..datatypes import Type
         attrs = attrs or {}
         ref = schema.get('$ref')
         cname = default_ns_manager.get_id_cname(ref or id)
@@ -56,11 +56,11 @@ class TypeProtocol(Serializer):
         # add enum type if detected
         enum = []
         if 'enum' in schema:
-            from ..types import Enum
+            from ..datatypes import Enum
             attrs['_enum'] = enum = schema['enum']
             extra_bases += (Enum, )
         if 'foreignKey' in schema:
-            from ..types.foreign_key import ForeignKey
+            from ..datatypes.foreign_key import ForeignKey
             fs = schema.get('foreignKey', {}).get('foreignSchema')
             attrs['_foreignSchema'] = fs = scope(fs, id)
             try:
@@ -92,7 +92,7 @@ class TypeProtocol(Serializer):
         elif enum:
             attrs['_default'] = enum[0]
         attrs['_id'] = id
-        attrs['_title'] = title
+        attrs['_title'] = title  # _(title) ??
         attrs.setdefault('__doc__', _(description or ''))
         attrs['_description'] = _(description)
         attrs['_comment'] = _(comment)

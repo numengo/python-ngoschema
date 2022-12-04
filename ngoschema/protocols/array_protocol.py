@@ -7,9 +7,9 @@ import six
 import logging
 import gettext
 
-from ..types.array import Array, ArraySerializer, ArrayDeserializer
+from ..datatypes.array import Array, ArraySerializer, ArrayDeserializer
 from .collection_protocol import CollectionProtocol, TypeProtocol
-from ..types.constants import _True
+from ..datatypes.constants import _True
 from ..utils import shorten
 from ..managers.namespace_manager import default_ns_manager
 from .. import settings
@@ -137,7 +137,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         attrs['_minItems'] = schema.get('minItems', Array._minItems)
         attrs['_maxItems'] = schema.get('maxItems', Array._maxItems)
         attrs['_uniqueItems'] = schema.get('uniqueItems', Array._uniqueItems)
-        attrs['_splitString'] = schema.get('splitString', Array._splitString)
+        attrs['_asString'] = schema.get('asString', Array._asString)
         attrs['_strDelimiter'] = schema.get('strDelimiter', Array._strDelimiter)
         attrs['_hasPk'] = bool(any(len(getattr(t, '_primaryKeys', [])) for t in items)\
                                     if items_list else len(getattr(items, '_primaryKeys', [])))

@@ -24,6 +24,7 @@ _BUILTINS_QUALNAME = {
 }
 
 
+# should symbol derive from String??
 @register_type('importable')
 class Symbol(Primitive):
     """

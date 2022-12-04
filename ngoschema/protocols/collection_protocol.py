@@ -11,10 +11,10 @@ from ..decorators import assert_arg
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
 from .. import settings
-from ..types.strings import Pattern, Expr
-from ..types.collection import Collection
-from ..types.uri import PathFile, PathFileExists
-from ..types.object import Object
+from ..datatypes.strings import Pattern, Expr
+from ..datatypes.collection import Collection
+from ..datatypes.uri import PathFile, PathFileExists
+from ..datatypes.object import Object
 from ..contexts import InstanceContext
 from .type_protocol import TypeProtocol
 
@@ -120,7 +120,7 @@ class CollectionProtocol(Collection):
         return ret
 
     def _items_evaluate(self, item, **opts):
-        from ..types.constants import _True
+        from ..datatypes.constants import _True
         v = self._data[item]
         t = self._items_type(self, item)
         opts.setdefault('context', self._context)

@@ -92,7 +92,7 @@ class NamespaceManager(Registry):
         return None, None
 
     def __contains__(self, item):
-        from ..types.symbols import Module
+        from ..datatypes.symbols import Module
         if Module.check(item):
             item = item.__module__
         n, u = self._find_ns_by_cname(item)

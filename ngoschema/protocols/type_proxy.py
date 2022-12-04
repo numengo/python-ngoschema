@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from .type_protocol import TypeProtocol
+from ..utils import ReadOnlyChainMap as ChainMap, shorten, is_mapping
 
 
 class TypeProxy(TypeProtocol):
@@ -11,13 +12,22 @@ class TypeProxy(TypeProtocol):
     @staticmethod
     def build(uri, schema=None):
         from ..managers.namespace_manager import default_ns_manager
-        from ..managers.type_builder import type_builder
+        from ..managers.type_builder import type_builder, scope, resolve_uri
+        from ..datatypes import AnyOf
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
         sch, bases, attrs = type_builder._on_construction[uri]
         schema = schema or sch
+        # should resolve all references
+        # why not expand all schema?
+        schema = type_builder.expand(uri, schema)
+        if 'anyOf' in schema:
+            return AnyOf(uri, **schema)
         clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(uri)
-        protocol = {'object': ObjectProtocol, 'array': ArrayProtocol}.get(sch['type'], TypeProtocol)
+        protocol = {
+            'object': ObjectProtocol,
+            'array': ArrayProtocol,
+        }.get(schema['type'], TypeProtocol)
         #bases += (protocol, TypeProxy) if not issubclass(protocol, bases) else ()
         bases += (protocol, ) if not issubclass(protocol, bases) else ()
         attrs = {k: v for k, v in attrs.items() if not k.startswith('__')}

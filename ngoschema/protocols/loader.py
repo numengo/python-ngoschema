@@ -10,14 +10,14 @@ class Loader(Deserializer):
     _instanceClass = None
 
     def __init__(self, deserializer=None, instanceClass=None, **opts):
-        from ..types.symbols import Symbol
+        from ..datatypes.symbols import Symbol
         self._deserializer = deserializer or self._deserializer
         self._deserializer.__init__(self, **opts)
         self._instanceClass = Symbol.convert(instanceClass or self._instanceClass)
 
     @staticmethod
     def _load(self, value, many=False, deserialize=True, **opts):
-        from ..types import Symbol, Array
+        from ..datatypes import Symbol, Array
         instance_class = Symbol.convert(opts.get('instance_class', self._instanceClass))
         if many:
             value = Array.deserialize(value, split_string=True)

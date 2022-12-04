@@ -88,18 +88,17 @@
             }
           }
         },
-        "Tag": {
+        "Taggable": {
           "type": "object",
-          "description": "Recursive tags",
           "extends": [
             "#/$defs/metadata/$defs/Annotation"
           ],
+          "aliases": {
+            "keywords": "tags"
+          },
           "properties": {
             "tags": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/metadata/$defs/Tag"
-              }
+              "type": "array"
             }
           }
         },
@@ -258,17 +257,6 @@
               "$ref": "#/$defs/protocols/$defs/Saver"
             }
           }
-        }
-      }
-    },
-    "managers": {
-      "type": "object",
-      "$defs": {
-        "TypeBuilder": {
-          "type": "object"
-        },
-        "NamespaceManager": {
-          "type": "object"
         }
       }
     },
@@ -541,7 +529,8 @@
           "type": "object",
           "description": "This object represents a document.",
           "extends": [
-            "#/$defs/files/$defs/File"
+            "#/$defs/files/$defs/File",
+            "#/$defs/metadata/$defs/Taggable"
           ],
           "additionalProperties": false,
           "primaryKeys": [
@@ -570,13 +559,6 @@
             "author": {
               "type": "string",
               "description": "Document author"
-            },
-            "keywords": {
-              "type": "array",
-              "description": "Keywords associated to document",
-              "items": {
-                "type": "string"
-              }
             },
             "content": true,
             "doc_id": {

@@ -10,7 +10,7 @@ import logging
 
 from ..decorators import assert_arg
 from ..utils import file_link_format
-from ..types.uri import Path, PathFile, PathFileExists
+from ..datatypes.uri import Path, PathFile, PathFileExists
 from .serializer import Serializer
 from .loader import Loader, Saver
 

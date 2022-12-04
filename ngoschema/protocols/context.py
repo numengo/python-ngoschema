@@ -12,12 +12,12 @@ import copy
 from pathlib import Path
 import datetime
 
-from ngoschema.utils.utils import Context
+from ngoschema.utils.utils import Context as UContext
 from ngoschema import settings
 
 from ..decorators import assert_arg
 
-DEFAULT_CONTEXT = Context(settings.DEFAULT_CONTEXT, today=datetime.date.today())
+DEFAULT_CONTEXT = UContext(settings.DEFAULT_CONTEXT, today=datetime.date.today())
 
 
 class Context:
@@ -35,6 +35,8 @@ class Context:
 
     @staticmethod
     def _create_context(self, *parents, context=None, **local):
+        if context and not isinstance(context, UContext):
+            context = UContext(**context)
         context = context or self._context
         # create a new today at every context creation, will update the DEFAULT_CONTEXT value
         ctx = context.create_child(*parents, today=datetime.date.today(), **local)

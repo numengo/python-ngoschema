@@ -31,6 +31,7 @@ def untype_schema(schema):
 
 class TypeBuilder(GenericClassRegistry):
     _registry = {}
+    _proxy_type_registry = {}
     _type_registry = {}
     _on_construction = {}
 
@@ -65,7 +66,8 @@ class TypeBuilder(GenericClassRegistry):
     def build(self, id, schema=None, bases=(), attrs=None):
         from .namespace_manager import NamespaceManager
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
-        from ..types.constants import _True, _False
+        from ..datatypes.constants import _True, _False
+        from ..datatypes import AnyOf
 
         if self.contains(id):
             return self.get(id)
@@ -86,6 +88,9 @@ class TypeBuilder(GenericClassRegistry):
             cls = self.load(scope(ref, id))
             if schema:
                 cls = cls.extend_type(id, **schema)
+        elif 'anyOf' in schema:
+            #any_of = [self.build(f'{id}/anyOf/{i}', t) for i, t in enumerate(schema['anyOf'])]
+            cls = AnyOf(id, **schema)
         elif 'object' in schema.get('type', ''):
             cls = ObjectProtocol.build(id, schema, bases, attrs)
         elif 'array' in schema.get('type', ''):
@@ -101,7 +106,9 @@ class TypeBuilder(GenericClassRegistry):
         from ..protocols import TypeProxy
         if id not in self._registry:
             if id in self._on_construction:
-                return TypeProxy.build(id)
+                if id not in self._proxy_type_registry:
+                    self._proxy_type_registry[id] = TypeProxy.build(id)
+                return self._proxy_type_registry[id]
             self._registry[id] = self.build(id)
         return self._registry[id]
 
@@ -110,6 +117,14 @@ class TypeBuilder(GenericClassRegistry):
         for error in default_meta_validator.iter_errors(schema):
             raise SchemaError.create_from(error)
 
+    @staticmethod
+    def scope_refs(id, schema):
+        def _scope_refs(coll, key, level):
+            if key == '$ref':
+                coll[key] = scope(coll[key], id)
+        apply_through_collection(schema, _scope_refs)
+
+    @staticmethod
     def schema_mro(id, schema=None):
         schema = schema or resolve_uri(id)
         def _schema_mro(id, sch):
@@ -121,20 +136,15 @@ class TypeBuilder(GenericClassRegistry):
                     yield m
         return OrderedDict(_schema_mro(id, schema))
 
-    def expand(self, id, schema=None):
-        def scope_refs(id, schema):
-            def _scope_refs(coll, key, level):
-                if isinstance(coll, Mapping):
-                    v = coll[key]
-                    if isinstance(v, Mapping) and '$ref' in v:
-                        v['$ref'] = scope(v['$ref'], id)
-            apply_through_collection(schema, _scope_refs)
-
+    @staticmethod
+    def expand(id, schema=None):
         schema = copy.deepcopy(schema or resolve_uri(id))
-        mro = self.schema_mro(id, schema)
-        scope_refs(id, schema)
+        if schema.get('$ref'):
+            schema['type'] = 'object' # is it really? very likely... (needed later to select protocol for proxy
+            schema['extends'] = [schema.pop('$ref')]
+        mro = TypeBuilder.schema_mro(id, schema)
         for i, s in mro.items():
-            scope_refs(i, s)
+            TypeBuilder.scope_refs(i, s)
         extends = list(mro.keys())
         required = list(schema.get('required', [])) + sum([list(s.get('required', [])) for s in mro.values()], [])
         read_only = list(schema.get('readOnly', [])) + sum([list(s.get('readOnly', [])) for s in mro.values()], [])

@@ -82,3 +82,7 @@ class Pattern(String):
         from ngoschema.utils.jinja2 import get_jinja2_variables
         return set(get_jinja2_variables(value))
 
+
+@register_type('html')
+class WebContent(String):
+    _schema = {'type': 'html'}

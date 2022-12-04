@@ -159,7 +159,7 @@ class Context(ReadOnlyChainMap):
         return ctx
 
     def save_context_to_json(self, fp, **opts):
-        from ..types.object import ObjectSerializer
+        from ..datatypes.object import ObjectSerializer
         from ..protocols import ObjectProtocol
         from ..serializers import JsonSerializer, FileSaver
         ctx = dict(self._local)
@@ -452,7 +452,7 @@ def reduce_coll(coll):
 
 
 def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs):
-    -("""Generic method to go through a complex collection
+    _("""Generic method to go through a complex collection
     and apply a transformation function 'func' on each element
     func can modify the collection on the fly
 
@@ -466,7 +466,7 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
         return
     is_map = is_mapping(coll)
     for i, k in enumerate(list(coll.keys()) if is_map else coll):
-        func(coll, k if is_map else i, level=level, **func_kwargs)
+        func(coll, k if is_map else i, level, **func_kwargs)
         if recursive:
             v = coll.get(k) if is_map else (
                 coll[i] if i < len(coll) else

@@ -16,7 +16,7 @@ from sqlalchemy.util import ScopedRegistry, ThreadLocalRegistry
 from . import utils
 from .decorators import assert_arg
 from .protocols import ObjectProtocol, ArrayProtocol, SchemaMetaclass, with_metaclass
-from .types import Tuple, Array
+from .datatypes import Tuple, Array
 from .query import Query
 
 _sessions = weakref.WeakValueDictionary()

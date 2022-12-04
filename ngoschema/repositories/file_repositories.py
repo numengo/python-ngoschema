@@ -29,8 +29,8 @@ from ..decorators import assert_arg
 from ..exceptions import InvalidOperation, InvalidValue
 from ..utils import file_link_format
 from ..utils import xmltodict
-from ..types import Path, PathFile
-from ..types import Array, Tuple
+from ..datatypes import Path, PathFile
+from ..datatypes import Array, Tuple
 from ..managers.type_builder import wrap
 from ..serializers.file_serializer import FileSaver
 from ..serializers.json_serializer import JsonSerializer
@@ -38,7 +38,7 @@ from ..serializers.xml_serializer import XmlSerializer
 from ..serializers.yaml_serializer import YamlSerializer
 from ..protocols import SchemaMetaclass, with_metaclass
 from ..protocols.object_protocol import ObjectProtocol
-from ..types.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
+from ..datatypes.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
 from ..models.files import File, Document

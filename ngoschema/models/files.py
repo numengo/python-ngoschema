@@ -25,13 +25,13 @@ from collections import Mapping, ChainMap
 #from ..protocol_base import ProtocolBase
 #from ..decorators import SCH_PATH_DIR
 #from ..decorators import SCH_PATH_FILE
-from ..types import PathDir, PathFile, String
+from ..datatypes import PathDir, PathFile, String
 from ..decorators import assert_arg, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol
 from ..protocols.serializer import Serializer
 from ..protocols.file_loader import FileSaver
 from ..query import Query
-from ..types.uri import Uri, Path
+from ..datatypes.uri import Uri, Path
 from ..resolvers.uri_resolver import UriResolver
 from ..models.instances import Entity
 
@@ -45,6 +45,7 @@ class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     deserializers or using the deserializers registered in memory
     """)
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/File'
+    _lazyLoading = True
 
     def __init__(self, value=None, meta_opts=None, **opts):
         Entity.__init__(self, value, **opts)
@@ -74,8 +75,8 @@ class FileInfo(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/FileInfo'
     _lazyLoading = True
 
-    def __init__(self, file=None, filepath=None, **opts):
-        file = file or File(filepath)
+    def __init__(self, filepath=None, file=None, binary=False, **opts):
+        file = file or File(filepath=filepath, binary=binary)
         ObjectProtocol.__init__(self, file=file, **opts)
 
     def get_dateCreated(self):
@@ -101,6 +102,7 @@ class FileInfo(with_metaclass(SchemaMetaclass)):
         return num
 
     def get_sha1(self):
+        return
         import hashlib
         sha = hashlib.sha1()
         fp = self.file.filepath if self.file else None

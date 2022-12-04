@@ -11,8 +11,8 @@ from __future__ import unicode_literals
 
 from .decorators import classproperty
 from .protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
-from .types import String
-from .types.foreign_key import ForeignKey as ForeignKey_t
+from .datatypes import String
+from .datatypes.foreign_key import ForeignKey as ForeignKey_t
 
 
 class Relationship(with_metaclass(SchemaMetaclass, ForeignKey_t)):
