@@ -205,3 +205,10 @@ def shorten(s, max_size=settings.PPRINT_MAX_STRL, str_fun=str):
 
 def inline(s):
     return '\\n'.join(s.split('\n'))
+
+
+def remove_accents(input_str):
+    import unicodedata
+    # Borrowed from https://stackoverflow.com/a/517974/1509718
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])

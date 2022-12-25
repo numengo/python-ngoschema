@@ -161,9 +161,15 @@ class NamespaceManager(Registry):
                 #    raise InvalidValue(f"impossible to find '{cname}' in {ns_uri}.")
             for c in cns[:-1]:
                 fragment_parts += ['$defs', c]
+            # keep the second which is more narrow (qualify as a property only if the name of the parent starts uppercase)
+            # it seems complicated to distinguish a property from another namespace
+            # if we base the result on a file that is going to be overwritten, it s gonna be messy and quickly unpredictable
+            # better to put explicitely the uri in the mindmap as a node $ref
+            #fragment_parts += (['properties', cns[-1]] if len(cns) > 1 and cns[-1][0].islower() else ['$defs', cns[-1]])
             fragment_parts += (['properties', cns[-1]] if len(cns) > 2 and cns[-2][0].isupper() and cns[-1][0].islower() else ['$defs', cns[-1]])
         ns_uri = ns_uri or self._find_ns_by_cname(current_ns)[1]
-        return '/'.join([ns_uri + ('#' if '#' not in ns_uri else '')] + fragment_parts)
+        ret = '/'.join([ns_uri + ('#' if '#' not in ns_uri else '')] + fragment_parts)
+        return ret
 
     @staticmethod
     def _fragment_to_cname(uri_fragment):

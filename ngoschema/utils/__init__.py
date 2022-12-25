@@ -34,6 +34,7 @@ __all__ = [
     'file_link_format',
     'shorten',
     'inline',
+    'remove_accents',
     # jinja2,
     'TemplatedString',
     'default_jinja2_env'

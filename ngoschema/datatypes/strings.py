@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import builtins
 import numbers
 import decimal
+import ipaddress
 import logging
 from past.types import basestring
 
@@ -16,6 +17,8 @@ from .. import settings
 from ..utils.jinja2 import TemplatedString
 
 logger = logging.getLogger(__name__)
+
+# formats (with regex or normalized standard) should be normally be checked through jsch_validators.format
 
 
 @register_type('string')
@@ -30,6 +33,7 @@ class String(Primitive):
     _maxLength = None
     _pattern = None
     _format = None
+    _re = None
 
     def __init__(self, **opts):
         Primitive.__init__(self, **opts)
@@ -38,6 +42,16 @@ class String(Primitive):
         self._maxLength = self._schema.get('maxLength', self._maxLength)
         self._pattern = self._schema.get('pattern', self._pattern)
         self._format = self._schema.get('format', self._format)
+        if self._pattern:
+            self._re = re.compile(self._pattern)
+
+    @staticmethod
+    def _check(self, value, context=None, **opts):
+        value = TypeProtocol._check(self, value, context=None, **opts)
+        if self._pattern:
+            if not self._re.match(value, **opts):
+                raise TypeError('%s is not formatted properly [%s].' % (value, self._pattern))
+        return value
 
 
 class Expr(String):

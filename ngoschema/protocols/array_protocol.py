@@ -87,7 +87,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def _str_list(self):
         if self._str is None:
             hidden = max(0, len(self) - settings.PPRINT_MAX_EL)
-            a = [shorten(self._dataValidated[i] or self._data[i], str_fun=repr)
+            a = [shorten(self._dataValidated[i] or self._data[i], str_fun=str)
                  for i, t in enumerate(self._items_types(self, self._data))
                  if i < settings.PPRINT_MAX_EL] + (['+%i...' % hidden] if hidden else [])
             self._str = '[%s]' % (', '.join(a))
@@ -164,8 +164,16 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     def get(self, *pks, default=None, **kwargs):
         from ..query import Query
+        items = self._items
         if pks:
-            kwargs.update({k: v for k, v in zip(self._items._primaryKeys, pks)})
+            kwargs.update({k: v for k, v in zip(items._primaryKeys, pks)})
+        if items is not None and not self._itemsIsList:
+            for alias, raw in self._items._aliases.items():
+                if alias in kwargs:
+                    kwargs[raw] = kwargs.pop(alias)
+            for alias, raw in self._items._aliasesNegated.items():
+                if alias in kwargs:
+                    kwargs[raw] = - kwargs.pop(alias)
         try:
             return Query(self).next(**kwargs)
         except StopIteration as er:
@@ -173,4 +181,12 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     def query(self, *attrs, distinct=False, order_by=False, reverse=False, **attrs_value):
         from ..query import Query
+        items = self._items
+        if items is not None and not self._itemsIsList:
+            for alias, raw in self._items._aliases.items():
+                if alias in attrs_value:
+                    attrs_value[raw] = attrs_value.pop(alias)
+            for alias, raw in self._items._aliasesNegated.items():
+                if alias in attrs_value:
+                    attrs_value[raw] = - attrs_value.pop(alias)
         return Query(self, distinct=distinct, order_by=order_by, reverse=reverse).get(*attrs, **attrs_value)

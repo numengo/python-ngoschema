@@ -38,6 +38,16 @@ from ..models.instances import Entity
 _ = gettext.gettext
 
 
+class Filepath(with_metaclass(SchemaMetaclass)):
+    _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/Filepath'
+
+    def get_dateCreated(self):
+        return arrow.get(self.filepath.stat().st_ctime)
+
+    def get_dateModified(self):
+        return arrow.get(self.filepath.stat().st_mtime)
+
+
 class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     _("""
     Document model which can be loaded from a filepath or a URL.
@@ -69,56 +79,6 @@ class File(with_metaclass(SchemaMetaclass, FileSaver, Entity)):
     #def _load(self, filepath, **opts):
     #    self.filepath = filepath
     #    return FileSaver._load_file(self, filepath, **opts)
-
-
-class FileInfo(with_metaclass(SchemaMetaclass)):
-    _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/FileInfo'
-    _lazyLoading = True
-
-    def __init__(self, filepath=None, file=None, binary=False, **opts):
-        file = file or File(filepath=filepath, binary=binary)
-        ObjectProtocol.__init__(self, file=file, **opts)
-
-    def get_dateCreated(self):
-        return arrow.get(self.file.filepath.stat().st_ctime)
-
-    def get_dateModified(self):
-        return arrow.get(self.file.filepath.stat().st_mtime)
-
-    def get_contentSize(self):
-        return self.file.filepath.stat().st_size
-
-    def get_mimetype(self):
-        import magic
-        return magic.Magic(mime=True).from_file(str(self.file.filepath))
-
-    @depend_on_prop('contentSize')
-    def get_contentSizeHuman(self):
-        num = int(self.contentSize)
-        for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-            if num < 1024.0:
-                return "%3.1f %s" % (num, x)
-            num /= 1024.0
-        return num
-
-    def get_sha1(self):
-        return
-        import hashlib
-        sha = hashlib.sha1()
-        fp = self.file.filepath if self.file else None
-        if fp:
-            with open(str(fp), 'rb') as source:
-                block = source.read(2 ** 16)
-                while len(block) != 0:
-                    sha.update(block)
-                    block = source.read(2 ** 16)
-        elif self.uri:
-            response = urlopen(str(self.uri))
-            block = response.read(2 ** 16)
-            while len(block) != 0:
-                sha.update(block)
-                block = response.read(2 ** 16)
-        return sha.hexdigest()
 
 
 class UriFile(with_metaclass(SchemaMetaclass, UriResolver)):
@@ -171,8 +131,8 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
         self._identifier = self.filepath or self.uri
         return self._identifier
 
-    def get_file_info(self):
-        return FileInfo(file=self, context=self._context)
+    #def get_file_info(self):
+    #    return FileInfo(file=self, context=self._context)
 
     @depend_on_prop('content')
     def get_doc_id(self):

@@ -85,9 +85,14 @@ class CollectionProtocol(Collection):
         return self._collection._evaluate(self, value, excludes=excludes, **opts)
 
     @staticmethod
-    def _serialize(self, value, excludes=[], **opts):
+    def _print_order(self, value, excludes=[], **opts):
         excludes = list(self._notSerialized.union(excludes))
-        return self._collection._serialize(self, value, excludes=excludes, **opts)
+        return self._collection._print_order(self, value, excludes=excludes, **opts)
+
+    #@staticmethod
+    #def _serialize(self, value, excludes=[], **opts):
+    #    excludes = list(self._notSerialized.union(excludes))
+    #    return self._collection._serialize(self, value, excludes=excludes, **opts)
 
     def _touch(self):
         self._repr = None
@@ -133,8 +138,10 @@ class CollectionProtocol(Collection):
                 return t(v, **opts)
             elif isinstance(t, _True):
                 return v
-            elif t._wraps is not None:
-                if v is not None and isinstance(v, t._wraps):
+            elif getattr(t, '_wraps', None):
+                if v is None:
+                    return None
+                if isinstance(v, t._wraps):
                     return v
                 else:
                     return t._wraps(v)
@@ -196,9 +203,9 @@ class CollectionProtocol(Collection):
             self._data[item] = value
         self._dataValidated[item] = value
 
-    def _is_outdated(self, item):
-        return (self._dataValidated[item] is None and self._data[item] is not None
-                ) or (self._itemsInputs.get(item, {}) != self._items_inputs_evaluate(item))
+    def _get_data(self, item):
+        value = self._dataValidated[item]
+        return value if value is not None else self._data[item]
 
     @classmethod
     def create(cls, value=None, **opts):

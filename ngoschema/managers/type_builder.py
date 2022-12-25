@@ -67,7 +67,7 @@ class TypeBuilder(GenericClassRegistry):
         from .namespace_manager import NamespaceManager
         from ..protocols import TypeProtocol, ObjectProtocol, ArrayProtocol, TypeProxy
         from ..datatypes.constants import _True, _False
-        from ..datatypes import AnyOf
+        from ..datatypes.compositions import SchemaComposition, is_schema_composition
 
         if self.contains(id):
             return self.get(id)
@@ -88,9 +88,8 @@ class TypeBuilder(GenericClassRegistry):
             cls = self.load(scope(ref, id))
             if schema:
                 cls = cls.extend_type(id, **schema)
-        elif 'anyOf' in schema:
-            #any_of = [self.build(f'{id}/anyOf/{i}', t) for i, t in enumerate(schema['anyOf'])]
-            cls = AnyOf(id, **schema)
+        elif is_schema_composition(schema):
+            cls = SchemaComposition.build(id, schema, bases, attrs)
         elif 'object' in schema.get('type', ''):
             cls = ObjectProtocol.build(id, schema, bases, attrs)
         elif 'array' in schema.get('type', ''):

@@ -18,7 +18,7 @@ class Checker:
 
     @staticmethod
     def _check(self, value, **opts):
-        _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        #_(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
         py_type = opts.get('pyType', self._pyType)
         if py_type and not isinstance(value, py_type):
             raise TypeError('%s is not of type %s.' % (shorten(value, str_fun=repr), self._pyType))

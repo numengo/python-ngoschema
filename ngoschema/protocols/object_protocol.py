@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import sys
 import six
 import logging
+import dpath.util
 from collections import MutableMapping, Mapping
 from collections import OrderedDict, defaultdict
 import re
@@ -19,6 +20,7 @@ from .. import decorators
 from ..resolvers.uri_resolver import UriResolver, resolve_uri
 from ..datatypes.array import Array
 from ..datatypes.type import Primitive
+from ..datatypes.numerics import Integer
 from ..datatypes.object import Object, ObjectSerializer, ObjectDeserializer
 from ..datatypes.symbols import Function, Class
 from ..datatypes.uri import Id, scope
@@ -236,6 +238,17 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             ctx = context or self._context
             for c in self._propertiesAllowed.intersection(ctx.keys()):
                 value.setdefault(c, ctx[c])
+        # handle canonical names
+        cns = [k for k in value.keys() if '.' in k]
+        for cn in cns:
+            ps = [Integer.convert(c) if Integer.check(c, convert=True) else c for c in cn.split('.')]
+            dpath.util.new(value, cn.split('.'), value.pop(cn))
+            cur = value
+            for i, p in enumerate(ps):
+                v = cur[p]
+                if Integer.check(p):
+                    v = cur[p] = [None] * p + [v]
+                cur = v
         # required with default
         return CollectionProtocol._deserialize(self, value, **opts)
 
@@ -286,6 +299,23 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __iter__(self):
         return iter(self._dataValidated.keys())
 
+    def _is_outdated(self, item):
+        return (self._dataValidated[item] is None and self._data[item] is not None
+                ) or (self._itemsInputs.get(item, {}) != self._items_inputs_evaluate(item))
+
+    def _get_data(self, item):
+        raw, trans = self._properties_raw_trans(item)
+        if '.' in raw:
+            cns = raw.split('.')
+            cur = self
+            for cn in cns:
+                value = cur = cur._get_data(cn) if isinstance(cur, ObjectProtocol) else cur[cn]
+                if value is None:
+                    break
+            return value
+        value = CollectionProtocol._get_data(self, trans)
+        return - value if raw in self._aliasesNegated else value
+
     __properties_raw_trans = None
     @classmethod
     def _properties_raw_trans(cls, name):
@@ -304,10 +334,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         alias = cls._aliases.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
+            #return name, alias
             return alias, name
         alias = cls._aliasesNegated.get(name)
         if alias:
             cls.__properties_raw_trans[name] = (alias, name)
+            #return name, alias
             return alias, name
         if cls._propertiesAdditional:
             trans = clean_js_name(name)
@@ -421,6 +453,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     def __getitem__(self, key):
         if not key:
             return self._parent
+        key = self._aliases.get(key, key)
         if '.' in key:
             parts = split_cname(key)
             # case: canonical name such as a[0][1].b[0].c
@@ -437,8 +470,6 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if desc:
             return desc.__get__(self)
         op = lambda x: neg(x) if key in self._aliasesNegated else x
-        key = self._aliasesNegated.get(key, key)
-        key = self._aliases.get(key, key)
         raw, trans = self._properties_raw_trans(key)
         if raw not in self._data:
             raise KeyError(key)
@@ -452,6 +483,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     def __setitem__(self, key, value):
         op = lambda x: neg(x) if key in self._aliasesNegated else x
+        key = self._aliasesNegated.get(key, key)
+        key = self._aliases.get(key, key)
         if '.' in key:
             parts = split_cname(key) # case: canonical name such as a[0][1].b[0].c
             cur = self
@@ -474,6 +507,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         self._data[key] = self._dataAdditional[key] = self._dataValidated[key] = v
 
     def __delitem__(self, key):
+        key = self._aliasesNegated.get(key, key)
+        key = self._aliases.get(key, key)
         for trans, raw in self._propertiesTranslation.items():
             if key in (trans, raw):
                 delattr(self, trans)
@@ -497,7 +532,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if alias not in excludes:
                 v = ret.get(raw)
                 if v is not None:
-                    ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = v
+                    # here we pop the alias reference
+                    ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = ret.pop(raw)
         for alias, raw in self._aliasesNegated.items():
             if only and alias not in only:
                 continue
@@ -661,6 +697,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if not pbases:
             bases += [ObjectProtocol]
 
+        if not wraps:
+            bases_wraps = [b._wraps for b in pbases if b._wraps]
+            if bases_wraps:
+                wraps = bases_wraps[0]
+
+
         # create an aliases dictionary from all bases dependencies
         aliases = schema.get('aliases', {})
         negated_aliases = schema.get('negatedAliases', {})
@@ -700,13 +742,18 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # extends flattened for proxies
         extends_proxies_flattened = []
         def flatten_proxy_extends(proxy_id):
-            if proxy_id not in extends_proxies_flattened:
-                extends_proxies_flattened.append(proxy_id)
+            extends_proxies_flattened.append(proxy_id)
             proxy_sch = resolve_uri(proxy_id)
             for e in proxy_sch.get('extends', []):
                 flatten_proxy_extends(scope(e, proxy_id))
         for b in not_ready_yet:
             flatten_proxy_extends(b._proxyUri)
+        # add extends proxies of ancesters
+        for b in pbases:
+            if b._extendsProxy:
+                extends_proxies_flattened.extend(b._extendsProxy)
+        # remove duplicates, order should not import
+        extends_proxies_flattened = list(set(extends_proxies_flattened))
 
         # create type for properties
         local_properties = OrderedDict([(k, type_builder.build(f'{id}/properties/{k}', v))
@@ -832,7 +879,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 fname = f'{PROP_PREF[prop]}{ptrans}'
                 fun = attrs.get(fname)
                 if not fun:
-                    fun = [getattr(b, fname) for b in bases if hasattr(b, fname)]
+                    # should we look for setters/getters in bases or pbases?
+                    # was it to allow mixins to take over?
+                    fun = [getattr(b, fname) for b in pbases if hasattr(b, fname)]
                     fun = None if not fun else fun[0]
                 if fun:
                     insp = inspect_function(fun)
@@ -920,6 +969,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_extendsProxy'] = extends_proxies_flattened
         attrs['_schema'] = schema_chained
         attrs['_schemaFlattened'] = schema_flattened
+        attrs['_default'] = schema.get('default', ObjectProtocol._default)
         attrs['_wraps'] = wraps
         attrs['_abstract'] = abstract
         attrs['_hasPk'] = is_entity # or bool(primary_keys)

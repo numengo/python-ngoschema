@@ -13,7 +13,7 @@ class TypeProxy(TypeProtocol):
     def build(uri, schema=None):
         from ..managers.namespace_manager import default_ns_manager
         from ..managers.type_builder import type_builder, scope, resolve_uri
-        from ..datatypes import AnyOf
+        from ..datatypes.compositions import is_schema_composition, SchemaComposition
         from .object_protocol import ObjectProtocol
         from .array_protocol import ArrayProtocol
         sch, bases, attrs = type_builder._on_construction[uri]
@@ -21,8 +21,9 @@ class TypeProxy(TypeProtocol):
         # should resolve all references
         # why not expand all schema?
         schema = type_builder.expand(uri, schema)
-        if 'anyOf' in schema:
-            return AnyOf(uri, **schema)
+
+        if is_schema_composition(schema):
+            return SchemaComposition.build(uri, schema)
         clsname = attrs.get('_clsname') or default_ns_manager.get_id_cname(uri)
         protocol = {
             'object': ObjectProtocol,

@@ -48,10 +48,6 @@ class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
         return f'{pi._canonicalName}.{n}' if pi is not None else n
 
 
-class InstanceList(with_metaclass(SchemaMetaclass, ArrayProtocol, InstanceContext)):
-    _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/InstanceList"
-
-
 class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     _("""
     Object referenced by a list of keys of a foreign schema

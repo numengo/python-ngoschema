@@ -41,7 +41,9 @@ class ArrayDeserializer(CollectionDeserializer):
         value = CollectionDeserializer._deserialize(self, value, **opts)
         #split_string = self._asString if split_string is None else split_string
         #str_del = self._strDelimiter if str_del is None else str_del
-        if String.check(value):
+        #if String.check(value, convert=False):
+        # String.check has triggers unexpected evaluations for unused error printing
+        if isinstance(value, str):
             split_string = opts.get('split_string', self._asString)
             str_del = opts.get('strDelimiter', self._strDelimiter)
             value = [s.strip() for s in value.split(str_del)] if split_string else [value]

@@ -110,6 +110,18 @@
               "default": "{%if this.name %}{{this.name|pluralize}}{% endif %}"
             }
           }
+        },
+        "Timestamp": {
+          "type": "object",
+          "abstract": true,
+          "properties": {
+            "dateCreated": {
+              "type": "datetime"
+            },
+            "dateModified": {
+              "type": "datetime"
+            }
+          }
         }
       }
     },
@@ -393,26 +405,6 @@
             }
           }
         },
-        "InstanceList": {
-          "type": "object",
-          "description": "This objects represents a list of instances, with metadata for naming",
-          "extends": [
-            "#/$defs/instances/$defs/Instance",
-            "#/$defs/metadata/$defs/Plural"
-          ],
-          "notSerialized": [
-            "items",
-            "namePlural"
-          ],
-          "properties": {
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/instances/$defs/Instance"
-              }
-            }
-          }
-        },
         "Entity": {
           "type": "object",
           "description": "Entities are important object usually stored in databases, and indexed using a primary key that identify the object by its identity keys.",
@@ -448,23 +440,117 @@
         }
       }
     },
+    "datasets": {
+      "type": "object",
+      "$defs": {
+        "Series": {
+          "type": "object",
+          "extends": [
+            "#/$defs/instances/$defs/Instance"
+          ],
+          "wraps": "pandas.core.series.Series",
+          "properties": {
+            "data": true,
+            "index": {
+              "type": "array"
+            },
+            "dtypes": {
+              "type": "array"
+            }
+          }
+        },
+        "Dataframe": {
+          "type": "object",
+          "extends": [
+            "#/$defs/datasets/$defs/Series"
+          ],
+          "wraps": "pandas.core.frame.DataFrame",
+          "properties": {
+            "data": true,
+            "index": {
+              "type": "array"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/datasets/$defs/Series"
+              }
+            },
+            "dtypes": {
+              "type": "array"
+            }
+          }
+        },
+        "DataframeSubset": {
+          "type": "object",
+          "aliases": {
+            "df": "dataframe"
+          },
+          "notSerialized": [
+            "dataframe"
+          ],
+          "readOnly": [
+            "subset"
+          ],
+          "required": [
+            "dataframe",
+            "subkeys"
+          ],
+          "properties": {
+            "dataframe": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
+            },
+            "subkeys": {
+              "type": "array"
+            },
+            "ids": {
+              "type": "array"
+            },
+            "subset": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
+            }
+          }
+        }
+      }
+    },
     "files": {
       "type": "object",
       "$defs": {
+        "Filepath": {
+          "type": "object",
+          "extends": [
+            "#/$defs/metadata/$defs/Timestamp"
+          ],
+          "readOnly": [
+            "dateCreated",
+            "dateModified"
+          ],
+          "required": [
+            "filepath"
+          ],
+          "properties": {
+            "filepath": {
+              "type": "path"
+            },
+            "dateCreated": {
+              "type": "datetime"
+            },
+            "dateModified": {
+              "type": "datetime"
+            }
+          }
+        },
         "File": {
           "type": "object",
           "description": "This object represents a file.",
           "extends": [
-            "#/$defs/instances/$defs/Entity"
+            "#/$defs/instances/$defs/Entity",
+            "#/$defs/files/$defs/Filepath"
           ],
           "primaryKeys": [
             "filepath"
           ],
           "properties": {
-            "filepath": {
-              "type": "path",
-              "description": "Path to file"
-            },
             "binary": {
               "type": "boolean",
               "description": "True, if binary file"
@@ -472,39 +558,26 @@
             "contentRaw": true
           }
         },
-        "FileInfo": {
+        "Folder": {
           "type": "object",
-          "description": "This object represents file informations.",
-          "required": [
-            "file"
+          "extends": [
+            "#/$defs/files/$defs/Filepath"
           ],
           "properties": {
-            "file": {
-              "$ref": "#/$defs/files/$defs/File"
+            "files": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/files/$defs/File"
+              }
             },
-            "dateCreated": {
-              "type": "datetime",
-              "description": "File creation date and time."
+            "subfolders": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/files/$defs/Folder"
+              }
             },
-            "dateModified": {
-              "type": "datetime",
-              "description": "File last modification date and time."
-            },
-            "contentSize": {
-              "type": "integer",
-              "description": "Content size in bytes."
-            },
-            "contentSizeHuman": {
-              "type": "string",
-              "description": "Content size in human readable units."
-            },
-            "mimetype": {
-              "type": "string",
-              "description": "MIME type of the file"
-            },
-            "sha1": {
-              "type": "string",
-              "description": "SHA1 hash of the file."
+            "parent": {
+              "$ref": "#/$defs/files/$defs/Folder"
             }
           }
         },
@@ -539,9 +612,6 @@
           "properties": {
             "encoder": {
               "$ref": "#/$defs/serializers/$defs/JsonSerializer"
-            },
-            "file_info": {
-              "$ref": "#/$defs/files/$defs/FileInfo"
             },
             "identifier": {
               "type": "string",
