@@ -74,7 +74,7 @@ class TypeProtocol(Serializer):
             except Exception as er:
                 # certainly a proxy type inf fc item fk type evaluation
                 #logger.error(er, exc_info=True)
-                assert hasattr(fc, '_proxyUri')
+                assert hasattr(fc, '_proxyUri'), id
             extra_bases += (ForeignKey, )
         if 'type' in schema:
             sch_type = type_builder.get_type(schema['type'])

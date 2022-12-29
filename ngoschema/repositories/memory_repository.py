@@ -16,12 +16,13 @@ _ = gettext.gettext
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
     _catalog = None
+    _many = True
 
     def __init__(self, value=None, meta_opts=None, **opts):
-        from ..types import Array
+        from ..datatypes import Array
         #from ..protocols.array_protocol import ArrayProtocol
         ObjectProtocol.__init__(self, **opts)
-        Repository.__init__(self, **(meta_opts or {}), **self)
+        Repository.__init__(self, **(meta_opts or {}), **{k: v  for k, v in self.items() if v is not None})
         self._catalog = OrderedDict()
         self._content = Array(items=self._instanceClass, maxItems=1 if not self._many else None)(value)
 
@@ -58,5 +59,5 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
             else:
                 self._content.append(value)
         else:
-            self._content = self._content(value)
+            self._content = value
         return self._content

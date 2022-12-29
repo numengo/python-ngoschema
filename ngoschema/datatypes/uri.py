@@ -89,7 +89,7 @@ class Id(NsManagerContext, Uri):
     def _convert(self, value, context=None, **opts):
         uri = value
         if value:
-            ns_mgr = find_ns_mgr(context or self._context)
+            ns_mgr = find_ns_mgr(context if context is not None else self._context)
             if cn_re.search(uri):
                 uri = ns_mgr.get_cname_id(uri)
             if '#' not in uri:
@@ -99,7 +99,7 @@ class Id(NsManagerContext, Uri):
 
     @staticmethod
     def _serialize(self, value, context=None, **opts):
-        ns_mgr = find_ns_mgr(context or self._context)
+        ns_mgr = find_ns_mgr(context if context is not None else self._context)
         canonical = opts.get('canonical', self._canonical)
         if canonical:
             return ns_mgr.get_id_cname(value)

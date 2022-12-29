@@ -93,9 +93,6 @@
           "extends": [
             "#/$defs/metadata/$defs/Annotation"
           ],
-          "aliases": {
-            "keywords": "tags"
-          },
           "properties": {
             "tags": {
               "type": "array"

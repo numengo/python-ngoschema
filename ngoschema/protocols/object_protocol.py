@@ -13,6 +13,7 @@ from operator import neg
 import copy
 import gettext
 from abc import _abc_instancecheck, _abc_subclasscheck
+from pandas import DataFrame, Series
 
 from ..exceptions import InvalidValue
 from ..utils import ReadOnlyChainMap as ChainMap, shorten, is_mapping
@@ -81,6 +82,7 @@ class PropertyDescriptor:
                 outdated = True
             #if outdated or self.fget: # or self.fset:
             if outdated:
+                # calling once here and just called it in _is_outdated
                 inputs = obj._items_inputs_evaluate(key)
                 if self.fget:
                     obj._set_data(key, self.fget(obj))
@@ -90,7 +92,7 @@ class PropertyDescriptor:
             value = obj._dataValidated[key]
             if outdated and self.fset:
                 self.fset(obj, value)
-            # value can change in setter
+            # value can change in setter (??really ???)
             return obj._dataValidated[key]
         except Exception as er:
             obj._logger.error(er, exc_info=True)
@@ -300,6 +302,32 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return iter(self._dataValidated.keys())
 
     def _is_outdated(self, item):
+        if self._data.get(item) is not None and self._dataValidated.get(item) is None:
+            return True
+        for v in self._dependencies.get(item, set()):
+            cur = self
+            vs = v.split('.')
+            lvs = len(vs)
+            for i, vv in enumerate(vs):
+                if cur._is_outdated(vv):
+                    return True
+                if len(vs) > 1 and i != len(vs) - 1:
+                    cur = cur.get(vv)
+                    if cur is None:
+                        break
+        return False
+        old_inputs = self._itemsInputs.get(item, {})
+        new_inputs = self._items_inputs_evaluate(item)
+        if set(old_inputs.keys()) != set(new_inputs.keys()):
+            return True
+        for k, nv in new_inputs.items():
+            ov = old_inputs[k]
+            if isinstance(ov, (DataFrame, Series)):
+                if id(ov) != id(nv):
+                    return True
+            elif ov != nv:
+                return True
+        return False
         return (self._dataValidated[item] is None and self._data[item] is not None
                 ) or (self._itemsInputs.get(item, {}) != self._items_inputs_evaluate(item))
 
@@ -359,6 +387,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         op = lambda x: neg(x) if name in self._aliasesNegated else x
         name = self._aliasesNegated.get(name, name)
         name = self._aliases.get(name, name)
+        if '.' in name:
+            return self[name]
         raw = self._propertiesTranslation.get(name, name)
         desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
@@ -704,23 +734,34 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
 
         # create an aliases dictionary from all bases dependencies
-        aliases = schema.get('aliases', {})
-        negated_aliases = schema.get('negatedAliases', {})
+        aliases = dict(ChainMap(schema.get('aliases', {}), *[b._aliases for b in pbases]))
+        negated_aliases = dict(ChainMap(schema.get('negatedAliases', {}), *[b._aliasesNegated for b in pbases]))
         properties_translation = {}
+        aks = set(aliases.keys())
+        naks = set(negated_aliases.keys())
 
         # building inner definitions
         defs = {dn: type_builder.load(f'{id}/$defs/{dn}') for dn, defn in schema.get('$defs', {}).items()}
 
         # create a dependency dictionary from all bases dependencies
         dependencies = defaultdict(set)
-        for k, v in schema.get('dependencies', {}).items():
-            dependencies[k].update(set(v))
-        for b in pbases:
-            for k, v in getattr(b, '_dependencies', {}).items():
-                dependencies[k].update(set(v))
         for s in not_ready_yet_sch:
             for k, v in s.get('dependencies', {}).items():
                 dependencies[k].update(set(v))
+        for b in pbases:
+            for k, v in getattr(b, '_dependencies', {}).items():
+                dependencies[k].update(set(v))
+        for k, v in schema.get('dependencies', {}).items():
+            # replace aliases
+            vs = list(v)
+            for i, v in enumerate(vs):
+                v0 = v.split('.')[0]
+                if v0 in aks:
+                    v = v.replace(v0, aliases[v0])
+                if v0 in naks:
+                    v = v.replace(v0, negated_aliases[v0])
+                vs[i] = v
+            dependencies[k].update(set(vs))
 
         if is_entity:
             primary_keys = list(attrs.get('_primaryKeys', schema.get('primaryKeys', [])))
@@ -917,8 +958,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         for pname, pfun in descriptor_funs.items():
             ptrans = clean_js_name(pname)
             for b in pbases:
-                if hasattr(b, ptrans) and isinstance(b, PropertyDescriptor):
-                    d = copy.copy(getattr(b.trans))
+                b_a = getattr(b, ptrans, None)
+                if isinstance(b_a, PropertyDescriptor):
+                    d = copy.copy(b_a)
                     for k, v in pfun.items():
                         if v is not None:
                             setattr(d, f'f{k}', v)
@@ -948,6 +990,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if pbases:
                 doc += _('Inherits from:') + '\n'
                 doc += '\t' + ', '.join([pb.__name__ for pb in pbases])
+
+        # remove aliases now redefined in local properties
+        for k in aks.intersection(set(local_properties)):
+            del aliases[k]
+        for k in naks.intersection(set(local_properties)):
+            del negated_aliases[k]
 
         schema_chained = ChainMap(schema, *[getattr(b, '_schema', {}) for b in bases])
         schema_flattened = dict(schema)
@@ -1000,10 +1048,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_notValidated'] = not_validated
         attrs['_attributesOrig'] = set().union(attributes_orig, *[b._attributesOrig for b in pbases])
         attrs['_propertiesTranslation'] = dict(ChainMap(properties_translation, *[b._propertiesTranslation for b in pbases]))
-        attrs['_aliases'] = dict(ChainMap(aliases, *[b._aliases for b in pbases]))
-        attrs['_aliasesNegated'] = dict(ChainMap(negated_aliases, *[b._aliasesNegated for b in pbases]))
-        attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases']).union(attrs['_aliases'].values())\
-            .union(attrs['_aliasesNegated']).union(attrs['_aliasesNegated'].values()).union(attrs['_propertiesTranslation']).difference(read_only)
+        attrs['_aliases'] = aliases
+        attrs['_aliasesNegated'] = negated_aliases
+        attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases']).union(attrs['_aliasesNegated']).union(attrs['_propertiesTranslation'])
+        attrs['_propertiesWritingAllowed'] = attrs['_propertiesAllowed'].difference(read_only)
         attrs['_propertiesWithDefault'] = has_default
         attrs['_logger'] = logger
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
