@@ -90,8 +90,9 @@ class ObjectSerializer(CollectionSerializer, ObjectDeserializer):
         no_readOnly = opts.get('no_readOnly', self._noReadOnly)
         if no_readOnly:
             excludes += list(self._readOnly)
+        required = self._required.difference(excludes)
         for k in all_ordered:
-            if k in self._required:
+            if k in required:
                 yield k
             elif ObjectSerializer._is_included(k, value, excludes=excludes, only=only, no_defaults=no_defaults):
                 yield k

@@ -153,9 +153,18 @@ class CollectionProtocol(Collection):
 
     def items_serialize(self, item, **opts):
         v = self[item]
-        t = self._items_type(self, item)
-        opts['context'] = getattr(v, '_context', self._context)
-        return t._serialize(t, v, **opts)
+        if v is not None:
+            if '.' in item:
+                ks = item.split('.')
+                t = self.__class__
+                for k in ks:
+                    t = t.items_type(k)
+            else:
+                t = self.items_type(item)
+                #t = self._items_type(self, item)
+            opts['context'] = getattr(v, '_context', self._context)
+            opts['deserialize'] = False  # deserialize triggers item reevaluation
+            return t._serialize(t, v, **opts)
 
     def __setitem__(self, item, value):
         self._data[item] = value
@@ -212,9 +221,11 @@ class CollectionProtocol(Collection):
         return cls(value, **opts)
 
     def do_validate(self, items=True, **opts):
+        __doc__ = self._validate.__doc__
         return self._validate(self, self, items=items, **opts)
 
     def do_serialize(self, deserialize=False, **opts):
+        __doc__ = self._serialize.__doc__
         opts['context'] = self._context
         return self._serialize(self, self, deserialize=deserialize, **opts)
 
@@ -226,8 +237,6 @@ class CollectionProtocol(Collection):
             return False
         if other is self:
             return True
-        if not self.check(other):
-            return False
         if len(self) != len(other):
             return False
         for i, v in enumerate(other):

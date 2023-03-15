@@ -19,7 +19,7 @@ class CollectionDeserializer(Deserializer):
     def __init__(self, collType=None, dependencies=None, **opts):
         Deserializer.__init__(self, **opts)
         self._collType = collType or self._collType
-        self._dependencies = defaultdict(list, dependencies or {})
+        self._dependencies = defaultdict(list, dependencies or self._dependencies)
 
     @staticmethod
     def _call_order(self, value, **opts):

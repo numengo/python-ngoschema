@@ -3,10 +3,32 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import pandas as pd
-import geopandas as gpd
-import numpy as np
 
 from ngoschema.protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
+
+
+class Series(with_metaclass(SchemaMetaclass)):
+    _id = r"https://numengo.org/ngoschema#/$defs/datasets/$defs/Series"
+
+
+class Dataframe(with_metaclass(SchemaMetaclass)):
+    _id = r"https://numengo.org/ngoschema#/$defs/datasets/$defs/Dataframe"
+
+
+class HasDataframe(with_metaclass(SchemaMetaclass)):
+    _id = r"https://numengo.org/ngoschema#/$defs/datasets/$defs/HasDataframe"
+
+
+class HasSeries(with_metaclass(SchemaMetaclass)):
+    _id = r"https://numengo.org/ngoschema#/$defs/datasets/$defs/HasSeries"
+    _lazyLoading = True
+
+    def get_series(self):
+        index = self.index
+        ret = self._data['series']
+        if ret is None and index:
+            ret = pd.Series([self[k] for k in index], index)
+        return ret
 
 
 class DataframeSubset(with_metaclass(SchemaMetaclass)):

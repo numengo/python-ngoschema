@@ -33,9 +33,9 @@ from ..datatypes import Path, PathFile
 from ..datatypes import Array, Tuple
 from ..managers.type_builder import wrap
 from ..serializers.file_serializer import FileSaver
-from ..serializers.json_serializer import JsonSerializer
-from ..serializers.xml_serializer import XmlSerializer
-from ..serializers.yaml_serializer import YamlSerializer
+from ..serializers.json_serializer import JsonSerializer, JsonDeserializer
+from ..serializers.xml_serializer import XmlSerializer, XmlDeserializer
+from ..serializers.yaml_serializer import YamlSerializer, YamlDeserializer
 from ..protocols import SchemaMetaclass, with_metaclass
 from ..protocols.object_protocol import ObjectProtocol
 from ..datatypes.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
@@ -52,7 +52,7 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
     _encoder = Serializer
-    _instanceClass = File
+    instanceClass = File
 
     def __init__(self, value=None, meta_opts=None, **opts):
         ObjectProtocol.__init__(self, value, **opts)
@@ -61,23 +61,22 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
 
     @staticmethod
     def _commit(self, value, **opts):
-        value = Repository._commit(self, value, **opts)
-
-
+        value = Repository._commit(self, value, save=False, **opts)
         stream = self._encoder.serialize(value, **opts)
         filepath = opts.get('filepath', self._filepath)
         if not filepath.parent.exists():
             self._logger.info("creating missing directory '%s'", file_link_format(filepath.parent))
             os.makedirs(str(filepath.parent))
         if filepath.exists():
-            doc.load()
-            if stream == doc.contentRaw:
-                self._logger.info("File '%s' already exists with same content. Not overwriting.", file_link_format(fpath))
+            orig = filepath.open().read()
+            if stream == orig:
+                self._logger.info("File '%s' already exists with same content. Not overwriting.",
+                                  file_link_format(filepath))
                 return
 
-        self._logger.info("DUMP %s", file_link_format(fpath))
+        self._logger.info("DUMP %s", file_link_format(filepath))
         self._logger.debug("data:\n%r ", stream)
-        doc.write(stream)
+        self.save(stream, serialize=False)
         return self
 
 
@@ -103,7 +102,8 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = JsonSerializer
     _deserializer = ObjectDeserializer
     _serializer = ObjectSerializer
-    _instanceClass = Document
+    #_instanceClass = Document
+    _instanceClass = None
 
     def __init__(self, value=None, **opts):
         FileRepository.__init__(self, value, **opts)

@@ -97,7 +97,7 @@ class Session(with_metaclass(SchemaMetaclass)):
         cns = cname.split('.')
         rn = cns[0]
         cn = cns[1:]
-        for repo in [r for r in self._repos if issubclass(r.instanceClass, Entity)]:
+        for repo in [r for r in self._repos if r.instanceClass and issubclass(r.instanceClass, Entity)]:
             if rn in repo:
                 v = repo.resolve_fkey(rn)
                 return v if not cn else v.resolve_cname(cn)
@@ -105,7 +105,7 @@ class Session(with_metaclass(SchemaMetaclass)):
 
     @assert_arg(1, Tuple, strDelimiter=',')
     def resolve_fkey(self, keys, object_class):
-        for repo in [r for r in self.repositories if issubclass(r.instanceClass, object_class)]:
+        for repo in [r for r in self.repositories if r.instanceClass and issubclass(r.instanceClass, object_class)]:
             if keys in repo:
                 return repo.resolve_fkey(keys)
         else:

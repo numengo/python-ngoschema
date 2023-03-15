@@ -291,7 +291,7 @@ class WeakRegistry(Registry):
 
 
 class GenericClassRegistry(Registry):
-    _registry = {}
+    _registry = collections.OrderedDict()
 
     def register(self, name=None):
         def f(functor):

@@ -80,11 +80,12 @@ class FileLoader(Loader):
         return self._read_file(self, filepath, **opts)
 
     #@classmethod
-    def load_file(self, filepath, **opts):
-        return self._load_file(self, filepath, **opts)
+    def load_file(cls, filepath, **opts):
+        return cls._load_file(cls, filepath, **opts)
 
+    #@classmethod
     def load(self, filepath=None, **opts):
-        filepath = filepath or self.filepath
+        filepath = filepath or self._filepath
         return FileLoader._load(self, filepath, **opts)
 
 
@@ -95,7 +96,7 @@ class FileSaver(Saver, FileLoader):
 
     def __init__(self, append=False, **opts):
         Saver.__init__(self, **opts)
-        FileLoader.__init__(self, **opts)
+        # FileLoader.__init__(self, **opts) # already initialized in Saver
         self._append = append
 
     #def set_filepath(self, filepath):
@@ -143,23 +144,24 @@ class FileSaver(Saver, FileLoader):
     @staticmethod
     def _save(self, value, filepath=None, **opts):
         filepath = filepath or self._filepath
-        return FileSaver._save_file(self, value, filepath, **opts)
+        return FileSaver._save_file(self, value, self._filepath, **opts)
 
     #@classmethod
     def write_file(self, value, filepath, **opts):
         self._filepath = filepath
-        return FileSaver._write_file(self, value, self.filepath, **opts)
+        return FileSaver._write_file(self, value, self._filepath, **opts)
 
     #@classmethod
     def append_file(self, value, filepath, **opts):
         self._filepath = filepath
-        return FileSaver._append_file(self, value, self.filepath, **opts)
+        return FileSaver._append_file(self, value, self._filepath, **opts)
 
     #@classmethod
     def save_file(self, value, filepath, **opts):
         self._filepath = filepath
-        return FileSaver._save_file(self, value, self.filepath, **opts)
+        return FileSaver._save_file(self, value, self._filepath, **opts)
 
+    #@classmethod
     def save(self, value, filepath=None, **opts):
         filepath = filepath or self._filepath
         return FileSaver._save_file(self, value, filepath, **opts)
