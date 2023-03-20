@@ -12,8 +12,6 @@ import re
 from operator import neg
 import copy
 import gettext
-from abc import _abc_instancecheck, _abc_subclasscheck
-from pandas import DataFrame, Series
 
 from ..exceptions import InvalidValue
 from ..utils import ReadOnlyChainMap as ChainMap, shorten, is_mapping

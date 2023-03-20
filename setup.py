@@ -70,7 +70,7 @@ install_requires = [
     'pathlib',
     'future',
     'click',
-    'jsonschema>=4.0.0a6',
+    'jsonschema',
     #'rfc3987',
     'ngofile',
     'attrs',
