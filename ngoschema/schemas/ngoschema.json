@@ -64,6 +64,9 @@
             "description": {
               "type": "string"
             },
+            "long_description": {
+              "type": "array"
+            },
             "$comment": {
               "type": "string"
             }
@@ -478,13 +481,45 @@
             }
           }
         },
-        "DataframeSubset": {
+        "HasDataframe": {
           "type": "object",
+          "abstract": true,
           "aliases": {
             "df": "dataframe"
           },
           "notSerialized": [
             "dataframe"
+          ],
+          "properties": {
+            "dataframe": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
+            }
+          }
+        },
+        "HasSeries": {
+          "type": "object",
+          "abstract": true,
+          "notSerialized": [
+            "series",
+            "index"
+          ],
+          "properties": {
+            "series": {
+              "$ref": "#/$defs/datasets/$defs/Series"
+            },
+            "index": {
+              "type": "array",
+              "asString": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "DataframeSubset": {
+          "type": "object",
+          "extends": [
+            "#/$defs/datasets/$defs/HasDataframe"
           ],
           "readOnly": [
             "subset"
@@ -494,9 +529,6 @@
             "subkeys"
           ],
           "properties": {
-            "dataframe": {
-              "$ref": "#/$defs/datasets/$defs/Dataframe"
-            },
             "subkeys": {
               "type": "array"
             },
@@ -541,11 +573,7 @@
           "type": "object",
           "description": "This object represents a file.",
           "extends": [
-            "#/$defs/instances/$defs/Entity",
             "#/$defs/files/$defs/Filepath"
-          ],
-          "primaryKeys": [
-            "filepath"
           ],
           "properties": {
             "binary": {
@@ -559,6 +587,15 @@
           "type": "object",
           "extends": [
             "#/$defs/files/$defs/Filepath"
+          ],
+          "notSerialized": [
+            "parent"
+          ],
+          "notValidated": [
+            "parent"
+          ],
+          "readOnly": [
+            "parent"
           ],
           "properties": {
             "files": {
@@ -578,15 +615,23 @@
             }
           }
         },
+        "ZipFile": {
+          "type": "object",
+          "extends": [
+            "#/$defs/files/$defs/File"
+          ]
+        },
         "UriFile": {
           "type": "object",
           "description": "This object represents a file referenced by a URI",
           "extends": [
             "#/$defs/files/$defs/File"
           ],
-          "primaryKeys": [
-            "uri"
-          ],
+          "dependencies": {
+            "uri": [
+              "filepath"
+            ]
+          },
           "properties": {
             "uri": {
               "type": "uri",
@@ -599,20 +644,13 @@
           "type": "object",
           "description": "This object represents a document.",
           "extends": [
-            "#/$defs/files/$defs/File",
+            "#/$defs/files/$defs/UriFile",
             "#/$defs/metadata/$defs/Taggable"
           ],
           "additionalProperties": false,
-          "primaryKeys": [
-            "identifier"
-          ],
           "properties": {
             "encoder": {
               "$ref": "#/$defs/serializers/$defs/JsonSerializer"
-            },
-            "identifier": {
-              "type": "string",
-              "description": "Document identifier for indexing"
             },
             "charset": {
               "type": "string",
@@ -627,11 +665,7 @@
               "type": "string",
               "description": "Document author"
             },
-            "content": true,
-            "doc_id": {
-              "type": "string",
-              "description": "Document identifier"
-            }
+            "content": true
           }
         }
       }
@@ -782,6 +816,44 @@
           "extends": [
             "#/$defs/serializers/$defs/InstanceSerializer"
           ]
+        },
+        "CsvSerializer": {
+          "type": "object",
+          "extends": [
+            "#/$defs/serializers/$defs/InstanceSerializer"
+          ],
+          "properties": {
+            "dialect": {
+              "type": "string"
+            },
+            "delimiter": {
+              "type": "string"
+            },
+            "delim_whitespace": {
+              "type": "string"
+            },
+            "engine": {
+              "type": "string"
+            },
+            "sep": {
+              "type": "string"
+            },
+            "error_bad_lines": {
+              "type": "string"
+            },
+            "warn_bad_lines": {
+              "type": "string"
+            },
+            "on_bad_lines": {
+              "type": "string"
+            },
+            "names": {
+              "type": "string"
+            },
+            "prefix": {
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -797,10 +869,28 @@
             "#/$defs/serializers/$defs/EntitySerializer"
           ],
           "additionalProperties": false,
+          "aliases": {
+            "instances": "content"
+          },
+          "dependencies": {
+            "index": [
+              "content"
+            ]
+          },
+          "readOnly": [
+            "content",
+            "index"
+          ],
           "properties": {
             "instanceClass": {
               "type": "importable",
               "description": "Class symbol of objects stored in repository"
+            },
+            "content": {
+              "type": "array"
+            },
+            "index": {
+              "type": "array"
             }
           }
         },
@@ -848,6 +938,53 @@
             "postprocessor": {
               "type": "importable",
               "description": "Class symbol of postprocessor"
+            }
+          }
+        },
+        "DataframeRepository": {
+          "type": "object",
+          "extends": [
+            "#/$defs/repositories/$defs/MemoryRepository",
+            "#/$defs/datasets/$defs/HasDataframe"
+          ],
+          "aliases": {
+            "dataframe": "content",
+            "rowClass": "instanceClass"
+          },
+          "properties": {
+            "content": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
+            }
+          }
+        },
+        "CsvFileRepository": {
+          "type": "object",
+          "description": "This represents a repository storing objects in xml files.",
+          "extends": [
+            "#/$defs/repositories/$defs/DataframeRepository",
+            "#/$defs/serializers/$defs/CsvSerializer"
+          ],
+          "properties": {
+            "filepath": {
+              "type": "path"
+            },
+            "doc": {
+              "type": "path"
+            },
+            "fieldnames": {
+              "type": "array",
+              "description": "list of keys for the dict"
+            },
+            "restkey": {
+              "type": "string",
+              "description": "key to catch long rows"
+            },
+            "restval": {
+              "type": "string",
+              "description": "default value for short rows"
+            },
+            "dataframe": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
             }
           }
         }

@@ -83,7 +83,8 @@ class ArraySerializer(CollectionSerializer, ArrayDeserializer):
         return range(len(value))
 
     @staticmethod
-    def _serialize(self, value, as_string=False, **opts):
+    def _serialize(self, value, **opts):
+        as_string = opts.get('as_string', self._asString)
         value = CollectionSerializer._serialize(self, value, **opts)
         value = self._collType([value[k] for k in self._print_order(self, value, **opts)])
         if as_string:

@@ -10,7 +10,7 @@ class ObjectProtocolContext(NsManagerContext):
 
     def set_context(self, context, session=None, **opts):
         from ..protocols.object_protocol import ObjectProtocol
-        NsManagerContext.set_context(self, context, **opts)
+        NsManagerContext.set_context(self, context, session=session, **opts)
         ctx = self._context
         # _parent and _root are declared readonly in inspect.mm and it raises an error
         self._parent = next((m for m in ctx.maps if isinstance(m, ObjectProtocol) and m is not self), None)

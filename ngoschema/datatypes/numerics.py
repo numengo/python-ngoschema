@@ -32,11 +32,21 @@ class Numeric(Primitive):
 
 @register_type('number')
 class Number(Numeric):
+    _pyType = float
+
+
+@register_type('float')
+class Float(Number):
+    _pyType = float
+
+
+@register_type('decimal')
+class Decimal(Float):
     _pyType = decimal.Decimal
     _dcmContext = decimal.Context()
 
     def __init__(self, precision=12, **opts):
-        Numeric. __init__(self, **opts)
+        Numeric.__init__(self, **opts)
         self._dcmContext = decimal.Context(prec=precision)
 
     @staticmethod
@@ -55,11 +65,6 @@ class Number(Numeric):
         return value.to_eng_string(context=self._dcmContext)
 
 
-@register_type('float')
-class Float(Number):
-    _pyType = float
-
-
 @register_type('integer')
-class Integer(Numeric):
+class Integer(Number):
     _pyType = int

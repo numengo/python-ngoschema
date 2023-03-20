@@ -31,7 +31,7 @@ def search_app_config_files(appname=None, appauthor=None, version=None):
     for cdir in cdirs:
         if pathlib.Path(cdir).exists():
             pl.add(cdir)
-    return pl.list_files(['*.cfg', '*.json', '*.yaml'])
+    return [str(f.resolve()) for f in pl.list_files(['*.cfg', '*.json', '*.yaml'])]
 
 
 @assert_arg(0, PathFileExists)
@@ -48,7 +48,7 @@ def load_log_config(filepath):
 
 def load_default_app_config(app_name, app_author=None):
     from simple_settings import LazySettings
-    settings_list = [str(p.resolve()) for p in search_app_config_files(app_name, app_author)]\
+    settings_list = [p for p in search_app_config_files(app_name, app_author)]\
                   + ['%s_.environ' % app_name.upper()]
     settings = LazySettings(*settings_list)
     return settings.as_dict()

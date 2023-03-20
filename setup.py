@@ -88,10 +88,10 @@ install_requires = [
     'six',
     'requests',
     'ruamel.yaml',
-    'python-magic==0.4.15',
+    #'python-magic==0.4.15',
     'xmldict',
     'redis',
-    'sqlalchemy',
+    #'sqlalchemy',
 ]
 
 test_requires = [

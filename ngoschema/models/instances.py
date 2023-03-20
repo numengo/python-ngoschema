@@ -14,6 +14,7 @@ from future.utils import with_metaclass
 from collections import Mapping
 
 from .. import settings
+from ..exceptions import ConversionError
 from ..decorators import memoized_property, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol, ArrayProtocol, Context
 from ..contexts import InstanceContext, EntityContext
@@ -66,11 +67,12 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         return ObjectProtocol.__new__(cls, *args, **kwargs)
 
     def __init__(self, value=None, primaryKeys=None, **opts):
+        from ngoschema.session import default_session
         self._primaryKeys = primaryKeys or self._primaryKeys
         if value and not isinstance(value, Mapping):
             context = opts.get('context')
             session = context._session if context else None
-            session = session or self._session
+            session = session or getattr(self._context, '_session', default_session)
             value = session.resolve_fkey(value, self.__class__)
         Instance.__init__(self, value, **opts)
         self.identityKeys
@@ -85,18 +87,26 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         return self._primaryKeys
 
     def get_identityKeys(self):
-        self._identityKeys = tuple(self[k] for k in self._primaryKeys)
+        self._identityKeys = tuple(self.items_serialize(k) for k in self._primaryKeys)
+        #self._identityKeys = tuple(self[k] for k in self._primaryKeys)
         return self._identityKeys
 
     @staticmethod
     def _convert(self, value, **opts):
         _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        if isinstance(value, self._pyType):
+            return value
+        if isinstance(value, Mapping):
+            return Instance._convert(self, value)
+        # interpret value as identiy keys
         pks = self._primaryKeys
         pks_type = [self._items_type(self, pk) for pk in pks]
-        try:
-            return [pk_type._convert(pk_type, v, **opts) for pk_type, v in zip(pks_type, to_list(value))]
-        except Exception as er:
-            return Instance._convert(self, value)
+        ids = to_list(value)
+        if len(ids) == len(pks_type):
+            if all([pk_type.check(v) for pk_type, v in zip(pks_type, ids)]):
+                ids = tuple(pk_type.convert(v, **opts) for pk_type, v in zip(pks_type, ids))
+                return ids
+        raise ConversionError('Impossible to get proper identity keys for %s from %s.' % (self.__class__, value))
 
     @staticmethod
     def _check(self, value, **opts):
@@ -110,6 +120,12 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     @staticmethod
     def _serialize(self, value, root_entity=False, **opts):
+        _("""
+        root_entity: flag to signal the object is the root entity to serialize
+        use_identity_keys: serialize only the identity keys (if not root)
+        use_entity_keys: returns a dict of identity keys values (if not root)
+        add_identity_keys: ensure the identity keys are serialized
+        """)
         use_identity_keys = opts.get('use_identity_keys', False)
         use_entity_keys = opts.get('use_entity_keys', False)
         add_identity_keys = opts.get('add_identity_keys', False)

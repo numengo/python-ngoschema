@@ -82,20 +82,24 @@ class TypeBuilder(GenericClassRegistry):
             return _False()
         attrs = attrs or {}
         self._on_construction[id] = (schema, bases, attrs)
-        if '$ref' in schema:
-            schema = schema.copy()
-            ref = schema.pop('$ref')
-            cls = self.load(scope(ref, id))
-            if schema:
-                cls = cls.extend_type(id, **schema)
-        elif is_schema_composition(schema):
-            cls = SchemaComposition.build(id, schema, bases, attrs)
-        elif 'object' in schema.get('type', ''):
-            cls = ObjectProtocol.build(id, schema, bases, attrs)
-        elif 'array' in schema.get('type', ''):
-            cls = ArrayProtocol.build(id, schema, bases, attrs)
-        else:
-            cls = TypeProtocol.build(id, schema, bases, attrs)()
+        try:
+            if '$ref' in schema:
+                schema = schema.copy()
+                ref = schema.pop('$ref')
+                cls = self.load(scope(ref, id))
+                if schema:
+                    cls = cls.extend_type(id, **schema)
+            elif is_schema_composition(schema):
+                cls = SchemaComposition.build(id, schema, bases, attrs)
+            elif 'object' in schema.get('type', ''):
+                cls = ObjectProtocol.build(id, schema, bases, attrs)
+            elif 'array' in schema.get('type', ''):
+                cls = ArrayProtocol.build(id, schema, bases, attrs)
+            else:
+                cls = TypeProtocol.build(id, schema, bases, attrs)()
+        except Exception as er:
+            logger.error(f'Impossible to build {id}: {er}', exc_info=True)
+            raise
         self._on_construction.pop(id)
         self._registry[id] = cls
         NamespaceManager.register_ns(id)

@@ -153,14 +153,18 @@ class ForeignKey(Ref):
     @staticmethod
     @assert_arg(1, Tuple, strDelimiter=',')
     def _resolve(self, key, session=None, **opts):
-        session = session or scoped_session(session_maker())()
-        ric = [r.instanceClass for r in session.repositories]
-        fc_repos = [r for r in session.repositories if issubclass(r.instanceClass, self._foreignClass)]
-        for r in fc_repos:
-            # change resolve_fkey to use resolve??
-            v = r.resolve_fkey(key)
-            if v is not None:
-                return v
+        from ..session import default_session
+        session = session or default_session
+        ric = [r.instanceClass for r in session.repositories] # TEMP
+        fc = self._foreignClass
+        fs = self._foreignSchema
+        for r in session.repositories:
+            ic = r.instanceClass
+            if ic and (issubclass(ic, fc) or ic._id ==  fs):
+                # change resolve_fkey to use resolve??
+                v = r.resolve_fkey(key)
+                if v is not None:
+                    return v
         raise InvalidValue('impossible to resolve foreign key %s' % repr(key))
 
 

@@ -28,6 +28,10 @@ class Repository(Saver):
         if self._many:
             self._content = []
 
+    @property
+    def session(self):
+        return self._session
+
     @staticmethod
     def _deserialize(self, value, **opts):
         return Object._deserialize(self, value, **opts)
@@ -55,7 +59,16 @@ class Repository(Saver):
         return self._commit(self, value, **opts)
 
     def __contains__(self, item):
-        return item in self._content
+        return item in self.index
+
+    @property
+    def index(self):
+        ic = self._instanceClass
+        pks = ic._primaryKeys
+        return [c.identity_keys if len(pks) > 1 else c.identity_keys[0] for c in self._content]
+
+    def get_by_id(self, *identity_keys):
+        return self.resolve_fkey(identity_keys)
 
     def query(self, *attrs, **attrs_value):
         from ..query import Query

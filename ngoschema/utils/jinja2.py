@@ -8,6 +8,7 @@ licence: GPL3
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import gettext
 import logging
 import re
 import functools

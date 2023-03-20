@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import MutableSequence
+from collections import MutableSequence, Sequence
 import six
 import logging
 import gettext
@@ -73,6 +73,9 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def __len__(self):
         return len(self._data)
 
+    def __eq__(self, other):
+        return CollectionProtocol.__eq__(self, other) if isinstance(other, Sequence) else False
+
     def insert(self, item, value):
         self._itemsInputs.insert(item, {})
         self._dataValidated.insert(item, None)
@@ -97,6 +100,8 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         return '%s(%s)' % (self.qualname(), ArrayProtocol._str_list(self))
 
     def __str__(self):
+        if self._asString:
+            return ArraySerializer._serialize(self, self)
         return ArrayProtocol._str_list(self)
 
     @staticmethod
@@ -182,7 +187,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
     def query(self, *attrs, distinct=False, order_by=False, reverse=False, **attrs_value):
         from ..query import Query
         items = self._items
-        if items is not None and not self._itemsIsList:
+        if items is not None and items is not TRUE and not self._itemsIsList:
             for alias, raw in self._items._aliases.items():
                 if alias in attrs_value:
                     attrs_value[raw] = attrs_value.pop(alias)

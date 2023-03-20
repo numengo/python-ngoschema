@@ -165,6 +165,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
     _propertiesAllowed = set()
     _propertiesTranslation = {}
     _relationships = {}
+    _inversesOf = {}
+    _supersededBy = {}
     _aliases = {}
     _aliasesNegated = {}
 
@@ -217,7 +219,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return self._deserializer.call_order(value, dependencies=dependencies, **opts)
 
     @staticmethod
-    def _deserialize(self, value, context=None, **opts):
+    def _deserialize(self, value, **opts):
         from ..managers.type_builder import type_builder
         if value is None:
             return value
@@ -235,7 +237,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         value.update({k2: - value.pop(k1) for k1, k2 in self._aliasesNegated.items() if k1 in value})
         # use information from context
         if self._useContext:
-            ctx = context or self._context
+            ctx = opts.get('context') or self._context
             for c in self._propertiesAllowed.intersection(ctx.keys()):
                 value.setdefault(c, ctx[c])
         # handle canonical names
@@ -292,6 +294,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         self._dataValidated = {k: None for k in keys}
         self._dataAdditional = {k: None for k in self._dataAdditional.keys()}
         self._dependencies = dict(self.__class__._dependencies)
+
+    def __eq__(self, other):
+        return CollectionProtocol.__eq__(self, other) if isinstance(other, Mapping) else False
 
     def __len__(self):
         return len(self._dataValidated)
@@ -391,6 +396,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
             return op(desc.__get__(self))
+        if name in self._supersededBy:
+            ss = self[self._supersededBy[name]]
+            return ss[0] if len(ss) else None
         if self._propertiesAdditional and name in self._data:
             self._itemsInputs[raw] = self._items_inputs_evaluate(name)
             self._dataAdditional[raw] = v = op(self[name])
@@ -504,6 +512,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         desc = self._propertiesDescriptor.get(raw)
         if desc:
             return op(desc.__get__(self))
+        if raw in self._supersededBy:
+            ss = self[self._supersededBy[raw]]
+            return ss[0] if len(ss) else None
         if self._lazyLoading or self._is_outdated(key):
             self._itemsInputs[key] = self._items_inputs_evaluate(key)
             self._set_dataValidated(key, self._items_evaluate(key))
@@ -518,9 +529,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             cur = self
             try:
                 for p in parts[:-1]:
-                    cur = cur[p] if not hasattr(cur, p) else getattr(cur, p)
-                    if cur is None:
-                        return
+                    cp = cur[p] if not hasattr(cur, p) else getattr(cur, p)
+                    if cp is None:
+                        # if intermediate object is None, create an empty one
+                        cur[p] = {}
+                        cp = cur[p]
+                    cur = cp
                 cur[parts[-1]] = value
                 return
             except Exception as er:
@@ -529,6 +543,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         desc = self._propertiesDescriptor.get(raw) or self._relationshipsDescriptor.get(raw)
         if desc:
             return desc.__set__(self, op(value))
+        if raw in self._supersededBy:
+            return self[self._supersededBy[raw]].insert(value, 0)
         if not self._propertiesAdditional:
             raise KeyError(key)
         v = op(value)
@@ -559,14 +575,16 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 continue
             if alias not in excludes:
                 v = ret.get(raw)
+                v = value.items_serialize(raw) if v is None else v
                 if v is not None:
                     # here we pop the alias reference
-                    ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = ret.pop(raw)
+                    ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = ret.pop(raw, v)
         for alias, raw in self._aliasesNegated.items():
             if only and alias not in only:
                 continue
             if alias not in excludes:
                 v = ret.get(raw)
+                v = value.items_serialize(raw) if v is None else v
                 if v is not None:
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = - v
         if isinstance(value, ObjectProtocol) and value._id != self._id:
@@ -797,6 +815,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # create type for properties
         local_properties = OrderedDict([(k, type_builder.build(f'{id}/properties/{k}', v))
                                   for k, v in schema.get('properties', {}).items()])
+        # gathers superseded properties (local and inherited)
+        supersededBy = ChainMap({v['supersedes']: k for k, v in schema.get('properties', {}).items()
+                                 if is_mapping(v) and 'supersedes' in v},
+                                *[b._supersededBy for b in pbases])
+        inversesOf = ChainMap({v['inverseOf']: k for k, v in schema.get('properties', {}).items()
+                               if is_mapping(v) and 'inverseOf' in v},
+                                *[b._inversesOf for b in pbases])
         redefined_properties = OrderedDict()
         for i, s in zip(not_ready_yet, not_ready_yet_sch):
             for k, v in s.get('properties', {}).items():
@@ -818,7 +843,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             if not len(b._primaryKeys):
                 if b._abstract:
                     continue
-                raise InvalidValue(_("Entity class '%s' is not abstract and has no primary keys defined.", rname))
+                raise InvalidValue(_("Entity class '%s' is not abstract and has no primary keys defined." % rname))
             pks = b._primaryKeys
             pname = rname + '_' + '_'.join(pks)
             ptype = b._properties[pks[0]]._type if len(pks) == 1 else 'array'
@@ -826,7 +851,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             local_properties[pname] = type_builder.build(f'{id}/properties/{pname}', psch)
             rsch = {'foreignSchema': b._id, 'foreignKeys': [pname], 'inheritance': True}
             local_relationships[rname] = rl = relationship_builder.build(f'{id}/relationships/{rname}', rsch)
-            local_relationships_descriptor[rname] = RelationshipDescriptor(rname, rl)
+            local_relationships_descriptor[rname] = RelationshipDescriptor(pname, rl)
         # add relationships related to local properties
         for k, v in schema.get('properties', {}).items():
             if Object.check(v) and 'foreignKey' in v:
@@ -840,7 +865,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 for kbp, bp in bps.items():
                     local_relationships[kbp] = rl = relationship_builder.build(f'{id}/relationships/{kbp}', bp, attrs=ra)
                     #local_relationships[rn] = rl = RelationshipBuilder.build(f'{id}/relationships/{rn}', rs, attrs=ra)
-                    local_relationships_descriptor[kbp] = RelationshipDescriptor(kbp, rl)
+                    local_relationships_descriptor[kbp] = RelationshipDescriptor(k, rl)
 
         # add some magic on methods defined in class
         # exception handling, argument conversion/validation, dependencies, etc...
@@ -1046,6 +1071,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         attrs['_notValidated'] = not_validated
         attrs['_attributesOrig'] = set().union(attributes_orig, *[b._attributesOrig for b in pbases])
         attrs['_propertiesTranslation'] = dict(ChainMap(properties_translation, *[b._propertiesTranslation for b in pbases]))
+        attrs['_inversesOf'] = inversesOf
+        attrs['_supersededBy'] = supersededBy
         attrs['_aliases'] = aliases
         attrs['_aliasesNegated'] = negated_aliases
         attrs['_propertiesAllowed'] = set(attrs['_properties']).union(attrs['_aliases']).union(attrs['_aliasesNegated']).union(attrs['_propertiesTranslation'])
