@@ -16,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class Type(TypeProtocol):
+    _auto = None
 
     def __init__(self, **opts):
         TypeProtocol.__init__(self, **opts)
         from ..managers import type_builder
         schema = dict(self._schema)
+        self._auto = self._schema.get('auto', self._auto)
         if not self._pyType:
             ty = schema.get('type')
             if 'type' in schema:

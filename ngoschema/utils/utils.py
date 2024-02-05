@@ -197,7 +197,7 @@ class Context(ReadOnlyChainMap):
         return hash(repr(sorted(self.merged.items())))
 
 
-class _KeyModifierMapping(MutableMapping):
+class KeyModifierMapping(MutableMapping):
 
     @classmethod
     def key_modifier(cls, value):
@@ -232,14 +232,14 @@ class _KeyModifierMapping(MutableMapping):
         return repr(self._dict)
 
 
-class CaseInsensitiveDict(_KeyModifierMapping):
+class CaseInsensitiveDict(KeyModifierMapping):
 
     @classmethod
     def key_modifier(cls, key):
         return key.lower()
 
 
-class UriDict(_KeyModifierMapping):
+class UriDict(KeyModifierMapping):
 
     @classmethod
     def key_modifier(cls, key):

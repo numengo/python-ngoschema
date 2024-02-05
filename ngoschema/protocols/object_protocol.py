@@ -252,7 +252,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     v = cur[p] = [None] * p + [v]
                 cur = v
         # required with default
-        return CollectionProtocol._deserialize(self, value, **opts)
+        return self._collection._deserialize(self, value, **opts)
 
     @staticmethod
     def _has_default(self, value=None, **opts):
@@ -563,14 +563,15 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             del self._dataValidated[key]
 
     @staticmethod
-    def _serialize(self, value, schema=False, excludes=[], only=[], **opts):
+    def _serialize(self, value, schema=False, excludes=[], only=[], aliases=None, **opts):
         serializer = self if not isinstance(value, Serializer) else value.__class__
         context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
-        ret = CollectionProtocol._serialize(serializer, value, excludes=excludes, only=only, **opts)
+        ret = self._collection._serialize(serializer, value, excludes=excludes, only=only, **opts)
         ret = self._collType([((attr_prefix if self._items_type(serializer, k).is_primitive() else '') + k, ret[k])
                                 for k in ret.keys()])
-        for alias, raw in self._aliases.items():
+        aliases = dict(**self._aliases, **(aliases or {}))
+        for alias, raw in aliases.items():
             if only and alias not in only:
                 continue
             if alias not in excludes:

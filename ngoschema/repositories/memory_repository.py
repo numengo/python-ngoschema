@@ -20,7 +20,7 @@ _ = gettext.gettext
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
     #_catalog = None
-    many = True
+    _many = True
 
     def __init__(self, value=None, meta_opts=None, **opts):
         from ..datatypes import Array
@@ -68,23 +68,32 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     @staticmethod
     def _commit(self, value, save=False, **opts):
         _("""Optionally load the value (at least validate it) and add it to content """)
+        many = opts.get('many', False)
+        opts.setdefault('pyType', self._instanceClass)
         value = self._saver._save(self, value, **opts) if save else value
         if self._many:
-            # check/set identity keys
-            pk = value.identityKeys
-            for i, k in enumerate(pk):
-                iks = [c.identityKeys[i] for c in self._content]
-                if k is None:
-                    k = max([-1] + iks) + 1
-                    value._set_data(value.primaryKeys[i], k)
-            #pk = value.identityKeys
-            #self._catalog[value._identityKeys] = value
-            for i, c in enumerate(self._content):
-                if pk == c.identityKeys:
-                    self._content[i] = value
-                    break
-            else:
-                self._content.append(value)
+            values = [value] if not many else value
+            for value in values:
+                # check/set identity keys
+                pk = value.identityKeys
+                for i, k in enumerate(pk):
+                    pkn = self._instanceClass._primaryKeys[i]
+                    t = self._instanceClass._get_primaryKeysType(self._instanceClass)[i]
+                    if k is None:
+                        if t._auto:
+                            iks = [c.identityKeys[i] for c in self._content]
+                            k = max([-1] + iks) + 1
+                        else:
+                            raise Exception("missing primary key '%s' in object %s", pkn, value)
+                    value._set_data(pkn, k)
+                #pk = value.identityKeys
+                #self._catalog[value._identityKeys] = value
+                for i, c in enumerate(self._content):
+                    if pk == c.identityKeys:
+                        self._content[i] = value
+                        break
+                else:
+                    self._content.append(value)
         else:
             self._content = value
         self._items_touch('content')

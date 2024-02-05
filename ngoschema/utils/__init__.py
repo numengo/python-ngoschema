@@ -7,6 +7,7 @@ __all__ = [
     'qualname',
     # utils
     'ReadOnlyChainMap',
+    'KeyModifierMapping',
     'CaseInsensitiveDict',
     'UriDict',
     'Registry',

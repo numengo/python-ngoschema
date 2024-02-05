@@ -4,7 +4,7 @@
 <node TEXT="ngoschema" FOLDED="false" ID="ID_1739447031" CREATED="1587355583875" MODIFIED="1599126444701" STYLE="oval">
 <font SIZE="18"/>
 <hook NAME="MapStyle">
-    <properties show_icon_for_attributes="true" fit_to_viewport="false" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff"/>
+    <properties show_icon_for_attributes="true" edgeColorConfiguration="#808080ff,#ff0000ff,#0000ffff,#00ff00ff,#ff00ffff,#00ffffff,#7c0000ff,#00007cff,#007c00ff,#7c007cff,#007c7cff,#7c7c00ff" fit_to_viewport="false"/>
 
 <map_styles>
 <stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
@@ -2150,7 +2150,7 @@
 </node>
 </node>
 </node>
-<node TEXT="files" ID="ID_1444501729" CREATED="1598196427868" MODIFIED="1601978266004">
+<node TEXT="files" FOLDED="true" ID="ID_1444501729" CREATED="1598196427868" MODIFIED="1601978266004">
 <node TEXT="$defs" ID="ID_1526416596" CREATED="1598196473645" MODIFIED="1601317927458">
 <node TEXT="Filepath" ID="ID_272248605" CREATED="1671091094884" MODIFIED="1671091098568">
 <node TEXT="extends" ID="ID_1029727390" CREATED="1671168479062" MODIFIED="1671168480469">
@@ -2388,7 +2388,7 @@
 <icon BUILTIN="bookmark"/>
 <node TEXT="Serializers implements the interface that formats objects in a string (for ex json, xml or yaml)." ID="ID_271564497" CREATED="1601954291499" MODIFIED="1650224068322"/>
 </node>
-<node TEXT="$defs" FOLDED="true" ID="ID_305461900" CREATED="1650224918108" MODIFIED="1650224922708">
+<node TEXT="$defs" ID="ID_305461900" CREATED="1650224918108" MODIFIED="1650224922708">
 <node TEXT="CollectionSerializer" ID="ID_969862978" CREATED="1601114751589" MODIFIED="1603203144139">
 <node TEXT="description" ID="ID_1790771912" CREATED="1601954284787" MODIFIED="1601954846268">
 <icon BUILTIN="bookmark"/>
@@ -2462,12 +2462,29 @@
 <node TEXT="extends" ID="ID_1257665993" CREATED="1603202967915" MODIFIED="1603202970252">
 <node TEXT="ObjectSerializer" ID="ID_1936113590" CREATED="1603202971877" MODIFIED="1603202975048"/>
 </node>
+<node TEXT="notSerialized" ID="ID_310647368" CREATED="1707130907640" MODIFIED="1707130914494">
+<node TEXT="tag" ID="ID_81727278" CREATED="1707130915354" MODIFIED="1707130916285"/>
+<node TEXT="elements_tag" ID="ID_255657902" CREATED="1707130916469" MODIFIED="1707130918708"/>
+</node>
 <node TEXT="properties" ID="ID_283790551" CREATED="1603202731679" MODIFIED="1603202733329">
+<node TEXT="instanceClass" ID="ID_1401103263" CREATED="1598171795000" MODIFIED="1601977410841">
+<icon BUILTIN="edit"/>
+<attribute NAME="type" VALUE="importable"/>
+<node TEXT="description" ID="ID_266696540" CREATED="1601954284787" MODIFIED="1601954846268">
+<icon BUILTIN="bookmark"/>
+<node TEXT="Class symbol of objects stored in repository" ID="ID_627600410" CREATED="1601954291499" MODIFIED="1651418516977"/>
+</node>
+</node>
 <node TEXT="tag" ID="ID_1441610142" CREATED="1603202565042" MODIFIED="1603202620118">
 <icon BUILTIN="edit"/>
 <node TEXT="description" ID="ID_1022526562" CREATED="1601954284787" MODIFIED="1601954846268">
 <icon BUILTIN="bookmark"/>
-<node TEXT="Tag to use to represent object in serialization." ID="ID_349842182" CREATED="1601954291499" MODIFIED="1651416108271"/>
+<node TEXT="Tag to use to represent root object in serialization." ID="ID_349842182" CREATED="1601954291499" MODIFIED="1706871245958"/>
+</node>
+</node>
+<node TEXT="elements_tag" ID="ID_377896919" CREATED="1706869879606" MODIFIED="1706869893719">
+<node TEXT="description" ID="ID_655958575" CREATED="1706869897192" MODIFIED="1706869904886">
+<node TEXT="Tag used to represent each elements if many" ID="ID_1587151130" CREATED="1706869906125" MODIFIED="1706871270242"/>
 </node>
 </node>
 </node>
@@ -2481,7 +2498,7 @@
 <node TEXT="InstanceSerializer" ID="ID_990528140" CREATED="1603202777934" MODIFIED="1603202781235"/>
 </node>
 <node TEXT="properties" ID="ID_1098110977" CREATED="1603202771109" MODIFIED="1603202772735">
-<node TEXT="entity" FOLDED="true" ID="ID_542620985" CREATED="1607588674969" MODIFIED="1607588740803">
+<node TEXT="entity" ID="ID_542620985" CREATED="1607588674969" MODIFIED="1607588740803">
 <icon BUILTIN="button_cancel"/>
 <node TEXT="..instances.Entity" ID="ID_1512840499" CREATED="1607588679593" MODIFIED="1607588693685"/>
 </node>
@@ -2746,14 +2763,6 @@
 </node>
 </node>
 <node TEXT="properties" ID="ID_1392956480" CREATED="1598171795000" MODIFIED="1672642076714">
-<node TEXT="instanceClass" ID="ID_516347502" CREATED="1598171795000" MODIFIED="1601977410841">
-<icon BUILTIN="edit"/>
-<attribute NAME="type" VALUE="importable"/>
-<node TEXT="description" ID="ID_303955790" CREATED="1601954284787" MODIFIED="1601954846268">
-<icon BUILTIN="bookmark"/>
-<node TEXT="Class symbol of objects stored in repository" ID="ID_908463028" CREATED="1601954291499" MODIFIED="1651418516977"/>
-</node>
-</node>
 <node TEXT="instances" ID="ID_1781019153" CREATED="1598295373585" MODIFIED="1603276495724">
 <icon BUILTIN="very_positive"/>
 <icon BUILTIN="button_cancel"/>

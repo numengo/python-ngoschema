@@ -20,7 +20,9 @@ class Repository(Saver):
     _content = None
 
     def __init__(self, saver=None, session=None, **opts):
+        from ..datatypes import Symbol, Array
         from ..protocols.array_protocol import ArrayProtocol
+        Saver.__init__(self, **opts)
         self._saver = saver or self._saver
         self._saver.__init__(self, **opts)
         self._session = session or self._session
@@ -32,17 +34,24 @@ class Repository(Saver):
     def session(self):
         return self._session
 
-    @staticmethod
-    def _deserialize(self, value, **opts):
-        return Object._deserialize(self, value, **opts)
+    # no idea where it comes from, but definitely wrong
+    #@staticmethod
+    #def _deserialize(self, value, **opts):
+    #    return Object._deserialize(self, value, **opts)
 
     @staticmethod
     def _commit(self, value, save=True, **opts):
         _("""Optionally load the value (at least validate it) and add it to content """)
+        from ..models.instances import Entity, Instance
         value = self._saver._save(self, value, **opts) if save else value
         if self._many:
+            for v in value:
+                if isinstance(v, Entity):
+                    v._repository = self
             self._content.extend(value)
         else:
+            if isinstance(value, Entity):
+                value._repository = self
             self._content = value
         return self._content
 

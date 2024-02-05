@@ -12,10 +12,11 @@ except ImportError:
 from ..registries import deserializers_registry, serializers_registry
 from ..protocols import Deserializer, Serializer
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
+from .instances_serializer import InstanceDeserializer, InstanceSerializer
 
 
 @deserializers_registry.register('yaml')
-class YamlDeserializer(Deserializer):
+class YamlDeserializer(InstanceDeserializer):
     _yaml = YAML(typ="safe")
 
     @staticmethod
@@ -34,7 +35,7 @@ class YamlDeserializer(Deserializer):
 
 
 @serializers_registry.register('yaml')
-class YamlSerializer(with_metaclass(SchemaMetaclass, Serializer, YamlDeserializer)):
+class YamlSerializer(with_metaclass(SchemaMetaclass, InstanceSerializer, YamlDeserializer)):
     _id = 'https://numengo.org/ngoschema#/$defs/serializers/$defs/YamlSerializer'
     _deserializer = YamlDeserializer
     _charset = 'utf-8'
@@ -45,7 +46,7 @@ class YamlSerializer(with_metaclass(SchemaMetaclass, Serializer, YamlDeserialize
                  charset='utf-8',
                  **opts):
         #ObjectProtocol.__init__(self, value, **opts)
-        Serializer.__init__(self, **opts)
+        InstanceSerializer.__init__(self, **opts)
         self._indent = indent
         self._charset = charset
 

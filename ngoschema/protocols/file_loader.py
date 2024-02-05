@@ -63,8 +63,8 @@ class FileLoader(Loader):
     def _load_file(self, filepath, **opts):
         filepath = FileLoader.set_filepath(self, filepath)
         content = FileLoader._deserialize(self, filepath, **opts)
-        parsed = self._encoder.deserialize(content, evaluate=False, **opts)
-        return Loader._load(self, parsed, **opts)
+        parsed = self._encoder._deserialize(self, content, evaluate=False, with_tags=True, from_str=True, **opts)
+        return Loader._load(self, parsed, deserialize=False, **opts)
 
     @staticmethod
     def _load(self, filepath=None, **opts):
@@ -96,12 +96,9 @@ class FileSaver(Saver, FileLoader):
 
     def __init__(self, append=False, **opts):
         Saver.__init__(self, **opts)
-        # FileLoader.__init__(self, **opts) # already initialized in Saver
+        # FileLoader.__init__(self, **opts) # already initialized in Saver only filepath missing
+        FileLoader.set_filepath(self, opts.get('filepath'))
         self._append = append
-
-    #def set_filepath(self, filepath):
-    #    self._filepath = filepath = Path.convert(filepath) if filepath else None
-    #    return filepath
 
     @staticmethod
     @assert_arg(2, Path)

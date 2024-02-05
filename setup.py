@@ -92,6 +92,7 @@ install_requires = [
     'xmldict',
     'redis',
     #'sqlalchemy',
+    'python-secrets',
 ]
 
 test_requires = [

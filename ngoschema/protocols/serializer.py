@@ -36,8 +36,14 @@ class Deserializer(Validator):
         return True
 
     @staticmethod
-    def _deserialize(self, value, evaluate=True, **opts):
-        value = self._validator._evaluate(self, value, **opts) if evaluate else value
+    def _deserialize(self, value, many=False, evaluate=True, **opts):
+        from ..datatypes import Symbol, Array
+        if many:
+            value = Array.deserialize(value, split_string=True)
+            value = [Validator._evaluate(self, v, **opts) if evaluate else v
+                     for v in value]
+        else:
+            value = Validator._evaluate(self, value, **opts) if evaluate else value
         return value
 
     def __call__(self, value, **opts):
@@ -50,7 +56,7 @@ class Deserializer(Validator):
         opts['context'] = cls.create_context(**opts)
         #value = cls._deserialize(cls, value, evaluate=evaluate, **opts)
         value = cls._deserialize(cls, value, evaluate=False, **opts)
-        value = cls._validator._evaluate(cls, value, **opts) if evaluate else value
+        value = Validator._evaluate(cls, value, **opts) if evaluate else value
         return value
 
 
@@ -62,8 +68,17 @@ class Serializer(Deserializer):
         self._deserializer.__init__(self, **opts)
 
     @staticmethod
-    def _serialize(self, value, deserialize=True, **opts):
-        value = self._deserializer._deserialize(self, value, **opts) if deserialize else value
+    def _serialize(self, value, deserialize=False, **opts):
+        from ..datatypes import Symbol, Array
+        return Deserializer._deserialize(self, value, **opts) if deserialize else value
+        many = opts.get('many', self._many)
+        #if many:
+        #    value = Array.deserialize(value, split_string=True)
+        #    value = [self._deserializer._deserialize(self, v, many=False, **opts) if deserialize else v
+        #             for v in value]
+        #else:
+        #    value = self._deserializer._deserialize(self, value, many=False, **opts) if deserialize else value
+        value = self._deserializer._deserialize(self, value, many=False, **opts) if deserialize else value
         return value
 
     def __call__(self, value, **opts):
@@ -71,8 +86,13 @@ class Serializer(Deserializer):
         return self._serialize(self, value, **opts)
 
     @classmethod
-    def serialize(cls, value, **opts):
+    def serialize(cls, value, aliases=None, **opts):
         #opts['context'] = cls.create_context(**opts)
         opts.setdefault('context', cls._context)
-        return cls._serialize(cls, value, **opts)
+        ret = cls._serialize(cls, value, **opts)
+        if aliases:
+            for alias, raw in aliases.items():
+                if raw in ret:
+                    ret[alias] = ret.pop(raw)
+        return ret
 

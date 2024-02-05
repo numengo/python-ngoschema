@@ -10,7 +10,7 @@ import gettext
 from ..datatypes.array import Array, ArraySerializer, ArrayDeserializer
 from .collection_protocol import CollectionProtocol, TypeProtocol
 from ..datatypes.constants import _True
-from ..utils import shorten
+from ..utils import shorten, to_list
 from ..managers.namespace_manager import default_ns_manager
 from .. import settings
 
@@ -167,11 +167,16 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         # sort 2 lists by one
         self._dataValidated, self._data = zip(*sorted(zip(self._dataValidated, self._data), key=key, reverse=reverse))
 
-    def get(self, *pks, default=None, **kwargs):
+    def get(self, *iks, default=None, **kwargs):
         from ..query import Query
         items = self._items
-        if pks:
-            kwargs.update({k: v for k, v in zip(items._primaryKeys, pks)})
+        if iks:
+            from ..models.instances import Entity, Instance
+            if items and not self._itemsIsList and issubclass(items, Instance):
+                pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+                kwargs.update({k: v for k, v in zip(pks, iks)})
+            else:
+                raise Exception('can only access this way an array of a given unique Instance or Entity')
         if items is not None and not self._itemsIsList:
             for alias, raw in self._items._aliases.items():
                 if alias in kwargs:
@@ -195,3 +200,59 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                 if alias in attrs_value:
                     attrs_value[raw] = - attrs_value.pop(alias)
         return Query(self, distinct=distinct, order_by=order_by, reverse=reverse).get(*attrs, **attrs_value)
+
+
+    def __setitem__(self, item, value):
+        if isinstance(item, int):
+            return CollectionProtocol.__setitem__(self, item, value)
+        from ..models.instances import Entity, Instance
+        iks = to_list(item)
+        items = self._items
+        if items and not self._itemsIsList and issubclass(items, Instance):
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+            if len(iks) != len(pks):
+                raise NotImplemented('access error with key %s where expecting %s' % (iks, pks))
+            for i, v in enumerate(self):
+                if iks == [v[pk] for pk in pks]:
+                    return CollectionProtocol.__setitem__(self, i, value)
+            if not isinstance(value, Instance):
+                value = items(**value)
+            for pk, ik in zip(pks, iks):
+                vik = value[pk]
+                if vik is not None and vik != ik:
+                    self.logger('changing primary key!!!')
+                value[pk] = ik
+            self.append(value)
+        else:
+            raise NotImplemented('access error with key %s' % item)
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return CollectionProtocol.__getitem__(self, item)
+        from ..models.instances import Entity, Instance
+        iks = to_list(item)
+        items = self._items
+        if items and not self._itemsIsList and issubclass(items, Instance):
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+            if len(iks) != len(pks):
+                raise NotImplemented('access error with key %s where expecting %s' % (iks, pks))
+            return self.get(*iks)
+        else:
+            raise NotImplemented('access error with key %s' % item)
+
+    def __contains__(self, value):
+        for v in self:
+            if v is value or v == value:
+                return True
+        from ..models.instances import Entity, Instance
+        items = self._items
+        if items and not self._itemsIsList and issubclass(items, Instance):
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+            iks = to_list(value)
+            if len(pks) != len(iks):
+                return False
+            for i, v in enumerate(self):
+                if iks == [v[pk] for pk in pks]:
+                    return True
+            return False
+        return False

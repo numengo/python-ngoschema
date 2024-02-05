@@ -224,10 +224,14 @@ class CollectionProtocol(Collection):
         __doc__ = self._validate.__doc__
         return self._validate(self, self, items=items, **opts)
 
-    def do_serialize(self, deserialize=False, **opts):
+    def do_serialize(self, deserialize=False, excludes=[], **opts):
         __doc__ = self._serialize.__doc__
         opts['context'] = self._context
-        return self._serialize(self, self, deserialize=deserialize, **opts)
+        excludes = list(self._notSerialized.union(excludes))
+        return self._serialize(self, self, deserialize=deserialize, excludes=excludes, **opts)
+
+    def no_defaults(self, **opts):
+        return self.do_serialize(no_defaults=True, **opts)
 
     def copy(self):
         return self.create(self._data, context=self._context)

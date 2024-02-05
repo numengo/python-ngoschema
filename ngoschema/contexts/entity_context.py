@@ -12,5 +12,7 @@ class EntityContext(InstanceContext):
         from ..repositories import Repository
         from ..session import default_session
         session = session or getattr(context, '_session', None) or default_session
-        self._repository = session.get_or_create_repo_by_class(self.__class__)
+        #doesnt seem like a good idea to get or create according to class
+        #better wait for commit
+        #self._repository = session.get_or_create_repo_by_class(self.__class__)
         InstanceContext.set_context(self, context, **opts)

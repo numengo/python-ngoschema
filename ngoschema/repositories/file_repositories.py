@@ -32,6 +32,7 @@ from ..utils import xmltodict
 from ..datatypes import Path, PathFile
 from ..datatypes import Array, Tuple
 from ..managers.type_builder import wrap
+from ..serializers.instances_serializer import InstanceSerializer, InstanceDeserializer
 from ..serializers.file_serializer import FileSaver
 from ..serializers.json_serializer import JsonSerializer, JsonDeserializer
 from ..serializers.xml_serializer import XmlSerializer, XmlDeserializer
@@ -52,18 +53,27 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
     _encoder = Serializer
-    instanceClass = File
 
     def __init__(self, value=None, meta_opts=None, **opts):
         ObjectProtocol.__init__(self, value, **opts)
-        Repository.__init__(self, **(meta_opts or {}), **self)
-        #Repository.__init__(self, **(meta_opts or {}), instanceClass=self.instanceClass)
+        opts.update(self.no_defaults())
+        # FileSaver.__init__(self, **opts)  # Saver already initialized in Repository, only misses filepath
+        Repository.__init__(self, **opts)
+        FileSaver.set_filepath(self, opts.get('filepath'))
+        # to initialize the encoder
+        meta_opts = meta_opts or {}
+        meta_opts.setdefault('instance_class', self._instanceClass)
+        self._encoder.__init__(self, **meta_opts)
 
     @staticmethod
-    def _commit(self, value, **opts):
-        value = Repository._commit(self, value, save=False, **opts)
-        stream = self._encoder.serialize(value, **opts)
-        filepath = opts.get('filepath', self._filepath)
+    def _commit(self, value, filepath=None, with_tags=True, many=False, **opts):
+        values_all = Repository._commit(self, value, many=many, save=False, **opts)
+        #values_serialized = self._serializer._serialize(self, values_all, many=many, with_tags=with_tags, **opts)
+        stream = self._encoder._serialize(self, values_all, many=many, with_tags=with_tags, as_str=True, **opts)
+        filepath = self.set_filepath(filepath) if filepath else self._filepath
+        if not filepath:
+            self._logger.error("missing filepath to dump values")
+            return
         if not filepath.parent.exists():
             self._logger.info("creating missing directory '%s'", file_link_format(filepath.parent))
             os.makedirs(str(filepath.parent))
@@ -73,7 +83,6 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
                 self._logger.info("File '%s' already exists with same content. Not overwriting.",
                                   file_link_format(filepath))
                 return
-
         self._logger.info("DUMP %s", file_link_format(filepath))
         self._logger.debug("data:\n%r ", stream)
         self.save(stream, serialize=False)
@@ -84,7 +93,7 @@ class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
 def load_object_from_file(fp, repository_class=None, session=None, file_opts=None, repo_opts=None, **opts):
     repo_class = repository_class or JsonFileRepository
     repo = repo_class(repo_opts or {}, session=session)
-    logger.info("LOAD %s from %s", repo.instanceClass or '<class unknown>', file_link_format(fp))
+    logger.info("LOAD %s from %s", repo._instanceClass or '<class unknown>', file_link_format(fp))
     return repo.load_file(fp, session=repo.session)
 
 
@@ -92,7 +101,7 @@ def load_object_from_file(fp, repository_class=None, session=None, file_opts=Non
 def serialize_object_to_file(obj, fp, repository_class=None, session=None, **opts):
     repo_class = repository_class or JsonFileRepository
     repo = repo_class(filepath=fp, session=session, **opts)
-    logger.info("DUMP %s from %s", repo.instanceClass, file_link_format(fp))
+    logger.info("DUMP %s from %s", repo._instanceClass, file_link_format(fp))
     repo.commit(obj, **opts)
 
 
@@ -100,23 +109,23 @@ def serialize_object_to_file(obj, fp, repository_class=None, session=None, **opt
 class JsonFileRepository(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/JsonFileRepository'
     _encoder = JsonSerializer
-    _deserializer = ObjectDeserializer
-    _serializer = ObjectSerializer
+    _deserializer = InstanceDeserializer
+    _serializer = InstanceSerializer
     #_instanceClass = Document
-    _instanceClass = None
+    #instanceClass = None
 
     def __init__(self, value=None, **opts):
         FileRepository.__init__(self, value, **opts)
 
-    @staticmethod
-    def _serialize(self, data, **opts):
-        return json.dumps(
-            data,
-            indent=self.get("indent", 2),
-            ensure_ascii=self.get("ensure_ascii", False),
-            separators=self.get("separators", None),
-            default=self.get("default", None),
-        )
+    #@staticmethod
+    #def _serialize(self, data, **opts):
+    #    # TODO: suppress _serialize from Repository to use the one in Serializer
+    #    return json.dumps(
+    #        data,
+    #        indent=self.get("indent", 2),
+    #        ensure_ascii=self.get("ensure_ascii", False),
+    #        separators=self.get("separators", None),
+    #        default=self.get("default", None))
 
 
 @assert_arg(0, PathFile)
@@ -134,21 +143,23 @@ def save_to_json(obj, fp, session=None, **kwargs):
 class YamlFileRepository(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/YamlFileRepository'
     _encoder = YamlSerializer
-    _deserializer = ObjectDeserializer
-    _serializer = ObjectSerializer
-    _instanceClass = Document
+    _deserializer = InstanceDeserializer
+    _serializer = InstanceSerializer
+    #instanceClass = Document
 
-    def deserialize_data(self):
-        data = self.document._serialize(self._yaml.load, **self._extended_properties)
-        return data
-
-    def serialize_data(self, data):
-        yaml.indent = self.get("indent", 2)
-        yaml.allow_unicode = self.get("encoding", "utf-8") == "utf-8"
-
-        output = StringIO()
-        self._yaml.safe_dump(data, output, default_flow_style=False, **self._extended_properties)
-        return output.getvalue()
+    # CRO 15/1/23: try to refactor and get rid of (de)serialize_data functions
+    # which should be done at the encoder level
+    #def deserialize_data(self):
+    #    data = self.document._serialize(self._yaml.load, **self._extended_properties)
+    #    return data
+    #
+    #def serialize_data(self, data):
+    #    yaml.indent = self.get("indent", 2)
+    #    yaml.allow_unicode = self.get("encoding", "utf-8") == "utf-8"
+    #
+    #    output = StringIO()
+    #    self._yaml.safe_dump(data, output, default_flow_style=False, **self._extended_properties)
+    #    return output.getvalue()
 
 
 @assert_arg(0, PathFile)
@@ -165,16 +176,17 @@ def save_to_yaml(obj, fp, session=None, **kwargs):
 class XmlFileRepository(with_metaclass(SchemaMetaclass)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/XmlFileRepository'
     _encoder = XmlSerializer
-    _deserializer = ObjectDeserializer
-    _serializer = ObjectSerializer
-    _instanceClass = Document
-    _tag = None
+    _deserializer = InstanceDeserializer
+    _serializer = InstanceSerializer
+    #instanceClass = Document
+    #_tag = None
 
     def __init__(self, value=None, postprocessor=None, **opts):
         FileRepository.__init__(self, value, **opts)
+        #self._instanceClass = opts.get('instanceClass', self._instanceClass)
         #self._serializer = JsonSerializer(no_defaults=self.no_defaults,
         #                                  use_entity_keys=self.use_entity_keys)
-        self.tag = self._tag = self.tag or self._tag or self._instanceClass.__name__
+        #self.tag = self._tag = self.tag or self._tag or self._instanceClass.__name__
         # this default post processor makes all non attribute be list
         _prefix = str(self._attrPrefix)
 
@@ -201,7 +213,7 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass)):
     #            raise NotImplemented('ambiguous request. use tag argument.')
     #        self._tag = keys[0]
     #    return parsed[self._tag]
-    #
+
     #def serialize_data(self, data):
     #    return xmltodict.unparse(
     #        {self._tag: data},
@@ -222,3 +234,6 @@ def load_xml_from_file(fp, session=None, **kwargs):
                                  **kwargs)
 
 
+@assert_arg(1, Path)
+def save_to_xml(obj, fp, session=None, **kwargs):
+    return serialize_object_to_file(obj, fp, repository_class=XmlFileRepository, session=session, **kwargs)

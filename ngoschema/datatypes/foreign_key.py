@@ -155,6 +155,8 @@ class ForeignKey(Ref):
     def _resolve(self, key, session=None, **opts):
         from ..session import default_session
         session = session or default_session
+        if not key:
+            return None
         ric = [r.instanceClass for r in session.repositories] # TEMP
         fc = self._foreignClass
         fs = self._foreignSchema

@@ -98,9 +98,13 @@ class ObjectSerializer(CollectionSerializer, ObjectDeserializer):
                 yield k
 
     @staticmethod
-    def _serialize(self, value, **opts):
-        value = CollectionSerializer._serialize(self, value, **opts)
-        return self._collType([(k, value.get(k)) for k in self._print_order(self, value, **opts)])
+    def _serialize(self, value, many=False, **opts):
+        value = CollectionSerializer._serialize(self, value, many=many, **opts)
+        if not many:
+            return self._collType([(k, value.get(k)) for k in ObjectSerializer._print_order(self, value, **opts)])
+        else:
+            return [self._collType([(k, v.get(k)) for k in ObjectSerializer._print_order(self, v, **opts)])
+                    for v in value]
 
 
 @register_type('object')
@@ -210,7 +214,7 @@ class Object(Collection, ObjectSerializer):
                       for k in self._propertiesWithDefault if k not in value})
         value.update({k: None for k in self._properties.keys() if k not in value})
         value = self._collType([(k, value[k]) for k in self._call_order(self, value, items=items, **opts)])
-        value = Collection._deserialize(self, value, items=items, evaluate=evaluate, raw_literals=raw_literals, **opts)
+        value = ObjectSerializer._deserialize(self, value, items=items, evaluate=evaluate, raw_literals=raw_literals, **opts)
         return value
 
     @staticmethod

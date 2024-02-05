@@ -18,12 +18,13 @@ from pathlib import Path
 from ..protocols import SchemaMetaclass, with_metaclass, ObjectProtocol
 from ..protocols import Serializer, Deserializer
 from ..registries import serializers_registry, deserializers_registry
+from .instances_serializer import InstanceDeserializer, InstanceSerializer
 
 _ = gettext.gettext
 
 
 @deserializers_registry.register('json')
-class JsonDeserializer(Deserializer):
+class JsonDeserializer(InstanceDeserializer):
     #_json_decoder = json._default_decoder
 
     @staticmethod
@@ -43,7 +44,7 @@ class JsonDeserializer(Deserializer):
 
 
 @serializers_registry.register('json')
-class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer, JsonDeserializer)):
+class JsonSerializer(with_metaclass(SchemaMetaclass, InstanceSerializer, JsonDeserializer)):
     _id = 'https://numengo.org/ngoschema#/$defs/serializers/$defs/JsonSerializer'
     _indent = 2
     _ensure_ascii = False
@@ -57,6 +58,7 @@ class JsonSerializer(with_metaclass(SchemaMetaclass, Serializer, JsonDeserialize
         self._separators = separators
         self._default_val = default
         self._json_encoder = json.JSONEncoder(indent=indent, ensure_ascii=ensure_ascii, separators=separators, default=default)
+        InstanceSerializer.__init__(**opts, **(meta_opts or {}))
         #ObjectProtocol.__init__(self, value, **opts)
         #Serializer.__init__(self, **(meta_opts or {}), **self)
 

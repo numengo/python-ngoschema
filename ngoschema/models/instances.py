@@ -18,7 +18,7 @@ from ..exceptions import ConversionError
 from ..decorators import memoized_property, depend_on_prop
 from ..protocols import SchemaMetaclass, ObjectProtocol, ArrayProtocol, Context
 from ..contexts import InstanceContext, EntityContext
-from ..utils import to_list
+from ..utils import to_list, shorten
 
 _ = gettext.gettext
 ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
@@ -55,6 +55,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     """)
     _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/Entity"
     _primaryKeys = tuple()
+    _primaryKeysType = None
     _identityKeys = None
 
     def __new__(cls, *args, **kwargs):
@@ -83,6 +84,22 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
             self._str = '<%s %s>' % (self.qualname(), ', '.join(ks))
         return self._str
 
+    def __repr__(self):
+        if self._repr is None:
+            m = settings.PPRINT_MAX_EL
+            ks = [str(k) for k in self._identityKeys]
+            self._str = '<%s %s>' % (self.qualname(), ', '.join(ks))
+            oks = list(self._print_order(self, self._data, excludes=ks, no_defaults=True, no_readOnly=True))
+            hidden = max(0, len(oks) - len(ks) - m)
+            #a = ['%s=%s' % (k, shorten(self._dataValidated[k] or self._data[k], str_fun=repr)) for k in ks[:m]]
+            a = ['%s=%s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k], str_fun=repr)) for k in ks]
+            a += ['%s=%s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k], str_fun=repr)) for k in oks[:m]]
+            #a = ['%s=%s' % (k, shorten(self._dataValidated[k] if self._dataValidated[k] is not None else self._data[k]), str_fun=repr)) for k in ks[:m]]
+            a += ['+%i...' % hidden] if hidden else []
+            self._repr = '%s(%s)' % (self.qualname(), ', '.join(a))
+        return self._repr
+
+
     def get_primaryKeys(self):
         return self._primaryKeys
 
@@ -90,6 +107,10 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
         self._identityKeys = tuple(self.items_serialize(k) for k in self._primaryKeys)
         #self._identityKeys = tuple(self[k] for k in self._primaryKeys)
         return self._identityKeys
+
+    @staticmethod
+    def _get_primaryKeysType(self):
+        return tuple(self._items_type(self, k) for k in self._primaryKeys)
 
     @staticmethod
     def _convert(self, value, **opts):

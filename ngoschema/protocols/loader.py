@@ -9,11 +9,13 @@ class Loader(Deserializer):
     _deserializer = Deserializer
     _instanceClass = None
 
-    def __init__(self, deserializer=None, instanceClass=None, **opts):
+    def __init__(self, deserializer=None, instance_class=None, **opts):
         from ..datatypes.symbols import Symbol
+        self._instanceClass = instance_class = Symbol.convert(instance_class or self._instanceClass)
+        opts.setdefault('instance_class', instance_class)
+        Deserializer.__init__(self, **opts)
         self._deserializer = deserializer or self._deserializer
         self._deserializer.__init__(self, **opts)
-        self._instanceClass = Symbol.convert(instanceClass or self._instanceClass)
 
     @staticmethod
     def _load(self, value, many=False, deserialize=True, **opts):
@@ -44,6 +46,9 @@ class Saver(Serializer, Loader):
     _loader = Loader
 
     def __init__(self, serializer=None, loader=None, **opts):
+        Loader.__init__(self, **opts)
+        opts.setdefault('instance_class', self._instanceClass)
+        Serializer.__init__(self, **opts)
         self._loader = loader or self._loader
         self._loader.__init__(self, **opts)
         self._serializer = serializer or self._serializer

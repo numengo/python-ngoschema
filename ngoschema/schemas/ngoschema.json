@@ -648,6 +648,11 @@
             "#/$defs/metadata/$defs/Taggable"
           ],
           "additionalProperties": false,
+          "dependencies": {
+            "content": [
+              "contentRaw"
+            ]
+          },
           "properties": {
             "encoder": {
               "$ref": "#/$defs/serializers/$defs/JsonSerializer"
@@ -719,10 +724,22 @@
           "extends": [
             "#/$defs/serializers/$defs/ObjectSerializer"
           ],
+          "notSerialized": [
+            "tag",
+            "elements_tag"
+          ],
           "properties": {
+            "instanceClass": {
+              "type": "importable",
+              "description": "Class symbol of objects stored in repository"
+            },
             "tag": {
               "type": "string",
-              "description": "Tag to use to represent object in serialization."
+              "description": "Tag to use to represent root object in serialization."
+            },
+            "elements_tag": {
+              "type": "string",
+              "description": "Tag used to represent each elements if many"
             }
           }
         },
@@ -882,10 +899,6 @@
             "index"
           ],
           "properties": {
-            "instanceClass": {
-              "type": "importable",
-              "description": "Class symbol of objects stored in repository"
-            },
             "content": {
               "type": "array"
             },
