@@ -162,9 +162,8 @@ class ForeignKey(Ref):
         fs = self._foreignSchema
         for r in session.repositories:
             ic = r.instanceClass
-            if ic and (issubclass(ic, fc) or ic._id ==  fs):
-                # change resolve_fkey to use resolve??
-                v = r.resolve_fkey(key)
+            if ic and (issubclass(ic, fc) or ic._id == fs):
+                v = r.get_by_id(key)
                 if v is not None:
                     return v
         raise InvalidValue('impossible to resolve foreign key %s' % repr(key))

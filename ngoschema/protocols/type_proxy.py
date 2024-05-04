@@ -35,6 +35,8 @@ class TypeProxy(TypeProtocol):
         attrs['_proxyUri'] = uri
         attrs['_id'] = uri
         attrs['_schema'] = schema
+        if schema['type'] == 'object':
+            attrs['_items_type_cache'] = {}
         attrs['__doc__'] = 'reference to %s' % clsname
         return type(clsname, (TypeProxy, ) + bases, attrs)
 

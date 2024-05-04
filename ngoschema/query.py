@@ -461,8 +461,6 @@ class Query(object):
         if len(ret) == 0:
             raise Exception('Entry %s does not exist' % attrs_value)
         elif len(ret) > 1:
-            import logging
-            logging.error(ret)
             raise Exception('Multiple objects returned')
         return ret[0]
 

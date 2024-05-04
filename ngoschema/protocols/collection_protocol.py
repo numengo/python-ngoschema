@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import logging
 from abc import abstractmethod
+from collections import Sequence
 from operator import neg
 
 from ..exceptions import InvalidValue, InvalidOperation
@@ -146,7 +147,7 @@ class CollectionProtocol(Collection):
                 else:
                     return t._wraps(v)
             else:
-                return v if isinstance(t, type) and isinstance(v, t) else t(v, **opts)
+                return v if isinstance(t, type) and isinstance(v, (t, None.__class__)) else t(v, **opts)
         except Exception as er:
             self._logger.error(er, exc_info=True)
             raise er
@@ -228,25 +229,16 @@ class CollectionProtocol(Collection):
         __doc__ = self._serialize.__doc__
         opts['context'] = self._context
         excludes = list(self._notSerialized.union(excludes))
-        return self._serialize(self, self, deserialize=deserialize, excludes=excludes, **opts)
+        return CollectionProtocol._serialize(self, self, deserialize=deserialize, excludes=excludes, **opts)
 
     def no_defaults(self, **opts):
         return self.do_serialize(no_defaults=True, **opts)
 
-    def copy(self):
-        return self.create(self._data, context=self._context)
+    def copy(self, _parents=tuple()):
+        raise NotImplemented
 
-    def __eq__(self, other):
-        if other is None:
-            return False
-        if other is self:
-            return True
-        if len(self) != len(other):
-            return False
-        for i, v in enumerate(other):
-            if self[i] != v:
-                return False
-        return True
+    def diff(self, other):
+        raise NotImplemented
 
     def __hash__(self):
         return hash(tuple(self._id, tuple((k, hash(v)) for k, v in enumerate(self._dataValidated))))

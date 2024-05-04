@@ -25,21 +25,22 @@ class InstanceDeserializer(ObjectDeserializer):
             elif not self._elements_tag and self._many:
                 self._elements_tag = underscore(instance_class.__name__)
 
-    def _deserialize(self, value, many=False, with_tags=False, **opts):
-        instance_class = opts.get('instance_class', self._instanceClass)
-        if instance_class:
-            value = [instance_class._deserialize(instance_class, v, **opts) for v in value] if many\
-                else instance_class._deserialize(instance_class, value, **opts)
-        else:
-            value = ObjectDeserializer._deserialize(self, value, many=many, **opts)
+    def _deserialize(self, value, many=False, deserialize_instances=True, with_tags=False, **opts):
         if with_tags:
             tag = opts.get('tag', self._tag)
             if tag in value:
                 value =  value[tag]
                 if many:
                     elements_tag = opts.get('elements_tag', self._elements_tag)
-                    if elements_tag in v:
+                    if elements_tag in value:
                         value = value[elements_tag]
+        instance_class = opts.get('instance_class', self._instanceClass)
+        if deserialize_instances:
+            if instance_class:
+                value = [instance_class._deserialize(instance_class, v, **opts) for v in value] if many\
+                    else instance_class._deserialize(instance_class, value, **opts)
+            else:
+                value = ObjectDeserializer._deserialize(self, value, many=many, **opts)
         return value
 
 

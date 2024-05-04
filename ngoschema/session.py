@@ -99,15 +99,15 @@ class Session(with_metaclass(SchemaMetaclass)):
         cn = cns[1:]
         for repo in [r for r in self._repos if r._instanceClass and issubclass(r._instanceClass, Entity)]:
             if rn in repo:
-                v = repo.resolve_fkey(rn)
+                v = repo.get_by_id(rn)
                 return v if not cn else v.resolve_cname(cn)
         raise Exception("Impossible to resolve '%s'" % cname)
 
     @assert_arg(1, Tuple, strDelimiter=',')
-    def resolve_fkey(self, keys, object_class):
+    def get_by_id(self, keys, object_class):
         for repo in [r for r in self.repositories if r._instanceClass and issubclass(r._instanceClass, object_class)]:
             if keys in repo:
-                return repo.resolve_fkey(keys)
+                return repo.get_by_id(keys)
         else:
             raise Exception("Impossible to resolve '%s'" % keys)
 

@@ -23,14 +23,15 @@ _ = gettext.gettext
 class CsvDeserializer(Deserializer):
 
     @staticmethod
-    def _deserialize(self, value, **opts):
-        return CsvDeserializer._deserialize_csv(self, value, **opts)
+    def _deserialize(self, value, from_str=False, **opts):
+        if from_str:
+            value = CsvDeserializer._deserialize_csv(self, value, **opts)
+        return Deserializer._deserialize(self, value, **opts)
 
     @staticmethod
     def _deserialize_csv(self, value, **opts):
         __doc__ = pd.read_csv.__doc__
-        value = pd.read_csv(value, **opts)
-        return Serializer._deserialize(self, value, **opts)
+        return pd.read_csv(value, **opts)
 
     def deserialize_csv(self, value, **opts):
         return self._deserialize_csv(self, value, **opts)
@@ -41,8 +42,10 @@ class CsvSerializer(with_metaclass(SchemaMetaclass, Serializer, CsvDeserializer)
     _id = 'https://numengo.org/ngoschema#/$defs/serializers/$defs/CsvSerializer'
 
     @staticmethod
-    def _serialize(self, value, **opts):
-        return CsvSerializer._serialize_csv(self, value, **opts)
+    def _serialize(self, value, as_str=False, **opts):
+        opts.setdefault('deserialize', False)
+        value = Serializer._serialize(self, value, **opts)
+        return CsvSerializer._serialize_csv(self, value, **opts) if as_str else value
 
     @staticmethod
     def _serialize_csv(self, value, **opts):

@@ -173,7 +173,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if iks:
             from ..models.instances import Entity, Instance
             if items and not self._itemsIsList and issubclass(items, Instance):
-                pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+                pks = items._primaryKeys if issubclass(items, Entity) else ('name', )
                 kwargs.update({k: v for k, v in zip(pks, iks)})
             else:
                 raise Exception('can only access this way an array of a given unique Instance or Entity')
@@ -209,7 +209,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         iks = to_list(item)
         items = self._items
         if items and not self._itemsIsList and issubclass(items, Instance):
-            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name', )
             if len(iks) != len(pks):
                 raise NotImplemented('access error with key %s where expecting %s' % (iks, pks))
             for i, v in enumerate(self):
@@ -232,13 +232,13 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         from ..models.instances import Entity, Instance
         iks = to_list(item)
         items = self._items
-        if items and not self._itemsIsList and issubclass(items, Instance):
-            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+        if items and not self._itemsIsList and isinstance(items, type) and issubclass(items, Instance):
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name', )
             if len(iks) != len(pks):
-                raise NotImplemented('access error with key %s where expecting %s' % (iks, pks))
+                raise ValueError('access error with key %s where expecting %s' % (iks, pks))
             return self.get(*iks)
         else:
-            raise NotImplemented('access error with key %s' % item)
+            raise ValueError('access error with key %s' % item)
 
     def __contains__(self, value):
         for v in self:
@@ -247,7 +247,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         from ..models.instances import Entity, Instance
         items = self._items
         if items and not self._itemsIsList and issubclass(items, Instance):
-            pks = items._primaryKeys if issubclass(items, Entity) else ('name')
+            pks = items._primaryKeys if issubclass(items, Entity) else ('name', )
             iks = to_list(value)
             if len(pks) != len(iks):
                 return False
@@ -256,3 +256,49 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                     return True
             return False
         return False
+
+    def __eq__(self, other, parents=tuple()):
+        if other is None:
+            return False
+        if other is self:
+            return True
+        if self in parents:
+            return True
+        if not isinstance(other, Sequence):
+            return False
+        if len(self) != len(other):
+            return False
+        for i, v in enumerate(other):
+            v2 = self[i]
+            if isinstance(v2, CollectionProtocol):
+                if not v2.__class__.__eq__(v2, v, parents=parents+(self, )):
+                    return False
+            elif v2 != v:
+                return False
+        return True
+
+    def diff(self, other, parents=tuple()):
+        if not isinstance(other, Sequence):
+            return other
+        if self in parents:
+            return
+        l1 = len(self)
+        l2 = len(other)
+        ret = {i: self[i].diff(other[i], parents=parents+(self,)) if isinstance(self[i], CollectionProtocol) else other[i] for i in range(min(l1, l2)) if self[i] != other[i]}
+        if l2 > l1:
+            ret.update({i: other[i] for i in range(l1, l2)})
+        if l2 < l1:
+            ret.update({i: self[i] for i in range(l2, l1)})
+        return ret
+
+    def copy(self, _parents=tuple()):
+        for orig, copy in _parents:
+            if self is orig:
+                return copy
+        self.do_validate()
+        copy = self.create(self._dataValidated, context=self._context, validate=False, lazy_loading=True)
+        for i, v in enumerate(copy):
+            if isinstance(v, CollectionProtocol):
+                copy[i] = v.copy(_parents=_parents + ((self, copy), ))
+        copy.do_validate()
+        return copy

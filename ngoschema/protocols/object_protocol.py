@@ -125,6 +125,12 @@ class PropertyDescriptor:
         del obj._data[key]
         del obj._dataValidated[key]
         del obj._itemsInputs[key]
+        # just added, not tested...
+        if key in obj._dependencies:
+            del obj._dependencies[key]
+        for vs in obj._dependencies.values():
+            if key in vs:
+                vs.pop(vs.index(key))
 
 
 class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableMapping):
@@ -241,7 +247,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             for c in self._propertiesAllowed.intersection(ctx.keys()):
                 value.setdefault(c, ctx[c])
         # handle canonical names
-        cns = [k for k in value.keys() if '.' in k]
+        cns = [k for k in value.keys() if isinstance(k, str) and '.' in k]
         for cn in cns:
             ps = [Integer.convert(c) if Integer.check(c, convert=True) else c for c in cn.split('.')]
             dpath.util.new(value, cn.split('.'), value.pop(cn))
@@ -295,8 +301,50 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         self._dataAdditional = {k: None for k in self._dataAdditional.keys()}
         self._dependencies = dict(self.__class__._dependencies)
 
-    def __eq__(self, other):
-        return CollectionProtocol.__eq__(self, other) if isinstance(other, Mapping) else False
+    def __eq__(self, other, parents=tuple()):
+        if other is None:
+            return False
+        if other is self:
+            return True
+        if self in parents:
+            return True
+        if not isinstance(other, Mapping):
+            return False
+        s1 = set(self.keys())
+        s2 = set(other.keys())
+        if s1 != s2:
+            return False
+        for k in list(s1):
+            v = other[k]
+            v2 = self[k]
+            if isinstance(v2, CollectionProtocol):
+                if not v2.__class__.__eq__(v2, v, parents=parents+(self, )):
+                    return False
+            elif v2 != v:
+                return False
+        return True
+
+    def copy(self, _parents=tuple()):
+        for orig, copy in _parents:
+            if self is orig:
+                return copy
+        self.do_validate(items=True)
+        copy = self.create({k: v for k, v in self._dataValidated.items() if k not in self._readOnly}, context=self._context, validate=False, lazy_loading=True)
+        for k, v in copy._data.items():
+            if isinstance(v, CollectionProtocol):
+                copy._data[k] = v.copy(_parents=_parents + ((self, copy), ))
+        copy.do_validate()
+        return copy
+
+    def diff(self, other, excludes=[], parents=tuple()):
+        if not isinstance(other, Mapping):
+            raise other
+        if self in parents:
+            return
+        s1 = set(self.keys())
+        s2 = set(other.keys())
+        return {k: self[k].diff(other[k], parents=parents+(self, )) if isinstance(self[k], CollectionProtocol) else other[k]\
+                for k in list(s1.intersection(s2).difference(excludes)) if not k.startswith('_') and self[k] != other[k]}
 
     def __len__(self):
         return len(self._dataValidated)
@@ -373,7 +421,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             #return name, alias
             return alias, name
         if cls._propertiesAdditional:
-            trans = clean_js_name(name)
+            trans = clean_js_name(name) if isinstance(name, str) else name
             cls.__properties_raw_trans[name] = (name, trans)
             return name, trans
         #cls.__properties_raw_trans[name] = (None, None)
@@ -487,10 +535,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                                  name, self.__class__.__name__))
 
     def __getitem__(self, key):
-        if not key:
+        if key is None:
             return self._parent
         key = self._aliases.get(key, key)
-        if '.' in key:
+        if isinstance(key, str) and '.' in key:
             parts = split_cname(key)
             # case: canonical name such as a[0][1].b[0].c
             cur = self
@@ -534,6 +582,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                         # if intermediate object is None, create an empty one
                         cur[p] = {}
                         cp = cur[p]
+                    if hasattr(cur, 'items_touch'):  # just added
+                        cur._items_touch(p)
                     cur = cp
                 cur[parts[-1]] = value
                 return
@@ -548,11 +598,31 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if not self._propertiesAdditional:
             raise KeyError(key)
         v = op(value)
+        changed = v != self._data.get(key)
+        if changed:
+            self._items_touch(key)
         self._data[key] = self._dataAdditional[key] = self._dataValidated[key] = v
 
     def __delitem__(self, key):
         key = self._aliasesNegated.get(key, key)
         key = self._aliases.get(key, key)
+        if '.' in key:
+            parts = split_cname(key) # case: canonical name such as a[0][1].b[0].c
+            cur = self
+            try:
+                for p in parts[:-1]:
+                    cp = cur[p] if not hasattr(cur, p) else getattr(cur, p)
+                    if cp is None:
+                        # if intermediate object is None, create an empty one
+                        cur[p] = {}
+                        cp = cur[p]
+                    if hasattr(cur, 'items_touch'):  # just added
+                        cur._items_touch(p)
+                    cur = cp
+                del cur[parts[-1]]
+                return
+            except Exception as er:
+                raise KeyError(key)
         for trans, raw in self._propertiesTranslation.items():
             if key in (trans, raw):
                 delattr(self, trans)
@@ -561,6 +631,16 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             del self._data[key]
             del self._itemsInputs[key]
             del self._dataValidated[key]
+
+    def __contains__(self, key):
+        try:
+            # differs from the abc version which only checks key error
+            # it seems more interesting to push the test to know if s not None
+            return self[key] is not None
+        except KeyError:
+            return False
+        else:
+            return True
 
     @staticmethod
     def _serialize(self, value, schema=False, excludes=[], only=[], aliases=None, **opts):

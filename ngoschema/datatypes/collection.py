@@ -99,7 +99,7 @@ class Collection(Type, CollectionSerializer):
             value = self._collType(value)  # make a copy to avoid modifying original object
             for k, t in self._items_types(self, value):
                 if self._is_included(k, value, no_defaults=no_defaults, **opts):
-                    value[k] = t._validate(t, value[k], **opts)
+                    value[k] = t._validate(t, value[k], items=True, no_defaults=no_defaults, **opts)
         return value
 
     @staticmethod

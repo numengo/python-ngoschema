@@ -63,7 +63,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
             context = kwargs.get('context')
             session = context._session if context else None
             if session:
-                inst = session.resolve_fkey(args, cls)
+                inst = session.get_by_id(*args, cls)
                 cls = inst.__class__
         return ObjectProtocol.__new__(cls, *args, **kwargs)
 
@@ -74,7 +74,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
             context = opts.get('context')
             session = context._session if context else None
             session = session or getattr(self._context, '_session', default_session)
-            value = session.resolve_fkey(value, self.__class__)
+            value = session.get_by_id(value, self.__class__)
         Instance.__init__(self, value, **opts)
         self.identityKeys
 
@@ -87,7 +87,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
     def __repr__(self):
         if self._repr is None:
             m = settings.PPRINT_MAX_EL
-            ks = [str(k) for k in self._identityKeys]
+            ks = [str(k) for k in self._primaryKeys]
             self._str = '<%s %s>' % (self.qualname(), ', '.join(ks))
             oks = list(self._print_order(self, self._data, excludes=ks, no_defaults=True, no_readOnly=True))
             hidden = max(0, len(oks) - len(ks) - m)

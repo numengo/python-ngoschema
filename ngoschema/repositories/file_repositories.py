@@ -21,72 +21,70 @@ try:
 except ImportError:
     from io import StringIO
 
-import json
-from ruamel import yaml
-from ruamel.yaml import YAML
 
 from ..decorators import assert_arg
-from ..exceptions import InvalidOperation, InvalidValue
 from ..utils import file_link_format
-from ..utils import xmltodict
 from ..datatypes import Path, PathFile
-from ..datatypes import Array, Tuple
-from ..managers.type_builder import wrap
+from ..datatypes import Array
 from ..serializers.instances_serializer import InstanceSerializer, InstanceDeserializer
 from ..serializers.file_serializer import FileSaver
-from ..serializers.json_serializer import JsonSerializer, JsonDeserializer
-from ..serializers.xml_serializer import XmlSerializer, XmlDeserializer
-from ..serializers.yaml_serializer import YamlSerializer, YamlDeserializer
+from ..serializers.json_serializer import JsonSerializer
+from ..serializers.xml_serializer import XmlSerializer
+from ..serializers.yaml_serializer import YamlSerializer
 from ..protocols import SchemaMetaclass, with_metaclass
 from ..protocols.object_protocol import ObjectProtocol
-from ..datatypes.object import Serializer, ObjectSerializer, ObjectDeserializer, Object
+from ..datatypes.object import Serializer
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
-from ..models.files import File, Document
-#from .models.instances import InstanceList, Entity
+from .memory_repository import MemoryRepository, DataframeRepository
 
 logger = logging.getLogger(__name__)
 
 
 @repositories_registry.register('file')
-class FileRepository(with_metaclass(SchemaMetaclass, Repository, FileSaver)):
+class FileRepository(with_metaclass(SchemaMetaclass, MemoryRepository, FileSaver)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/FileRepository'
     _saver = FileSaver
     _encoder = Serializer
 
     def __init__(self, value=None, meta_opts=None, **opts):
-        ObjectProtocol.__init__(self, value, **opts)
+        MemoryRepository.__init__(self, value, meta_opts=meta_opts, **opts)
         opts.update(self.no_defaults())
         # FileSaver.__init__(self, **opts)  # Saver already initialized in Repository, only misses filepath
-        Repository.__init__(self, **opts)
         FileSaver.set_filepath(self, opts.get('filepath'))
         # to initialize the encoder
-        meta_opts = meta_opts or {}
+        meta_opts = meta_opts or opts
         meta_opts.setdefault('instance_class', self._instanceClass)
         self._encoder.__init__(self, **meta_opts)
 
     @staticmethod
-    def _commit(self, value, filepath=None, with_tags=True, many=False, **opts):
-        values_all = Repository._commit(self, value, many=many, save=False, **opts)
-        #values_serialized = self._serializer._serialize(self, values_all, many=many, with_tags=with_tags, **opts)
-        stream = self._encoder._serialize(self, values_all, many=many, with_tags=with_tags, as_str=True, **opts)
-        filepath = self.set_filepath(filepath) if filepath else self._filepath
-        if not filepath:
-            self._logger.error("missing filepath to dump values")
-            return
-        if not filepath.parent.exists():
-            self._logger.info("creating missing directory '%s'", file_link_format(filepath.parent))
-            os.makedirs(str(filepath.parent))
-        if filepath.exists():
-            orig = filepath.open().read()
-            if stream == orig:
-                self._logger.info("File '%s' already exists with same content. Not overwriting.",
-                                  file_link_format(filepath))
+    def _commit(self, value=None, filepath=None, dump_file=True, with_tags=True, many=False, **opts):
+        # one or more values can be commited, using the many optional argument
+        if value is not None:
+            values_all = MemoryRepository._commit(self, value, many=many, save=False, **opts)
+        else:
+            values_all = self._content
+        # out of _commit comes the whole content of the repository, so the following commands should use the setting of the repository
+        # already done in encoder ! values_serialized = self._serializer._serialize(self, values_all, many=self._many, with_tags=with_tags, **opts)
+        if dump_file:
+            stream = self._encoder._serialize(self, values_all, many=self._many, with_tags=with_tags, as_str=True, **opts)
+            filepath = self.set_filepath(filepath) if filepath else self._filepath
+            if not filepath:
+                self._logger.error("missing filepath to dump values")
                 return
-        self._logger.info("DUMP %s", file_link_format(filepath))
-        self._logger.debug("data:\n%r ", stream)
-        self.save(stream, serialize=False)
-        return self
+            if not filepath.parent.exists():
+                self._logger.info("creating missing directory '%s'", file_link_format(filepath.parent))
+                os.makedirs(str(filepath.parent))
+            if filepath.exists():
+                orig = filepath.open().read()
+                if stream == orig:
+                    self._logger.info("File '%s' already exists with same content. Not overwriting.",
+                                      file_link_format(filepath))
+                    return
+            self._logger.info("DUMP %s", file_link_format(filepath))
+            self._logger.debug("data:\n%r ", stream)
+            self.save(stream, serialize=False)
+            return stream
 
 
 @assert_arg(0, PathFile)
@@ -111,30 +109,18 @@ class JsonFileRepository(with_metaclass(SchemaMetaclass)):
     _encoder = JsonSerializer
     _deserializer = InstanceDeserializer
     _serializer = InstanceSerializer
-    #_instanceClass = Document
-    #instanceClass = None
 
     def __init__(self, value=None, **opts):
         FileRepository.__init__(self, value, **opts)
 
-    #@staticmethod
-    #def _serialize(self, data, **opts):
-    #    # TODO: suppress _serialize from Repository to use the one in Serializer
-    #    return json.dumps(
-    #        data,
-    #        indent=self.get("indent", 2),
-    #        ensure_ascii=self.get("ensure_ascii", False),
-    #        separators=self.get("separators", None),
-    #        default=self.get("default", None))
-
 
 @assert_arg(0, PathFile)
-def load_json_from_file(fp, session=None, **kwargs):
+def load_object_from_file_json(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
 
 @assert_arg(1, Path)
-def save_to_json(obj, fp, session=None, **kwargs):
+def save_object_to_file_json(obj, fp, session=None, **kwargs):
     kwargs.setdefault('evaluate', False)
     return serialize_object_to_file(obj, fp, repository_class=JsonFileRepository, session=session, **kwargs)
 
@@ -163,12 +149,12 @@ class YamlFileRepository(with_metaclass(SchemaMetaclass)):
 
 
 @assert_arg(0, PathFile)
-def load_yaml_from_file(fp, session=None, **kwargs):
+def load_object_from_file_yaml(fp, session=None, **kwargs):
     return load_object_from_file(fp, repository_class=YamlFileRepository, session=session, **kwargs)
 
 
 @assert_arg(1, Path)
-def save_to_yaml(obj, fp, session=None, **kwargs):
+def save_object_to_file_yaml(obj, fp, session=None, **kwargs):
     return serialize_object_to_file(obj, fp, repository_class=YamlFileRepository, session=session, **kwargs)
 
 
@@ -227,7 +213,7 @@ class XmlFileRepository(with_metaclass(SchemaMetaclass)):
 
 
 @assert_arg(0, PathFile)
-def load_xml_from_file(fp, session=None, **kwargs):
+def load_object_from_file_xml(fp, session=None, **kwargs):
     return load_object_from_file(fp,
                                  repository_class=XmlFileRepository,
                                  session=session,
@@ -235,5 +221,39 @@ def load_xml_from_file(fp, session=None, **kwargs):
 
 
 @assert_arg(1, Path)
-def save_to_xml(obj, fp, session=None, **kwargs):
+def save_object_to_file_xml(obj, fp, session=None, **kwargs):
     return serialize_object_to_file(obj, fp, repository_class=XmlFileRepository, session=session, **kwargs)
+
+
+class CsvFileRepository(with_metaclass(SchemaMetaclass)):
+    _id = r"https://numengo.org/ngoschema#/$defs/repositories/$defs/CsvFileRepository"
+    #_loader = pd.read_csv
+
+    @staticmethod
+    def _serialize(self, value, **opts):
+        return ObjectProtocol._serialize(self, value, **opts)
+        #return CsvSerializer._serialize_csv(self, value, **opts)
+
+    @staticmethod
+    def _deserialize(self, value, **opts):
+        return ObjectProtocol._deserialize(self, value, **opts)
+        #return CsvSerializer._serialize_csv(self, value, **opts)
+
+    def get_dataframe(self):
+        return pd.read_csv(str(self.csv))
+
+    def get_by_id(self, *identity_keys):
+        return DataframeRepository.get_by_id(self, *identity_keys)
+
+
+@assert_arg(0, PathFile)
+def load_object_from_file_csv(fp, session=None, **kwargs):
+    return load_object_from_file(fp,
+                                 repository_class=CsvFileRepository,
+                                 session=session,
+                                 **kwargs)
+
+
+@assert_arg(1, Path)
+def save_object_to_file_csv(obj, fp, session=None, **kwargs):
+    return serialize_object_to_file(obj, fp, repository_class=CsvFileRepository, session=session, **kwargs)

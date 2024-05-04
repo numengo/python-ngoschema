@@ -239,6 +239,14 @@ class CaseInsensitiveDict(KeyModifierMapping):
         return key.lower()
 
 
+class AccentCaseInsensitiveDict(KeyModifierMapping):
+
+    @classmethod
+    def key_modifier(cls, key):
+        from .str_utils import remove_accents
+        return remove_accents(key.lower())
+
+
 class UriDict(KeyModifierMapping):
 
     @classmethod
@@ -488,14 +496,18 @@ def filter_collection(data,
 
     def _filter_keys(container, keys, keep=True):
         if is_mapping(container):
-            for k in keys.intersection(container.keys()):
-                if not keep:
+            if not keep: # but, excludes
+                for k in keys.intersection(container.keys()):
                     container.pop(k)
-                elif recursive:
-                    _filter_keys(container[k], keys, keep, recursive)
+            else: # only,
+                for k in set(container.keys()).difference(keys):
+                    container.pop(k)
+            if recursive:
+                for k, v in container.items():
+                    _filter_keys(v, keys, keep)
         elif is_sequence(container):
             for v in container:
-                _filter_keys(v, keys, keep, recursive)
+                _filter_keys(v, keys, keep)
         return container
 
     if only or but:

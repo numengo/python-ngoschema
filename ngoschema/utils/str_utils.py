@@ -17,6 +17,7 @@ import pprint
 import collections
 import gettext
 from itertools import islice
+from gettext import gettext as _
 
 from ngoschema import utils
 

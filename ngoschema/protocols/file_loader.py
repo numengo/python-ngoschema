@@ -42,6 +42,7 @@ class FileLoader(Loader):
         charset = opts.get('charset', self._charset)
         binary = opts.get('binary', self._binary)
         fp = str(filepath)
+        self._logger.debug(f'OPEN file %s' % fp)
         if binary:
             return open(fp, mode=mode)
         return codecs.open(fp, mode, charset)
@@ -51,6 +52,7 @@ class FileLoader(Loader):
         binary = opts.get('binary', self._binary)
         mode = 'rb' if binary else 'r'
         with FileLoader._open_file(self, filepath, mode=mode, **opts) as f:
+            self._logger.debug("READ file '%s'", file_link_format(filepath))
             return f.read()
 
     @staticmethod
@@ -60,11 +62,12 @@ class FileLoader(Loader):
         #return Serializer._deserialize(self, read, **opts)
 
     @staticmethod
-    def _load_file(self, filepath, **opts):
+    def _load_file(self, filepath, deserialize_instances=True, load_instances=True, **opts):
         filepath = FileLoader.set_filepath(self, filepath)
+        self._logger.info("LOAD file '%s'", file_link_format(filepath))
         content = FileLoader._deserialize(self, filepath, **opts)
-        parsed = self._encoder._deserialize(self, content, evaluate=False, with_tags=True, from_str=True, **opts)
-        return Loader._load(self, parsed, deserialize=False, **opts)
+        parsed = self._encoder._deserialize(self, content, evaluate=False, deserialize_instances=deserialize_instances, with_tags=True, from_str=True, **opts)
+        return Loader._load(self, parsed, deserialize_instances=False, load_instances=load_instances, **opts)
 
     @staticmethod
     def _load(self, filepath=None, **opts):

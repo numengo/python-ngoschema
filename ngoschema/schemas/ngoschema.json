@@ -222,6 +222,9 @@
           "extends": [
             "#/$defs/protocols/$defs/Deserializer"
           ],
+          "aliases": {
+            "instance_class": "instanceClass"
+          },
           "properties": {
             "instanceClass": {
               "type": "importable"
@@ -264,6 +267,10 @@
             "#/$defs/protocols/$defs/Saver"
           ],
           "properties": {
+            "many": {
+              "type": "boolean",
+              "default": true
+            },
             "content": true,
             "saver": {
               "$ref": "#/$defs/protocols/$defs/Saver"
@@ -882,8 +889,7 @@
           "type": "object",
           "description": "This represents a repository storing objects in memory.",
           "extends": [
-            "#/$defs/protocols/$defs/Repository",
-            "#/$defs/serializers/$defs/EntitySerializer"
+            "#/$defs/protocols/$defs/Repository"
           ],
           "additionalProperties": false,
           "aliases": {
@@ -907,11 +913,27 @@
             }
           }
         },
+        "DataframeRepository": {
+          "type": "object",
+          "extends": [
+            "#/$defs/repositories/$defs/MemoryRepository",
+            "#/$defs/datasets/$defs/HasDataframe"
+          ],
+          "aliases": {
+            "dataframe": "content",
+            "rowClass": "instanceClass"
+          },
+          "properties": {
+            "content": {
+              "$ref": "#/$defs/datasets/$defs/Dataframe"
+            }
+          }
+        },
         "FileRepository": {
           "type": "object",
           "description": "This represents a repository storing objects in files.",
           "extends": [
-            "#/$defs/protocols/$defs/Repository",
+            "#/$defs/repositories/$defs/MemoryRepository",
             "#/$defs/serializers/$defs/FileSerializer"
           ],
           "additionalProperties": false,
@@ -951,22 +973,6 @@
             "postprocessor": {
               "type": "importable",
               "description": "Class symbol of postprocessor"
-            }
-          }
-        },
-        "DataframeRepository": {
-          "type": "object",
-          "extends": [
-            "#/$defs/repositories/$defs/MemoryRepository",
-            "#/$defs/datasets/$defs/HasDataframe"
-          ],
-          "aliases": {
-            "dataframe": "content",
-            "rowClass": "instanceClass"
-          },
-          "properties": {
-            "content": {
-              "$ref": "#/$defs/datasets/$defs/Dataframe"
             }
           }
         },

@@ -2,6 +2,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+from collections import Sequence
+
 from .converter import Converter
 from .validator import Validator
 
@@ -28,7 +30,12 @@ class Deserializer(Validator):
                     return False
             else:
                 if key >= len(vk):
-                    return False
+                    # problem if vk is a dict
+                    if not isinstance(vk, Sequence):
+                        if key not in vk:
+                            return False
+                    else:
+                        return False
             value = vk[key]
         if no_defaults:
             if value is None:

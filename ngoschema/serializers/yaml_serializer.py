@@ -22,12 +22,13 @@ class YamlDeserializer(InstanceDeserializer):
     @staticmethod
     def _deserialize_yaml(self, value, **opts):
         __doc__ = self._yaml.load.__doc__
-        value = self._yaml.load(value)
-        return Serializer._deserialize(self, value, **opts)
+        return self._yaml.load(value)
 
     @staticmethod
-    def _deserialize(self, value, **opts):
-        return YamlSerializer._deserialize_yaml(self, value, **opts)
+    def _deserialize(self, value, from_str=False, **opts):
+        if from_str:
+            value = YamlSerializer._deserialize_yaml(self, value, **opts)
+        return InstanceDeserializer._deserialize(self, value, **opts)
 
     #@classmethod
     def deserialize_yaml(self, value, **opts):
@@ -45,7 +46,6 @@ class YamlSerializer(with_metaclass(SchemaMetaclass, InstanceSerializer, YamlDes
                  indent=2,
                  charset='utf-8',
                  **opts):
-        #ObjectProtocol.__init__(self, value, **opts)
         InstanceSerializer.__init__(self, **opts)
         self._indent = indent
         self._charset = charset
@@ -57,12 +57,13 @@ class YamlSerializer(with_metaclass(SchemaMetaclass, InstanceSerializer, YamlDes
         yaml.allow_unicode = opts.get('charset', self._charset)
         output = StringIO()
         self._yaml.safe_dump(value, output, default_flow_style=False, **opts)
-        value = output.getvalue()
-        return Serializer._serialize(self, value, **opts)
+        return output.getvalue()
 
     @staticmethod
-    def _serialize(self, value, **opts):
-        return YamlSerializer._serialize_yaml(self, value, **opts)
+    def _serialize(self, value, as_str=False, **opts):
+        opts.setdefault('deserialize', False)
+        value = InstanceSerializer._serialize(self, value, **opts)
+        return YamlSerializer._serialize_yaml(self, value, **opts) if as_str else value
 
     #@classmethod
     def serialize_yaml(self, value, **opts):

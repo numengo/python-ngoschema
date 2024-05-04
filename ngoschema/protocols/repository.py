@@ -30,6 +30,12 @@ class Repository(Saver):
         if self._many:
             self._content = []
 
+    @staticmethod
+    def _load_file(self, filepath, **opts):
+        opts.setdefault('many', self._many)
+        self._content = self._loader._load_file(self, filepath, **opts)
+        return self._content
+
     @property
     def session(self):
         return self._session
@@ -40,18 +46,17 @@ class Repository(Saver):
     #    return Object._deserialize(self, value, **opts)
 
     @staticmethod
-    def _commit(self, value, save=True, **opts):
+    def _commit(self, value, many=False, save=True, **opts):
         _("""Optionally load the value (at least validate it) and add it to content """)
         from ..models.instances import Entity, Instance
-        value = self._saver._save(self, value, **opts) if save else value
+        value = self._saver._save(self, value, many=many, **opts) if save else value
+        for v in (value if many else [value]):
+            if isinstance(v, Entity):
+                v._repository = self
+        # _many depends on the type of repo, whereas many (optional arg) refers to the value being processed
         if self._many:
-            for v in value:
-                if isinstance(v, Entity):
-                    v._repository = self
-            self._content.extend(value)
+            self._content.extend(value) if many else self._content.append(value)
         else:
-            if isinstance(value, Entity):
-                value._repository = self
             self._content = value
         return self._content
 
@@ -63,7 +68,7 @@ class Repository(Saver):
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return self._commit(self, value, **opts)
 
-    def commit(self, value, **opts):
+    def commit(self, value=None, **opts):
         opts.setdefault('context', self._context)
         return self._commit(self, value, **opts)
 
@@ -74,10 +79,12 @@ class Repository(Saver):
     def index(self):
         ic = self._instanceClass
         pks = ic._primaryKeys
-        return [c.identity_keys if len(pks) > 1 else c.identity_keys[0] for c in self._content]
+        return [c.identityKeys if len(pks) > 1 else c.identityKeys[0] for c in self._content]
 
     def get_by_id(self, *identity_keys):
-        return self.resolve_fkey(identity_keys)
+        ic = self._instanceClass
+        pks = ic._primaryKeys
+        return self.query(**{k: v for k,v in zip(pks, identity_keys)})
 
     def query(self, *attrs, **attrs_value):
         from ..query import Query

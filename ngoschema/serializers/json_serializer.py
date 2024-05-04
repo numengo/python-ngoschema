@@ -28,15 +28,15 @@ class JsonDeserializer(InstanceDeserializer):
     #_json_decoder = json._default_decoder
 
     @staticmethod
-    def _deserialize(self, value, **opts):
-        return JsonDeserializer._deserialize_json(self, value, **opts)
+    def _deserialize(self, value, many=False, deserialize_instances=True, with_tags=False, from_str=False, evaluate=False, **opts):
+        if from_str:
+            value = JsonDeserializer._deserialize_json(self, value, **opts)
+        return InstanceDeserializer._deserialize(self, value, many=many, deserialize_instances=deserialize_instances, with_tags=with_tags, evaluate=evaluate, **opts)
 
     @staticmethod
     def _deserialize_json(self, value, **opts):
         __doc__ = json.loads.__doc__
-        #value = self._json_decoder.decode(value)
-        value = json.loads(value)
-        return Serializer._deserialize(self, value, **opts)
+        return json.loads(value, **opts)
 
     #@classmethod
     def deserialize_json(self, value, **opts):
@@ -58,17 +58,16 @@ class JsonSerializer(with_metaclass(SchemaMetaclass, InstanceSerializer, JsonDes
         self._separators = separators
         self._default_val = default
         self._json_encoder = json.JSONEncoder(indent=indent, ensure_ascii=ensure_ascii, separators=separators, default=default)
-        InstanceSerializer.__init__(**opts, **(meta_opts or {}))
-        #ObjectProtocol.__init__(self, value, **opts)
-        #Serializer.__init__(self, **(meta_opts or {}), **self)
+        InstanceSerializer.__init__(self, **opts, **(meta_opts or {}))
 
     @staticmethod
-    def _serialize(self, value, **opts):
-        return JsonSerializer._serialize_json(self, value, **opts)
+    def _serialize(self, value, as_str=False, **opts):
+        opts.setdefault('deserialize', False)
+        value = InstanceSerializer._serialize(self, value, **opts)
+        return JsonSerializer._serialize_json(self, value, **opts) if as_str else value
 
     @staticmethod
     def _serialize_json(self, value, **opts):
-        #value = Serializer._serialize(self, value, **opts)
         return self._json_encoder.encode(value)
 
     #@classmethod
