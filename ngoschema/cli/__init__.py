@@ -88,18 +88,19 @@ class SpecialHelpMixin:
 
 class ComplexCLI(SpecialHelpMixin, click.MultiCommand):
 
-    def __init__(self, module_name, cmd_folder, banner=None, **kwargs):
+    def __init__(self, module_name, cmd_folder=None, cmd_folders=[], banner=None, **kwargs):
         from ngoschema import settings
         self.module_name = module_name
-        self.cmd_folder = cmd_folder
+        self.cmd_folders = cmd_folders or ([cmd_folder] if cmd_folder else [])
         self.banner = banner or self.banner or settings.CLI_BANNER
         click.MultiCommand.__init__(self, **kwargs)
 
     def list_commands(self, ctx):
         rv = []
-        for filename in os.listdir(self.cmd_folder):
-            if filename.endswith(".py") and filename.startswith("cmd_"):
-                rv.append(inflection.dasherize(filename[4:-3]))
+        for cmd_folder in self.cmd_folders:
+            for filename in os.listdir(cmd_folder):
+                if filename.endswith(".py") and filename.startswith("cmd_"):
+                    rv.append(inflection.dasherize(filename[4:-3]))
         rv.sort()
         return rv
 
@@ -146,6 +147,12 @@ def base_cli(ctx, home, config_file, verbose, log_level):
 
 def run_cli(command, args):
     runner = CliRunner()
+    banner = getattr(command, 'banner', None)
+    if banner:
+        for b in banner.splitlines():
+            if b.strip():
+                click.echo(b)
+    logging.getLogger().info('START %s' % command.name)
     result = runner.invoke(command, args)
     if result.exit_code:
         er_msg = ''.join(traceback.format_exception(*result.exc_info))

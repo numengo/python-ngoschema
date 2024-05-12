@@ -78,6 +78,7 @@ class Serializer(Deserializer):
     def _serialize(self, value, deserialize=False, **opts):
         from ..datatypes import Symbol, Array
         return Deserializer._deserialize(self, value, **opts) if deserialize else value
+
         many = opts.get('many', self._many)
         #if many:
         #    value = Array.deserialize(value, split_string=True)

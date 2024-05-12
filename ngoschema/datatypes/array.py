@@ -124,6 +124,12 @@ class Array(Collection, ArraySerializer):
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
         return Type.__call__(self, value, **opts)
 
+    def __add__(self, add):
+        if isinstance(add, Sequence):
+            return list(self) + list(add)
+        else:
+            raise ValueError('impossible to add not a sequence to an array (%s)' % (add))
+
     @staticmethod
     def _items_types(self, value, **opts):
         value = self._items[:len(value)] if self._itemsIsList else [self._items] * len(value)

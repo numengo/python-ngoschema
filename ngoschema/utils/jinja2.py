@@ -199,6 +199,10 @@ def rsplit(string, sep=',', maxsplit=-1):
 def last(any):
     return any[-1]
 
+@filters_registry.register()
+def gettext(message):
+    return gettext.gettext(message)
+
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):
     logger = logging.getLogger(__name__ + ".DefaultJinja2Environment")

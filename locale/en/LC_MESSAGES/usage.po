@@ -1,0 +1,104 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2018, Cédric ROMAN
+# This file is distributed under the same license as the NgoSchema package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: NgoSchema 1.0.10\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-04-21 07:54+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.1\n"
+
+#: ../../../docs/usage.rst:3
+msgid "Usage"
+msgstr ""
+
+#: ../../../docs/usage.rst:5
+msgid ""
+"User can register json files as schemas in his module using "
+"``load_module_schemas(\"{module_folder}\")`` in the module "
+"``__init__.py``."
+msgstr ""
+
+#: ../../../docs/usage.rst:7
+msgid ""
+"A proper JSON-schema document should have a property ``$id`` set to `an "
+"absolute URI (it s domain/namespace) <https://json-schema.org"
+"/understanding-json-schema/structuring.html#id15>`_."
+msgstr ""
+
+#: ../../../docs/usage.rst:9
+msgid ""
+"To add a schema to a class, user needs to have the class use the "
+"``SchemaMetaclass`` and can build a class refering to a domain/namespace "
+"which will be looked first in the available modules schemas, and "
+"eventually on-line. Some schemas from `json-schema.org <https://json-"
+"schema.org/>`_ are included in the schemas directory of the module."
+msgstr ""
+
+#: ../../../docs/usage.rst:14
+msgid ""
+"The library adds some meta-programing to create instrumented classes "
+"following a ``ProtocolBase`` One could create a class extending the Card "
+"class from `json-schema.org <https://json-schema.org/>`_ as follows:"
+msgstr ""
+
+#: ../../../docs/usage.rst:28
+msgid ""
+"The schema can be indicated using different fields: * ``__schema__`` "
+"indicates a URI that the resolver will look for in the schema store. The "
+"library comes with a derived resolver which automatically looks for some "
+"schemas to load. see ``ngoschema.resolver`` * ``__schema_path__`` "
+"indicates a path to a file containing the schema"
+msgstr ""
+
+#: ../../../docs/usage.rst:34
+msgid ""
+"The class should always inherit from ``with_metaclass(SchemaMetaclass, "
+"Parent1, Parent2)``"
+msgstr ""
+
+#: ../../../docs/usage.rst:36
+msgid ""
+"If user redefines the ``__init__`` method, it should always call the "
+"ProtocolBase initialization method."
+msgstr ""
+
+#: ../../../docs/usage.rst:39
+msgid ""
+"User can't define additional public properties, but is free to do "
+"anything with protected or private properties."
+msgstr ""
+
+#: ../../../docs/usage.rst:42
+msgid ""
+"``SchemaMetaclass`` will build the class doing a lot of magic: * it adds "
+"a logger that can be accessed with self.logger * it adds proper logging "
+"and exception handling to all methods * it add type conversion/checking "
+"and data validation to methods according to their documentation"
+msgstr ""
+
+#: ../../../docs/usage.rst:51
+msgid "Generated Classes"
+msgstr ""
+
+#: ../../../docs/usage.rst:53
+msgid ""
+"Classes generated using ``ngoschema`` expose all defined properties as "
+"both attributes and through dictionary access."
+msgstr ""
+
+#: ../../../docs/usage.rst:56
+msgid ""
+"In addition, classes contain a number of utility methods for "
+"serialization, deserialization, and validation."
+msgstr ""
+

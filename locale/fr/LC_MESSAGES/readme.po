@@ -1,0 +1,182 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2018, Cédric ROMAN
+# This file is distributed under the same license as the NgoSchema package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: NgoSchema 1.0.10\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-04-21 07:54+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.1\n"
+
+#: ../../../README.rst:3
+msgid "Overview"
+msgstr ""
+
+#: ../../../README.rst:10
+msgid "docs"
+msgstr ""
+
+#: ../../../README.rst:11
+msgid "|docs|"
+msgstr ""
+
+#: ../../../README.rst
+msgid "Documentation Status"
+msgstr ""
+
+#: ../../../README.rst:12
+msgid "tests"
+msgstr ""
+
+#: ../../../README.rst
+msgid "|requires|"
+msgstr ""
+
+#: ../../../README.rst
+msgid "Requirements Status"
+msgstr ""
+
+#: ../../../README.rst:14
+msgid "package"
+msgstr ""
+
+#: ../../../README.rst
+msgid "|version| |wheel| |supported-versions| |supported-implementations|"
+msgstr ""
+
+#: ../../../README.rst
+msgid "PyPI Package latest release"
+msgstr ""
+
+#: ../../../README.rst
+msgid "PyPI Wheel"
+msgstr ""
+
+#: ../../../README.rst
+msgid "Supported versions"
+msgstr ""
+
+#: ../../../README.rst
+msgid "Supported implementations"
+msgstr ""
+
+#: ../../../README.rst
+msgid "|commits-since|"
+msgstr ""
+
+#: ../../../README.rst
+msgid "Commits since latest release"
+msgstr ""
+
+#: ../../../README.rst:50
+msgid "Description"
+msgstr ""
+
+#: ../../../README.rst:52
+msgid "I'm Cedric ROMAN."
+msgstr ""
+
+#: ../../../README.rst:54
+msgid ""
+"``ngoschema`` aims at automate the building of classes based on a `JSON "
+"schema <https://spacetelescope.github.io/understanding-json-"
+"schema/index.html>`_."
+msgstr ""
+
+#: ../../../README.rst:57
+msgid ""
+"User can declare all class attributes in a schema (along with their type,"
+" default value) and the class will be built with accessors to check and "
+"validate data."
+msgstr ""
+
+#: ../../../README.rst:60
+msgid ""
+"User can add methods and override setters/getters, but the library "
+"provides a boiler plate to automatically create the class, nicely "
+"instrumented (with loggers, exception handling, type checking, data "
+"validation, serialization, etc...)."
+msgstr ""
+
+#: ../../../README.rst:64
+msgid ""
+"The classbuilder allows to easily load definitions based on a canonical "
+"name and a namespace."
+msgstr ""
+
+#: ../../../README.rst:66
+msgid ""
+"Instance of these classes can be iterated and behave as standard "
+"collections."
+msgstr ""
+
+#: ../../../README.rst:68
+msgid ""
+"``ngoschema`` aims at being a toolkit for Domain-Driven Design and Model-"
+"Driven Architecture."
+msgstr ""
+
+#: ../../../README.rst:70
+msgid ""
+"The library is build on top of `python-jsonchema <http://python-"
+"jsonschema.readthedocs.io/en/latest/validate/>`_, a python implementation"
+" for JSON schema validation."
+msgstr ""
+
+#: ../../../README.rst:74
+msgid "Free software: GNU General Public License v3"
+msgstr ""
+
+#: ../../../README.rst:79
+msgid "Installation"
+msgstr ""
+
+#: ../../../README.rst:81
+msgid "To install, with the command line::"
+msgstr ""
+
+#: ../../../README.rst:86
+msgid "Documentation"
+msgstr ""
+
+#: ../../../README.rst:88
+msgid "https://python-ngoschema.readthedocs.io/"
+msgstr ""
+
+#: ../../../README.rst:90
+msgid ""
+"Settings are managed using `simple-settings "
+"<https://github.com/drgarcia1986/simple-settings>`__ and can be overriden"
+" with configuration files (cfg, yaml, json) or with environment variables"
+" prefixed with NGOSCHEMA_."
+msgstr ""
+
+#: ../../../README.rst:95
+msgid "Development"
+msgstr ""
+
+#: ../../../README.rst:97
+msgid "To run the all tests run::"
+msgstr ""
+
+#: ../../../README.rst:101
+msgid "Note, to combine the coverage data from all the tox environments run:"
+msgstr ""
+
+#: ../../../README.rst:107
+msgid "Windows"
+msgstr ""
+
+#: ../../../README.rst:113
+msgid "Other"
+msgstr ""
+

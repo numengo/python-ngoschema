@@ -85,7 +85,8 @@ class Validator(Converter, Context):
         value = self._convert(self, value, validate=False, **opts) if convert else value
         if validate:
             # value is not modified
-            self._validate(self, value, with_type=False, **opts)
+            opts['with_type'] = False
+            self._validate(self, value, **opts)
         return value
 
     def __call__(self, value, **opts):

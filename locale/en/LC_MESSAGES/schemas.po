@@ -1,0 +1,128 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2018, Cédric ROMAN
+# This file is distributed under the same license as the NgoSchema package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: NgoSchema 1.0.10\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-04-21 07:54+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.1\n"
+
+#: ../../../docs/schemas.rst:2
+msgid "Schemas"
+msgstr ""
+
+#: ../../../docs/schemas.rst:4
+msgid ""
+"The library intends to deal with complex schemas, possibly using "
+"inheritance which is not yet supported in JSON Schema, as well as data "
+"types which can be useful in generated class."
+msgstr ""
+
+#: ../../../docs/schemas.rst:7
+msgid ""
+"For this purpose, a meta-schema is built on top of the standard ones, "
+"adding specific features, but which won't be recognized by standard "
+"validators. Though, the schema valid against this meta-schema should "
+"usually be processed without problem by standard validation libraries "
+"(with warnings for the unknown field) with the exception."
+msgstr ""
+
+#: ../../../docs/schemas.rst:22
+msgid "The additional grammar adds:"
+msgstr ""
+
+#: ../../../docs/schemas.rst:15
+msgid "extra object attributes:"
+msgstr ""
+
+#: ../../../docs/schemas.rst:14
+msgid "``isAbtract`` boolean to indicate an abstract class."
+msgstr ""
+
+#: ../../../docs/schemas.rst:15
+msgid "``extends`` allowing to specify the ``id`` of parent classes."
+msgstr ""
+
+#: ../../../docs/schemas.rst:16
+msgid ""
+"``readOnly`` and ``notSerialized`` to specify properties which cannot "
+"beset or are not serialized."
+msgstr ""
+
+#: ../../../docs/schemas.rst:17
+msgid ""
+"extra literal types (``date``, ``time``, ``datetime``, ``path``, "
+"``importable``)."
+msgstr ""
+
+#: ../../../docs/schemas.rst:22
+msgid "extra property attributes for specific types:"
+msgstr ""
+
+#: ../../../docs/schemas.rst:19
+msgid "``isPathDir`` boolean to indicate the path of a directory"
+msgstr ""
+
+#: ../../../docs/schemas.rst:20
+msgid "``isPathFile`` boolean to indicate the path of a file"
+msgstr ""
+
+#: ../../../docs/schemas.rst:21
+msgid "``isPathExisting`` boolean to indicate an existing path"
+msgstr ""
+
+#: ../../../docs/schemas.rst:22
+msgid ""
+"``foreignKey`` dictionary of options to define a foreign key to another "
+"object"
+msgstr ""
+
+#: ../../../docs/schemas.rst:24
+msgid ""
+"It also comes with a few definitions that can be useful in a `Domain-"
+"Driven Design implementation <https://en.wikipedia.org/wiki/Domain-"
+"driven_design>`_."
+msgstr ""
+
+#: ../../../docs/schemas.rst:26
+msgid ""
+"This meta-schema is available as ``https://numengo.org/ngoschema "
+"<https://numengo.org/ngoschema#`` and can be optionally referred as "
+"`$schema <https://json-schema.org/understanding-json-"
+"schema/basics.html#declaring-a-json-schema>`_. in the definitions "
+"(instead of the standard `draft <https://json-schema.org/understanding-"
+"json-schema/index.html>`_)"
+msgstr ""
+
+#: ../../../docs/schemas.rst:35
+msgid ""
+"Additional types are available for literals, and can then be used already"
+" properly casted in further code. Those types are mapped as follows:"
+msgstr ""
+
+#: ../../../docs/schemas.rst:31
+msgid "``date``: ``datetime.date``"
+msgstr ""
+
+#: ../../../docs/schemas.rst:32
+msgid "``datetime``: ``datetime.datetime``"
+msgstr ""
+
+#: ../../../docs/schemas.rst:33 ../../../docs/schemas.rst:34
+msgid "``time``: ``datetime.time``"
+msgstr ""
+
+#: ../../../docs/schemas.rst:35
+msgid "``path``: ``pathlib.Path``"
+msgstr ""
+

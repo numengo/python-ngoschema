@@ -122,7 +122,7 @@ class NamespaceManager(Registry):
             return f'{ns_cn}.{f_cn}' if ns_cn else f_cn
         return ns_cn
 
-    def get_cname_id(self, cname):
+    def get_cname_id(self, cname, absolute=False):
         if cname.startswith('.'):
             rcn = self._current_ns.split('.')
             cname = cname[1:]
@@ -132,7 +132,7 @@ class NamespaceManager(Registry):
             cname = '.'.join(rcn + [cname])
         id = self._get_cname_id(cname, self._current_ns)
         u = self._current_ns_uri.split('#')[0] + '#'
-        if u and id.startswith(u):
+        if u and id.startswith(u) and not absolute:
             id = id[len(u.strip('#')):]
         return id
 

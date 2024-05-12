@@ -16,6 +16,7 @@ from collections import Mapping
 from .. import settings
 from ..exceptions import ConversionError
 from ..decorators import memoized_property, depend_on_prop
+from ..datatypes import String
 from ..protocols import SchemaMetaclass, ObjectProtocol, ArrayProtocol, Context
 from ..contexts import InstanceContext, EntityContext
 from ..utils import to_list, shorten
@@ -26,6 +27,12 @@ ATTRIBUTE_NAME_FIELD = settings.ATTRIBUTE_NAME_FIELD
 
 class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
     _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/Instance"
+
+    def __init__(self, value=None, **kwargs):
+        if value and String.check(value):
+            kwargs.setdefault('name', value)
+            value = None
+        ObjectProtocol.__init__(self, value, **kwargs)
 
     def __str__(self):
         if self._str is None:

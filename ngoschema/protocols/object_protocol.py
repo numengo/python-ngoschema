@@ -225,7 +225,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return self._deserializer.call_order(value, dependencies=dependencies, **opts)
 
     @staticmethod
-    def _deserialize(self, value, **opts):
+    def _deserialize(self, value, raw_literals=False, **opts):
         from ..managers.type_builder import type_builder
         if value is None:
             return value
@@ -246,17 +246,18 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             ctx = opts.get('context') or self._context
             for c in self._propertiesAllowed.intersection(ctx.keys()):
                 value.setdefault(c, ctx[c])
-        # handle canonical names
-        cns = [k for k in value.keys() if isinstance(k, str) and '.' in k]
-        for cn in cns:
-            ps = [Integer.convert(c) if Integer.check(c, convert=True) else c for c in cn.split('.')]
-            dpath.util.new(value, cn.split('.'), value.pop(cn))
-            cur = value
-            for i, p in enumerate(ps):
-                v = cur[p]
-                if Integer.check(p):
-                    v = cur[p] = [None] * p + [v]
-                cur = v
+        if not raw_literals:
+            # handle canonical names
+            cns = [k for k in value.keys() if isinstance(k, str) and '.' in k]
+            for cn in cns:
+                ps = [Integer.convert(c) if Integer.check(c, convert=True) else c for c in cn.split('.')]
+                dpath.util.new(value, cn.split('.'), value.pop(cn))
+                cur = value
+                for i, p in enumerate(ps):
+                    v = cur[p]
+                    if Integer.check(p):
+                        v = cur[p] = [None] * p + [v]
+                    cur = v
         # required with default
         return self._collection._deserialize(self, value, **opts)
 
@@ -350,7 +351,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return len(self._dataValidated)
 
     def __iter__(self):
-        return iter(self._dataValidated.keys())
+        yield from self._dataValidated.keys()
+
+    def __next__(self):
+        yield from self._dataValidated.keys()
 
     def _is_outdated(self, item):
         if self._data.get(item) is not None and self._dataValidated.get(item) is None:
@@ -656,7 +660,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 continue
             if alias not in excludes:
                 v = ret.get(raw)
-                v = value.items_serialize(raw) if v is None else v
+                v = value.get(raw) if v is None else v
                 if v is not None:
                     # here we pop the alias reference
                     ret[(attr_prefix if self._items_type(self, raw).is_primitive() else '') + alias] = ret.pop(raw, v)
@@ -1008,9 +1012,12 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 attr = schema.get(pname)
             if attr is not None:
                 if ptype.check(attr, raw_literals=True, convert=True):
-                    v = ptype.serialize(
-                        ptype(attr, items=False, raw_literals=True),
-                        deserialize=False, no_defaults=True, raw_literals=True)
+                    # allows to avoid instanciation
+                    #v_ = ptype.serialize(
+                    #    ptype(attr, items=False, raw_literals=True),
+                    #    deserialize=False, no_defaults=True, raw_literals=True)
+                    dsv = ptype.deserialize(attr, evaluate=False, items=False, raw_literals=True)
+                    v = ptype.serialize(dsv, deserialize=False, no_defaults=True, raw_literals=True)
                     extra_schema_properties[pname] = dict(ptype._schema)
                     extra_schema_properties[pname]['default'] = v
                     has_default.add(pname)
@@ -1128,7 +1135,9 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         #attrs['_hasPk'] = tuple(k for k, p in all_properties.items() if len(getattr(p, '_primaryKeys', [])))
         if is_entity:
             attrs['_primaryKeys'] = primary_keys
-        attrs['_properties'] = dict(all_properties)
+        #attrs['_properties'] = dict(all_properties)
+        # TODO: dict(all_properties) takes a very long time, could it be faster to
+        attrs['_properties'] = dict(ChainMap(local_properties, redefined_properties, *[b._properties for b in pbases]))
         attrs['_propertiesChained'] = all_properties
         attrs['_propertiesLocal'] = local_properties
         attrs['_propertiesRedefined'] = redefined_properties
@@ -1183,7 +1192,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         try:
             cls = type(clsname, bases, attrs)
         except Exception as er:
-            logger.error(f'Impossible to build {id}: {er}', exc_info=True)
+            logger.error(f'Impossible to build {id}: {er}')
             raise
         cls._pyType = cls
         return cls

@@ -201,7 +201,6 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                     attrs_value[raw] = - attrs_value.pop(alias)
         return Query(self, distinct=distinct, order_by=order_by, reverse=reverse).get(*attrs, **attrs_value)
 
-
     def __setitem__(self, item, value):
         if isinstance(item, int):
             return CollectionProtocol.__setitem__(self, item, value)

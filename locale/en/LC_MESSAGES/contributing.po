@@ -1,0 +1,189 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2018, Cédric ROMAN
+# This file is distributed under the same license as the NgoSchema package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: NgoSchema 1.0.10\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-04-21 07:54+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.1\n"
+
+#: ../../../CONTRIBUTING.rst:3
+msgid "Contributing"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:5
+msgid ""
+"Contributions are welcome, and they are greatly appreciated! Every little"
+" bit helps, and credit will always be given."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:9
+msgid "Bug reports"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:11
+msgid ""
+"When `reporting a bug <https://github.com/numengo/python-"
+"ngoschema/issues>`_ please include:"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:13
+msgid "Your operating system name and version."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:14
+msgid ""
+"Any details about your local setup that might be helpful in "
+"troubleshooting."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:15
+msgid "Detailed steps to reproduce the bug."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:18
+msgid "Documentation improvements"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:20
+msgid ""
+"NgoSchema could always use more documentation, whether as part of the "
+"official NgoSchema docs, in docstrings, or even on the web in blog posts,"
+" articles, and such."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:25
+msgid "Feature requests and feedback"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:27
+msgid ""
+"The best way to send feedback is to file an issue at "
+"https://github.com/numengo/python-ngoschema/issues."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:29
+msgid "If you are proposing a feature:"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:31
+msgid "Explain in detail how it would work."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:32
+msgid "Keep the scope as narrow as possible, to make it easier to implement."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:33
+msgid ""
+"Remember that this is a volunteer-driven project, and that code "
+"contributions are welcome :)"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:36
+msgid "Development"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:38
+msgid "To set up `python-ngoschema` for local development:"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:40
+msgid ""
+"Fork `python-ngoschema <https://github.com/numengo/python-ngoschema>`_ "
+"(look for the \"Fork\" button)."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:42
+msgid "Clone your fork locally::"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:46
+msgid "Create a branch for local development::"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:50
+msgid "Now you can make your changes locally."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:52
+msgid ""
+"When you're done making changes, run all the checks, doc builder and "
+"spell checker with `tox "
+"<http://tox.readthedocs.io/en/latest/install.html>`_ one command::"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:56
+msgid "Commit your changes and push your branch to GitHub::"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:62
+msgid "Submit a pull request through the GitHub website."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:65
+msgid "Pull Request Guidelines"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:67
+msgid ""
+"If you need some code review or feedback while you're developing the code"
+" just make the pull request."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:69
+msgid "For merging, you should:"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:71
+msgid "Include passing tests (run ``tox``) [1]_."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:72
+msgid "Update documentation when there's new API, functionality etc."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:73
+msgid "Add a note to ``CHANGELOG.rst`` about the changes."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:74
+msgid "Add yourself to ``AUTHORS.rst``."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:76
+msgid ""
+"If you don't have all the necessary python versions available locally you"
+" can rely on Travis - it will `run the tests <https://travis-"
+"ci.org/numengo/python-ngoschema/pull_requests>`_ for each change you add "
+"in the pull request."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:79
+msgid "It will be slower though ..."
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:82
+msgid "Tips"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:84
+msgid "To run a subset of tests::"
+msgstr ""
+
+#: ../../../CONTRIBUTING.rst:88
+msgid ""
+"To run all the test environments in *parallel* (you need to ``pip install"
+" detox``)::"
+msgstr ""
+

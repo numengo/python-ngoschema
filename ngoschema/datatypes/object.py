@@ -48,7 +48,7 @@ class ObjectDeserializer(CollectionDeserializer):
     @staticmethod
     def _check(self, value, **opts):
         if not isinstance(value, Mapping):
-            raise TypeError('%s is not of type mapping.' % value)
+            raise TypeError('%s is not of type mapping.' % type(value))
         #value = self._collType(value)
         return value
 
@@ -203,8 +203,10 @@ class Object(Collection, ObjectSerializer):
         return self._serialize(self, ret, **opts)
 
     @staticmethod
-    def _null(self, value, items=False, **opts):
-        return self._collType([(k, None) for k in self._print_order(self, value, items=items, **opts)])
+    def _null(self, value, items=False, no_defaults=False, **opts):
+        # need to call ._collection._print_order to avoid excluding notSerialized
+        return self._collType([(k, None) for k in list(self._collection._print_order(self, value,
+                                                                         items=items, no_defaults=no_defaults, **opts))])
 
     @staticmethod
     def _deserialize(self, value, items=True, evaluate=True, raw_literals=False, **opts):
@@ -247,7 +249,7 @@ class Object(Collection, ObjectSerializer):
     @staticmethod
     def _print_order(self, value, **opts):
         no_defaults = opts.pop('no_defaults', self._noDefaults)
-        context = opts.pop('context', self._context)
+        context = getattr(value, '_context', opts.pop('context', self._context))
         for k in ObjectSerializer._print_order(self, value, no_defaults=no_defaults, **opts):
             if no_defaults:
                 t = self._items_type(self, k)

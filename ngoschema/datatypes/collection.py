@@ -96,10 +96,15 @@ class Collection(Type, CollectionSerializer):
     def _validate(self, value, items=True, no_defaults=True, **opts):
         value = CollectionSerializer._validate(self, value, **opts)
         if items:
-            value = self._collType(value)  # make a copy to avoid modifying original object
-            for k, t in self._items_types(self, value):
+            ret = self.null(value, **opts)
+            for k in self._call_order(self, value, **opts):
                 if self._is_included(k, value, no_defaults=no_defaults, **opts):
-                    value[k] = t._validate(t, value[k], items=True, no_defaults=no_defaults, **opts)
+                    t = self._items_type(self, k)
+                    ret[k] = t._validate(t, value[k], items=True, no_defaults=no_defaults, **opts)
+            #for k, t in self._items_types(self, value):
+            #    if self._is_included(k, value, no_defaults=no_defaults, **opts):
+            #        ret[k] = t._validate(t, value[k], items=True, no_defaults=no_defaults, **opts)
+            value = ret  # make a copy to avoid modifying original object
         return value
 
     @staticmethod
@@ -115,16 +120,18 @@ class Collection(Type, CollectionSerializer):
     @staticmethod
     def _serialize(self, value, items=True, only=[], excludes=[], **opts):
         opts.setdefault('no_defaults', True)
-        ret = value = CollectionSerializer._serialize(self, value, only=only, excludes=excludes, **opts)
+        value = CollectionSerializer._serialize(self, value, only=only, excludes=excludes, **opts)
         if items:
             ret = self.null(value, only=only, excludes=excludes, **opts)
             for k, t in self._items_types(self, ret):
                 if self._is_included(k, value, only=only, excludes=excludes, **opts):
                     v = value[k]
-                    t_excludes = getattr(t, '_notSerialized', [])
+                    t_excludes = set(getattr(t, '_notSerialized', [])).union(excludes)
                     ret[k] = t._serialize(t, v, excludes=t_excludes, **opts)
                     #ret[k] = v.do_serialize(**opts) if hasattr(v, 'do_serialize') else t._serialize(t, v, **opts)
-        return self._collType(ret)
+        else:
+            ret = self._collType(value)
+        return ret
 
     @classmethod
     def items_types(cls, value, **opts):

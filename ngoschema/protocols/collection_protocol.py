@@ -149,6 +149,7 @@ class CollectionProtocol(Collection):
             else:
                 return v if isinstance(t, type) and isinstance(v, (t, None.__class__)) else t(v, **opts)
         except Exception as er:
+            self._logger.error('while evaluating item \'%s\' %s with value: %s', item, t, v)
             self._logger.error(er, exc_info=True)
             raise er
 
