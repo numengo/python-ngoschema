@@ -122,7 +122,7 @@ class Collection(Type, CollectionSerializer):
         opts.setdefault('no_defaults', True)
         value = CollectionSerializer._serialize(self, value, only=only, excludes=excludes, **opts)
         if items:
-            ret = self.null(value, only=only, excludes=excludes, **opts)
+            ret = self.null(value, only=only, excludes=excludes) # not opts because it sometimes triggers no_defaults
             for k, t in self._items_types(self, ret):
                 if self._is_included(k, value, only=only, excludes=excludes, **opts):
                     v = value[k]

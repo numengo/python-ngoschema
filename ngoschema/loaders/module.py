@@ -139,5 +139,5 @@ def register_module(module_name):
 def register_locale_dir(module_name, locale_dir, codeset=None):
     locale_module_loader.register(module_name, locale_dir)
     gettext.bindtextdomain(module_name, localedir=str(locale_dir))
-    gettext.bind_textdomain_codeset(module_name, codeset)
+    #gettext.bind_textdomain_codeset(module_name, codeset)
     gettext.textdomain(module_name)

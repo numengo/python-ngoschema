@@ -16,7 +16,7 @@ import json
 
 from ruamel.yaml import YAML
 import appdirs
-#from simple_settings import LazySettings as SimpleLazySettings
+from simple_settings import LazySettings as SimpleLazySettings
 
 from ngofile.pathlist import PathList
 
@@ -47,7 +47,6 @@ def load_log_config(filepath):
 
 
 def load_default_app_config(app_name, app_author=None):
-    from simple_settings import LazySettings
     settings_list = [p for p in search_app_config_files(app_name, app_author)]\
                   + ['%s_.environ' % app_name.upper()]
     settings = LazySettings(*settings_list)
@@ -71,3 +70,31 @@ class SettingsLoadStrategyPythonSecrets:
         if e.secrets_file_path_exists():
             e.read_secrets_and_descriptions()
             return dict(e.items())
+
+
+class LazySettings(SimpleLazySettings):
+    """LazySettings extension allowing to update or merge other settings """
+
+    def __init__(self, *settings_list):
+        SimpleLazySettings.__init__(self, *settings_list)
+
+    def update(self, *other_settings):
+        # other_settings List[SimpleLazySettings]
+        as_dict = self.as_dict()
+        keys = set(as_dict.keys())
+        for other_setting in other_settings:
+            other_as_dict = other_setting.as_dict()
+            other_update = {k: as_dict[k] for k in keys.intersection(other_as_dict.keys())}
+            other_setting.configure(**other_update)
+
+    def merge(self, *other_settings, only_keys=True):
+        # other_settings List[SimpleLazySettings]
+        as_dict = self.as_dict()
+        keys = set(as_dict.keys())
+        for other_setting in other_settings:
+            other_as_dict = other_setting.as_dict()
+            if only_keys:
+                merge = {k: other_as_dict[k] for k in keys.intersection(other_as_dict.keys())}
+            else:
+                merge = other_as_dict
+            self.configure(**other_update)

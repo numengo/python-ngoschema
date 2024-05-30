@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import pandas as pd
-from collections import OrderedDict, Sequence
+from collections import OrderedDict
+from collections.abc import Sequence
 import gettext
 
 from ..protocols.loader import Loader, Saver

@@ -2,7 +2,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import OrderedDict, defaultdict, Mapping, Sequence
+from collections import OrderedDict, defaultdict
+from collections.abc import Mapping, Sequence
 import re
 
 from .. import settings

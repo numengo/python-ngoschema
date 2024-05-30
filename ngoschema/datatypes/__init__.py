@@ -28,6 +28,8 @@ __all__ = [
     'String',
     'Pattern',
     'Expr',
+    'HtmlContent',
+    'Gettext',
     'Number',
     # complex
     'Path',

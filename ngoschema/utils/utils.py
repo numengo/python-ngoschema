@@ -10,7 +10,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import os
-import collections
 from pyrsistent import pmap
 import copy
 import importlib
@@ -37,8 +36,8 @@ from jsonschema._types import is_integer
 
 from ngoschema.utils._qualname import qualname
 from ngoschema.exceptions import InvalidValue, CommandError
-from collections import OrderedDict as odict
-from collections import Mapping, MutableMapping
+from collections import OrderedDict as odict, deque
+from collections.abc import Mapping, MutableMapping, Set, Sequence
 
 _ = gettext.gettext
 
@@ -259,7 +258,7 @@ class Registry(Mapping):
 
     def __init__(self, *parent_registries):
         self._parent_registries = parent_registries
-        self._registry = collections.OrderedDict()
+        self._registry = odict()
 
     def __repr__(self):
         return repr(self._registry)
@@ -299,7 +298,7 @@ class WeakRegistry(Registry):
 
 
 class GenericClassRegistry(Registry):
-    _registry = collections.OrderedDict()
+    _registry = odict()
 
     def register(self, name=None):
         def f(functor):
@@ -389,7 +388,7 @@ def is_mapping(value):
     """
     Test if value is a mapping (dict, ordered dict, ...)
     """
-    if isinstance(value, collections.Mapping):
+    if isinstance(value, Mapping):
         return True
     return False
 
@@ -398,10 +397,9 @@ def is_sequence(value):
     """
     Test if value is a sequence (list, tuple, deque)
     """
-    if isinstance(value,
-                  collections.Sequence) and not isinstance(value, basestring):
+    if isinstance(value, Sequence) and not isinstance(value, basestring):
         return True
-    if isinstance(value, collections.deque):
+    if isinstance(value, deque):
         return True
     if isinstance(value, weakref.WeakSet):
         return True
@@ -416,7 +414,7 @@ def is_collection(value):
         return True
     if is_sequence(value):
         return True
-    if isinstance(value, collections.Set):
+    if isinstance(value, Set):
         return True
     return False
 
@@ -524,7 +522,7 @@ def nested_dict_iter(nested, separator='.'):
     Generator going through a nested dictionary and returning a canonical name / value
     """)
     for key, value in nested.items():
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, Mapping):
             for inner_key, inner_value in nested_dict_iter(value):
                 yield f'{key}{separator}{inner_key}', inner_value
         else:

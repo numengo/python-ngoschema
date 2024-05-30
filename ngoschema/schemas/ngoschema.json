@@ -350,6 +350,7 @@
         "ForeignKey": {
           "type": "object",
           "description": "This object allow to point an object stored in a repository from a foreign key, and to associate it to the current object",
+          "$comment": "to define a relationship to another instance",
           "extends": [
             "#/$defs/relationships/$defs/RelationshipBase"
           ],
@@ -421,7 +422,11 @@
           ],
           "abstract": true,
           "additionalProperties": false,
-          "dependencies": {},
+          "dependencies": {
+            "identityKeys": [
+              "primaryKeys"
+            ]
+          },
           "notSerialized": [
             "identityKeys",
             "primaryKeys",
@@ -450,6 +455,23 @@
     "datasets": {
       "type": "object",
       "$defs": {
+        "Enum": {
+          "type": "object",
+          "extends": [
+            "#/$defs/instances/$defs/Instance"
+          ],
+          "required": [
+            "names"
+          ],
+          "properties": {
+            "names": {
+              "type": "array"
+            },
+            "values": {
+              "type": "array"
+            }
+          }
+        },
         "Series": {
           "type": "object",
           "extends": [

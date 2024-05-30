@@ -2,10 +2,12 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import Mapping, Sequence, deque, OrderedDict
+from collections import deque, OrderedDict
+from collections.abc import Mapping, Sequence
 
 from ..exceptions import ValidationError, ConversionError
 from ..utils import ReadOnlyChainMap as ChainMap
+from ..utils.utils import to_list
 from ..decorators import log_exceptions
 from ..managers.type_builder import register_type
 from ..protocols.serializer import Serializer
@@ -215,9 +217,6 @@ class Array(Collection, ArraySerializer):
             return cls._items.is_primitive()
 
 
-ArrayString = Array.extend_type('ArrayString', items=String)
-
-
 @register_type('tuple')
 class Tuple(Array):
     _pyType = tuple
@@ -228,3 +227,114 @@ class Tuple(Array):
 class Set(Array):
     _pyType = set
     #_collType = list
+
+
+ArrayString = Array.extend_type('ArrayString', items=String)
+
+
+@register_type('tokens')
+class TokenizedString(Array):
+    _rawLiterals = False
+    _strDelimiter = '\n'
+    _tokDelimiter = ' '
+    _indentation = '\t'
+
+    def __init__(self, strDelimiter='\n', tokDelimiter=' ', indentation= '\t', **opts):
+        self._strDelimiter = opts.get('strDelimiter') or self._strDelimiter
+        self._tokDelimiter = opts.get('tokDelimiter') or self._tokDelimiter
+        self._indentation = opts.get('indentation') or self._indentation
+        items = type(f'{self._id}/items', (ArrayString, ), dict(_strDelimiter=self._tokDelimiter))
+        Array.__init__(self, items=items, **opts)
+
+    def __call__(self, value=None, *values, **opts):
+        opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
+        lines = TokenizedString._convert(self, value, **opts)
+        return Type.__call__(self, lines, convert=False, **opts)
+
+    @staticmethod
+    def _convert(self, value, split_string=False, **opts):
+        from .strings import Pattern, Expr
+        strDelimiter = opts.get('strDelimiter') or self._strDelimiter
+        tokDelimiter = opts.get('tokDelimiter') or self._tokDelimiter
+        indentation = opts.get('indentation') or self._indentation
+
+        def convert_token(tok):
+            if Expr.check(tok):
+                return Expr.convert(tok, check=False, **opts)
+            elif Pattern.check(tok):
+                return Pattern.convert(tok, check=False, **opts)
+            return tok
+
+        def convert_collection(coll, *s, indent_level=1, split=False):
+            lines = []
+            if split:
+                s = sum([ss.split(strDelimiter) for ss in s])
+                s = sum([ss.split(tokDelimiter) for ss in s])
+            if isinstance(coll, str):
+                coll = convert_token(coll)
+                line = list(s) + (coll.split(tokDelimiter) if split else [coll])
+                lines.append(tuple(line))
+            elif isinstance(coll, Sequence):
+                if s:
+                    lines.append(tuple(s))
+                s2 = [indentation] * indent_level
+                for c in coll:
+                    lines.extend(convert_collection(c, *s2, indent_level=indent_level + 1, split=split))
+            elif isinstance(coll, Mapping):
+                if len(coll) == 1:
+                    s1, d1 = list(coll.items())[0]
+                    s1 = convert_token(s1)
+                    s2 = s1.split(tokDelimiter) if split else [s1]
+                    lines.extend(convert_collection(d1, *s, *s2, indent_level=indent_level, split=split))
+                else:
+                    if s:
+                        lines.append(tuple(s))
+                    for s1, d1 in coll.items():
+                        s1 = convert_token(s1)
+                        if split:
+                            s2 = [indentation] * (indent_level - 1) + s1.split(tokDelimiter)
+                        else:
+                            s2 = [indentation] * (indent_level - 1) + [s1]
+                        lines.extend(convert_collection(d1, *s2, indent_level=indent_level + 1, split=split))
+            elif s:
+                lines.append(tuple(s))
+            return lines
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            lines = [tuple([convert_token(tok) for tok in to_list(l)]) for l in value]
+        else:
+            lines = convert_collection(value, split=split_string)
+        return CollectionSerializer._convert(self, lines, **opts)
+
+    @staticmethod
+    def _serialize(self, value, **opts):
+        as_string = opts.pop('as_string', self._asString)
+        lines = Array._serialize(self, value, as_string=False, **opts)
+        for i, line in enumerate(lines):
+            lines[i] = list(lines[i])
+            for j, tok in enumerate(line):
+                lines[i][j] = String._serialize(self._items, tok, **opts)
+            lines[i] = tuple(lines[i])
+        if as_string:
+            lines = [self._tokDelimiter.join(line) for line in lines]
+            return self._strDelimiter.join(lines)
+        return lines
+
+    def __str__(self):
+        lines = Array._serialize(self, self, as_string=False)
+        lines = [self._tokDelimiter.join(line) for line in lines]
+        return self._strDelimiter.join(lines)
+
+    @classmethod
+    def is_primitive(cls):
+        return True
+
+    def default(self, value=None, **opts):
+        ret = value or self._default
+        if isinstance(ret, str):
+            ret = [(l, ) for l in ret.split(self._strDelimiter) if l]
+        return self._serialize(self, ret, items=False, **opts)
+
+    @staticmethod
+    def _inputs(self, value, **opts):
+        from ngoschema.utils.jinja2 import get_jinja2_variables
+        return set(get_jinja2_variables(str(value)))

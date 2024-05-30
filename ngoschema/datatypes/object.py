@@ -2,7 +2,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import OrderedDict, defaultdict, Mapping, MutableMapping
+from collections import OrderedDict, defaultdict
+from collections.abc import Mapping, MutableMapping
 import re
 from operator import neg
 
@@ -83,7 +84,10 @@ class ObjectSerializer(CollectionSerializer, ObjectDeserializer):
     def _print_order(self, value, excludes=[], only=[], **opts):
         """Generate a print order according to schema and inherited schemas properties order
         and additonal properties detected in values. """
-        keys = set((value or {}).keys())
+        if not isinstance(value, Mapping):
+            self._logger.info(str(value))
+            value = {str(value): {}}
+        keys = set(value.keys())
         all_ordered = list(keys.intersection(self._required))
         all_ordered += list(keys.difference(all_ordered))
         no_defaults = opts.get('no_defaults', self._noDefaults)
@@ -202,9 +206,15 @@ class Object(Collection, ObjectSerializer):
         #opts['items'] = False
         return self._serialize(self, ret, **opts)
 
+    def merge(self, value, **opts):
+        import dpath
+        return dpath.merge(self, value, **opts)
+
     @staticmethod
     def _null(self, value, items=False, no_defaults=False, **opts):
         # need to call ._collection._print_order to avoid excluding notSerialized
+        if not isinstance(value, Mapping):   # hack for attributes initialized with fake objects
+            value = {str(value): {}}
         return self._collType([(k, None) for k in list(self._collection._print_order(self, value,
                                                                          items=items, no_defaults=no_defaults, **opts))])
 

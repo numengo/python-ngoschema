@@ -6,7 +6,7 @@ import sys
 import six
 import logging
 import dpath.util
-from collections import MutableMapping, Mapping
+from collections.abc import MutableMapping, Mapping
 from collections import OrderedDict, defaultdict
 import re
 from operator import neg
@@ -229,6 +229,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         from ..managers.type_builder import type_builder
         if value is None:
             return value
+        if isinstance(value, str):
+            value = {'name': value}
         value = dict(value)
         # handle subclassing
         if value.get('$schema'):
@@ -651,6 +653,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         serializer = self if not isinstance(value, Serializer) else value.__class__
         context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
+        if not isinstance(value, Mapping):  # hack for attributes initialized with fake objects
+            value = {str(value): {}}
         ret = self._collection._serialize(serializer, value, excludes=excludes, only=only, **opts)
         ret = self._collType([((attr_prefix if self._items_type(serializer, k).is_primitive() else '') + k, ret[k])
                                 for k in ret.keys()])

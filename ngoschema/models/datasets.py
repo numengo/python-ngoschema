@@ -5,6 +5,24 @@ from __future__ import unicode_literals
 import pandas as pd
 
 from ngoschema.protocols import with_metaclass, SchemaMetaclass, ObjectProtocol
+from ngoschema.models.instances import Instance
+
+
+class Enum(with_metaclass(SchemaMetaclass)):
+    #_id = r"https://numengo.org/ngoschema#/$defs/datasets/$defs/Enum"
+
+    def __init__(self, name=None, context=None, *args, **kwargs):
+        if kwargs:
+            names = kwargs.keys()
+            values = kwargs.values()
+        else:
+            names = list(args) if args else kwargs.pop('names', [])
+            values = range(len(names))
+        as_dict = {n: v for n, v in zip(names, values)}
+        as_dict['name'] = name
+        as_dict['names'] = names
+        as_dict['values'] = values
+        Instance.__init__(self, value=as_dict, context=context)
 
 
 class Series(with_metaclass(SchemaMetaclass)):

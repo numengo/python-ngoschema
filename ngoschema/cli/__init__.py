@@ -108,11 +108,20 @@ class ComplexCLI(SpecialHelpMixin, click.MultiCommand):
         try:
             if sys.version_info[0] == 2:
                 name = name.encode("ascii", "replace")
-            mod = __import__(
-                "{}.commands.cmd_{}".format(self.module_name, inflection.underscore(name)), None, None, ["cli"]
-            )
+            cmd_name = f'cmd_{inflection.underscore(name)}'
+            for cmd_folder in self.cmd_folders:
+                cmd_file = f'{cmd_name}.py'
+                if cmd_file in os.listdir(cmd_folder):
+                    cmd_folder = pathlib.Path(cmd_folder)
+                    path = cmd_folder.parts[cmd_folder.parts.index(self.module_name):]
+                    mod = __import__(
+                        "{}.cmd_{}".format('.'.join(path), inflection.underscore(name)), None, None, ["cli"]
+                    )
+                    break
+            else:
+                logging.error(f'{name} {self.cmd_folders}')
         except ImportError as er:
-            click.echo(er)
+            logging.error(str(er))
             return
         return mod.cli
 

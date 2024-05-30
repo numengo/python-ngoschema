@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import MutableSequence, Sequence
+from collections.abc import MutableSequence, Sequence
 import six
 import logging
 import gettext

@@ -199,9 +199,26 @@ def rsplit(string, sep=',', maxsplit=-1):
 def last(any):
     return any[-1]
 
+
 @filters_registry.register()
 def gettext(message):
     return gettext.gettext(message)
+
+
+@filters_registry.register()
+def intersect(a, b):
+    bs = list(b)
+    for aa in a:
+        if aa in bs:
+            yield aa
+
+
+@filters_registry.register()
+def difference(a, b):
+    bs = list(b)
+    for aa in a:
+        if aa not in bs:
+            yield aa
 
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):

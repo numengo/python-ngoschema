@@ -47,7 +47,7 @@ class Primitive(Type):
 
     @staticmethod
     def _check(self, value, **opts):
-        from collections import Mapping, Sequence
+        from collections.abc import Mapping, Sequence
         if not self._pyType:
             if isinstance(value, (Mapping, Sequence)) and not isinstance(value, str):
                 raise TypeError('%s is not a primitive.' % shorten(value, str_fun=repr))

@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import gettext
 import builtins
 import numbers
 import decimal
@@ -98,5 +99,15 @@ class Pattern(String):
 
 
 @register_type('html')
-class WebContent(String):
+class HtmlContent(String):
     _schema = {'type': 'html'}
+
+
+@register_type('gettext')
+class Gettext(String):
+    _schema = {'type': 'gettext'}
+
+    @staticmethod
+    def _convert(self, value, context=None, **opts):
+        ret = String._convert(self, value, context=context, **opts)
+        return gettext.gettext(ret)

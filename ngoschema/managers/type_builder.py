@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 
 import logging
 import copy
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
+from collections.abc import Mapping
 from jsonschema.validators import extend
 from jsonschema.exceptions import UndefinedTypeCheck
 

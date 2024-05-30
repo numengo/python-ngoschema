@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import logging
 from abc import abstractmethod
-from collections import Sequence
+from collections.abc import Sequence
 from operator import neg
 
 from ..exceptions import InvalidValue, InvalidOperation

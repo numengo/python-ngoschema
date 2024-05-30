@@ -40,7 +40,8 @@ def take_arrays(narg1=0, narg2=-1, flatten=False):
     """
 
     def to_decorate(wrapped):
-        sig = inspect.getargspec(wrapped)
+        sig = inspect.getfullargspec(wrapped)
+        #sig = inspect.getargspec(wrapped)
 
         @wrapt.decorator
         def wrapper(method, instance, args, kwargs):
@@ -117,7 +118,8 @@ def assert_arg(arg, typ, **schema):
         arg_i = None
         arg_s = arg
         try:
-            sig = inspect.getargspec(wrapped)
+            #sig = inspect.getargspec(wrapped)
+            sig = inspect.getfullargspec(wrapped)
             if type(arg) is int:
                 arg_i = arg
                 arg_s = sig.args[arg]

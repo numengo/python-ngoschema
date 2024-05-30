@@ -66,7 +66,7 @@ def resolve_fragment(doc, fragment):
             if is_sequence(doc):
                 part = int(part)
             doc = doc[part]
-        except:
+        except Exception as er:
             raise InvalidValue("Impossible to find fragment '%s' in document." % ('/'.join(parts[:i+1])))
     return doc
 

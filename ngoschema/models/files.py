@@ -20,7 +20,8 @@ import requests
 from future.utils import with_metaclass
 from ngofile.list_files import list_files
 from six.moves.urllib.request import urlopen
-from collections import Mapping, ChainMap
+from collections import ChainMap
+from collections.abc import Mapping
 
 #from ngoschema import utils, get_builder
 #from ..protocol_base import ProtocolBase
@@ -94,7 +95,7 @@ class File(with_metaclass(SchemaMetaclass, FileSaver)):
         if value is None:
             fp = self.filepath
             if fp and fp.exists():
-                return FileSaver._load_file(self, fp)
+                return FileSaver._load_file(self, fp, deserialize_instances=False, load_instances=False)
         return value
 
     #@staticmethod

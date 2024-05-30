@@ -5,7 +5,8 @@ from __future__ import unicode_literals
 import logging
 import copy
 from abc import abstractmethod
-from collections import OrderedDict, Mapping, Sequence
+from collections import OrderedDict
+from collections.abc import Mapping, Sequence
 import gettext
 
 from ..utils import ReadOnlyChainMap, shorten

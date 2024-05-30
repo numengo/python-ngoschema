@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from collections import Sequence
+from collections.abc import Sequence
 
 from .converter import Converter
 from .validator import Validator
