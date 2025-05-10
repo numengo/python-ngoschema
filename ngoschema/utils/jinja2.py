@@ -206,6 +206,11 @@ def gettext(message):
 
 
 @filters_registry.register()
+def has_alpha(message):
+    return any([m.isalpha() for m in message])
+
+
+@filters_registry.register()
 def intersect(a, b):
     bs = list(b)
     for aa in a:

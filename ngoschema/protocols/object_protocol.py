@@ -93,7 +93,8 @@ class PropertyDescriptor:
             # value can change in setter (??really ???)
             return obj._dataValidated[key]
         except Exception as er:
-            obj._logger.error(er, exc_info=True)
+            obj._logger.error(str(er) + f' in {obj.__class__.__name__}', exc_info=True)
+            #obj._logger.error(er, exc_info=True)
             raise
             #etype, value, trace = sys.exc_info()
             #raise six.reraise(AttributeError, value, trace)
@@ -225,7 +226,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return self._deserializer.call_order(value, dependencies=dependencies, **opts)
 
     @staticmethod
-    def _deserialize(self, value, raw_literals=False, **opts):
+    def _deserialize(self, value, raw_literals=True, **opts):
         from ..managers.type_builder import type_builder
         if value is None:
             return value
@@ -353,7 +354,8 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return len(self._dataValidated)
 
     def __iter__(self):
-        yield from self._dataValidated.keys()
+        return iter(self._dataValidated)
+        #yield from self._dataValidated.keys()
 
     def __next__(self):
         yield from self._dataValidated.keys()
@@ -544,7 +546,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if key is None:
             return self._parent
         key = self._aliases.get(key, key)
-        if isinstance(key, str) and '.' in key:
+        if isinstance(key, str) and '.' in key and key not in self._data:
             parts = split_cname(key)
             # case: canonical name such as a[0][1].b[0].c
             cur = self

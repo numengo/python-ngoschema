@@ -55,7 +55,13 @@ class CollectionProtocol(Collection):
         if not lz:
             self._collType(self)
         if validate:
-            self._validate(self, self, items=False, context=ctx)
+            try:
+                self._validate(self, self, items=False, context=ctx)
+            except InvalidValue as er:
+                self._logger.error(er, exc_info=True)
+                self._logger.error('in %s [%s]' % (self._pyType, self.name))
+                raise er
+
 
     @staticmethod
     def _convert(self, value, excludes=[], **opts):
