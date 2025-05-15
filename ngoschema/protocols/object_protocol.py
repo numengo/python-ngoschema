@@ -1021,7 +1021,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     # allows to avoid instanciation
                     #v_ = ptype.serialize(
                     #    ptype(attr, items=False, raw_literals=True),
-                    #    deserialize=False, no_defaults=True, raw_literals=True)
+                    #    deserialize=v = {list: 2} [OrderedDict([('name', 'callback'), ('_type', 'CallbackQuery'), ('required', True)]), OrderedDict([('name', 'dialog_manager'), ('_type', 'DialogManager')])]False, no_defaults=True, raw_literals=True)
                     dsv = ptype.deserialize(attr, evaluate=False, items=False, raw_literals=True)
                     v = ptype.serialize(dsv, deserialize=False, no_defaults=True, raw_literals=True)
                     extra_schema_properties[pname] = dict(ptype._schema)

@@ -77,7 +77,8 @@ class Primitive(Type):
                 elif Pattern.check(value):
                     value = Pattern.convert(value, **opts)
             except Exception as er:
-                logger.warning('impossible to convert %s: %s', shorten(inline(str(value))), er)
+                logger.warning('impossible to convert %s to %s: %s',
+                               shorten(inline(str(value))), self._type, er)
                 #logger.error(er, exc_info=True)
         # only convert if not raw literals
         return value if raw_literals else Type._convert(self, value, **opts)

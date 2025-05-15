@@ -95,7 +95,7 @@ class Validator(Converter, Context):
     @classmethod
     def check(cls, value, convert=False, validate=False, **opts):
         try:
-            value = cls._convert(cls, value, validate=False, **opts) if convert else value
+            value = cls._convert(cls, value, validate=False, items=False, **opts) if convert else value
             value = cls._check(cls, value, **opts)
             value = cls._validate(cls, value, with_type=False, **opts) if validate else value
             return True
