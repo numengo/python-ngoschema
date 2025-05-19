@@ -29,6 +29,7 @@ _jinja2_globals['enumerate'] = enumerate
 _jinja2_globals['len'] = len
 _jinja2_globals['str'] = str
 _jinja2_globals['list'] = list
+_jinja2_globals['zip'] = zip
 
 
 def extend_jinja2_globals(**globals):

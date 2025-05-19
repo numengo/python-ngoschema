@@ -1,5 +1,3 @@
-import pytest
-
 from future.utils import with_metaclass
 from ngoschema.exceptions import InvalidValue
 from ngoschema.loaders.schemas import load_schema
@@ -32,6 +30,16 @@ load_schema({
     'additionalProperties': False,
     'properties': {
         'b': {'type': 'integer'},
+    }
+})
+
+
+load_schema({
+    '$id': 'C',
+    'type': 'object',
+    'additionalProperties': True,
+    'properties': {
+        'a': {'type': 'string'},
     }
 })
 
@@ -69,6 +77,14 @@ def test_object_protocol():
 
     ba = BA(a=1)
     assert ba.a == '1', ba.a
+
+
+def test_object_protocol2():
+    class C(with_metaclass(SchemaMetaclass)):
+        _id = 'C'
+
+    c = C(a=1, b=2)
+    assert c.b == 2, c.b
 
 
 def test_call_order():
@@ -152,6 +168,7 @@ def test_repr2():
 
 if __name__ == "__main__":
     #test_repr2()
+    test_object_protocol2()
     test_object_protocol()
     test_call_order()
     test_repr()
