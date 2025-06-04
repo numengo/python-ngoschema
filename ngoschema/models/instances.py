@@ -57,9 +57,9 @@ class Instance(with_metaclass(SchemaMetaclass, InstanceContext)):
 
 
 class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
-    _("""
+    """
     Object referenced by a list of keys of a foreign schema
-    """)
+    """
     _id = "https://numengo.org/ngoschema#/$defs/instances/$defs/Entity"
     _primaryKeys = tuple()
     _primaryKeysType = None
@@ -121,7 +121,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     @staticmethod
     def _convert(self, value, **opts):
-        _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        """ method to overload locally for extra check. Allows to associate a message to check failure."""
         if isinstance(value, self._pyType):
             return value
         if isinstance(value, Mapping):
@@ -138,7 +138,7 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     @staticmethod
     def _check(self, value, **opts):
-        _(""" method to overload locally for extra check. Allows to associate a message to check failure.""")
+        """ method to overload locally for extra check. Allows to associate a message to check failure."""
         pks = self._primaryKeys
         pks_type = [self._items_type(self, pk) for pk in pks]
         try:
@@ -148,12 +148,12 @@ class Entity(with_metaclass(SchemaMetaclass, EntityContext)):
 
     @staticmethod
     def _serialize(self, value, root_entity=False, **opts):
-        _("""
+        """
         root_entity: flag to signal the object is the root entity to serialize
         use_identity_keys: serialize only the identity keys (if not root)
         use_entity_keys: returns a dict of identity keys values (if not root)
         add_identity_keys: ensure the identity keys are serialized
-        """)
+        """
         use_identity_keys = opts.get('use_identity_keys', False)
         use_entity_keys = opts.get('use_entity_keys', False)
         add_identity_keys = opts.get('add_identity_keys', False)

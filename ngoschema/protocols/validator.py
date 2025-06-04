@@ -51,10 +51,10 @@ class Validator(Converter, Context):
 
     @staticmethod
     def _errors(self, value, excludes=[], with_type=True, **opts):
-        _("""
+        """
         Validate the value according to schema
         Return dictionnary of errors or raise ngoschema.InvalidValue
-        """)
+        """
         if not with_type:
             excludes = list(excludes) + ['type']
         schema = {k: v for k, v in opts.get('schema', self._schemaFlattened).items() if k not in excludes}

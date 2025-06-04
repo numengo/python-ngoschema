@@ -308,6 +308,13 @@ class TokenizedString(Array):
     @staticmethod
     def _serialize(self, value, **opts):
         as_string = opts.pop('as_string', self._asString)
+        strDelimiter = opts.get('strDelimiter') or self._strDelimiter
+        tokDelimiter = opts.get('tokDelimiter') or self._tokDelimiter
+        indentation = opts.get('indentation') or self._indentation
+
+        if isinstance(value, str):
+            # could convert value in case of string formating at this stage?
+            value = [(value, )]
         lines = Array._serialize(self, value, as_string=False, **opts)
         for i, line in enumerate(lines):
             lines[i] = list(lines[i])
@@ -315,8 +322,8 @@ class TokenizedString(Array):
                 lines[i][j] = String._serialize(self._items, tok, **opts)
             lines[i] = tuple(lines[i])
         if as_string:
-            lines = [self._tokDelimiter.join(line) for line in lines]
-            return self._strDelimiter.join(lines)
+            lines = [tokDelimiter.join(line) for line in lines]
+            return strDelimiter.join(lines)
         return lines
 
     def __str__(self):
@@ -338,3 +345,11 @@ class TokenizedString(Array):
     def _inputs(self, value, **opts):
         from ngoschema.utils.jinja2 import get_jinja2_variables
         return set(get_jinja2_variables(str(value)))
+
+
+@register_type('python_tokens')
+class TokenizedPython(TokenizedString):
+    _rawLiterals = False
+    _strDelimiter = '\n'
+    _tokDelimiter = ' '
+    _indentation = '    '

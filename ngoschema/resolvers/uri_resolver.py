@@ -147,7 +147,7 @@ class UriResolver(RefResolver):
         return UriResolver(uri, schema, store=dict(UriResolver._doc_store))
 
     def _expand(self, uri, schema, doc_scope):
-        _(""" expand a schema to add properties of all definitions it extends
+        """ expand a schema to add properties of all definitions it extends
         if a URI is given, it will be used to identify the schema in a cache store.
         If no resolver is given, use a resolver with local schema store, with the
         URI as referring document.
@@ -159,7 +159,7 @@ class UriResolver(RefResolver):
         :param doc_scope: current doc uri
         :type doc_scope: string
         :rtype: dict
-        """)
+        """
         uri = self._urljoin_cache(self.resolution_scope, uri)
 
         schema_scope, frag = urldefrag(uri)

@@ -321,9 +321,9 @@ class GenericClassRegistry(Registry):
 
 
 def gcs(*classes):
-    _("""
+    """
     Return the greatest common superclass of input classes
-    """)
+    """
     mros = [x.mro() for x in classes]
     for x in mros[0]:
         if all([x in mro for mro in mros]):
@@ -332,7 +332,7 @@ def gcs(*classes):
 
 # http://code.activestate.com/recipes/577748-calculate-the-mro-of-a-class/
 def mro(*bases):
-    _("""Calculate the Method Resolution Order of bases using the C3 algorithm.
+    """Calculate the Method Resolution Order of bases using the C3 algorithm.
 
     Suppose you intended creating a class K with the given base classes. This
     function returns the MRO which K would have, *excluding* K itself (since
@@ -340,7 +340,7 @@ def mro(*bases):
 
     Another way of looking at this, if you pass a single class K, this will
     return the linearization of K (the MRO of K, *including* itself).
-    """)
+    """
     seqs = [list(C.__mro__) for C in bases] + [list(bases)]
     res = []
     while True:
@@ -440,10 +440,10 @@ def to_none_single_list(x):
 
 
 def reduce_coll(coll):
-    _("""Runction to reduce a collection
+    """Runction to reduce a collection
     delete empty elements
     make unique item lists as single element
-    """)
+    """
     def do_reduce(coll, key, level):
         v = coll[key]
         if is_mapping(v):
@@ -458,7 +458,7 @@ def reduce_coll(coll):
 
 
 def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs):
-    _("""Generic method to go through a complex collection
+    """Generic method to go through a complex collection
     and apply a transformation function 'func' on each element
     func can modify the collection on the fly
 
@@ -467,7 +467,7 @@ def apply_through_collection(coll, func, recursive=True, level=0, **func_kwargs)
         * the key (string for dict or int for sequences)
         * the level of depth in collection
         * it is also given the additional func_kwargs keyword arguments
-    """)
+    """
     if not coll:
         return
     is_map = is_mapping(coll)
@@ -485,12 +485,12 @@ def filter_collection(data,
                       only=(),
                       but=(),
                       recursive=False):
-    _("""
+    """
     Process a collection keeping some/only fields.
 
     :param only: only keys to keep
     :param but: keys to exclude
-    """)
+    """
 
     def _filter_keys(container, keys, keep=True):
         if is_mapping(container):
@@ -518,9 +518,9 @@ def filter_collection(data,
 
 
 def nested_dict_iter(nested, separator='.'):
-    _("""
+    """
     Generator going through a nested dictionary and returning a canonical name / value
-    """)
+    """
     for key, value in nested.items():
         if isinstance(value, Mapping):
             for inner_key, inner_value in nested_dict_iter(value):
@@ -534,13 +534,13 @@ def logging_call(popenargs,
                  stdout_log_level=logging.DEBUG,
                  stderr_log_level=logging.ERROR,
                  **kwargs):
-    _("""
+    """
     Variant of subprocess.call that accepts a logger instead of stdout/stderr,
     and logs stdout messages via logger.debug and stderr messages via
     logger.error.
 
     inspired from code https://gist.github.com/1402841/231d4ae00325892ad30f6d9587446bc55c56dcb6
-    """)
+    """
     _logger = logger or logging.getLogger(__name__)
     out, err = subprocess.Popen(
         popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -555,7 +555,7 @@ def logging_call(popenargs,
 
 
 def grouper( page_size, iterable ):
-    _("""Group iterable by pages of page_size and generate an iterator on pages""")
+    """Group iterable by pages of page_size and generate an iterator on pages"""
     page= []
     for item in iterable:
         page.append( item )
@@ -567,7 +567,7 @@ def grouper( page_size, iterable ):
 
 @contextlib.contextmanager
 def casted_as(instance, cls):
-    _("""Context manager to cast an instance as a parent class""")
+    """Context manager to cast an instance as a parent class"""
     instance_cls = instance.__class__
     if cls not in instance_cls.__mro__:
         raise AttributeError("'%s' is not a parent of '%s'" % (cls, instance))
@@ -577,7 +577,7 @@ def casted_as(instance, cls):
 
 
 def class_casted_as(cls, other):
-    _("""return a class casted to another.""")
+    """return a class casted to another."""
     if other not in cls.__mro__:
         raise AttributeError("'%s' is not a parent of '%s'" % (other, cls))
     # get all attributes of cls not in other mro
@@ -696,7 +696,7 @@ def threadsafe_counter(init_value=1):
 
 
 def split_path(path):
-    _(""" return a path as a list of attributes and key, index""")
+    """ return a path as a list of attributes and key, index"""
     paths = []
     for part in path.split('.'):
         for key in part.split('['):
@@ -706,11 +706,11 @@ def split_path(path):
 
 
 def get_descendant(obj, key_list):
-    _("""
+    """
     Get descendant in an object/dictionary by providing the path as a list of keys
     :param obj: object to iterate
     :param key_list: list of keys
-    """)
+    """
     if is_string(key_list):
         key_list = split_path(key_list)
     k0 = key_list[0]
@@ -724,7 +724,7 @@ def get_descendant(obj, key_list):
 
 
 def topological_sort(data):
-    _(""""Sort a dependency tree """)
+    """"Sort a dependency tree """
     # http://rosettacode.org/wiki/Topological_sort#Python
     from functools import reduce
     if not data:
@@ -746,7 +746,7 @@ def topological_sort(data):
 
 @contextlib.contextmanager
 def working_directory(path):
-    _("""Changes working directory and returns to previous on exit.""")
+    """Changes working directory and returns to previous on exit."""
     prev_cwd = pathlib.Path.cwd()
     os.chdir(path)
     try:
@@ -756,11 +756,11 @@ def working_directory(path):
 
 
 def popen_wrapper(args, stdout_encoding='utf-8'):
-    _("""
+    """
     Friendly wrapper around Popen.
 
     Return stdout output, stderr output, and OS status code.
-    """)
+    """
     from .. import settings
     try:
         p = subprocess.Popen(args, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=os.name != 'nt')

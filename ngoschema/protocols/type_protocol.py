@@ -174,7 +174,7 @@ class TypeProtocol(Serializer):
 
 
 class SchemaMetaclass(type):
-    _("""Metaclass for instrumented classes defined by a schema based on TypeProtocol.
+    """Metaclass for instrumented classes defined by a schema based on TypeProtocol.
 
     :param _id: id of schema to be resolved in loaded schemas using resolve_uri
 
@@ -188,7 +188,7 @@ class SchemaMetaclass(type):
 
     :param _assert_args: if a method documentation is present, its content its parsed to detect attribute types and decorate
     the method with the proper check and conversion (default is True).
-    """)
+    """
 
     def __new__(cls, clsname, bases, attrs):
         from ..managers.type_builder import type_builder

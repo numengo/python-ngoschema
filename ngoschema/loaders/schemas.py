@@ -30,7 +30,7 @@ def _id_of(schema):
 
 
 def load_schema(schema, schemas_store=None):
-    _("""
+    """
     Load a schema to the schema store.
 
     if no schema store is provided, only the internal schema store is filled.
@@ -39,7 +39,7 @@ def load_schema(schema, schemas_store=None):
     :type schema: dict
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
-    """)
+    """
     from ngoschema.resolvers.uri_resolver import UriResolver
     uri = _id_of(schema).rstrip('#')
     if not uri and "title" in schema:
@@ -58,7 +58,7 @@ def load_schema(schema, schemas_store=None):
 
 
 def load_schema_file(schema_path, schemas_store=None):
-    _("""
+    """
     Load a schema from a file to the metaschema store
     and returns the schema dictionary.
 
@@ -67,7 +67,7 @@ def load_schema_file(schema_path, schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     :rtype: dict
-    """)
+    """
     with open(str(schema_path), "rb") as f:
         try:
             schema = json.loads(f.read().decode("utf-8"), object_pairs_hook=collections.OrderedDict)

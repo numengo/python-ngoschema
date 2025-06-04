@@ -20,7 +20,7 @@ TRUE = _True()
 
 
 class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
-    _("""
+    """
     ArrayProtocol is class defined by a json-schema and built by TypeBuilder.build_array_protocol.
 
     The class is built with a list or a unique item type (which can be a Literal or a subclass of
@@ -28,7 +28,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
 
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
-    """)
+    """
     _serializer = ArraySerializer
     _deserializer = ArrayDeserializer
     _collection = Array

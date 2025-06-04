@@ -60,12 +60,12 @@ class GenericModuleFileLoader(Registry):
                                         serializers=serializers)
 
     def find_one(self, name):
-        _("""
+        """
         find first name/pattern in loader's pathlist (module as "{module}/")
 
         :param name: path or pattern
         :rtype: path
-        """)
+        """
         name = name.replace('\\', '/')
         if '/' in name:
             module, path = name.split('/', 1)
@@ -95,7 +95,7 @@ locale_module_loader = GenericModuleFileLoader('config/locale')
 
 
 def load_module_schemas(module="ngoschema", schemas_store=None):
-    _("""
+    """
     Load the schemas of a module that are in the folder module
     as $(MODULEPATH)/schemas/*.json and add them with load_chema_file.
     User can provide an existing schema store to fill, or a new one
@@ -107,7 +107,7 @@ def load_module_schemas(module="ngoschema", schemas_store=None):
     :param schemas_store: optional schemas_store to fill
     :type schemas_store: dict
     :rtype: dict
-    """)
+    """
     from ngoschema.resolvers.uri_resolver import UriResolver
     schema_folder = schemas_module_loader.register(module)
 

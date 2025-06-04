@@ -133,9 +133,17 @@ class PropertyDescriptor:
             if key in vs:
                 vs.pop(vs.index(key))
 
+    def has_default(self, obj=None):
+        return self.ptype.has_default()
+
+    def default(self, obj=None):
+        if self.ptype.has_default():
+            default = self.ptype.default(evaluate=True, context=obj._context if obj else None)
+            return default
+
 
 class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableMapping):
-    _("""
+    """
     ObjectProtocol is class defined by a json-schema and built by TypeBuilder.build_object_protocol.
     The schema is specified directly by a protected attribute _schema or by providing its id using a protected
     attribute _id to be resolved in loaded schemas.
@@ -149,7 +157,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
 
     If lazy loading is enabled, data is only constructed and validated on first read access. If not, validation is done
     when setting the item.
-    """)
+    """
     _serializer = ObjectSerializer
     _deserializer = ObjectDeserializer
     _collection = Object
@@ -319,13 +327,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         if s1 != s2:
             return False
         for k in list(s1):
-            v = other[k]
-            v2 = self[k]
-            if isinstance(v2, CollectionProtocol):
-                if not v2.__class__.__eq__(v2, v, parents=parents+(self, )):
+            if k in self._propertiesAllowed.difference(self._notValidated).difference(self._notSerialized):
+                v = other[k]
+                v2 = self[k]
+                if isinstance(v2, CollectionProtocol):
+                    if not v2.__class__.__eq__(v2, v, parents=parents+(self, )):
+                        return False
+                elif v2 != v:
                     return False
-            elif v2 != v:
-                return False
         return True
 
     def copy(self, _parents=tuple()):
@@ -457,7 +466,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             return ss[0] if len(ss) else None
         if self._propertiesAdditional and name in self._data:
             self._itemsInputs[raw] = self._items_inputs_evaluate(name)
-            self._dataAdditional[raw] = v = op(self[name])
+            self._dataAdditional[raw] = v = op(self._data[name])
             return v
         if self._attributeByName:
             try:
@@ -655,6 +664,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         serializer = self if not isinstance(value, Serializer) else value.__class__
         context = getattr(value, '_context', self._context)
         attr_prefix = opts.get('attr_prefix', self._attrPrefix)
+        opts.setdefault('context', context)
         if not isinstance(value, Mapping):  # hack for attributes initialized with fake objects
             value = {str(value): {}}
         ret = self._collection._serialize(serializer, value, excludes=excludes, only=only, **opts)

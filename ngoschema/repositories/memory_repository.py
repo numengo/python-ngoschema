@@ -111,7 +111,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
 
     @staticmethod
     def _commit(self, value, save=False, **opts):
-        _("""Optionally load the value (at least validate it) and add it to content """)
+        """Optionally load the value (at least validate it) and add it to content """
         from ngoschema.models.instances import Entity
         many = opts.get('many', False)
         opts.setdefault('pyType', self._instanceClass)

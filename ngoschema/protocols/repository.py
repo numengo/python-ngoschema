@@ -47,7 +47,7 @@ class Repository(Saver):
 
     @staticmethod
     def _commit(self, value, many=False, save=True, **opts):
-        _("""Optionally load the value (at least validate it) and add it to content """)
+        """Optionally load the value (at least validate it) and add it to content """
         from ..models.instances import Entity, Instance
         value = self._saver._save(self, value, many=many, **opts) if save else value
         for v in (value if many else [value]):
@@ -61,7 +61,7 @@ class Repository(Saver):
         return self._content
 
     def dump(self, **opts):
-        _("""Serialize repository content.""")
+        """Serialize repository content."""
         return self._saver._save(self, self._content, **opts)
 
     def __call__(self, value, **opts):

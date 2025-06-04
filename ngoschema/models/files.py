@@ -69,11 +69,11 @@ class Folder(with_metaclass(SchemaMetaclass)):
 
 
 class File(with_metaclass(SchemaMetaclass, FileSaver)):
-    _("""
+    """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
-    """)
+    """
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/File'
     _lazyLoading = True
 
@@ -144,11 +144,11 @@ class UriFile(with_metaclass(SchemaMetaclass, UriResolver)):
 
 
 class Document(with_metaclass(SchemaMetaclass, UriFile)):
-    _("""
+    """
     Document model which can be loaded from a filepath or a URL.
     Document can be loaded in memory, and deserialized (parsed) using provided
     deserializers or using the deserializers registered in memory
-    """)
+    """
     _id = 'https://numengo.org/ngoschema#/$defs/files/$defs/Document'
     #_content = None
     #_contentRaw = None
