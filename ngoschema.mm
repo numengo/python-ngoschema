@@ -249,7 +249,7 @@
 </node>
 </node>
 </node>
-<node TEXT="protocols" ID="ID_622376127" CREATED="1601748104865" MODIFIED="1601998053900">
+<node TEXT="protocols" FOLDED="true" ID="ID_622376127" CREATED="1601748104865" MODIFIED="1601998053900">
 <node TEXT="Les interfaces s enchainent, et filtrent les options" ID="ID_1716481952" CREATED="1602197647280" MODIFIED="1605117207780">
 <icon BUILTIN="button_cancel"/>
 <node TEXT="defaults" ID="ID_1143282703" CREATED="1602197781338" MODIFIED="1602197786169">
@@ -2417,7 +2417,7 @@
 </node>
 </node>
 </node>
-<node TEXT="serializers" FOLDED="true" ID="ID_552093017" CREATED="1601664177591" MODIFIED="1601666135742">
+<node TEXT="serializers" ID="ID_552093017" CREATED="1601664177591" MODIFIED="1601666135742">
 <node TEXT="description" ID="ID_892547121" CREATED="1601954284787" MODIFIED="1601954846268">
 <icon BUILTIN="bookmark"/>
 <node TEXT="Serializers implements the interface that formats objects in a string (for ex json, xml or yaml)." ID="ID_271564497" CREATED="1601954291499" MODIFIED="1650224068322"/>

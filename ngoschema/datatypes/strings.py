@@ -95,7 +95,10 @@ class Pattern(String):
     @staticmethod
     def _inputs(self, value, **opts):
         from ngoschema.utils.jinja2 import get_jinja2_variables
-        return set(get_jinja2_variables(value))
+        try:
+            return set(get_jinja2_variables(value))
+        except Exception as er:
+            return ConversionError('Problem with inputs in string pattern "%s": %s' % (value, str(er)))
 
 
 @register_type('html')

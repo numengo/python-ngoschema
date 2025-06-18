@@ -104,7 +104,7 @@ class Collection(Type, CollectionSerializer):
                     try:
                         ret[k] = t._validate(t, value[k], items=True, no_defaults=no_defaults, **opts)
                     except Exception as er:
-                        msg = f"Errpr while validating item '{k}' of type {t} in {self.__class__}: {str(er)}"
+                        msg = f"Error while validating item '{k}' of type {t} in {self.__class__}: {str(er)}"
                         raise ValidationError(msg)
             #for k, t in self._items_types(self, value):
             #    if self._is_included(k, value, no_defaults=no_defaults, **opts):
@@ -122,7 +122,7 @@ class Collection(Type, CollectionSerializer):
                     try:
                         value[k] = t._evaluate(t, value[k], convert=False, validate=validate, **opts)
                     except Exception as er:
-                        msg = f"Errpr while evaluating item '{k}' of type {t} in {self.__class__}: {str(er)}"
+                        msg = f"Error while evaluating item '{k}' of type {t} in {self.__class__}: {str(er)}"
                         raise InvalidValue(msg)
         return Type._evaluate(self, value, convert=False, validate=validate, **opts)
 
