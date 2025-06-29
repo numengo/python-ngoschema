@@ -49,7 +49,7 @@ class TypeProtocol(Serializer):
         clsname = cname.split('.')[-1]
         description = schema.get('description')
         comment = schema.get('$comment')
-        title = schema.get('title', clsname)
+        title = schema.get('title')
         extra_bases = tuple(type_builder.load(scope(e, id)) for e in schema.get('extends', []))
         # extract type and ref from schema and add the corresponding python types in bases
         if ref:
@@ -93,10 +93,10 @@ class TypeProtocol(Serializer):
         elif enum:
             attrs['_default'] = enum[0]
         attrs['_id'] = id
-        attrs['_title'] = title  # _(title) ??
-        attrs.setdefault('__doc__', _(description or ''))
-        attrs['_description'] = _(description)
-        attrs['_comment'] = _(comment)
+        attrs['_title'] = _(title) if title else None
+        attrs.setdefault('__doc__', description or '')
+        attrs['_description'] = _(description) if description else None
+        attrs['_comment'] = _(comment) if comment else None
         attrs['_logger'] = logging.getLogger(cname)
         attrs['_jsValidator'] = DefaultValidator(schema, resolver=UriResolver.create(uri=id, schema=schema))
         attrs['_pbases'] = [b for b in bases + extra_bases if isinstance(b, type) and issubclass(b, TypeProtocol)]
@@ -149,8 +149,8 @@ class TypeProtocol(Serializer):
         return qn + cls.__name__
 
     @classmethod
-    def dosctring(cls):
-        doc = f':param {cls.__name__}:\n:type {cls._type}:'
+    def docstring(cls):
+        return f':param {cls.__name__}:' + (cls._description if cls._description else '') + '\n:type {cls._type}:'
 
     def __repr__(self):
         s = ', '.join(['%s=%r' %(k, v) for k, v in self._repr_schema(self).items()])

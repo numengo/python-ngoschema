@@ -75,15 +75,18 @@ class FileLoader(Loader):
         return self._load_file(self, filepath, **opts)
 
     #@classmethod
-    def open_file(self, filepath, **opts):
+    def open_file(self, filepath=None, **opts):
+        filepath = filepath or self._filepath
         return self._open_file(self, filepath, **opts)
 
     #@classmethod
-    def read_file(self, filepath, **opts):
+    def read_file(self, filepath=None, **opts):
+        filepath = filepath or self._filepath
         return self._read_file(self, filepath, **opts)
 
     #@classmethod
-    def load_file(cls, filepath, **opts):
+    def load_file(cls, filepath=None, **opts):
+        filepath = filepath or cls._filepath
         return cls._load_file(cls, filepath, **opts)
 
     #@classmethod

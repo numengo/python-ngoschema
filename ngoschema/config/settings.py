@@ -3,13 +3,13 @@ CLI_CONTEXT_FILENAME = '.numengorc'
 # https://www.coolgenerator.com/ascii-text-generator
 # font: Shimrod
 CLI_BANNER = """
-                                ______       
-                               / _____)      
- ____  _   _ ____   ____ ____ | /  ___  ___  
-|  _ \| | | |    \ / _  )  _ \| | (___)/ _ \ 
+                                ______
+                               / _____)
+ ____  _   _ ____   ____ ____ | /  ___  ___
+|  _ \| | | |    \ / _  )  _ \| | (___)/ _ \\
 | | | | |_| | | | ( (/ /| | | | \____/| |_| |
-|_| |_|\____|_|_|_|\____)_| |_|\_____/ \___/ 
-                                               
+|_| |_|\____|_|_|_|\____)_| |_|\_____/ \___/
+
 """
 
 SIMPLE_SETTINGS = {
@@ -59,6 +59,31 @@ DEFAULT_CONTEXT = {
     'False': False,
     'None': None,
 }
+
+
+LOCALES_BUILD_CONFIGURATION = {
+    "domains": [
+        {
+            "domain_name": "ngoschema",
+            "sources": [
+                {"source_type": "sourcefile"},
+                {"source_type": "json", "includes": ["schemas"]},
+                {"source_type": "inspect", "symbols": ["ngoschema.protocols",
+                                                       "ngoschema.models.metadata",
+                                                       "ngoschema.models.files",
+                                                       "ngoschema.models.instances"]},
+            ],
+            "options": {
+                "no_wrap": False,
+                "no_location": False,
+                "no_obsolete": False,
+                "verbosity": 1,
+                "process_all": False,
+            },
+        }
+    ]
+}
+
 
 # resolver
 URI_ID = '$id'

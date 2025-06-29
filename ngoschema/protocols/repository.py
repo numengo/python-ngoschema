@@ -7,6 +7,7 @@ import gettext
 from .validator import Validator
 from .serializer import Serializer
 from .loader import Loader, Saver
+from .. import InvalidOperation
 from ..session import default_session
 from ..datatypes.object import Object
 from ..registries import repositories_registry
@@ -30,11 +31,45 @@ class Repository(Saver):
         if self._many:
             self._content = []
 
+    def load(self, value, **opts):
+        return self._load(self, value, **opts)
+
+    # NEW C.ROMAN
+    @staticmethod
+    def _load(self, value, many=False, **opts):
+        if self._many:
+            from ..models.instances import Entity
+            values = list(value) if many else [value]
+            self._content = values
+            for v in values:
+                if isinstance(v, Entity):
+                    v._repository = self
+        else:
+            self._content = value
+        return self._content
+
+    def add(self, value, **opts):
+        return self._add(self, value, **opts)
+
+    @staticmethod
+    def _add(self, value, **opts):
+        if self._many:
+            from ..models.instances import Entity
+            values = [value]
+            self._content += values
+            for v in values:
+                if isinstance(v, Entity):
+                    v._repository = self
+        else:
+            raise InvalidOperation('trying to add element on a repository with many=False, use load instead.')
+        return value
+
     @staticmethod
     def _load_file(self, filepath, **opts):
         opts.setdefault('many', self._many)
-        self._content = self._loader._load_file(self, filepath, **opts)
-        return self._content
+        file_data = self._loader._load_file(self, filepath, **opts)
+        return self._load(self, file_data, **opts)
+        #return file_data
 
     @property
     def session(self):

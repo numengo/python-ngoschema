@@ -134,6 +134,9 @@ def parse_docstring(docstring):
                     }
                     for name, doc in PARAM_REGEX.findall(params_returns_desc)
                 }
+                for k, v in arguments.items():
+                    if not v['description']:
+                        del v['description']
                 types = TYPE_REGEX.findall(params_returns_desc)
                 for name, typ in types:
                     add2dict(arguments, name, {"type": typ.strip()})

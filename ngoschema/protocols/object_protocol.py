@@ -63,7 +63,7 @@ def split_cname(cname):
 class PropertyDescriptor:
 
     def __init__(self, pname, ptype, fget=None, fset=None, fdel=None, desc=None):
-        self.__doc__ = desc or pname
+        self.__doc__ = desc
         self.pname = pname
         self.ptype = ptype
         self.fget = fget
@@ -719,13 +719,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         return self._str
 
     @classmethod
-    def dosctring(cls, arguments=True, methods=True, methods_inherited=True):
+    def docstring(cls, arguments=True, methods=True, methods_inherited=True):
         txt = cls.__doc__
         title = cls._title
+        name = cls.__name__
         description = cls._description
         local_properties = cls._propertiesLocal
 
-        doc = f'{title}\n\n{description or ""}\n\n'
+        doc = f'{title or name}\n\n{description or ""}\n\n'
         if local_properties:
             doc += _('ARGUMENTS:') + '\n'
             for a, p in local_properties.items():
@@ -742,7 +743,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                             items = p._items if p._itemsIsList else [p._items]
                             items = [getattr(i, '__name__', i._schema.get('type')) for i in items]
                             pt += f'[{", ".join(items)}]'
-                doc += f'\t:param {a}: {_(desc)}\n'
+                doc += f'\t:param {a}: {desc or ""}\n'
                 doc += f'\t:type {a}: {pt}\n'
             if cls._pbases:
                 doc += _('Inherits from:') + '\n'
@@ -816,7 +817,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         abstract = schema.get('abstract', False)
         description = schema.get('description')
         comment = schema.get('$comment')
-        title = schema.get('title', clsname)
+        title = schema.get('title')
 
 
         bases_extended = [type_builder.load(scope(e, id)) for e in schema.get('extends', [])]
@@ -1095,7 +1096,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     break
 
         # create documentation
-        doc = f'{title}\n\n{description or ""}\n\n'
+        doc = f'{title or clsname}\n\n{description or ""}\n\n'
         if local_properties:
             doc += _('Arguments:') + '\n'
             for a, p in local_properties.items():
@@ -1112,7 +1113,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                             items = p._items if p._itemsIsList else [p._items]
                             items = [getattr(i, '__name__', i._schema.get('type')) for i in items]
                             pt += f'[{", ".join(items)}]'
-                doc += f'\t:param {a}: {_(desc)}\n'
+                doc += f'\t:param {a}: {desc or ""}\n'
                 doc += f'\t:type {a}: {pt}\n'
             if pbases:
                 doc += _('Inherits from:') + '\n'
@@ -1135,10 +1136,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                 del schema_flattened[f]
 
         # set the attributes
-        attrs['_title'] = _(title)
+        attrs['_title'] = _(title) if title else None
         attrs['__doc__'] = doc.strip()
-        attrs['_description'] = _(description)
-        attrs['_comment'] = _(comment)
+        attrs['_description'] = _(description) if description else None
+        attrs['_comment'] = _(comment) if comment else None
         attrs['_id'] = id
         attrs['_extends'] = extends
         attrs['_extendsProxy'] = extends_proxies_flattened

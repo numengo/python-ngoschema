@@ -7,6 +7,7 @@ from collections import OrderedDict
 from collections.abc import Sequence
 import gettext
 
+from .. import InvalidOperation
 from ..protocols.loader import Loader, Saver
 from ..protocols.repository import Repository
 from ..registries import repositories_registry
@@ -20,12 +21,11 @@ _ = gettext.gettext
 class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
     # catalog is used for o(1) access rather than o(n) if we got through the array
-    _catalog = OrderedDict
+    _catalog_type = OrderedDict
     _many = True
 
     def __init__(self, value=None, meta_opts=None, many=None, **opts):
         from ..datatypes import Array
-        #from ..protocols.array_protocol import ArrayProtocol
         # hack to initialize ObjectProtocol with _many value (if repo not defined with a schema like MapRepository)
         many = many if many is not None else self._many
         # items=False to avoid validation at this point (_content not initialized)
@@ -41,8 +41,11 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
         meta_opts.setdefault('session', self.session)
         meta_opts.setdefault('many', self.many)
         Repository.__init__(self, **(meta_opts or {}))
-        self._content = Array(items=self.instanceClass, maxItems=1 if not many else None)(value)
-        self._catalog = self._catalog({self._get_idk(self, v): v for v in self._content})
+        self._catalog = self._catalog_type()
+        self._content = Array(items=self._instanceClass, maxItems=1 if not many else None)(value, evaluate=False)
+        if many and self._instanceClass and self._content:
+            for v in self._content:
+                self._catalog[self._get_idk(self, v)] = v
 
     # overload this methods to avoid conflicts with inherited Serializers basis
     @staticmethod
@@ -53,14 +56,44 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     def _serialize(self, value, **opts):
         return ObjectProtocol._serialize(self, value, **opts)
 
+    # NEW C.ROMAN
     @staticmethod
-    def _load_file(self, filepath, **opts):
-        Repository._load_file(self, filepath, **opts)
+    def _load(self, value, many=True, evaluate=False, **opts):
+        instance_class = self._instanceClass
         if self._many:
+            from ..models.instances import Entity
+            from ..datatypes import Array
+            values = list(value) if many else [value]
+            self._content = Array(items=instance_class, maxItems=1 if not many else None)(values, evaluate=evaluate)
+            if instance_class:
+                for v in values:
+                    self._catalog[self._get_idk(self, v)] = v
+                    if isinstance(v, instance_class):
+                        v._repository = self
+        else:
+            self._content = instance_class(value) if instance_class else value
+        return self._content
+
+    @staticmethod
+    def _add(self, value, **opts):
+        if self._many:
+            from ..models.instances import Entity
+            self._content.append(value)
+            if isinstance(value, Entity):
+                value._repository = self
+        else:
+            raise InvalidOperation('trying to add element on a repository with many=False, use load instead.')
+        return value
+
+    @staticmethod
+    def _load_file(self, filepath, load_instances=True, **opts):
+        opts.setdefault('deserialize_instances', load_instances)
+        file_data = Repository._load_file(self, filepath, load_instances=load_instances, **opts)
+        if self._many and self._instanceClass:
             self._catalog.update({self._get_idk(self, v): v for v in self._content})
             self._logger.info(f'LOAD %s items', len(self._content))
         self._items_touch('content')
-        return self._content
+        return file_data
 
     def get_content(self):
         return self._content
@@ -97,8 +130,9 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
         pkc = identity_keys if len(identity_keys) > 1 else identity_keys[0]
         ret = self._catalog[pkc]
         # instanciate object if not done already
-        if ret is not None and not isinstance(ret, self._instanceClass):
+        if ret is not None and self._instanceClass and not isinstance(ret, self._instanceClass):
             ret = self._instanceClass(ret)
+            ret._repository = self
         return ret
 
     @staticmethod
@@ -170,7 +204,7 @@ class DataframeRepository(with_metaclass(SchemaMetaclass)):
 
     def get_by_id(self, *identity_keys):
         row = self.dataframe.loc[identity_keys]
-        ic = self.instanceClass
+        ic = self._instanceClass
         if ic:
             pks = {pk: ik for pk, ik in zip(ic._primaryKeys, identity_keys)}
             return ic(**pks, **row, session=self.session)

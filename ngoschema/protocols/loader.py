@@ -30,6 +30,7 @@ class Loader(Deserializer):
     def _load(self, value, many=False, deserialize_instances=True, load_instances=True, instance_class=None, **opts):
         from ..datatypes import Symbol, Array
         instance_class = self.set_instanceClass(instance_class)
+        load_instances = load_instances and (self._instanceClass is not None)
         if load_instances and instance_class is None:
             raise ValueError('instance class is not defined')
         if many:

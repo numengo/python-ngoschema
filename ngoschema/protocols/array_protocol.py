@@ -113,7 +113,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         logger = logging.getLogger(cname)
         description = schema.get('description')
         comment = schema.get('$comment')
-        title = schema.get('title', clsname)
+        title = schema.get('title')
         items = schema.get('items')
         items_list = False
         lz = schema.get('lazyLoading', None)
@@ -135,10 +135,10 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
         if lz is not None:
             attrs.setdefault('_lazyLoading', lz)
         attrs['_items'] = items
-        attrs['_title'] = title
-        attrs['__doc__'] = description
-        attrs['_description'] = description
-        attrs['_comment'] = comment
+        attrs['_title'] = _(title) if title else None
+        attrs['__doc__'] = _(description) if description else None
+        attrs['_description'] = _(description) if description else None
+        attrs['_comment'] = _(comment) if comment else None
         attrs['_minItems'] = schema.get('minItems', Array._minItems)
         attrs['_maxItems'] = schema.get('maxItems', Array._maxItems)
         attrs['_uniqueItems'] = schema.get('uniqueItems', Array._uniqueItems)
@@ -245,7 +245,7 @@ class ArrayProtocol(CollectionProtocol, Array, MutableSequence):
                 return True
         from ..models.instances import Entity, Instance
         items = self._items
-        if items and not self._itemsIsList and issubclass(items, Instance):
+        if items and items is not TRUE and not self._itemsIsList and issubclass(items, Instance):
             pks = items._primaryKeys if issubclass(items, Entity) else ('name', )
             iks = to_list(value)
             if len(pks) != len(iks):

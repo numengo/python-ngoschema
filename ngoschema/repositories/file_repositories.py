@@ -53,7 +53,9 @@ class FileRepository(with_metaclass(SchemaMetaclass, MemoryRepository, FileSaver
         # FileSaver.__init__(self, **opts)  # Saver already initialized in Repository, only misses filepath
         FileSaver.set_filepath(self, opts.get('filepath'))
         # to initialize the encoder
-        meta_opts = meta_opts or opts
+        common_opts = set(self._encoder._properties.keys()).intersection(self._properties.keys())
+        meta_opts = meta_opts or {}
+        meta_opts.update({k: self[k] for k in common_opts if self[k]})
         meta_opts.setdefault('instance_class', self._instanceClass)
         self._encoder.__init__(self, **meta_opts)
 

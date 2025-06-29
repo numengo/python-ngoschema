@@ -29,6 +29,7 @@ _jinja2_globals['enumerate'] = enumerate
 _jinja2_globals['len'] = len
 _jinja2_globals['str'] = str
 _jinja2_globals['list'] = list
+_jinja2_globals['any'] = any
 _jinja2_globals['zip'] = zip
 
 
@@ -197,8 +198,13 @@ def rsplit(string, sep=',', maxsplit=-1):
 
 
 @filters_registry.register()
-def last(any):
-    return any[-1]
+def last(iterable):
+    return iterable[-1]
+
+_any = any
+@filters_registry.register()
+def any(iterable):
+    return _any(iterable)
 
 
 @filters_registry.register()
@@ -208,7 +214,7 @@ def gettext(message):
 
 @filters_registry.register()
 def has_alpha(message):
-    return any([m.isalpha() for m in message])
+    return _any([m.isalpha() for m in message])
 
 
 @filters_registry.register()
