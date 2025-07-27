@@ -22,6 +22,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     _id = 'https://numengo.org/ngoschema#/$defs/repositories/$defs/MemoryRepository'
     # catalog is used for o(1) access rather than o(n) if we got through the array
     _catalog_type = OrderedDict
+    _catalog = _catalog_type()
     _many = True
 
     def __init__(self, value=None, meta_opts=None, many=None, **opts):
@@ -31,7 +32,6 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
         # items=False to avoid validation at this point (_content not initialized)
         ObjectProtocol.__init__(self, value=None, items=False, many=many, **opts)
         meta_opts = meta_opts or {}
-        meta_opts.setdefault('filepath', self.filepath)
         meta_opts.setdefault('instanceClass', self.instanceClass)
         meta_opts.setdefault('saver', self.saver)
         meta_opts.setdefault('loader', self.loader)
@@ -65,6 +65,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
             from ..datatypes import Array
             values = list(value) if many else [value]
             self._content = Array(items=instance_class, maxItems=1 if not many else None)(values, evaluate=evaluate)
+            self._logger.info(f'LOAD %s items', len(self._content))
             if instance_class:
                 for v in values:
                     self._catalog[self._get_idk(self, v)] = v
@@ -72,6 +73,7 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
                         v._repository = self
         else:
             self._content = instance_class(value) if instance_class else value
+        self._items_touch('content')
         return self._content
 
     @staticmethod
@@ -89,10 +91,9 @@ class MemoryRepository(with_metaclass(SchemaMetaclass, Repository)):
     def _load_file(self, filepath, load_instances=True, **opts):
         opts.setdefault('deserialize_instances', load_instances)
         file_data = Repository._load_file(self, filepath, load_instances=load_instances, **opts)
-        if self._many and self._instanceClass:
-            self._catalog.update({self._get_idk(self, v): v for v in self._content})
-            self._logger.info(f'LOAD %s items', len(self._content))
-        self._items_touch('content')
+        return MemoryRepository._load(self, file_data, many=self._many, evaluate=load_instances)
+        #if self._many and self._instanceClass:
+        #    self._catalog.update({self._get_idk(self, v): v for v in self._content})
         return file_data
 
     def get_content(self):

@@ -94,6 +94,8 @@ class Validator(Converter, Context):
 
     @classmethod
     def check(cls, value, convert=False, validate=False, **opts):
+        if value is None:
+            return False
         try:
             value = cls._convert(cls, value, validate=False, items=False, **opts) if convert else value
             value = cls._check(cls, value, **opts)
@@ -102,7 +104,7 @@ class Validator(Converter, Context):
         except Exception as er:
             p = False
             if p:
-                logger.error(er, exc_info=True)
+                logger.error(str(er), exc_info=True)
             return False
 
     @classmethod

@@ -93,7 +93,7 @@ class PropertyDescriptor:
             # value can change in setter (??really ???)
             return obj._dataValidated[key]
         except Exception as er:
-            obj._logger.error(str(er) + f' in {obj.__class__.__name__}', exc_info=True)
+            obj._logger.error(str(er), exc_info=True)
             #obj._logger.error(er, exc_info=True)
             raise
             #etype, value, trace = sys.exc_info()
@@ -112,7 +112,7 @@ class PropertyDescriptor:
                 if self.fset:
                     self.fset(obj, obj._dataValidated[key])
         except Exception as er:
-            obj._logger.error(er, exc_info=True)
+            obj._logger.error(str(er), exc_info=True)
             raise
             #etype, value, trace = sys.exc_info()
             #raise six.reraise(AttributeError, value, trace)
@@ -472,7 +472,7 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
             try:
                 return op(self.resolve_cname([name]))
             except Exception as er:
-                self._logger.error(er, exc_info=True)
+                self._logger.error(str(er), exc_info=True)
                 raise
         if not self._propertiesAdditional:
             # additional properties not allowed, raise exception
@@ -573,12 +573,13 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         op = lambda x: neg(x) if key in self._aliasesNegated else x
         raw, trans = self._properties_raw_trans(key)
         if raw not in self._data:
-            raise KeyError(key)
+            raise KeyError(f'{self.__class__.__name__}:{key}')
         desc = self._propertiesDescriptor.get(raw)
         if desc:
             return op(desc.__get__(self))
         if raw in self._supersededBy:
-            ss = self[self._supersededBy[raw]]
+            superseded_by = self._supersededBy[raw]
+            ss = self[superseded_by]
             return ss[0] if len(ss) else None
         if self._lazyLoading or self._is_outdated(key):
             self._itemsInputs[key] = self._items_inputs_evaluate(key)
@@ -920,10 +921,10 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
         # gathers superseded properties (local and inherited)
         supersededBy = ChainMap({v['supersedes']: k for k, v in schema.get('properties', {}).items()
                                  if is_mapping(v) and 'supersedes' in v},
-                                *[b._supersededBy for b in pbases])
+                                *[b._supersededBy for b in pbases if b._supersededBy])
         inversesOf = ChainMap({v['inverseOf']: k for k, v in schema.get('properties', {}).items()
                                if is_mapping(v) and 'inverseOf' in v},
-                                *[b._inversesOf for b in pbases])
+                                *[b._inversesOf for b in pbases if b._inversesOf])
         redefined_properties = OrderedDict()
         for i, s in zip(not_ready_yet, not_ready_yet_sch):
             for k, v in s.get('properties', {}).items():
@@ -1035,7 +1036,14 @@ class ObjectProtocol(ObjectProtocolContext, CollectionProtocol, Object, MutableM
                     #    deserialize=v = {list: 2} [OrderedDict([('name', 'callback'), ('_type', 'CallbackQuery'), ('required', True)]), OrderedDict([('name', 'dialog_manager'), ('_type', 'DialogManager')])]False, no_defaults=True, raw_literals=True)
                     dsv = ptype.deserialize(attr, evaluate=False, items=False, raw_literals=True)
                     v = ptype.serialize(dsv, deserialize=False, no_defaults=True, raw_literals=True)
-                    extra_schema_properties[pname] = dict(ptype._schema)
+                    sch = dict(ptype._schema)
+                    ptype_id =  ptype._id.split('#')[0] if ptype._id else None
+                    if ptype_id and ptype_id != id.split('#')[0]:
+                        if '$ref' in sch and not sch['$ref'].split('#')[0]:
+                            sch['$ref'] = ptype_id + sch['$ref']
+                        if '$ref' in sch.get('items', {}) and not sch['items']['$ref'].split('#')[0]:
+                            sch['items']['$ref'] = ptype_id + sch['items']['$ref']
+                    extra_schema_properties[pname] = sch
                     extra_schema_properties[pname]['default'] = v
                     has_default.add(pname)
                     #read_only.add(pname)  # as defined in schema attributes or hardcoded

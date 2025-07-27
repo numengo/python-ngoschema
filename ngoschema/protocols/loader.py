@@ -12,7 +12,7 @@ class Loader(Deserializer):
     def __init__(self, deserializer=None, instance_class=None, instanceClass=None, **opts):
         instance_class = self.set_instanceClass(instance_class=instance_class or instanceClass)
         opts.setdefault('instance_class', instance_class)
-        Deserializer.__init__(self, **opts)
+        # Deserializer.__init__(self, **opts) # done with self._deserializer.__init__(self, **opts)
         self._deserializer = deserializer or self._deserializer
         self._deserializer.__init__(self, **opts)
 
@@ -30,17 +30,17 @@ class Loader(Deserializer):
     def _load(self, value, many=False, deserialize_instances=True, load_instances=True, instance_class=None, **opts):
         from ..datatypes import Symbol, Array
         instance_class = self.set_instanceClass(instance_class)
-        load_instances = load_instances and (self._instanceClass is not None)
+        load_instances = load_instances and (instance_class is not None)
         if load_instances and instance_class is None:
             raise ValueError('instance class is not defined')
         if many:
             value = Array.deserialize(value, split_string=True)
             value = [self._deserializer._deserialize(self, v, evaluate=False, **opts) if deserialize_instances else v
                      for v in value]
-            return [instance_class(d, **opts) if load_instances else d for d in value]
+            return [instance_class(d, context=self._context, **opts) if load_instances else d for d in value]
         else:
             value = self._deserializer._deserialize(self, value, evaluate=False, **opts) if deserialize_instances else value
-            return instance_class(value, **opts) if load_instances else value
+            return instance_class(value, context=self._context, **opts) if load_instances else value
 
     def __call__(self, value, **opts):
         opts['context'] = opts['context'] if 'context' in opts else self._create_context(self, **opts)
@@ -58,9 +58,9 @@ class Saver(Serializer, Loader):
     _loader = Loader
 
     def __init__(self, serializer=None, loader=None, **opts):
-        Loader.__init__(self, **opts)
+        # Loader.__init__(self, **opts) # done with self._loader.__init__(self, **opts)
         opts.setdefault('instance_class', self._instanceClass)
-        Serializer.__init__(self, **opts)
+        # Serializer.__init__(self, **opts) done with self._serializer.__init__(self, **opts)
         self._loader = loader or self._loader
         self._loader.__init__(self, **opts)
         self._serializer = serializer or self._serializer

@@ -211,7 +211,8 @@ class Object(Collection, ObjectSerializer):
         return dpath.merge(self, value, **opts)
 
     @staticmethod
-    def _null(self, value, items=False, no_defaults=False, **opts):
+    def _null(self, value, items=False, no_defaults=True, **opts):
+        # we force no_default to False in call to print_order, we just need the print order
         # need to call ._collection._print_order to avoid excluding notSerialized
         if not isinstance(value, Mapping):   # hack for attributes initialized with fake objects
             value = {str(value): {}}
@@ -263,10 +264,10 @@ class Object(Collection, ObjectSerializer):
         for k in ObjectSerializer._print_order(self, value, no_defaults=no_defaults, **opts):
             if no_defaults:
                 t = self._items_type(self, k)
-                v = value[k]
                 if t._has_default(t):
                     d = t.default(context=context, raw_literals=True)
                     d = t(d, context=context, raw_literals=True)
+                    v = value[k]
                     v = neg(v) if k in self._aliasesNegated else v
                     #if t.is_primitive():
                     #    #d = t.serialize(d, raw_literals=True)

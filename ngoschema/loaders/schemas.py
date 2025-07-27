@@ -75,5 +75,5 @@ def load_schema_file(schema_path, schemas_store=None):
             return load_schema(schema, schemas_store)
         except Exception as er:
             logger.error(schema_path)
-            logger.error(er, exc_info=True)
+            logger.error(str(er), exc_info=True)
             raise

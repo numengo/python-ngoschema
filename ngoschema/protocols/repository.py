@@ -23,7 +23,7 @@ class Repository(Saver):
     def __init__(self, saver=None, session=None, **opts):
         from ..datatypes import Symbol, Array
         from ..protocols.array_protocol import ArrayProtocol
-        Saver.__init__(self, **opts)
+        # Saver.__init__(self, **opts) # done with line self._saver.__init__(self, **opts)
         self._saver = saver or self._saver
         self._saver.__init__(self, **opts)
         self._session = session or self._session
@@ -67,8 +67,10 @@ class Repository(Saver):
     @staticmethod
     def _load_file(self, filepath, **opts):
         opts.setdefault('many', self._many)
+        return self._loader._load_file(self, filepath, **opts)
+
         file_data = self._loader._load_file(self, filepath, **opts)
-        return self._load(self, file_data, **opts)
+        return self._loader._load(self, file_data, **opts)
         #return file_data
 
     @property

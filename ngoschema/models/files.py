@@ -183,7 +183,7 @@ class Document(with_metaclass(SchemaMetaclass, UriFile)):
             try:
                 return self._encoder._deserialize(self, self.contentRaw)
             except Exception as er:
-                self._logger.error(er, exc_info=True)
+                self._logger.error(str(er), exc_info=True)
 
     def _serialize(self, value, **opts):
         self._encoder._serialize(self, value, **opts)

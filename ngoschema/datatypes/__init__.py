@@ -10,6 +10,7 @@ from .symbols import *
 from .array import *
 #from .foreign_key import *
 from .object import *
+from .geo_location import *
 
 __all__ = [
     'Null',
@@ -58,4 +59,6 @@ __all__ = [
     #'Ref',
     #'ForeignKey',
     #'CanonicalName',
+    # geo_location
+    'GeoLocation',
 ]

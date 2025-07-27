@@ -166,6 +166,7 @@ class Array(Collection, ArraySerializer):
 
     @staticmethod
     def _has_default(self, value=None, **opts):
+        #return bool(len(self._default))
         return True
 
     def default(self, value=None, **opts):

@@ -97,4 +97,4 @@ class LazySettings(SimpleLazySettings):
                 merge = {k: other_as_dict[k] for k in keys.intersection(other_as_dict.keys())}
             else:
                 merge = other_as_dict
-            self.configure(**other_update)
+            self.configure(**merge)

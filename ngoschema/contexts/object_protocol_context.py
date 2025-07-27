@@ -13,9 +13,9 @@ class ObjectProtocolContext(NsManagerContext):
         NsManagerContext.set_context(self, context, session=session, **opts)
         ctx = self._context
         # _parent and _root are declared readonly in inspect.mm and it raises an error
-        self._parent = next((m for m in ctx.maps if isinstance(m, ObjectProtocol) and m is not self), None)
+        self._parent = parent = next((m for m in ctx.maps if isinstance(m, ObjectProtocol) and m is not self), None)
         if '_parent' in self._properties:
-            self._set_dataValidated('_parent', self._parent)
+            self._set_dataValidated('_parent', parent)
 
     @property
     def _root(self):

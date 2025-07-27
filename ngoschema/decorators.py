@@ -127,7 +127,7 @@ def assert_arg(arg, typ, **schema):
                 arg_i = sig.args.index(arg)
                 arg_s = arg
         except Exception as er:
-            logger.error(er)
+            logger.error(str(er))
             raise
             # if no inspection possible (if creating type metaprogramming)
 
@@ -169,7 +169,7 @@ def assert_arg(arg, typ, **schema):
 
             wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", doc)
         except Exception as er:
-            logger.error(er)
+            logger.error(str(er))
             raise
 
         return decorated

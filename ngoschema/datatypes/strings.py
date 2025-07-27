@@ -90,7 +90,10 @@ class Pattern(String):
         ctx = (context or self.create_context(**opts)).merged
         ctx.setdefault('this', None)
         if value is not None:
-            return TemplatedString(value)(ctx)
+            try:
+                return TemplatedString(value)(ctx)
+            except Exception as er:
+                raise er
 
     @staticmethod
     def _inputs(self, value, **opts):

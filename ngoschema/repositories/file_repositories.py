@@ -49,15 +49,28 @@ class FileRepository(with_metaclass(SchemaMetaclass, MemoryRepository, FileSaver
 
     def __init__(self, value=None, meta_opts=None, **opts):
         MemoryRepository.__init__(self, value, meta_opts=meta_opts, **opts)
-        opts.update(self.no_defaults())
-        # FileSaver.__init__(self, **opts)  # Saver already initialized in Repository, only misses filepath
-        FileSaver.set_filepath(self, opts.get('filepath'))
+        # Saver already initialized in Repository, only misses filepath
+        self._saver.set_filepath(self._saver, self.filepath)
+        #opts.update(self.no_defaults())
+        #meta_opts.setdefault('filepath', self.filepath)
+        # FileSaver.__init__(self, **opts)
+        #FileSaver.set_filepath(self, opts.get('filepath'))
         # to initialize the encoder
         common_opts = set(self._encoder._properties.keys()).intersection(self._properties.keys())
         meta_opts = meta_opts or {}
         meta_opts.update({k: self[k] for k in common_opts if self[k]})
         meta_opts.setdefault('instance_class', self._instanceClass)
         self._encoder.__init__(self, **meta_opts)
+
+    @staticmethod
+    def _load_file(self, filepath, **opts):
+        filepath = filepath or self._filepath
+        return self._loader._load_file(self, filepath, **opts)
+
+    #@staticmethod
+    #def _load(self, filepath=None, **opts):
+    #    filepath = filepath or self._filepath
+    #    return self._loader._load_file(self, filepath=filepath, **opts)
 
     @staticmethod
     def _commit(self, value=None, filepath=None, dump_file=True, with_tags=True, many=False, **opts):

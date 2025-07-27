@@ -27,7 +27,7 @@ class Transformer(Converter):
         try:
             return toClass(value, **opts)
         except Exception as er:
-            self._logger.error(er, exc_info=True)
+            self._logger.error(str(er), exc_info=True)
             raise
 
     def __call__(self, value, **opts):

@@ -7,7 +7,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from operator import neg
 
-from ..exceptions import InvalidValue, InvalidOperation
+from ..exceptions import InvalidValue, InvalidOperation, ValidationError
 from ..decorators import assert_arg
 from ..managers.type_builder import DefaultValidator
 from ..managers.namespace_manager import default_ns_manager, clean_js_name
@@ -57,8 +57,8 @@ class CollectionProtocol(Collection):
         if validate:
             try:
                 self._validate(self, self, items=False, context=ctx)
-            except InvalidValue as er:
-                self._logger.error(er, exc_info=True)
+            except (InvalidValue, ValidationError) as er:
+                self._logger.error(str(er), exc_info=True)
                 self._logger.error('in %s [%s]' % (self._pyType, self.name))
                 raise er
 
@@ -121,14 +121,14 @@ class CollectionProtocol(Collection):
             try:
                 ret[k] = self[k]
             except Exception as er:
-                self._logger.error(er, exc_info=True)
+                self._logger.error(str(er))
         # treat data
         if t.is_primitive() and not t._rawLiterals:
             for k in t._inputs(t, self._data[item]):
                 try:
                     ret[k] = self[k]
                 except Exception as er:
-                    self._logger.error(er, exc_info=True)
+                    self._logger.error(str(er), exc_info=True)
         return ret
 
     def _items_evaluate(self, item, **opts):
@@ -156,7 +156,7 @@ class CollectionProtocol(Collection):
                 return v if isinstance(t, type) and isinstance(v, (t, None.__class__)) else t(v, **opts)
         except Exception as er:
             self._logger.error('while evaluating item \'%s\' %s with value: %s', item, t, v)
-            self._logger.error(er, exc_info=True)
+            self._logger.error(str(er), exc_info=True)
             raise er
 
     def items_serialize(self, item, **opts):
