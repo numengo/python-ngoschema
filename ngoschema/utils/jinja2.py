@@ -18,8 +18,10 @@ from builtins import str
 import inflection
 import jinja2
 import jinja2.parser
+from markupsafe import Markup
 
 from .utils import GenericClassRegistry
+from ngoschema import settings
 
 # default jinja2 environment instance
 _default_jinja_env = None
@@ -31,6 +33,9 @@ _jinja2_globals['str'] = str
 _jinja2_globals['list'] = list
 _jinja2_globals['any'] = any
 _jinja2_globals['zip'] = zip
+
+MARKDOWNV2_ESCAPE_CHARS = settings.MARKDOWNV2_ESCAPE_CHARS
+MARKDOWNV2_ESCAPE_PATTERN = re.compile(r'([_*[\]()~`>#+\-=|{}.!])')
 
 
 def extend_jinja2_globals(**globals):
@@ -231,6 +236,23 @@ def difference(a, b):
     for aa in a:
         if aa not in bs:
             yield aa
+
+
+@filters_registry.register()
+def escape_markdownv2(value: str) -> str:
+    """
+    Échappe les caractères spéciaux pour MarkdownV2.
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    for char in MARKDOWNV2_ESCAPE_CHARS:
+        value = value.replace(char, f'\\{char}')
+    return value
+
+
+@filters_registry.register()
+def escape_markdown_v2(value: str) -> Markup:
+    return Markup(MARKDOWNV2_ESCAPE_PATTERN.sub(r'\\\1', str(value)))
 
 
 class ModulePrefixedJinja2Environment(jinja2.Environment):

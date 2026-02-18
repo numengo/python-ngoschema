@@ -53,7 +53,17 @@ class CollectionProtocol(Collection):
         ctx = self._create_context(self, context=context)
         self.set_context(ctx, session=session, **opts)
         if not lz:
-            self._collType(self)
+            try:
+                self._collType(self)
+            except Exception as er:
+                self._logger.error(str(er), exc_info=True)
+                self._logger.error('in %s [%s]' % (self._pyType, self.name))
+                for k in self.keys():
+                    try:
+                        self[k]
+                    except Exception as er:
+                        self._logger.error(f'error processing {k}: {er}')
+
         if validate:
             try:
                 self._validate(self, self, items=False, context=ctx)

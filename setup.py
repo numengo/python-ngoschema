@@ -81,6 +81,7 @@ install_requires = [
     'appdirs',
     'wrapt',
     'jinja2',
+    'phonenumbers',
     'arrow',
     'inflection',
     'slugify',

@@ -10,6 +10,7 @@ __all__ = [
     'KeyModifierMapping',
     'CaseInsensitiveDict',
     'UriDict',
+    'ColonDict',
     'Registry',
     'GenericClassRegistry',
     'is_string',

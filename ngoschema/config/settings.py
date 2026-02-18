@@ -205,3 +205,7 @@ DATETIME_FORMATS = {
 GETTER_PREFIX = 'get_'
 SETTER_PREFIX = 'set_'
 DELETER_PREFIX = 'del_'
+
+MARKDOWNV2_ESCAPE_CHARS = [
+    '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
+]

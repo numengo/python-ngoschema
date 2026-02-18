@@ -34,10 +34,12 @@ from ngofile.pathlist import PathList
 from past.types import basestring
 from jsonschema._types import is_integer
 
-from ngoschema.utils._qualname import qualname
-from ngoschema.exceptions import InvalidValue, CommandError
+from typing import Any, Iterator, Tuple
 from collections import OrderedDict as odict, deque
 from collections.abc import Mapping, MutableMapping, Set, Sequence
+
+from ngoschema.utils._qualname import qualname
+from ngoschema.exceptions import InvalidValue, CommandError
 
 _ = gettext.gettext
 
@@ -251,6 +253,57 @@ class UriDict(KeyModifierMapping):
     @classmethod
     def key_modifier(cls, key):
         return str(urlsplit(key).geturl()).lower()
+
+
+class ColonDict(MutableMapping):
+    def __init__(self):
+        self._dict = {}
+
+    def _parse_key(self, key: str) -> Tuple[str, ...]:
+        """Transforme une clé 'key1:key2:key3' en tuple ('key1', 'key2', 'key3')."""
+        if isinstance(key, str):
+            return tuple(key.split(':'))
+        return key
+
+    def _get_nested_dict(self, keys: Tuple[str, ...], create: bool = False) -> dict:
+        """Accède ou crée le dictionnaire imbriqué pour les clés données."""
+        current = self._dict
+        for key in keys[:-1]:
+            if create and key not in current:
+                current[key] = {}
+            current = current[key]
+        return current
+
+    def __getitem__(self, key: str) -> Any:
+        keys = self._parse_key(key)
+        current = self._get_nested_dict(keys)
+        return current[keys[-1]]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        keys = self._parse_key(key)
+        current = self._get_nested_dict(keys, create=True)
+        current[keys[-1]] = value
+
+    def __delitem__(self, key: str) -> None:
+        keys = self._parse_key(key)
+        current = self._get_nested_dict(keys)
+        del current[keys[-1]]
+
+    def __iter__(self) -> Iterator[str]:
+        def _flatten_keys(d: dict, prefix: str = '') -> Iterator[str]:
+            for key, value in d.items():
+                current_key = f"{prefix}{key}" if prefix else key
+                if isinstance(value, dict):
+                    yield from _flatten_keys(value, f"{current_key}:")
+                else:
+                    yield current_key
+        return _flatten_keys(self._dict)
+
+    def __len__(self) -> int:
+        return sum(1 for _ in self)
+
+    def __str__(self) -> str:
+        return str(self._dict)
 
 
 class Registry(Mapping):

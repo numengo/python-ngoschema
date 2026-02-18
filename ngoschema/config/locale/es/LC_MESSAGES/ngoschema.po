@@ -1,0 +1,761 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-22 20:39+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:731
+msgid "ARGUMENTS:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:749
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:1119
+msgid "Inherits from:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:761
+msgid "METHODS"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:763
+msgid "METHODS INHERITED"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:948
+#, python-format
+msgid "Entity class '%s' is not abstract and has no primary keys defined."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/object_protocol.py:1101
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:6
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:8
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:10
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:14
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:16
+msgid "Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:5
+msgid "automatically generated for ngoschema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:9
+msgid ""
+"The context is initialized at the instance creation and defines the "
+"environment of the object. Contexts can give access to Namespace Manager, "
+"parent objects or instances"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:60
+msgid "Basic annotations"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:134
+msgid "Protocol for context management"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:138
+msgid "Type checking interface"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:147
+msgid "Type conversion interface"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:159
+msgid "Type transformation interface"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:177
+msgid "Validator interface"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:195
+msgid "Deserialization interface: how input data is preprocessed when loading."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:210
+msgid "Serialization interface: how object data is printed or saved"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:222
+msgid ""
+"Loading interface: How data is loaded to memory. It can be from a file, a "
+"database"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:251
+msgid ""
+"Saving interface: How data is saved persistently. It can be a file, a "
+"database."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:266
+msgid ""
+"Repository interface: How entities are handled in memory and/or saved "
+"persistently. It can be in memory, in a file, a database. Repositories store "
+"entities of a same family."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:288
+msgid ""
+"This objet represents the relationship between one and one/many other objects"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:306
+msgid "Foreign object schema id"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:310
+msgid "Foreign object symbol"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:314
+msgid "Foreign keys to index objects"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:321
+msgid "Relationship cardinality."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:329
+msgid "list of objects keys to use for ordering"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:336
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1089
+msgid "True, if order is reversed"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:340
+msgid "True, if inheritance relationship"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:353
+msgid ""
+"This object allow to point an object stored in a repository from a foreign "
+"key, and to associate it to the current object"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:354
+msgid "to define a relationship to another instance"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:365
+msgid "Behavior on object deletion"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:384
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:11
+msgid "Named Object"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:385
+msgid ""
+"Instance abstract class. An instance is named and can be part of another "
+"instance and is referred by its canonical name."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:402
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:6
+msgid "Instance's name"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:406
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:13
+msgid "Instance's canonical name, depends on parents."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:410
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:14
+msgid "Instance's properties"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:419
+msgid ""
+"Entities are important object usually stored in databases, and indexed using "
+"a primary key that identify the object by its identity keys."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:443
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:7
+msgid "Keys to be used as primary keys to index this class of entities."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:450
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:5
+msgid "Primary keys values in object, used to identify it."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:604
+msgid "This object represents a file."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:611
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:806
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:6
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:12
+msgid "True, if binary file"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:656
+msgid "This object represents a file referenced by a URI"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:668
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:21
+msgid "File Uri."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:675
+msgid "This object represents a document."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:692
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:7
+msgid "Character set"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:697
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:9
+msgid "Document version"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:701
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:5
+msgid "Document author"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:710
+msgid ""
+"Serializers implements the interface that formats objects in a string (for "
+"ex json, xml or yaml)."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:714
+msgid "This represents a serializer for a collection."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:718
+msgid "True, if serializer can serialize several objects at once."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:722
+msgid "Keys to exclude from serialization"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:726
+msgid "Keys to keep only during serialization"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:732
+msgid "This represents a serializer for an object."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:739
+msgid "Prefix used for simple primitive attributes."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:743
+msgid "True, if only non default value are serialized."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:747
+msgid "True, if read-only attributes should not be serialized."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:753
+msgid "This represents a serializer for an instance."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:764
+msgid "Class symbol of objects stored in repository"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:768
+msgid "Tag to use to represent root object in serialization."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:772
+msgid "Tag used to represent each elements if many"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:778
+msgid "This represents a serializer for an entity."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:785
+msgid "True, if entities are referenced using their identity keys."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:789
+msgid "True, if entities are serialized as a dict with the primary key"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:795
+msgid "This represents a (de)serializer to/from a file."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:802
+msgid "File path"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:816
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:8
+msgid "This represents a json (de)serializer."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:823
+msgid "This represents a xml (de)serializer."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:830
+msgid "Prefix used for simple primitive attributes (usually '@')."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:835
+msgid "True, if serialization is indented"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:840
+msgid "Key used for cdata in xml (usually '#text')"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:845
+msgid "True, if empty elements are excluded"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:850
+msgid "Indentation string"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:855
+msgid "New line string"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:862
+msgid "This represents a yaml (de)serializer."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:909
+msgid ""
+"Repositories are containers of objects, loading, holding and serializing the "
+"instances."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:913
+msgid "This represents a repository storing objects in memory."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:957
+msgid "This represents a repository storing objects in files."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:966
+msgid "True, if overwriting file is permitted."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:972
+msgid "This represents a repository storing objects in json files."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:980
+msgid "This represents a repository storing objects in yaml files."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:989
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1004
+msgid "This represents a repository storing objects in xml files."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:998
+msgid "Class symbol of postprocessor"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1018
+msgid "list of keys for the dict"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1022
+msgid "key to catch long rows"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1026
+msgid "default value for short rows"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1040
+msgid "This object represents a filter for a query set."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1045
+msgid "List of attributes that objects should have defined."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1050
+msgid "Set of key/value to filter query set."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1054
+msgid "True, if negate condition."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1058
+msgid "True, if any of the filter conditions is enough."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1064
+msgid "This object represents a query"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1080
+msgid "Iterable to filter."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1084
+msgid "True, if only distinct objects are returned."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1093
+msgid "Filtered items"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngoschema.json:1104
+msgid ""
+"This object represents a session, and binds all repositories in the scope of "
+"the application."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/applicator.json:10
+msgid "Applicator vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/core.json:10
+msgid "Core vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/core.json:16
+msgid "Non-empty fragments not allowed."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/content.json:10
+msgid "Content vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/format.json:10
+msgid "Format vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/validation.json:10
+msgid "Validation vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/vocab/meta-data.json:10
+msgid "Meta-data vocabulary meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/schema.json:15
+msgid "Core and Validation specifications meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/schema.json:27
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:41
+msgid ""
+"While no longer an official keyword as it is replaced by $defs, this keyword "
+"is retained in the meta-schema to prevent incompatible extensions as it "
+"remains in common use."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/schema.json:33
+msgid ""
+"\"dependencies\" is no longer a keyword, but schema authors should avoid "
+"redefining it to facilitate a smooth transition to \"dependentSchemas\" and "
+"\"dependentRequired\""
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/2019-09/hyper-schema.json:10
+msgid "JSON Hyper-Schema Vocabulary Schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/card.json:5
+msgid "A representation of a person, company, organization, or place"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/card.json:10
+msgid "Formatted Name"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:5
+msgid "A representation of an event"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:12
+msgid "Event starting time"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:17
+msgid "Event ending time"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:25
+msgid "Event duration"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:30
+msgid "Recurrence date"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/calendar.json:34
+msgid "Recurrence rule"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/address.json:5
+msgid ""
+"An Address following the convention of http://microformats.org/wiki/hcard"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/hyper-draft-07.json:5
+msgid "JSON Hyper-Schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/draft-07.json:5
+msgid "Core schema meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/links-draft-07.json:5
+msgid "Link Description Object"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/json-schema.org/draft-07/geo.json:5
+msgid "A geographical coordinate"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:5
+msgid "numenGo core schema meta-schema"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:49
+msgid "dictionary of property dependencies in an object"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:73
+msgid "for creating APIs and store objects defined in importable components"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:81
+msgid "for inheritance..."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:85
+msgid "for code generation"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:89
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:93
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/schemas/ngo-draft-06.json:97
+msgid "for complexType path"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:1
+msgid ""
+"ArrayProtocol is class defined by a json-schema and built by TypeBuilder."
+"build_array_protocol."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:2
+msgid ""
+"The class is built with a list or a unique item type (which can be a Literal "
+"or a subclass of\n"
+"ObjectProtocol or ArrayProtocol.\n"
+"\n"
+"If lazy loading is enabled, data is only constructed and validated on first "
+"read access. If not, validation is done\n"
+"when setting the item."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:3
+msgid ""
+"ObjectProtocol is class defined by a json-schema and built by TypeBuilder."
+"build_object_protocol.\n"
+"The schema is specified directly by a protected attribute _schema or by "
+"providing its id using a protected\n"
+"attribute _id to be resolved in loaded schemas.\n"
+"\n"
+"The class is built with an ordered dictionary of property types (which can "
+"be Literal or a subclass of\n"
+"ObjectProtocol or ArrayProtocol.\n"
+"\n"
+"An instance behave as a standard mapping, but its properties can also be "
+"accessed through a\n"
+"descriptor (renamed using clean_js_name in case it contains forbidden "
+"characters in python arguments).\n"
+"When _attributeByName is enabled, attributes can be accessed also by their "
+"names according to setting ATTRIBUTE_NAME_FIELD\n"
+"\n"
+"If lazy loading is enabled, data is only constructed and validated on first "
+"read access. If not, validation is done\n"
+"when setting the item."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:4
+msgid "Override for issubclass(subclass, cls)."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:5
+msgid ""
+"Metaclass for instrumented classes defined by a schema based on TypeProtocol."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:6
+msgid "Just modify the behavior for classes that aren't genuine subclasses."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/protocols/__init__.py:7
+msgid ""
+"Validate the value according to schema\n"
+"Return dictionnary of errors or raise ngoschema.InvalidValue"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:1
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:1
+msgid "Foreign key component"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:2
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:2
+msgid ""
+"author: Cédric ROMAN (roman@numengo.com)\n"
+"licence: GPL3\n"
+"created on 28/01/2019"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:3
+msgid "Annotation"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:4
+msgid ""
+"Basic annotations\n"
+"\n"
+"Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:5
+msgid "Id"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:7
+msgid "Name"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/metadata.py:9
+msgid "Plural"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:1
+msgid "utilities and stores to resolve canonical names in models"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:2
+msgid ""
+"author: Cedric ROMAN\n"
+"email: roman@numengo.com\n"
+"licence: GNU GPLv3"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:3
+msgid "Document"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:4
+msgid ""
+"This object represents a document.\n"
+"\n"
+"Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:10
+msgid "File"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:11
+msgid ""
+"This object represents a file.\n"
+"\n"
+"Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:13
+msgid "Filepath"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:15
+msgid "Folder"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:17
+msgid "UriFile"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:18
+msgid ""
+"This object represents a file referenced by a URI\n"
+"\n"
+"Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:19
+msgid "Retrieve the current base URI, not including any fragment."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/files.py:20
+msgid "Retrieve the current resolution scope."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:3
+msgid "Entity"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:4
+msgid ""
+"Entities are important object usually stored in databases, and indexed using "
+"a primary key that identify the object by its identity keys.\n"
+"\n"
+"Arguments:"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:8
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:9
+msgid ""
+"method to overload locally for extra check. Allows to associate a message to "
+"check failure."
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:10
+msgid ""
+"root_entity: flag to signal the object is the root entity to serialize\n"
+"use_identity_keys: serialize only the identity keys (if not root)\n"
+"use_entity_keys: returns a dict of identity keys values (if not root)\n"
+"add_identity_keys: ensure the identity keys are serialized"
+msgstr ""
+
+#: /home/cedric/Nextcloud/Devel/python/python-ngoschema/ngoschema/models/instances.py:12
+msgid ""
+"Instance abstract class. An instance is named and can be part of another "
+"instance and is referred by its canonical name.\n"
+"\n"
+"Arguments:"
+msgstr ""
